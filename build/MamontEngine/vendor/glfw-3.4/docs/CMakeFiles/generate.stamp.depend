@@ -1,0 +1,5 @@
+# CMake generation dependency list for this directory.
+D:/Apps/CMake/share/cmake-3.30/Modules/FindDoxygen.cmake
+D:/Apps/CMake/share/cmake-3.30/Modules/FindPackageHandleStandardArgs.cmake
+D:/Apps/CMake/share/cmake-3.30/Modules/FindPackageMessage.cmake
+D:/Repos/MamontEngine/MamontEngine/vendor/glfw-3.4/docs/CMakeLists.txt

@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\Repos\MamontEngine\build\MamontEditor\CMakeFiles\MamontEditor.dir\cmake_pch.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Repos\MamontEngine\MamontEditor\src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\Repos\MamontEngine\build\MamontEditor\CMakeFiles\MamontEditor.dir\Debug\cmake_pch.hxx">
+      <Filter>Precompile Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Repos\MamontEngine\build\MamontEditor\CMakeFiles\MamontEditor.dir\Release\cmake_pch.hxx">
+      <Filter>Precompile Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Repos\MamontEngine\build\MamontEditor\CMakeFiles\MamontEditor.dir\Distribution\cmake_pch.hxx">
+      <Filter>Precompile Header File</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Repos\MamontEngine\MamontEditor\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Precompile Header File">
+      <UniqueIdentifier>{ED2FE65A-4551-3EA5-89B3-7F908F9C31A4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{37A1A62E-391C-3044-BB0E-F3A390FCDF43}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{DCF40AEA-559A-32DE-AEB6-B2B3AACA7263}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\Repos\MamontEngine\build\CMakeFiles\522697c7ffc741a88622ce1ec862d3af\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{6806B94E-14E0-35C3-AE76-61125125DC71}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

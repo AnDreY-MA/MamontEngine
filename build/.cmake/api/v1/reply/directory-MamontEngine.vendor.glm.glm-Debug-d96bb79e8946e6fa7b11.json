@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "MamontEngine/vendor/glm/glm",
+		"source" : "MamontEngine/vendor/glm/glm"
+	}
+}

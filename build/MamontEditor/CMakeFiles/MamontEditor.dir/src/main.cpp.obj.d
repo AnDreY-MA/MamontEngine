@@ -1,0 +1,29 @@
+MamontEditor/CMakeFiles/MamontEditor.dir/src/main.cpp.obj: \
+ D:\Repos\MamontEngine\MamontEditor\src\main.cpp \
+ D:/Repos/MamontEngine/MamontEngine/src/Core/Engine.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/vector \
+ D:/Apps/VulkanSDK/Include/vulkan/vulkan_core.h \
+ D:/Apps/VulkanSDK/Include/vulkan/vk_platform.h \
+ D:/MinGW64/MinGW64/lib/gcc/x86_64-w64-mingw32/14.1.0/include/stddef.h \
+ D:/MinGW64/MinGW64/x86_64-w64-mingw32/include/stddef.h \
+ D:/MinGW64/MinGW64/x86_64-w64-mingw32/include/crtdefs.h \
+ D:/MinGW64/MinGW64/lib/gcc/x86_64-w64-mingw32/14.1.0/include/stdint.h \
+ D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codec_h264std.h \
+ D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codecs_common.h \
+ D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codec_h264std_encode.h \
+ D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codec_h264std.h \
+ D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codec_h265std.h \
+ D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codec_h265std_encode.h \
+ D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codec_h265std.h \
+ D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codec_h264std_decode.h \
+ D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codec_h265std_decode.h \
+ D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codec_av1std.h \
+ D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codec_av1std_decode.h \
+ D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codec_av1std.h \
+ D:/Repos/MamontEngine/MamontEngine/src/Events/Event.h \
+ D:/Repos/MamontEngine/MamontEngine/src/Core/Base.h \
+ D:/Repos/MamontEngine/MamontEngine/src/Events/ApplicationEvent.h \
+ D:/Repos/MamontEngine/MamontEngine/vendor/glfw-3.4/include/GLFW/glfw3.h \
+ D:/Apps/VulkanSDK/Include/vulkan/vulkan.h \
+ D:/Apps/VulkanSDK/Include/vulkan/vulkan_core.h \
+ D:/MinGW64/MinGW64/x86_64-w64-mingw32/include/GL/gl.h
