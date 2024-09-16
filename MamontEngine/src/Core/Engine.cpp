@@ -1,6 +1,8 @@
 #include <cstdint>
 #include <cstring>
+#include <map>
 #include <stdexcept>
+#include <vector>
 #include <vulkan/vk_platform.h>
 #include <vulkan/vulkan_core.h>
 #include "GLFW/glfw3.h"
@@ -59,6 +61,7 @@ namespace MamontEngine
 
         CreateInstance();
         SetupDebugMessenger();
+        PickPhysicalDevice();
 
     }
 
@@ -143,6 +146,70 @@ namespace MamontEngine
         {
             throw std::runtime_error("Failed to create instance!");
         }
+    }
+    
+    bool Engine::IsDeviceSuitable(VkPhysicalDevice inDevice)
+    {
+        QueueFamilyIndices indices = FindQueueFamilies(inDevice);
+
+        return indices.IsComplete();
+    }
+    
+    void Engine::PickPhysicalDevice()
+    {
+        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+        uint32_t deviceCount{0};
+        vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
+        if (deviceCount == 0)
+        {
+            throw std::runtime_error("Failed to find GPU's with Vulkan support!");
+        }
+
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(m_Instance, &deviceCount, devices.data());
+
+        std::multimap<int, VkPhysicalDevice> candidates;
+
+        for (const auto& device : devices)
+        {
+            if(IsDeviceSuitable(device))
+            {
+                physicalDevice = device;
+                break;
+            }
+        }
+
+        if (physicalDevice == VK_NULL_HANDLE)
+        {
+            throw std::runtime_error("Failed to find a suitable GPU!"); 
+        }
+    }
+
+    QueueFamilyIndices Engine::FindQueueFamilies(VkPhysicalDevice inDevice)
+    {
+        QueueFamilyIndices indices;
+
+        uint32_t queueFamilyCount{0};
+        vkGetPhysicalDeviceQueueFamilyProperties(inDevice, &queueFamilyCount, nullptr);
+
+        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(inDevice, &queueFamilyCount, queueFamilies.data());
+
+        int index {0};
+        for (const auto& queueFamily : queueFamilies)
+        {
+            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            {
+                indices.GraphicsFamily = index;
+            }
+            
+            if(indices.IsComplete())
+                break;
+
+            index++;
+        }
+
+        return indices;
     }
 
     VkResult Engine::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, 

@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
@@ -9,6 +10,13 @@
 
 namespace MamontEngine
 {
+    struct QueueFamilyIndices
+    {
+        std::optional<uint32_t> GraphicsFamily;
+        
+        const bool IsComplete() const { return GraphicsFamily.has_value(); }
+    };
+
     class Engine 
     {
     public:
@@ -29,6 +37,11 @@ namespace MamontEngine
 
         void CreateInstance();
         void SetupDebugMessenger();
+        void PickPhysicalDevice();
+
+        bool IsDeviceSuitable(VkPhysicalDevice inDevice);
+
+        QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice inDevice);
         
         void PopulateDebugMessengerCreateInfor(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
         VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, 
@@ -44,7 +57,9 @@ namespace MamontEngine
         bool m_Running{true};
 
         VkInstance m_Instance;
-        VkDebugUtilsMessengerEXT debugMessenger;
+        VkDebugUtilsMessengerEXT m_debugMessenger;
+
+        VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
 
         //static Engine* s_Instance;
 
