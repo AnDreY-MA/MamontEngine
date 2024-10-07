@@ -3,6 +3,8 @@
 #include <cstdint>
 
 #include "Events/Event.h"
+#include "GLFW/glfw3.h"
+
 
 namespace MamontEngine
 {
@@ -27,6 +29,8 @@ namespace MamontEngine
 
         virtual uint32_t GetWidth() const = 0;
         virtual uint32_t GetHeight() const = 0;
+
+        virtual GLFWwindow* GetGLFWWindow() const = 0;
 
         virtual void SetEventCallback(const EventCallback& callback) = 0;
         virtual void SetVSync(const bool enabled) = 0;

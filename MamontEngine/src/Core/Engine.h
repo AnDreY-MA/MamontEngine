@@ -13,6 +13,7 @@ namespace MamontEngine
     struct QueueFamilyIndices
     {
         std::optional<uint32_t> GraphicsFamily;
+        std::optional<uint32_t> presentFamily;
         
         const bool IsComplete() const { return GraphicsFamily.has_value(); }
     };
@@ -70,6 +71,7 @@ namespace MamontEngine
         VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
         VkDevice m_Device;
         VkQueue m_graphicQueue;
+        VkQueue m_PresentQueue;
         VkSurfaceKHR m_Surface;
 
         static Engine* s_Instance;

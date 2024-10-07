@@ -12,6 +12,7 @@
 #include "Core/Window.h"
 #include "Window.h"
 #include <iostream>
+#include <set>
 
 
 namespace MamontEngine
@@ -53,6 +54,7 @@ namespace MamontEngine
         {
             DestroyDebugUtilsMessengerEXT(m_VkInstance, m_debugMessenger, nullptr);
         }
+        vkDestroySurfaceKHR(m_VkInstance, m_Surface, nullptr);
         vkDestroyInstance(m_VkInstance,nullptr);
     }
 
@@ -65,6 +67,7 @@ namespace MamontEngine
 
         CreateInstance();
         SetupDebugMessenger();
+        CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
     }
@@ -72,7 +75,7 @@ namespace MamontEngine
     void Engine::Run()
     {
         VkFence closeEvent;
-        vkCreateFence(m_Device, nullptr, nullptr, &closeEvent);
+        //vkCreateFence(m_Device, nullptr, nullptr, &closeEvent);
       
         while(m_Running)
         {
@@ -196,19 +199,25 @@ namespace MamontEngine
 
     void Engine::CreateLogicalDevice()
     {
-        QueueFamilyIndices indices = FindQueueFamilies(m_physicalDevice);
-        VkDeviceQueueCreateInfo queueCreateInfo{};
-        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueFamilyIndex = indices.GraphicsFamily.value();
-        queueCreateInfo.queueCount = 1;
+        QueueFamilyIndices                   indices = FindQueueFamilies(m_physicalDevice);
+        std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+        std::set<uint32_t>                   uniqueQueueFamilies = {indices.GraphicsFamily.value(), indices.presentFamily.value()};
 
         float queuePriority{1.f};
-        queueCreateInfo.pQueuePriorities = &queuePriority;
+        for (uint32_t queueFamily : uniqueQueueFamilies)
+        {
+            VkDeviceQueueCreateInfo queueCreateInfo{};
+            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queueCreateInfo.queueFamilyIndex = queueFamily;
+            queueCreateInfo.queueCount       = 1;
+            queueCreateInfo.pQueuePriorities = &queuePriority;
+            queueCreateInfos.push_back(queueCreateInfo);
+        }
 
         VkPhysicalDeviceFeatures deviceFeatures{};
         VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        createInfo.pQueueCreateInfos = &queueCreateInfo;
+        createInfo.pQueueCreateInfos = queueCreateInfos.data();
         createInfo.queueCreateInfoCount = 1;
         createInfo.pEnabledFeatures     = &deviceFeatures;
         createInfo.enabledExtensionCount = 0;
@@ -229,6 +238,7 @@ namespace MamontEngine
         }
         
         vkGetDeviceQueue(m_Device, indices.GraphicsFamily.value(), 0, &m_graphicQueue);
+        vkGetDeviceQueue(m_Device, indices.presentFamily.value(), 0, &m_PresentQueue);
     }
 
     QueueFamilyIndices Engine::FindQueueFamilies(VkPhysicalDevice inDevice)
@@ -248,6 +258,12 @@ namespace MamontEngine
             {
                 indices.GraphicsFamily = index;
             }
+
+            VkBool32 presentSupport = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(inDevice, index, m_Surface, &presentSupport);
+
+            if (presentSupport)
+                indices.presentFamily = index;
             
             if(indices.IsComplete())
                 break;
@@ -296,9 +312,9 @@ namespace MamontEngine
 
     void Engine::CreateSurface()
     {
-        if (glfwCreateWindowSurface(m_VkInstance, m_))
+        if (glfwCreateWindowSurface(m_VkInstance, m_Window->GetGLFWWindow(), nullptr, &m_Surface) != VK_SUCCESS)
         {
-
+            throw std::runtime_error("Failed to create window surface!");
         }
     }
     void Engine::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) 

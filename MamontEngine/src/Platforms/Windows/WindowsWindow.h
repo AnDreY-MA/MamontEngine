@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include "Core/Window.h"
-#include "GLFW/glfw3.h"
 
 namespace MamontEngine
 {
@@ -15,6 +14,11 @@ namespace MamontEngine
 
         virtual uint32_t GetWidth() const override { return m_Data.Width; }
         virtual uint32_t GetHeight() const override { return m_Data.Height; }
+
+        virtual GLFWwindow *GetGLFWWindow() const
+        {
+            return m_Window;
+        }
         
         virtual void SetEventCallback(const EventCallback& callback) override { m_Data.Callback = callback;}
         virtual void SetVSync(const bool enabled) override { m_Data.VSync = enabled;}
