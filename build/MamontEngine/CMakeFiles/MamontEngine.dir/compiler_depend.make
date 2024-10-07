@@ -210,11 +210,41 @@ MamontEngine/CMakeFiles/MamontEngine.dir/src/Core/Engine.cpp.obj: MamontEngine/C
   D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codecs_common.h \
   D:/Apps/VulkanSDK/Include/vulkan/vk_platform.h \
   D:/Apps/VulkanSDK/Include/vulkan/vulkan_core.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/allocator.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/concept_check.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/cpp_type_traits.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/enable_special_members.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/erase_if.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/exception_defines.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/functexcept.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/functional_hash.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/invoke.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/memory_resource.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/node_handle.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/range_access.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/requires_hosted.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_algobase.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_construct.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_function.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_map.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_multimap.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_tree.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/utility.h \
   D:/MinGW64/MinGW64/include/c++/14.1.0/bits/version.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/compare \
   D:/MinGW64/MinGW64/include/c++/14.1.0/cstdint \
   D:/MinGW64/MinGW64/include/c++/14.1.0/cstring \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/exception \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/ext/aligned_buffer.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/ext/alloc_traits.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/initializer_list \
   D:/MinGW64/MinGW64/include/c++/14.1.0/iostream \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/map \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/new \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/optional \
   D:/MinGW64/MinGW64/include/c++/14.1.0/stdexcept \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/tuple \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/type_traits \
   D:/MinGW64/MinGW64/include/c++/14.1.0/vector \
   D:/MinGW64/MinGW64/include/c++/14.1.0/x86_64-w64-mingw32/bits/c++config.h \
   D:/MinGW64/MinGW64/lib/gcc/x86_64-w64-mingw32/14.1.0/include/stddef.h \
@@ -296,6 +326,8 @@ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/allocator.h:
 D:/MinGW64/MinGW64/include/c++/14.1.0/bits/ranges_util.h:
 
 D:/MinGW64/MinGW64/include/c++/14.1.0/bits/atomic_wait.h:
+
+D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_map.h:
 
 D:/MinGW64/MinGW64/include/c++/14.1.0/bits/basic_ios.h:
 
@@ -390,6 +422,8 @@ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/move.h:
 D:/MinGW64/MinGW64/include/c++/14.1.0/bits/nested_exception.h:
 
 D:/MinGW64/MinGW64/include/c++/14.1.0/bits/new_allocator.h:
+
+D:/MinGW64/MinGW64/include/c++/14.1.0/map:
 
 D:/MinGW64/MinGW64/include/c++/14.1.0/bits/node_handle.h:
 
@@ -599,6 +633,8 @@ D:/MinGW64/MinGW64/lib/gcc/x86_64-w64-mingw32/14.1.0/include/syslimits.h:
 
 D:/MinGW64/MinGW64/x86_64-w64-mingw32/include/_mingw_mac.h:
 
+D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_tree.h:
+
 D:/MinGW64/MinGW64/x86_64-w64-mingw32/include/_mingw_off_t.h:
 
 D:/MinGW64/MinGW64/x86_64-w64-mingw32/include/_mingw_stat64.h:
@@ -682,6 +718,10 @@ D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codecs_common.h:
 D:/Apps/VulkanSDK/Include/vulkan/vk_platform.h:
 
 D:/Apps/VulkanSDK/Include/vulkan/vulkan_core.h:
+
+D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_multimap.h:
+
+D:/MinGW64/MinGW64/include/c++/14.1.0/optional:
 
 D:/MinGW64/MinGW64/x86_64-w64-mingw32/include/sec_api/string_s.h:
 

@@ -211,7 +211,21 @@ MamontEditor/CMakeFiles/MamontEditor.dir/src/main.cpp.obj: MamontEditor/CMakeFil
   D:/Apps/VulkanSDK/Include/vulkan/vk_platform.h \
   D:/Apps/VulkanSDK/Include/vulkan/vulkan.h \
   D:/Apps/VulkanSDK/Include/vulkan/vulkan_core.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/enable_special_members.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/exception_defines.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/functional_hash.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/invoke.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_construct.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/utility.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/bits/version.h \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/compare \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/exception \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/initializer_list \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/new \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/optional \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/type_traits \
   D:/MinGW64/MinGW64/include/c++/14.1.0/vector \
+  D:/MinGW64/MinGW64/include/c++/14.1.0/x86_64-w64-mingw32/bits/c++config.h \
   D:/MinGW64/MinGW64/lib/gcc/x86_64-w64-mingw32/14.1.0/include/stddef.h \
   D:/MinGW64/MinGW64/lib/gcc/x86_64-w64-mingw32/14.1.0/include/stdint.h \
   D:/MinGW64/MinGW64/x86_64-w64-mingw32/include/GL/gl.h \
@@ -644,6 +658,8 @@ D:/Apps/VulkanSDK/Include/vulkan/vk_platform.h:
 D:/Apps/VulkanSDK/Include/vulkan/vulkan.h:
 
 D:/Apps/VulkanSDK/Include/vulkan/vulkan_core.h:
+
+D:/MinGW64/MinGW64/include/c++/14.1.0/optional:
 
 D:/MinGW64/MinGW64/x86_64-w64-mingw32/include/GL/gl.h:
 

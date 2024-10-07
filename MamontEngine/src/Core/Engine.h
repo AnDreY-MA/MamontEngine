@@ -25,6 +25,11 @@ namespace MamontEngine
         
         void Run();
 
+        static Engine& Get()
+        {
+            return *s_Instance;
+        }
+
     private:
         void Init();
         void Loop();
@@ -37,7 +42,10 @@ namespace MamontEngine
 
         void CreateInstance();
         void SetupDebugMessenger();
+        void CreateSurface();
         void PickPhysicalDevice();
+
+        void CreateLogicalDevice();
 
         bool IsDeviceSuitable(VkPhysicalDevice inDevice);
 
@@ -56,12 +64,15 @@ namespace MamontEngine
     private:
         bool m_Running{true};
 
-        VkInstance m_Instance;
+        VkInstance m_VkInstance;
         VkDebugUtilsMessengerEXT m_debugMessenger;
 
         VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+        VkDevice m_Device;
+        VkQueue m_graphicQueue;
+        VkSurfaceKHR m_Surface;
 
-        //static Engine* s_Instance;
+        static Engine* s_Instance;
 
         std::unique_ptr<class Window> m_Window;
     };

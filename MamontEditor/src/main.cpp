@@ -4,11 +4,13 @@
 using namespace MamontEngine;
 
 
-int main() 
+int main(int argc, char** argv) 
 {
         
-        std::unique_ptr<Engine> Mamont = std::make_unique<Engine>();
+        auto Mamont = new Engine();
         Mamont->Run();
+
+        delete Mamont;
         
         /*glfwInit();
 

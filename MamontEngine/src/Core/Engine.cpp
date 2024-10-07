@@ -16,6 +16,7 @@
 
 namespace MamontEngine
 {
+    Engine* Engine::s_Instance = nullptr;
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
     };
@@ -40,16 +41,19 @@ namespace MamontEngine
 
     Engine::Engine()
     {
+        s_Instance = this;
+
         Init();
     }
     Engine::~Engine()
     {
         std::cout << "~Engine" << std::endl;
+        vkDestroyDevice(m_Device, nullptr);
         if (enableValidationLayers)
         {
-            DestroyDebugUtilsMessengerEXT(m_Instance, debugMessenger, nullptr);
+            DestroyDebugUtilsMessengerEXT(m_VkInstance, m_debugMessenger, nullptr);
         }
-        vkDestroyInstance(m_Instance,nullptr);
+        vkDestroyInstance(m_VkInstance,nullptr);
     }
 
     void Engine::Init()
@@ -62,13 +66,22 @@ namespace MamontEngine
         CreateInstance();
         SetupDebugMessenger();
         PickPhysicalDevice();
-
+        CreateLogicalDevice();
     }
 
     void Engine::Run()
     {
+        VkFence closeEvent;
+        vkCreateFence(m_Device, nullptr, nullptr, &closeEvent);
+      
         while(m_Running)
         {
+            
+            /* VkResult closeResult = vkGetFenceStatus(m_Device, closeEvent);
+            if (closeResult == VK_SUCCESS)
+            {
+                m_Running = false;
+            }*/
             m_Window->OnUpdate();
         }
 
@@ -94,8 +107,6 @@ namespace MamontEngine
     {
         return false;
     }
-
-    
 
     void Engine::CreateInstance()
     {
@@ -140,9 +151,9 @@ namespace MamontEngine
             createInfo.enabledLayerCount = 0;
 
             createInfo.pNext = nullptr;
-        }
+        } 
 
-        if(vkCreateInstance(&createInfo, nullptr, &m_Instance) != VK_SUCCESS)
+        if(vkCreateInstance(&createInfo, nullptr, &m_VkInstance) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create instance!");
         }
@@ -157,32 +168,67 @@ namespace MamontEngine
     
     void Engine::PickPhysicalDevice()
     {
-        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
         uint32_t deviceCount{0};
-        vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
+        vkEnumeratePhysicalDevices(m_VkInstance, &deviceCount, nullptr);
         if (deviceCount == 0)
         {
             throw std::runtime_error("Failed to find GPU's with Vulkan support!");
         }
 
-        std::vector<VkPhysicalDevice> devices(deviceCount);
-        vkEnumeratePhysicalDevices(m_Instance, &deviceCount, devices.data());
 
-        std::multimap<int, VkPhysicalDevice> candidates;
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(m_VkInstance, &deviceCount, devices.data());
 
         for (const auto& device : devices)
         {
             if(IsDeviceSuitable(device))
             {
-                physicalDevice = device;
+                m_physicalDevice = device;
                 break;
             }
         }
 
-        if (physicalDevice == VK_NULL_HANDLE)
+        if (m_physicalDevice == VK_NULL_HANDLE)
         {
             throw std::runtime_error("Failed to find a suitable GPU!"); 
         }
+    }
+
+    void Engine::CreateLogicalDevice()
+    {
+        QueueFamilyIndices indices = FindQueueFamilies(m_physicalDevice);
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = indices.GraphicsFamily.value();
+        queueCreateInfo.queueCount = 1;
+
+        float queuePriority{1.f};
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+
+        VkPhysicalDeviceFeatures deviceFeatures{};
+        VkDeviceCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        createInfo.pQueueCreateInfos = &queueCreateInfo;
+        createInfo.queueCreateInfoCount = 1;
+        createInfo.pEnabledFeatures     = &deviceFeatures;
+        createInfo.enabledExtensionCount = 0;
+
+        if (enableValidationLayers)
+        {
+            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+            createInfo.ppEnabledLayerNames = validationLayers.data();
+        }
+        else
+        {
+            createInfo.enabledLayerCount = 0;
+        }
+
+        if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_Device) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create logical device!");
+        }
+        
+        vkGetDeviceQueue(m_Device, indices.GraphicsFamily.value(), 0, &m_graphicQueue);
     }
 
     QueueFamilyIndices Engine::FindQueueFamilies(VkPhysicalDevice inDevice)
@@ -241,13 +287,20 @@ namespace MamontEngine
         VkDebugUtilsMessengerCreateInfoEXT createInfo{};
         PopulateDebugMessengerCreateInfor(createInfo);
 
-        if(CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
+        if(CreateDebugUtilsMessengerEXT(m_VkInstance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to set up debug messenger!");
         }
 
     }
 
+    void Engine::CreateSurface()
+    {
+        if (glfwCreateWindowSurface(m_VkInstance, m_))
+        {
+
+        }
+    }
     void Engine::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) 
     {
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");

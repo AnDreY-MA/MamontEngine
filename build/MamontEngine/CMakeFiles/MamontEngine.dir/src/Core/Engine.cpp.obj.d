@@ -7,7 +7,27 @@ MamontEngine/CMakeFiles/MamontEngine.dir/src/Core/Engine.cpp.obj: \
  D:/MinGW64/MinGW64/x86_64-w64-mingw32/include/string.h \
  D:/MinGW64/MinGW64/x86_64-w64-mingw32/include/crtdefs.h \
  D:/MinGW64/MinGW64/x86_64-w64-mingw32/include/sec_api/string_s.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/map \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/requires_hosted.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_tree.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_algobase.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/allocator.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_function.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/cpp_type_traits.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/ext/alloc_traits.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/ext/aligned_buffer.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/node_handle.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_map.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/functexcept.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/concept_check.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/initializer_list \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/tuple \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_multimap.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/range_access.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/erase_if.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/memory_resource.h \
  D:/MinGW64/MinGW64/include/c++/14.1.0/stdexcept \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/vector \
  D:/Apps/VulkanSDK/Include/vulkan/vk_platform.h \
  D:/MinGW64/MinGW64/lib/gcc/x86_64-w64-mingw32/14.1.0/include/stddef.h \
  D:/MinGW64/MinGW64/x86_64-w64-mingw32/include/stddef.h \
@@ -28,7 +48,17 @@ MamontEngine/CMakeFiles/MamontEngine.dir/src/Core/Engine.cpp.obj: \
  D:/Apps/VulkanSDK/Include/vk_video/vulkan_video_codec_av1std.h \
  D:/Repos/MamontEngine/MamontEngine/vendor/glfw-3.4/include/GLFW/glfw3.h \
  D:\Repos\MamontEngine\MamontEngine\src\Core\Engine.h \
- D:/MinGW64/MinGW64/include/c++/14.1.0/vector \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/optional \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/type_traits \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/exception \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/new \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/enable_special_members.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/exception_defines.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/functional_hash.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/stl_construct.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/utility.h \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/compare \
+ D:/MinGW64/MinGW64/include/c++/14.1.0/bits/invoke.h \
  D:/Repos/MamontEngine/MamontEngine/src/Events/Event.h \
  D:/Repos/MamontEngine/MamontEngine/src/Core/Base.h \
  D:/Repos/MamontEngine/MamontEngine/src/Events/ApplicationEvent.h \
