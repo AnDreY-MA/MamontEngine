@@ -9,3 +9,9 @@
 [submodule "MamontEngine/vendor/ImGui"]
     path = MamontEngine/vendor/ImGui
     url = https://github.com/ocornut/imgui    
+[submodule "MamontEngine/vendor/sdl"]
+	path = MamontEngine/vendor/sdl
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "MamontEngine/vendor/vkbootstrap"]
+	path = MamontEngine/vendor/vkbootstrap
+	url = https://github.com/charles-lunarg/vk-bootstrap.git

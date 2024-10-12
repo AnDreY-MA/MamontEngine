@@ -12,8 +12,6 @@ source_group("src/Core" FILES ${Core})
 file(GLOB_RECURSE Events "src/Events/*.h" "src/Events/*.hpp" "src/Events/*.cpp")
 source_group("src/Events" FILES ${Events})
 
-file(GLOB_RECURSE PlatformsWin "src/Platforms/Windows/*.h" "src/Platforms/Windows/*.hpp" "src/Platforms/Windows/*.cpp")
-source_group("src/Platforms/Windows" FILES ${PlatformsWin})
 
 file(GLOB_RECURSE CoreModule "src/Core/*.ixx")
 
@@ -79,12 +77,22 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})
 # glm
 add_subdirectory("vendor/glm")
 
-#glfw
-add_subdirectory("vendor/glfw-3.4")
-target_link_libraries(${PROJECT_NAME} PUBLIC glfw)
+#glf
+#include_directories("vendor/glfw-3.4/include")
+#target_link_directories(${PROJECT_NAME} PUBLIC "vendor/glfw-3.4")
 
-include_directories("vendor/glfw-3.4/include")
-target_link_directories(${PROJECT_NAME} PUBLIC "vendor/glfw-3.4")
+
+CPMAddPackage("gh:charles-lunarg/vk-bootstrap#a5950c070082e851e621206fca7b3b0b008dcb28")
+target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap)
+set_target_properties(vk-bootstrap PROPERTIES FOLDER "vendor")
+
+add_subdirectory("vendor/sdl")
+target_link_libraries(${PROJECT_NAME} PUBLIC SDL3::SDL3)
+
+target_include_directories(${PROJECT_NAME} PUBLIC "vendor/sdl/include")
+#sdl
+#add_subdirectory("vendor/sdl" EXCLUDE_FROM_ALL)
+#target_link_libraries(${PROJECT_NAME} PUBLIC SDL2::SDL2)
 
 set(PCH_FILE src/pch.h)
 target_precompile_headers(${PROJECT_NAME} PUBLIC ${PCH_FILE})
