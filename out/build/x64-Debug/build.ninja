@@ -63,36 +63,6 @@ build CMakeFiles\rebuild_cache.util: CUSTOM_COMMAND
 
 build rebuild_cache: phony CMakeFiles\rebuild_cache.util
 
-
-#############################################
-# Utility command for list_install_components
-
-build list_install_components: phony
-
-
-#############################################
-# Utility command for install
-
-build CMakeFiles\install.util: CUSTOM_COMMAND all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -P cmake_install.cmake"
-  DESC = Install the project...
-  pool = console
-  restat = 1
-
-build install: phony CMakeFiles\install.util
-
-
-#############################################
-# Utility command for install/local
-
-build CMakeFiles\install\local.util: CUSTOM_COMMAND all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake"
-  DESC = Installing only the local directory...
-  pool = console
-  restat = 1
-
-build install\local: phony CMakeFiles\install\local.util
-
 # =============================================================================
 # Write statements declared in CMakeLists.txt:
 # D:/Repos/MamontEngine/CMakeLists.txt
@@ -105,12 +75,12 @@ build install\local: phony CMakeFiles\install\local.util
 #############################################
 # Order-only phony target for MamontEngine
 
-build cmake_object_order_depends_target_MamontEngine: phony || cmake_object_order_depends_target_glfw
+build cmake_object_order_depends_target_MamontEngine: phony || cmake_object_order_depends_target_vk-bootstrap
 
 build MamontEngine\CMakeFiles\MamontEngine.dir\cmake_pch.cxx.obj: CXX_COMPILER__MamontEngine_unscanned_Debug D$:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\CMakeFiles\MamontEngine.dir\cmake_pch.cxx | MamontEngine\CMakeFiles\MamontEngine.dir\cmake_pch.hxx || cmake_object_order_depends_target_MamontEngine
   DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DGLFW_INCLUDE_NONE -DGLM_ENABLE_EXPERIMENTAL -DGLM_FORCE_DEPTH_ZERO_TO_ONE -DMM_COMPILER_MSVC -DMM_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_DEBUG -D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS -D_WIN32_WINNT=0x0A00
   FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++20 /std:c++20 /permissive- /W3 /EHsc /MP /bigobj /YcD:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/CMakeFiles/MamontEngine.dir/cmake_pch.hxx /FpD:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/CMakeFiles/MamontEngine.dir/./cmake_pch.cxx.pch /FID:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/CMakeFiles/MamontEngine.dir/cmake_pch.hxx
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\src -ID:\Repos\MamontEngine\MamontEngine\vendor -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -external:ID:\Apps\VulkanSDK\Include -external:W0
+  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\src -ID:\Repos\MamontEngine\MamontEngine\vendor -external:ID:\Apps\VulkanSDK\Include -external:ID:\Repos\MamontEngine\out\build\x64-Debug\_deps\vk-bootstrap-src\src -external:W0
   OBJECT_DIR = MamontEngine\CMakeFiles\MamontEngine.dir
   OBJECT_FILE_DIR = MamontEngine\CMakeFiles\MamontEngine.dir
   TARGET_COMPILE_PDB = MamontEngine\CMakeFiles\MamontEngine.dir\MamontEngine.pdb
@@ -125,7 +95,7 @@ build MamontEngine\CMakeFiles\MamontEngine.dir\.\cmake_pch.cxx.pch: phony Mamont
 build MamontEngine\CMakeFiles\MamontEngine.dir\src\Core\Engine.cpp.obj: CXX_COMPILER__MamontEngine_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\src\Core\Engine.cpp | MamontEngine\CMakeFiles\MamontEngine.dir\cmake_pch.hxx MamontEngine\CMakeFiles\MamontEngine.dir\cmake_pch.cxx.pch || cmake_object_order_depends_target_MamontEngine
   DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DGLFW_INCLUDE_NONE -DGLM_ENABLE_EXPERIMENTAL -DGLM_FORCE_DEPTH_ZERO_TO_ONE -DMM_COMPILER_MSVC -DMM_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_DEBUG -D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS -D_WIN32_WINNT=0x0A00
   FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++20 /std:c++20 /permissive- /W3 /EHsc /MP /bigobj /YuD:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/CMakeFiles/MamontEngine.dir/cmake_pch.hxx /FpD:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/CMakeFiles/MamontEngine.dir/./cmake_pch.cxx.pch /FID:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/CMakeFiles/MamontEngine.dir/cmake_pch.hxx
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\src -ID:\Repos\MamontEngine\MamontEngine\vendor -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -external:ID:\Apps\VulkanSDK\Include -external:W0
+  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\src -ID:\Repos\MamontEngine\MamontEngine\vendor -external:ID:\Apps\VulkanSDK\Include -external:ID:\Repos\MamontEngine\out\build\x64-Debug\_deps\vk-bootstrap-src\src -external:W0
   OBJECT_DIR = MamontEngine\CMakeFiles\MamontEngine.dir
   OBJECT_FILE_DIR = MamontEngine\CMakeFiles\MamontEngine.dir\src\Core
   TARGET_COMPILE_PDB = MamontEngine\CMakeFiles\MamontEngine.dir\MamontEngine.pdb
@@ -134,18 +104,9 @@ build MamontEngine\CMakeFiles\MamontEngine.dir\src\Core\Engine.cpp.obj: CXX_COMP
 build MamontEngine\CMakeFiles\MamontEngine.dir\src\Core\Window.cpp.obj: CXX_COMPILER__MamontEngine_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\src\Core\Window.cpp | MamontEngine\CMakeFiles\MamontEngine.dir\cmake_pch.hxx MamontEngine\CMakeFiles\MamontEngine.dir\cmake_pch.cxx.pch || cmake_object_order_depends_target_MamontEngine
   DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DGLFW_INCLUDE_NONE -DGLM_ENABLE_EXPERIMENTAL -DGLM_FORCE_DEPTH_ZERO_TO_ONE -DMM_COMPILER_MSVC -DMM_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_DEBUG -D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS -D_WIN32_WINNT=0x0A00
   FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++20 /std:c++20 /permissive- /W3 /EHsc /MP /bigobj /YuD:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/CMakeFiles/MamontEngine.dir/cmake_pch.hxx /FpD:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/CMakeFiles/MamontEngine.dir/./cmake_pch.cxx.pch /FID:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/CMakeFiles/MamontEngine.dir/cmake_pch.hxx
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\src -ID:\Repos\MamontEngine\MamontEngine\vendor -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -external:ID:\Apps\VulkanSDK\Include -external:W0
+  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\src -ID:\Repos\MamontEngine\MamontEngine\vendor -external:ID:\Apps\VulkanSDK\Include -external:ID:\Repos\MamontEngine\out\build\x64-Debug\_deps\vk-bootstrap-src\src -external:W0
   OBJECT_DIR = MamontEngine\CMakeFiles\MamontEngine.dir
   OBJECT_FILE_DIR = MamontEngine\CMakeFiles\MamontEngine.dir\src\Core
-  TARGET_COMPILE_PDB = MamontEngine\CMakeFiles\MamontEngine.dir\MamontEngine.pdb
-  TARGET_PDB = MamontEngine\MamontEngine.pdb
-
-build MamontEngine\CMakeFiles\MamontEngine.dir\src\Platforms\Windows\WindowsWindos.cpp.obj: CXX_COMPILER__MamontEngine_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\src\Platforms\Windows\WindowsWindos.cpp | MamontEngine\CMakeFiles\MamontEngine.dir\cmake_pch.hxx MamontEngine\CMakeFiles\MamontEngine.dir\cmake_pch.cxx.pch || cmake_object_order_depends_target_MamontEngine
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DGLFW_INCLUDE_NONE -DGLM_ENABLE_EXPERIMENTAL -DGLM_FORCE_DEPTH_ZERO_TO_ONE -DMM_COMPILER_MSVC -DMM_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_DEBUG -D_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++20 /std:c++20 /permissive- /W3 /EHsc /MP /bigobj /YuD:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/CMakeFiles/MamontEngine.dir/cmake_pch.hxx /FpD:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/CMakeFiles/MamontEngine.dir/./cmake_pch.cxx.pch /FID:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/CMakeFiles/MamontEngine.dir/cmake_pch.hxx
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\src -ID:\Repos\MamontEngine\MamontEngine\vendor -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -external:ID:\Apps\VulkanSDK\Include -external:W0
-  OBJECT_DIR = MamontEngine\CMakeFiles\MamontEngine.dir
-  OBJECT_FILE_DIR = MamontEngine\CMakeFiles\MamontEngine.dir\src\Platforms\Windows
   TARGET_COMPILE_PDB = MamontEngine\CMakeFiles\MamontEngine.dir\MamontEngine.pdb
   TARGET_PDB = MamontEngine\MamontEngine.pdb
 
@@ -157,7 +118,7 @@ build MamontEngine\CMakeFiles\MamontEngine.dir\src\Platforms\Windows\WindowsWind
 #############################################
 # Link the static library MamontEngine\MamontEngine.lib
 
-build MamontEngine\MamontEngine.lib: CXX_STATIC_LIBRARY_LINKER__MamontEngine_Debug MamontEngine\CMakeFiles\MamontEngine.dir\cmake_pch.cxx.obj MamontEngine\CMakeFiles\MamontEngine.dir\src\Core\Engine.cpp.obj MamontEngine\CMakeFiles\MamontEngine.dir\src\Core\Window.cpp.obj MamontEngine\CMakeFiles\MamontEngine.dir\src\Platforms\Windows\WindowsWindos.cpp.obj || MamontEngine\vendor\glfw-3.4\src\glfw3.lib
+build MamontEngine\MamontEngine.lib: CXX_STATIC_LIBRARY_LINKER__MamontEngine_Debug MamontEngine\CMakeFiles\MamontEngine.dir\cmake_pch.cxx.obj MamontEngine\CMakeFiles\MamontEngine.dir\src\Core\Engine.cpp.obj MamontEngine\CMakeFiles\MamontEngine.dir\src\Core\Window.cpp.obj || _deps\vk-bootstrap-build\vk-bootstrap.lib
   LANGUAGE_COMPILE_FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
   LINK_FLAGS = /machine:x64
   OBJECT_DIR = MamontEngine\CMakeFiles\MamontEngine.dir
@@ -190,36 +151,6 @@ build MamontEngine\CMakeFiles\rebuild_cache.util: CUSTOM_COMMAND
 
 build MamontEngine\rebuild_cache: phony MamontEngine\CMakeFiles\rebuild_cache.util
 
-
-#############################################
-# Utility command for list_install_components
-
-build MamontEngine\list_install_components: phony
-
-
-#############################################
-# Utility command for install
-
-build MamontEngine\CMakeFiles\install.util: CUSTOM_COMMAND MamontEngine\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -P cmake_install.cmake"
-  DESC = Install the project...
-  pool = console
-  restat = 1
-
-build MamontEngine\install: phony MamontEngine\CMakeFiles\install.util
-
-
-#############################################
-# Utility command for install/local
-
-build MamontEngine\CMakeFiles\install\local.util: CUSTOM_COMMAND MamontEngine\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake"
-  DESC = Installing only the local directory...
-  pool = console
-  restat = 1
-
-build MamontEngine\install\local: phony MamontEngine\CMakeFiles\install\local.util
-
 # =============================================================================
 # Write statements declared in CMakeLists.txt:
 # D:/Repos/MamontEngine/MamontEngine/CMakeLists.txt
@@ -247,36 +178,6 @@ build MamontEngine\vendor\glm\CMakeFiles\rebuild_cache.util: CUSTOM_COMMAND
   restat = 1
 
 build MamontEngine\vendor\glm\rebuild_cache: phony MamontEngine\vendor\glm\CMakeFiles\rebuild_cache.util
-
-
-#############################################
-# Utility command for list_install_components
-
-build MamontEngine\vendor\glm\list_install_components: phony
-
-
-#############################################
-# Utility command for install
-
-build MamontEngine\vendor\glm\CMakeFiles\install.util: CUSTOM_COMMAND MamontEngine\vendor\glm\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glm && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -P cmake_install.cmake"
-  DESC = Install the project...
-  pool = console
-  restat = 1
-
-build MamontEngine\vendor\glm\install: phony MamontEngine\vendor\glm\CMakeFiles\install.util
-
-
-#############################################
-# Utility command for install/local
-
-build MamontEngine\vendor\glm\CMakeFiles\install\local.util: CUSTOM_COMMAND MamontEngine\vendor\glm\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glm && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake"
-  DESC = Installing only the local directory...
-  pool = console
-  restat = 1
-
-build MamontEngine\vendor\glm\install\local: phony MamontEngine\vendor\glm\CMakeFiles\install\local.util
 
 # =============================================================================
 # Write statements declared in CMakeLists.txt:
@@ -342,452 +243,69 @@ build MamontEngine\vendor\glm\glm\CMakeFiles\rebuild_cache.util: CUSTOM_COMMAND
 
 build MamontEngine\vendor\glm\glm\rebuild_cache: phony MamontEngine\vendor\glm\glm\CMakeFiles\rebuild_cache.util
 
-
-#############################################
-# Utility command for list_install_components
-
-build MamontEngine\vendor\glm\glm\list_install_components: phony
-
-
-#############################################
-# Utility command for install
-
-build MamontEngine\vendor\glm\glm\CMakeFiles\install.util: CUSTOM_COMMAND MamontEngine\vendor\glm\glm\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glm\glm && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -P cmake_install.cmake"
-  DESC = Install the project...
-  pool = console
-  restat = 1
-
-build MamontEngine\vendor\glm\glm\install: phony MamontEngine\vendor\glm\glm\CMakeFiles\install.util
-
-
-#############################################
-# Utility command for install/local
-
-build MamontEngine\vendor\glm\glm\CMakeFiles\install\local.util: CUSTOM_COMMAND MamontEngine\vendor\glm\glm\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glm\glm && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake"
-  DESC = Installing only the local directory...
-  pool = console
-  restat = 1
-
-build MamontEngine\vendor\glm\glm\install\local: phony MamontEngine\vendor\glm\glm\CMakeFiles\install\local.util
-
 # =============================================================================
 # Write statements declared in CMakeLists.txt:
 # D:/Repos/MamontEngine/MamontEngine/CMakeLists.txt
 # =============================================================================
 
-
-#############################################
-# Utility command for uninstall
-
-build MamontEngine\vendor\glfw-3.4\uninstall: phony MamontEngine\vendor\glfw-3.4\CMakeFiles\uninstall
-
-
-#############################################
-# Utility command for edit_cache
-
-build MamontEngine\vendor\glfw-3.4\CMakeFiles\edit_cache.util: CUSTOM_COMMAND
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4 && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -E echo "No interactive CMake dialog available.""
-  DESC = No interactive CMake dialog available...
-  restat = 1
-
-build MamontEngine\vendor\glfw-3.4\edit_cache: phony MamontEngine\vendor\glfw-3.4\CMakeFiles\edit_cache.util
-
-
-#############################################
-# Utility command for rebuild_cache
-
-build MamontEngine\vendor\glfw-3.4\CMakeFiles\rebuild_cache.util: CUSTOM_COMMAND
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4 && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --regenerate-during-build -SD:\Repos\MamontEngine -BD:\Repos\MamontEngine\out\build\x64-Debug"
-  DESC = Running CMake to regenerate build system...
-  pool = console
-  restat = 1
-
-build MamontEngine\vendor\glfw-3.4\rebuild_cache: phony MamontEngine\vendor\glfw-3.4\CMakeFiles\rebuild_cache.util
-
-
-#############################################
-# Utility command for list_install_components
-
-build MamontEngine\vendor\glfw-3.4\list_install_components: phony
-
-
-#############################################
-# Utility command for install
-
-build MamontEngine\vendor\glfw-3.4\CMakeFiles\install.util: CUSTOM_COMMAND MamontEngine\vendor\glfw-3.4\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4 && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -P cmake_install.cmake"
-  DESC = Install the project...
-  pool = console
-  restat = 1
-
-build MamontEngine\vendor\glfw-3.4\install: phony MamontEngine\vendor\glfw-3.4\CMakeFiles\install.util
-
-
-#############################################
-# Utility command for install/local
-
-build MamontEngine\vendor\glfw-3.4\CMakeFiles\install\local.util: CUSTOM_COMMAND MamontEngine\vendor\glfw-3.4\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4 && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake"
-  DESC = Installing only the local directory...
-  pool = console
-  restat = 1
-
-build MamontEngine\vendor\glfw-3.4\install\local: phony MamontEngine\vendor\glfw-3.4\CMakeFiles\install\local.util
-
-
-#############################################
-# Custom command for MamontEngine\vendor\glfw-3.4\CMakeFiles\uninstall
-
-build MamontEngine\vendor\glfw-3.4\CMakeFiles\uninstall | ${cmake_ninja_workdir}MamontEngine\vendor\glfw-3.4\CMakeFiles\uninstall: CUSTOM_COMMAND
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4 && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -P D:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/vendor/glfw-3.4/cmake_uninstall.cmake"
-
 # =============================================================================
-# Write statements declared in CMakeLists.txt:
-# D:/Repos/MamontEngine/MamontEngine/vendor/glfw-3.4/CMakeLists.txt
-# =============================================================================
-
-# =============================================================================
-# Object build statements for STATIC_LIBRARY target glfw
+# Object build statements for STATIC_LIBRARY target vk-bootstrap
 
 
 #############################################
-# Order-only phony target for glfw
+# Order-only phony target for vk-bootstrap
 
-build cmake_object_order_depends_target_glfw: phony || .
+build cmake_object_order_depends_target_vk-bootstrap: phony || .
 
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\context.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\context.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\init.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\init.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\input.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\input.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\monitor.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\monitor.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\platform.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\platform.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\vulkan.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\vulkan.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\window.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\window.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\egl_context.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\egl_context.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\osmesa_context.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\osmesa_context.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\null_init.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\null_init.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\null_monitor.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\null_monitor.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\null_window.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\null_window.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\null_joystick.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\null_joystick.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_module.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\win32_module.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_time.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\win32_time.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_thread.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\win32_thread.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_init.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\win32_init.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_joystick.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\win32_joystick.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_monitor.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\win32_monitor.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_window.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\win32_window.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\wgl_context.c.obj: C_COMPILER__glfw_unscanned_Debug D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\wgl_context.c || cmake_object_order_depends_target_glfw
-  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DUNICODE -D_CRT_SECURE_NO_WARNINGS -D_GLFW_WIN32 -D_UNICODE -D_WIN32_WINNT=0x0A00
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /W3
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src -ID:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  OBJECT_FILE_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
+build _deps\vk-bootstrap-build\CMakeFiles\vk-bootstrap.dir\src\VkBootstrap.cpp.obj: CXX_COMPILER__vk-bootstrap_unscanned_Debug D$:\Repos\MamontEngine\out\build\x64-Debug\_deps\vk-bootstrap-src\src\VkBootstrap.cpp || cmake_object_order_depends_target_vk-bootstrap
+  DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -D_WIN32_WINNT=0x0A00
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++20 /W4
+  INCLUDES = -ID:\Repos\MamontEngine\out\build\x64-Debug\_deps\vk-bootstrap-src\src -external:ID:\Apps\VulkanSDK\Include -external:W0
+  OBJECT_DIR = _deps\vk-bootstrap-build\CMakeFiles\vk-bootstrap.dir
+  OBJECT_FILE_DIR = _deps\vk-bootstrap-build\CMakeFiles\vk-bootstrap.dir\src
+  TARGET_COMPILE_PDB = _deps\vk-bootstrap-build\CMakeFiles\vk-bootstrap.dir\vk-bootstrap.pdb
+  TARGET_PDB = _deps\vk-bootstrap-build\vk-bootstrap.pdb
 
 
 # =============================================================================
-# Link build statements for STATIC_LIBRARY target glfw
+# Link build statements for STATIC_LIBRARY target vk-bootstrap
 
 
 #############################################
-# Link the static library MamontEngine\vendor\glfw-3.4\src\glfw3.lib
+# Link the static library _deps\vk-bootstrap-build\vk-bootstrap.lib
 
-build MamontEngine\vendor\glfw-3.4\src\glfw3.lib: C_STATIC_LIBRARY_LINKER__glfw_Debug MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\context.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\init.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\input.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\monitor.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\platform.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\vulkan.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\window.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\egl_context.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\osmesa_context.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\null_init.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\null_monitor.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\null_window.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\null_joystick.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_module.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_time.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_thread.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_init.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_joystick.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_monitor.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\win32_window.c.obj MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\wgl_context.c.obj
-  LANGUAGE_COMPILE_FLAGS = /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1
+build _deps\vk-bootstrap-build\vk-bootstrap.lib: CXX_STATIC_LIBRARY_LINKER__vk-bootstrap_Debug _deps\vk-bootstrap-build\CMakeFiles\vk-bootstrap.dir\src\VkBootstrap.cpp.obj
+  LANGUAGE_COMPILE_FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
   LINK_FLAGS = /machine:x64
-  OBJECT_DIR = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir
+  OBJECT_DIR = _deps\vk-bootstrap-build\CMakeFiles\vk-bootstrap.dir
   POST_BUILD = cd .
   PRE_LINK = cd .
-  TARGET_COMPILE_PDB = MamontEngine\vendor\glfw-3.4\src\CMakeFiles\glfw.dir\glfw.pdb
-  TARGET_FILE = MamontEngine\vendor\glfw-3.4\src\glfw3.lib
-  TARGET_PDB = MamontEngine\vendor\glfw-3.4\src\glfw3.pdb
-
-
-#############################################
-# Utility command for update_mappings
-
-build MamontEngine\vendor\glfw-3.4\src\update_mappings: phony MamontEngine\vendor\glfw-3.4\src\CMakeFiles\update_mappings
+  TARGET_COMPILE_PDB = _deps\vk-bootstrap-build\CMakeFiles\vk-bootstrap.dir\vk-bootstrap.pdb
+  TARGET_FILE = _deps\vk-bootstrap-build\vk-bootstrap.lib
+  TARGET_PDB = _deps\vk-bootstrap-build\vk-bootstrap.pdb
 
 
 #############################################
 # Utility command for edit_cache
 
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\edit_cache.util: CUSTOM_COMMAND
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -E echo "No interactive CMake dialog available.""
+build _deps\vk-bootstrap-build\CMakeFiles\edit_cache.util: CUSTOM_COMMAND
+  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\_deps\vk-bootstrap-build && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -E echo "No interactive CMake dialog available.""
   DESC = No interactive CMake dialog available...
   restat = 1
 
-build MamontEngine\vendor\glfw-3.4\src\edit_cache: phony MamontEngine\vendor\glfw-3.4\src\CMakeFiles\edit_cache.util
+build _deps\vk-bootstrap-build\edit_cache: phony _deps\vk-bootstrap-build\CMakeFiles\edit_cache.util
 
 
 #############################################
 # Utility command for rebuild_cache
 
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\rebuild_cache.util: CUSTOM_COMMAND
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --regenerate-during-build -SD:\Repos\MamontEngine -BD:\Repos\MamontEngine\out\build\x64-Debug"
+build _deps\vk-bootstrap-build\CMakeFiles\rebuild_cache.util: CUSTOM_COMMAND
+  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\_deps\vk-bootstrap-build && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --regenerate-during-build -SD:\Repos\MamontEngine -BD:\Repos\MamontEngine\out\build\x64-Debug"
   DESC = Running CMake to regenerate build system...
   pool = console
   restat = 1
 
-build MamontEngine\vendor\glfw-3.4\src\rebuild_cache: phony MamontEngine\vendor\glfw-3.4\src\CMakeFiles\rebuild_cache.util
-
-
-#############################################
-# Utility command for list_install_components
-
-build MamontEngine\vendor\glfw-3.4\src\list_install_components: phony
-
-
-#############################################
-# Utility command for install
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\install.util: CUSTOM_COMMAND MamontEngine\vendor\glfw-3.4\src\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -P cmake_install.cmake"
-  DESC = Install the project...
-  pool = console
-  restat = 1
-
-build MamontEngine\vendor\glfw-3.4\src\install: phony MamontEngine\vendor\glfw-3.4\src\CMakeFiles\install.util
-
-
-#############################################
-# Utility command for install/local
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\install\local.util: CUSTOM_COMMAND MamontEngine\vendor\glfw-3.4\src\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\src && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake"
-  DESC = Installing only the local directory...
-  pool = console
-  restat = 1
-
-build MamontEngine\vendor\glfw-3.4\src\install\local: phony MamontEngine\vendor\glfw-3.4\src\CMakeFiles\install\local.util
-
-
-#############################################
-# Custom command for MamontEngine\vendor\glfw-3.4\src\CMakeFiles\update_mappings
-
-build MamontEngine\vendor\glfw-3.4\src\CMakeFiles\update_mappings | ${cmake_ninja_workdir}MamontEngine\vendor\glfw-3.4\src\CMakeFiles\update_mappings: CUSTOM_COMMAND
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -P D:/Repos/MamontEngine/MamontEngine/vendor/glfw-3.4/CMake/GenerateMappings.cmake mappings.h.in mappings.h"
-  DESC = Updating gamepad mappings from upstream repository
-
-# =============================================================================
-# Write statements declared in CMakeLists.txt:
-# D:/Repos/MamontEngine/MamontEngine/vendor/glfw-3.4/CMakeLists.txt
-# =============================================================================
-
-
-#############################################
-# Utility command for edit_cache
-
-build MamontEngine\vendor\glfw-3.4\docs\CMakeFiles\edit_cache.util: CUSTOM_COMMAND
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\docs && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -E echo "No interactive CMake dialog available.""
-  DESC = No interactive CMake dialog available...
-  restat = 1
-
-build MamontEngine\vendor\glfw-3.4\docs\edit_cache: phony MamontEngine\vendor\glfw-3.4\docs\CMakeFiles\edit_cache.util
-
-
-#############################################
-# Utility command for rebuild_cache
-
-build MamontEngine\vendor\glfw-3.4\docs\CMakeFiles\rebuild_cache.util: CUSTOM_COMMAND
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\docs && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --regenerate-during-build -SD:\Repos\MamontEngine -BD:\Repos\MamontEngine\out\build\x64-Debug"
-  DESC = Running CMake to regenerate build system...
-  pool = console
-  restat = 1
-
-build MamontEngine\vendor\glfw-3.4\docs\rebuild_cache: phony MamontEngine\vendor\glfw-3.4\docs\CMakeFiles\rebuild_cache.util
-
-
-#############################################
-# Utility command for list_install_components
-
-build MamontEngine\vendor\glfw-3.4\docs\list_install_components: phony
-
-
-#############################################
-# Utility command for install
-
-build MamontEngine\vendor\glfw-3.4\docs\CMakeFiles\install.util: CUSTOM_COMMAND MamontEngine\vendor\glfw-3.4\docs\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\docs && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -P cmake_install.cmake"
-  DESC = Install the project...
-  pool = console
-  restat = 1
-
-build MamontEngine\vendor\glfw-3.4\docs\install: phony MamontEngine\vendor\glfw-3.4\docs\CMakeFiles\install.util
-
-
-#############################################
-# Utility command for install/local
-
-build MamontEngine\vendor\glfw-3.4\docs\CMakeFiles\install\local.util: CUSTOM_COMMAND MamontEngine\vendor\glfw-3.4\docs\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEngine\vendor\glfw-3.4\docs && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake"
-  DESC = Installing only the local directory...
-  pool = console
-  restat = 1
-
-build MamontEngine\vendor\glfw-3.4\docs\install\local: phony MamontEngine\vendor\glfw-3.4\docs\CMakeFiles\install\local.util
+build _deps\vk-bootstrap-build\rebuild_cache: phony _deps\vk-bootstrap-build\CMakeFiles\rebuild_cache.util
 
 # =============================================================================
 # Write statements declared in CMakeLists.txt:
@@ -801,12 +319,12 @@ build MamontEngine\vendor\glfw-3.4\docs\install\local: phony MamontEngine\vendor
 #############################################
 # Order-only phony target for MamontEditor
 
-build cmake_object_order_depends_target_MamontEditor: phony || cmake_object_order_depends_target_MamontEngine cmake_object_order_depends_target_glfw
+build cmake_object_order_depends_target_MamontEditor: phony || cmake_object_order_depends_target_MamontEngine cmake_object_order_depends_target_vk-bootstrap
 
 build MamontEditor\CMakeFiles\MamontEditor.dir\cmake_pch.cxx.obj: CXX_COMPILER__MamontEditor_unscanned_Debug D$:\Repos\MamontEngine\out\build\x64-Debug\MamontEditor\CMakeFiles\MamontEditor.dir\cmake_pch.cxx | MamontEditor\CMakeFiles\MamontEditor.dir\cmake_pch.hxx || cmake_object_order_depends_target_MamontEditor
   DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DMM_DEBUG -D_DEBUG -D_WIN32_WINNT=0x0A00
   FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++20   /MP /std:c++20 /permissive- /YcD:/Repos/MamontEngine/out/build/x64-Debug/MamontEditor/CMakeFiles/MamontEditor.dir/cmake_pch.hxx /FpD:/Repos/MamontEngine/out/build/x64-Debug/MamontEditor/CMakeFiles/MamontEditor.dir/./cmake_pch.cxx.pch /FID:/Repos/MamontEngine/out/build/x64-Debug/MamontEditor/CMakeFiles/MamontEditor.dir/cmake_pch.hxx
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEditor\src -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm -ID:\Repos\MamontEngine\MamontEngine\src -ID:\Repos\MamontEngine\MamontEngine\vendor -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -external:ID:\Apps\VulkanSDK\Include -external:W0
+  INCLUDES = -ID:\Repos\MamontEngine\MamontEditor\src -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm -ID:\Repos\MamontEngine\MamontEngine\src -ID:\Repos\MamontEngine\MamontEngine\vendor -external:ID:\Apps\VulkanSDK\Include -external:ID:\Repos\MamontEngine\out\build\x64-Debug\_deps\vk-bootstrap-src\src -external:W0
   OBJECT_DIR = MamontEditor\CMakeFiles\MamontEditor.dir
   OBJECT_FILE_DIR = MamontEditor\CMakeFiles\MamontEditor.dir
   TARGET_COMPILE_PDB = MamontEditor\CMakeFiles\MamontEditor.dir\
@@ -821,7 +339,7 @@ build MamontEditor\CMakeFiles\MamontEditor.dir\.\cmake_pch.cxx.pch: phony Mamont
 build MamontEditor\CMakeFiles\MamontEditor.dir\src\main.cpp.obj: CXX_COMPILER__MamontEditor_unscanned_Debug D$:\Repos\MamontEngine\MamontEditor\src\main.cpp | MamontEditor\CMakeFiles\MamontEditor.dir\cmake_pch.hxx MamontEditor\CMakeFiles\MamontEditor.dir\cmake_pch.cxx.pch || cmake_object_order_depends_target_MamontEditor
   DEFINES = -DBOOST_USE_WINAPI_VERSION=0x0A00 -DMM_DEBUG -D_DEBUG -D_WIN32_WINNT=0x0A00
   FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++20   /MP /std:c++20 /permissive- /YuD:/Repos/MamontEngine/out/build/x64-Debug/MamontEditor/CMakeFiles/MamontEditor.dir/cmake_pch.hxx /FpD:/Repos/MamontEngine/out/build/x64-Debug/MamontEditor/CMakeFiles/MamontEditor.dir/./cmake_pch.cxx.pch /FID:/Repos/MamontEngine/out/build/x64-Debug/MamontEditor/CMakeFiles/MamontEditor.dir/cmake_pch.hxx
-  INCLUDES = -ID:\Repos\MamontEngine\MamontEditor\src -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm -ID:\Repos\MamontEngine\MamontEngine\src -ID:\Repos\MamontEngine\MamontEngine\vendor -ID:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include -external:ID:\Apps\VulkanSDK\Include -external:W0
+  INCLUDES = -ID:\Repos\MamontEngine\MamontEditor\src -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include -ID:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm -ID:\Repos\MamontEngine\MamontEngine\src -ID:\Repos\MamontEngine\MamontEngine\vendor -external:ID:\Apps\VulkanSDK\Include -external:ID:\Repos\MamontEngine\out\build\x64-Debug\_deps\vk-bootstrap-src\src -external:W0
   OBJECT_DIR = MamontEditor\CMakeFiles\MamontEditor.dir
   OBJECT_FILE_DIR = MamontEditor\CMakeFiles\MamontEditor.dir\src
   TARGET_COMPILE_PDB = MamontEditor\CMakeFiles\MamontEditor.dir\
@@ -835,11 +353,10 @@ build MamontEditor\CMakeFiles\MamontEditor.dir\src\main.cpp.obj: CXX_COMPILER__M
 #############################################
 # Link the executable MamontEditor\MamontEditor.exe
 
-build MamontEditor\MamontEditor.exe: CXX_EXECUTABLE_LINKER__MamontEditor_Debug MamontEditor\CMakeFiles\MamontEditor.dir\cmake_pch.cxx.obj MamontEditor\CMakeFiles\MamontEditor.dir\src\main.cpp.obj | MamontEngine\MamontEngine.lib D$:\Apps\VulkanSDK\Lib\vulkan-1.lib MamontEngine\vendor\glfw-3.4\src\glfw3.lib || MamontEngine\MamontEngine.lib MamontEngine\vendor\glfw-3.4\src\glfw3.lib
+build MamontEditor\MamontEditor.exe: CXX_EXECUTABLE_LINKER__MamontEditor_Debug MamontEditor\CMakeFiles\MamontEditor.dir\cmake_pch.cxx.obj MamontEditor\CMakeFiles\MamontEditor.dir\src\main.cpp.obj | MamontEngine\MamontEngine.lib D$:\Apps\VulkanSDK\Lib\vulkan-1.lib _deps\vk-bootstrap-build\vk-bootstrap.lib || MamontEngine\MamontEngine.lib _deps\vk-bootstrap-build\vk-bootstrap.lib
   FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
   LINK_FLAGS = /machine:x64 /debug /INCREMENTAL /subsystem:console  /DEBUG:FULL
-  LINK_LIBRARIES = MamontEngine\MamontEngine.lib  D:\Apps\VulkanSDK\Lib\vulkan-1.lib  MamontEngine\vendor\glfw-3.4\src\glfw3.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
-  LINK_PATH = -LIBPATH:D:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4
+  LINK_LIBRARIES = MamontEngine\MamontEngine.lib  D:\Apps\VulkanSDK\Lib\vulkan-1.lib  _deps\vk-bootstrap-build\vk-bootstrap.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
   OBJECT_DIR = MamontEditor\CMakeFiles\MamontEditor.dir
   POST_BUILD = cd .
   PRE_LINK = cd .
@@ -871,36 +388,6 @@ build MamontEditor\CMakeFiles\rebuild_cache.util: CUSTOM_COMMAND
 
 build MamontEditor\rebuild_cache: phony MamontEditor\CMakeFiles\rebuild_cache.util
 
-
-#############################################
-# Utility command for list_install_components
-
-build MamontEditor\list_install_components: phony
-
-
-#############################################
-# Utility command for install
-
-build MamontEditor\CMakeFiles\install.util: CUSTOM_COMMAND MamontEditor\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEditor && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -P cmake_install.cmake"
-  DESC = Install the project...
-  pool = console
-  restat = 1
-
-build MamontEditor\install: phony MamontEditor\CMakeFiles\install.util
-
-
-#############################################
-# Utility command for install/local
-
-build MamontEditor\CMakeFiles\install\local.util: CUSTOM_COMMAND MamontEditor\all
-  COMMAND = C:\Windows\system32\cmd.exe /C "cd /D D:\Repos\MamontEngine\out\build\x64-Debug\MamontEditor && D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_INSTALL_LOCAL_ONLY=1 -P cmake_install.cmake"
-  DESC = Installing only the local directory...
-  pool = console
-  restat = 1
-
-build MamontEditor\install\local: phony MamontEditor\CMakeFiles\install\local.util
-
 # =============================================================================
 # Target aliases.
 
@@ -912,17 +399,13 @@ build MamontEngine: phony MamontEngine\MamontEngine.lib
 
 build MamontEngine.lib: phony MamontEngine\MamontEngine.lib
 
-build glfw: phony MamontEngine\vendor\glfw-3.4\src\glfw3.lib
-
-build glfw3.lib: phony MamontEngine\vendor\glfw-3.4\src\glfw3.lib
-
 build glm: phony MamontEngine\vendor\glm\glm\glm.lib
 
 build glm.lib: phony MamontEngine\vendor\glm\glm\glm.lib
 
-build uninstall: phony MamontEngine\vendor\glfw-3.4\uninstall
+build vk-bootstrap: phony _deps\vk-bootstrap-build\vk-bootstrap.lib
 
-build update_mappings: phony MamontEngine\vendor\glfw-3.4\src\update_mappings
+build vk-bootstrap.lib: phony _deps\vk-bootstrap-build\vk-bootstrap.lib
 
 # =============================================================================
 # Folder targets.
@@ -946,28 +429,7 @@ build MamontEditor\all: phony MamontEditor\MamontEditor.exe
 #############################################
 # Folder: D:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine
 
-build MamontEngine\all: phony MamontEngine\MamontEngine.lib MamontEngine\vendor\glm\all MamontEngine\vendor\glfw-3.4\all
-
-# =============================================================================
-
-#############################################
-# Folder: D:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/vendor/glfw-3.4
-
-build MamontEngine\vendor\glfw-3.4\all: phony MamontEngine\vendor\glfw-3.4\src\all MamontEngine\vendor\glfw-3.4\docs\all
-
-# =============================================================================
-
-#############################################
-# Folder: D:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/vendor/glfw-3.4/docs
-
-build MamontEngine\vendor\glfw-3.4\docs\all: phony
-
-# =============================================================================
-
-#############################################
-# Folder: D:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/vendor/glfw-3.4/src
-
-build MamontEngine\vendor\glfw-3.4\src\all: phony MamontEngine\vendor\glfw-3.4\src\glfw3.lib
+build MamontEngine\all: phony MamontEngine\MamontEngine.lib MamontEngine\vendor\glm\all
 
 # =============================================================================
 
@@ -984,20 +446,27 @@ build MamontEngine\vendor\glm\all: phony MamontEngine\vendor\glm\glm\all
 build MamontEngine\vendor\glm\glm\all: phony MamontEngine\vendor\glm\glm\glm.lib
 
 # =============================================================================
+
+#############################################
+# Folder: D:/Repos/MamontEngine/out/build/x64-Debug/_deps/vk-bootstrap-build
+
+build _deps\vk-bootstrap-build\all: phony _deps\vk-bootstrap-build\vk-bootstrap.lib
+
+# =============================================================================
 # Built-in targets
 
 
 #############################################
 # Re-run CMake if any of its inputs changed.
 
-build build.ninja: RERUN_CMAKE | CMakeCache.txt CMakeFiles\3.29.5-msvc4\CMakeCCompiler.cmake CMakeFiles\3.29.5-msvc4\CMakeCXXCompiler.cmake CMakeFiles\3.29.5-msvc4\CMakeRCCompiler.cmake CMakeFiles\3.29.5-msvc4\CMakeSystem.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\BasicConfigVersion-SameMajorVersion.cmake.in D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCXXInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCommonLanguageInclude.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeDependentOption.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeGenericSystem.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeInitializeConfigs.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeLanguageInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakePackageConfigHelpers.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeRCInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInitialize.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CheckCSourceCompiles.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CheckIncludeFile.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CheckLibraryExists.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\CMakeCommonCompilerMacros.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC-C.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC-CXX.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\ExternalProject\shared_internal_commands.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FetchContent.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindDoxygen.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindPackageHandleStandardArgs.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindPackageMessage.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindThreads.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindVulkan.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\GNUInstallDirs.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Internal\CheckSourceCompiles.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-Initialize.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC-C.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC-CXX.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\WindowsPaths.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\WriteBasicConfigVersionFile.cmake D$:\Repos\MamontEngine\CMakeLists.txt D$:\Repos\MamontEngine\MamontEditor\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\CMake\cmake_uninstall.cmake.in D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\CMake\glfw3.pc.in D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\CMake\glfw3Config.cmake.in D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\docs\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glm\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glm\glm\CMakeLists.txt D$:\Repos\MamontEngine\cpm.cmake
+build build.ninja: RERUN_CMAKE | CMakeCache.txt CMakeFiles\3.29.5-msvc4\CMakeCXXCompiler.cmake CMakeFiles\3.29.5-msvc4\CMakeRCCompiler.cmake CMakeFiles\3.29.5-msvc4\CMakeSystem.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCXXInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCommonLanguageInclude.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeGenericSystem.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeInitializeConfigs.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeLanguageInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeRCInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInitialize.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\CMakeCommonCompilerMacros.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC-CXX.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\ExternalProject\shared_internal_commands.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FetchContent.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FetchContent\CMakeLists.cmake.in D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindGit.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindPackageHandleStandardArgs.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindPackageMessage.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindVulkan.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\GNUInstallDirs.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-Initialize.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC-CXX.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\WindowsPaths.cmake D$:\Repos\MamontEngine\CMakeLists.txt D$:\Repos\MamontEngine\MamontEditor\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glm\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glm\glm\CMakeLists.txt D$:\Repos\MamontEngine\cpm.cmake _deps\vk-bootstrap-src\CMakeLists.txt _deps\vk-bootstrap-src\gen\CurrentBuildVulkanVersion.cmake
   pool = console
 
 
 #############################################
 # A missing CMake input file is not an error.
 
-build CMakeCache.txt CMakeFiles\3.29.5-msvc4\CMakeCCompiler.cmake CMakeFiles\3.29.5-msvc4\CMakeCXXCompiler.cmake CMakeFiles\3.29.5-msvc4\CMakeRCCompiler.cmake CMakeFiles\3.29.5-msvc4\CMakeSystem.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\BasicConfigVersion-SameMajorVersion.cmake.in D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCXXInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCommonLanguageInclude.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeDependentOption.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeGenericSystem.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeInitializeConfigs.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeLanguageInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakePackageConfigHelpers.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeRCInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInitialize.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CheckCSourceCompiles.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CheckIncludeFile.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CheckLibraryExists.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\CMakeCommonCompilerMacros.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC-C.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC-CXX.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\ExternalProject\shared_internal_commands.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FetchContent.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindDoxygen.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindPackageHandleStandardArgs.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindPackageMessage.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindThreads.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindVulkan.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\GNUInstallDirs.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Internal\CheckSourceCompiles.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-Initialize.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC-C.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC-CXX.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\WindowsPaths.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\WriteBasicConfigVersionFile.cmake D$:\Repos\MamontEngine\CMakeLists.txt D$:\Repos\MamontEngine\MamontEditor\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\CMake\cmake_uninstall.cmake.in D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\CMake\glfw3.pc.in D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\CMake\glfw3Config.cmake.in D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\docs\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\src\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glm\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glm\glm\CMakeLists.txt D$:\Repos\MamontEngine\cpm.cmake: phony
+build CMakeCache.txt CMakeFiles\3.29.5-msvc4\CMakeCXXCompiler.cmake CMakeFiles\3.29.5-msvc4\CMakeRCCompiler.cmake CMakeFiles\3.29.5-msvc4\CMakeSystem.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCXXInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCommonLanguageInclude.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeGenericSystem.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeInitializeConfigs.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeLanguageInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeRCInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInformation.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInitialize.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\CMakeCommonCompilerMacros.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC-CXX.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\ExternalProject\shared_internal_commands.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FetchContent.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FetchContent\CMakeLists.cmake.in D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindGit.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindPackageHandleStandardArgs.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindPackageMessage.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\FindVulkan.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\GNUInstallDirs.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-Initialize.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC-CXX.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows.cmake D$:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\WindowsPaths.cmake D$:\Repos\MamontEngine\CMakeLists.txt D$:\Repos\MamontEngine\MamontEditor\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glm\CMakeLists.txt D$:\Repos\MamontEngine\MamontEngine\vendor\glm\glm\CMakeLists.txt D$:\Repos\MamontEngine\cpm.cmake _deps\vk-bootstrap-src\CMakeLists.txt _deps\vk-bootstrap-src\gen\CurrentBuildVulkanVersion.cmake: phony
 
 
 #############################################

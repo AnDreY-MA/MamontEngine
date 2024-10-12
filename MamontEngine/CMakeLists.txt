@@ -9,12 +9,6 @@ source_group("src" FILES ${src})
 
 file(GLOB_RECURSE Core "src/Core/*.h" "src/Core/*.hpp" "src/Core/*.cpp")
 source_group("src/Core" FILES ${Core})
-file(GLOB_RECURSE Events "src/Events/*.h" "src/Events/*.hpp" "src/Events/*.cpp")
-source_group("src/Events" FILES ${Events})
-
-
-file(GLOB_RECURSE CoreModule "src/Core/*.ixx")
-
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -86,10 +80,10 @@ CPMAddPackage("gh:charles-lunarg/vk-bootstrap#a5950c070082e851e621206fca7b3b0b00
 target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap)
 set_target_properties(vk-bootstrap PROPERTIES FOLDER "vendor")
 
-add_subdirectory("vendor/sdl")
-target_link_libraries(${PROJECT_NAME} PUBLIC SDL3::SDL3)
+#add_subdirectory("vendor/sdl")
+#target_link_libraries(${PROJECT_NAME} PUBLIC SDL3::SDL3)
 
-target_include_directories(${PROJECT_NAME} PUBLIC "vendor/sdl/include")
+#target_include_directories(${PROJECT_NAME} PUBLIC "vendor/sdl/include")
 #sdl
 #add_subdirectory("vendor/sdl" EXCLUDE_FROM_ALL)
 #target_link_libraries(${PROJECT_NAME} PUBLIC SDL2::SDL2)

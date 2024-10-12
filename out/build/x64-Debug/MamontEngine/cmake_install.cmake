@@ -35,7 +35,6 @@ endif()
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("D:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/vendor/glm/cmake_install.cmake")
-  include("D:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/vendor/glfw-3.4/cmake_install.cmake")
 
 endif()
 
