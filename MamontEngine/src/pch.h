@@ -17,3 +17,29 @@
 #include <vulkan/vk_enum_string_helper.h>
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
+
+#include <fmt/core.h>
+
+#define VK_CHECK(x)                                                                                                                                            \
+    do                                                                                                                                                         \
+    {                                                                                                                                                          \
+        VkResult err = x;                                                                                                                                      \
+        if (err)                                                                                                                                               \
+        {                                                                                                                                                      \
+            fmt::print("Detected Vulkan error: {}", string_VkResult(err));                                                                                     \
+            abort();                                                                                                                                           \
+        }                                                                                                                                                      \
+    }                                                                                                                                                          \
+    while (0)
+
+#define VK_CHECK_MESSAGE(x, s)                                                                                                                                         \
+    do                                                                                                                                                         \
+    {                                                                                                                                                          \
+        VkResult err = x;                                                                                                                                      \
+        if (err)                                                                                                                                               \
+        {                                                                                                                                                      \
+            fmt::print("Detected Vulkan error: {} - {}", string_VkResult(err), s);                                                                             \
+            abort();                                                                                                                                           \
+        }                                                                                                                                                      \
+    }                                                                                                                                                          \
+    while (0)

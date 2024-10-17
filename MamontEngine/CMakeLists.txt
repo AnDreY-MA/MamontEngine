@@ -17,7 +17,7 @@ set(ALL_FILES ${SOURCE_FILES})
 
 
 # Add library
-add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
+add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES} "src/Core/VkInitializers.h" "src/Core/VkInitializers.cpp" "src/Core/VkImages.h" "src/Core/VkImages.cpp")
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
@@ -76,12 +76,15 @@ add_subdirectory("vendor/glm")
 #target_link_directories(${PROJECT_NAME} PUBLIC "vendor/glfw-3.4")
 
 
-CPMAddPackage("gh:charles-lunarg/vk-bootstrap#a5950c070082e851e621206fca7b3b0b008dcb28")
+add_subdirectory("vendor/vkbootstrap")
 target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap)
 set_target_properties(vk-bootstrap PROPERTIES FOLDER "vendor")
+set_property(TARGET vk-bootstrap PROPERTY CXX_STANDARD 20)
+add_subdirectory("vendor/SDL")
+target_link_libraries(${PROJECT_NAME} PUBLIC SDL3::SDL3)
 
-#add_subdirectory("vendor/sdl")
-#target_link_libraries(${PROJECT_NAME} PUBLIC SDL3::SDL3)
+add_subdirectory("vendor/fmt" EXCLUDE_FROM_ALL)
+target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
 
 #target_include_directories(${PROJECT_NAME} PUBLIC "vendor/sdl/include")
 #sdl

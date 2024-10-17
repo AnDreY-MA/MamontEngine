@@ -31,11 +31,10 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
-build/*
-out/*
+build/
+out/
+.cache/
 
-/build
-/out
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

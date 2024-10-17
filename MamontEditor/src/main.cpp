@@ -4,7 +4,10 @@
 
 int main(int argc, char** argv) 
 {
-        
-        
-        return 0;
+    MamontEngine::MEngine Engine;
+    Engine.Init();
+    Engine.Run();
+    Engine.Cleanup();
+
+    return 0;
 }
