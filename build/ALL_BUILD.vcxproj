@@ -46,6 +46,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -92,7 +93,7 @@
       <UseUtf8Encoding>Always</UseUtf8Encoding>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/Repos/MamontEngine/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
-D:\Apps\CMake\bin\cmake.exe -SD:/Repos/MamontEngine -BD:/Repos/MamontEngine/build --check-stamp-file D:/Repos/MamontEngine/build/CMakeFiles/generate.stamp
+D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -SD:/Repos/MamontEngine -BD:/Repos/MamontEngine/build --check-stamp-file D:/Repos/MamontEngine/build/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -100,12 +101,12 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Apps\CMake\share\cmake-3.30\Modules\CMakeCInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeCXXInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeCommonLanguageInclude.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeGenericSystem.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeInitializeConfigs.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeLanguageInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeRCInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeSystemSpecificInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeSystemSpecificInitialize.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Compiler\MSVC-C.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Compiler\MSVC-CXX.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Compiler\MSVC.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows-Initialize.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows-MSVC-C.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows-MSVC-CXX.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows-MSVC.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\WindowsPaths.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.30.2\CMakeCCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.30.2\CMakeCXXCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.30.2\CMakeRCCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.30.2\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCXXInformation.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCommonLanguageInclude.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeGenericSystem.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeInitializeConfigs.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeLanguageInformation.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeRCInformation.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInformation.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInitialize.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC-CXX.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-Initialize.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC-CXX.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\WindowsPaths.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.29.5-msvc4\CMakeCXXCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.29.5-msvc4\CMakeRCCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.29.5-msvc4\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Repos\MamontEngine\build\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/Repos/MamontEngine/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
-D:\Apps\CMake\bin\cmake.exe -SD:/Repos/MamontEngine -BD:/Repos/MamontEngine/build --check-stamp-file D:/Repos/MamontEngine/build/CMakeFiles/generate.stamp
+D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -SD:/Repos/MamontEngine -BD:/Repos/MamontEngine/build --check-stamp-file D:/Repos/MamontEngine/build/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -113,12 +114,12 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Apps\CMake\share\cmake-3.30\Modules\CMakeCInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeCXXInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeCommonLanguageInclude.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeGenericSystem.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeInitializeConfigs.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeLanguageInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeRCInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeSystemSpecificInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeSystemSpecificInitialize.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Compiler\MSVC-C.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Compiler\MSVC-CXX.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Compiler\MSVC.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows-Initialize.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows-MSVC-C.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows-MSVC-CXX.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows-MSVC.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\WindowsPaths.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.30.2\CMakeCCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.30.2\CMakeCXXCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.30.2\CMakeRCCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.30.2\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCXXInformation.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCommonLanguageInclude.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeGenericSystem.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeInitializeConfigs.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeLanguageInformation.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeRCInformation.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInformation.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInitialize.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC-CXX.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-Initialize.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC-CXX.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\WindowsPaths.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.29.5-msvc4\CMakeCXXCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.29.5-msvc4\CMakeRCCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.29.5-msvc4\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Repos\MamontEngine\build\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='Distribution|x64'">Building Custom Rule D:/Repos/MamontEngine/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Distribution|x64'">setlocal
-D:\Apps\CMake\bin\cmake.exe -SD:/Repos/MamontEngine -BD:/Repos/MamontEngine/build --check-stamp-file D:/Repos/MamontEngine/build/CMakeFiles/generate.stamp
+D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -SD:/Repos/MamontEngine -BD:/Repos/MamontEngine/build --check-stamp-file D:/Repos/MamontEngine/build/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -126,7 +127,7 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Distribution|x64'">D:\Apps\CMake\share\cmake-3.30\Modules\CMakeCInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeCXXInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeCommonLanguageInclude.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeGenericSystem.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeInitializeConfigs.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeLanguageInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeRCInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeSystemSpecificInformation.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\CMakeSystemSpecificInitialize.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Compiler\MSVC-C.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Compiler\MSVC-CXX.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Compiler\MSVC.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows-Initialize.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows-MSVC-C.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows-MSVC-CXX.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows-MSVC.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\Windows.cmake;D:\Apps\CMake\share\cmake-3.30\Modules\Platform\WindowsPaths.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.30.2\CMakeCCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.30.2\CMakeCXXCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.30.2\CMakeRCCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.30.2\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Distribution|x64'">D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCXXInformation.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeCommonLanguageInclude.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeGenericSystem.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeInitializeConfigs.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeLanguageInformation.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeRCInformation.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInformation.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\CMakeSystemSpecificInitialize.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC-CXX.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Compiler\MSVC.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-Initialize.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC-CXX.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows-MSVC.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\Windows.cmake;D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.29\Modules\Platform\WindowsPaths.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.29.5-msvc4\CMakeCXXCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.29.5-msvc4\CMakeRCCompiler.cmake;D:\Repos\MamontEngine\build\CMakeFiles\3.29.5-msvc4\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Distribution|x64'">D:\Repos\MamontEngine\build\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Distribution|x64'">false</LinkObjects>
     </CustomBuild>
@@ -148,16 +149,29 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <Project>{359AD45E-234A-34D7-8D47-3F3F6E5CE0CC}</Project>
       <Name>MamontEngine</Name>
     </ProjectReference>
-    <ProjectReference Include="D:\Repos\MamontEngine\build\MamontEngine\vendor\glfw-3.4\src\glfw.vcxproj">
-      <Project>{2385CCD0-E29D-3E19-83A0-EB70A10D2E57}</Project>
-      <Name>glfw</Name>
+    <ProjectReference Include="D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\SDL3-shared.vcxproj">
+      <Project>{95C226D9-6066-3884-9AEC-61C404BAE3CB}</Project>
+      <Name>SDL3-shared</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\SDL3_test.vcxproj">
+      <Project>{D7D9F1E8-C56D-3B9E-9173-0D014202C77B}</Project>
+      <Name>SDL3_test</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\SDL_uclibc.vcxproj">
+      <Project>{B2F7CC4C-AEA0-3109-99AF-EC42E3E89561}</Project>
+      <Name>SDL_uclibc</Name>
     </ProjectReference>
     <ProjectReference Include="D:\Repos\MamontEngine\build\MamontEngine\vendor\glm\glm\glm.vcxproj">
       <Project>{D5AC551E-86F2-386F-8FAD-2F15CCF02F3A}</Project>
       <Name>glm</Name>
     </ProjectReference>
+    <ProjectReference Include="D:\Repos\MamontEngine\build\MamontEngine\vendor\vkbootstrap\vk-bootstrap.vcxproj">
+      <Project>{B06C904F-AA15-3305-AC2D-2EF36B04BD81}</Project>
+      <Name>vk-bootstrap</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>

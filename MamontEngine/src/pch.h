@@ -12,6 +12,8 @@
 #include <unordered_set>
 #include <cstdint>
 #include <functional>
+#include <deque>
+#include <queue>
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
@@ -19,6 +21,16 @@
 #include <glm/vec4.hpp>
 
 #include <fmt/core.h>
+#include <vk_mem_alloc.h>
+
+struct AllocatedImage
+{
+    VkImage Image;
+    VkImageView ImageView;
+    VmaAllocation Allocation;
+    VkExtent3D    ImageExtent;
+    VkFormat      ImageFormat;
+};
 
 #define VK_CHECK(x)                                                                                                                                            \
     do                                                                                                                                                         \

@@ -1,8 +1,35 @@
 #pragma once
 
+#include "vk_mem_alloc.h"
 
 namespace MamontEngine
 {
+    
+    constexpr unsigned int FRAME_OVERLAP = 2;
+
+    struct DeletionQueue
+    {
+    public:
+        void PushFunction(std::function < void()>&& inFunction)
+        {
+            deletors.push_back(inFunction);
+        }
+
+        void Flush()
+        {
+            for (auto it = deletors.rbegin(); it != deletors.rend(); it++)
+            {
+                (*it)();
+            }
+
+            deletors.clear();
+        }
+
+    private:
+        std::deque<std::function<void()>> deletors;
+
+    };
+
     struct FrameData
     {
         VkSemaphore     SwapchainSemaphore;
@@ -10,8 +37,10 @@ namespace MamontEngine
         VkFence         RenderFence;
         VkCommandPool   CommandPool;
         VkCommandBuffer MainCommandBuffer;
+
+        DeletionQueue Deleteions;
+
     };
-    constexpr unsigned int FRAME_OVERLAP = 2;
 
 	class MEngine
 	{
@@ -32,6 +61,8 @@ namespace MamontEngine
 
         void CreateSwapchain(const uint32_t inWidth, const uint32_t inHeight);
         void DestroySwapchain();
+
+        void DrawBackground(VkCommandBuffer inCmd);
 
     private:
         bool       m_IsInitialized{false};
@@ -61,6 +92,13 @@ namespace MamontEngine
 
         VkQueue m_GraphicsQueue;
         uint32_t m_GraphicsQueueFamily;
+
+        DeletionQueue m_MainDeletionQueue;
+
+        VmaAllocator m_Allocator;
+
+        AllocatedImage m_DrawImage;
+        VkExtent2D     m_DrawExtent;
 
 	};
 }

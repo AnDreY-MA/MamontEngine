@@ -15,3 +15,6 @@
 [submodule "MamontEngine/vendor/vkbootstrap"]
 	path = MamontEngine/vendor/vkbootstrap
 	url = https://github.com/charles-lunarg/vk-bootstrap.git
+[submodule "MamontEngine/vendor/vma"]
+	path = MamontEngine/vendor/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

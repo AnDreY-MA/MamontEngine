@@ -11,6 +11,9 @@
 #include <thread>
 #include <VkBootstrap.h>
 
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
 static SDL_Window* window = nullptr;
 
 namespace MamontEngine
@@ -100,7 +103,11 @@ namespace MamontEngine
                 vkDestroyFence(m_Device, m_Frames[i].RenderFence, nullptr);
                 vkDestroySemaphore(m_Device, m_Frames[i].RenderSemaphore, nullptr);
                 vkDestroySemaphore(m_Device, m_Frames[i].SwapchainSemaphore, nullptr);
+
+                m_Frames[i].Deleteions.Flush();
+
             }
+            m_MainDeletionQueue.Flush();
             DestroySwapchain();
 
             vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
@@ -133,6 +140,8 @@ namespace MamontEngine
         fmt::println("Waiting for fence...");
         VK_CHECK(vkWaitForFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence, true, 1000000000));
         fmt::println("Fence signaled.");
+        m_Frames[m_FrameNumber].Deleteions.Flush();
+
         VK_CHECK(vkResetFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence));
 
         uint32_t swapchainImageIndex;
@@ -151,15 +160,14 @@ namespace MamontEngine
 
         VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-        VkClearColorValue clearValue;
-        float       flash = std::abs(std::sin(m_FrameNumber / 12.f));
-        fmt::println("Flash={}", flash);
-        clearValue                         = {{0.0f, 0.0f, flash, 1.0f}};
-        VkImageSubresourceRange clearRange = vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
+        DrawBackground(cmd);
 
-        vkCmdClearColorImage(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
-
+        VkUtil::transition_image(cmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+        VkUtil::copy_image_to_image(cmd, m_DrawImage.Image, m_SwapchainImages[swapchainImageIndex], m_DrawExtent, m_SwapchainExtent);
+
+        VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
         VK_CHECK(vkEndCommandBuffer(cmd));
 
@@ -186,6 +194,17 @@ namespace MamontEngine
         VK_CHECK(vkQueuePresentKHR(m_GraphicsQueue, &presentInfo));
 
         m_FrameNumber = (m_FrameNumber + 1) % FRAME_OVERLAP;
+    }
+
+    void MEngine::DrawBackground(VkCommandBuffer inCmd)
+    {
+        VkClearColorValue clearValue;
+        float             flash = std::abs(std::sin(m_FrameNumber / 12.f));
+        fmt::println("Flash={}", flash);
+        clearValue                         = {{0.0f, 0.0f, flash, 1.0f}};
+        VkImageSubresourceRange clearRange = vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
+
+        vkCmdClearColorImage(inCmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
     }
 
     void MEngine::InitVulkan()
@@ -244,10 +263,48 @@ namespace MamontEngine
         m_GraphicsQueue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
         m_GraphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
 
+        VmaAllocatorCreateInfo allocatorInfo = {};
+        allocatorInfo.physicalDevice         = m_ChosenGPU;
+        allocatorInfo.device                 = m_Device;
+        allocatorInfo.instance               = m_Instance;
+        allocatorInfo.flags                  = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+        vmaCreateAllocator(&allocatorInfo, &m_Allocator);
+
+        m_MainDeletionQueue.PushFunction([&]() { vmaDestroyAllocator(m_Allocator); });
+
     }
     void MEngine::InitSwapchain()
     {
         CreateSwapchain(m_WindowExtent.width, m_WindowExtent.height);
+
+        VkExtent3D drawImageExtent = {m_WindowExtent.width, m_WindowExtent.height, 1};
+
+        m_DrawImage.ImageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+        m_DrawImage.ImageExtent = drawImageExtent;
+
+        VkImageUsageFlags drawImageUsages{};
+        drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        drawImageUsages |= VK_IMAGE_USAGE_STORAGE_BIT;
+        drawImageUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+        VkImageCreateInfo rImageInfo = vkinit::image_create_info(m_DrawImage.ImageFormat, drawImageUsages, drawImageExtent);
+
+        VmaAllocationCreateInfo rImageAllocInfo = {};
+        rImageAllocInfo.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
+        rImageAllocInfo.requiredFlags           = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        
+        vmaCreateImage(m_Allocator, &rImageInfo, &rImageAllocInfo, &m_DrawImage.Image, &m_DrawImage.Allocation, nullptr);
+
+        VkImageViewCreateInfo rViewInfo = vkinit::imageview_create_info(m_DrawImage.ImageFormat, m_DrawImage.Image, VK_IMAGE_ASPECT_COLOR_BIT);
+
+        VK_CHECK(vkCreateImageView(m_Device, &rViewInfo, nullptr, &m_DrawImage.ImageView));
+
+        m_MainDeletionQueue.PushFunction([=]() { 
+                    vkDestroyImageView(m_Device, m_DrawImage.ImageView, nullptr);
+                    vmaDestroyImage(m_Allocator, m_DrawImage.Image, m_DrawImage.Allocation);
+            });
+
     }
     void MEngine::InitCommants()
     {

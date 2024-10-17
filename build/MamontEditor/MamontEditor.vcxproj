@@ -43,6 +43,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -74,8 +75,8 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/Apps/VulkanSDK/Include"</AdditionalOptions>
+      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\vkbootstrap\src;D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\fmt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/Apps/VulkanSDK/Include" /utf-8</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <ConformanceMode>true</ConformanceMode>
@@ -84,7 +85,6 @@
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <MinimalRebuild></MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -92,19 +92,24 @@
       <PrecompiledHeaderOutputFile>D:/Repos/MamontEngine/build/MamontEditor/MamontEditor.dir/Debug/cmake_pch.pch</PrecompiledHeaderOutputFile>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <SupportJustMyCode></SupportJustMyCode>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;MM_DEBUG;_DEBUG;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;MM_DEBUG;_DEBUG;BOOST_USE_WINAPI_VERSION=0x0A00;_WIN32_WINNT=0x0A00;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;MM_DEBUG;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include;D:\Apps\VulkanSDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;MM_DEBUG;BOOST_USE_WINAPI_VERSION=0x0A00;_WIN32_WINNT=0x0A00;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\vkbootstrap\src;D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\fmt\include;D:\Apps\VulkanSDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;MM_DEBUG;_DEBUG;BOOST_USE_WINAPI_VERSION=0x0A00;_WIN32_WINNT=0x0A00;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <IncludePaths>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\vkbootstrap\src;D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\fmt\include;D:\Apps\VulkanSDK\Include;%(IncludePaths)</IncludePaths>
+      <AdditionalOptions>%(AdditionalOptions) /std:c++20 /permissive-</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </MASM>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include;D:\Apps\VulkanSDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\vkbootstrap\src;D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\fmt\include;D:\Apps\VulkanSDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -112,8 +117,8 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>..\MamontEngine\Debug\MamontEngine.lib;D:\Apps\VulkanSDK\Lib\vulkan-1.lib;..\MamontEngine\vendor\glfw-3.4\src\Debug\glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:/Repos/MamontEngine/MamontEngine/vendor/glfw-3.4;D:/Repos/MamontEngine/MamontEngine/vendor/glfw-3.4/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>..\MamontEngine\Debug\MamontEngine.lib;D:\Apps\VulkanSDK\Lib\vulkan-1.lib;..\MamontEngine\vendor\vkbootstrap\Debug\vk-bootstrap.lib;..\MamontEngine\vendor\SDL\Debug\SDL3.lib;..\MamontEngine\vendor\fmt\Debug\fmtd.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -127,16 +132,14 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/Apps/VulkanSDK/Include"</AdditionalOptions>
+      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\vkbootstrap\src;D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\fmt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/Apps/VulkanSDK/Include" /utf-8</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
-      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <ConformanceMode>true</ConformanceMode>
       <ExceptionHandling>Sync</ExceptionHandling>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <MinimalRebuild></MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <Optimization>MaxSpeed</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -144,21 +147,26 @@
       <PrecompiledHeaderOutputFile>D:/Repos/MamontEngine/build/MamontEditor/MamontEditor.dir/Release/cmake_pch.pch</PrecompiledHeaderOutputFile>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <SupportJustMyCode></SupportJustMyCode>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;MM_RELEASE;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;MM_RELEASE;BOOST_USE_WINAPI_VERSION=0x0A00;_WIN32_WINNT=0x0A00;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;MM_RELEASE;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include;D:\Apps\VulkanSDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;MM_RELEASE;BOOST_USE_WINAPI_VERSION=0x0A00;_WIN32_WINNT=0x0A00;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\vkbootstrap\src;D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\fmt\include;D:\Apps\VulkanSDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;MM_RELEASE;BOOST_USE_WINAPI_VERSION=0x0A00;_WIN32_WINNT=0x0A00;CMAKE_INTDIR="Release";</PreprocessorDefinitions>
+      <IncludePaths>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\vkbootstrap\src;D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\fmt\include;D:\Apps\VulkanSDK\Include;%(IncludePaths)</IncludePaths>
+      <AdditionalOptions>%(AdditionalOptions) /std:c++20 /permissive-</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </MASM>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include;D:\Apps\VulkanSDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\vkbootstrap\src;D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\fmt\include;D:\Apps\VulkanSDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -166,8 +174,8 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>..\MamontEngine\Release\MamontEngine.lib;D:\Apps\VulkanSDK\Lib\vulkan-1.lib;..\MamontEngine\vendor\glfw-3.4\src\Release\glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:/Repos/MamontEngine/MamontEngine/vendor/glfw-3.4;D:/Repos/MamontEngine/MamontEngine/vendor/glfw-3.4/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>..\MamontEngine\Release\MamontEngine.lib;D:\Apps\VulkanSDK\Lib\vulkan-1.lib;..\MamontEngine\vendor\vkbootstrap\Release\vk-bootstrap.lib;..\MamontEngine\vendor\SDL\Release\SDL3.lib;..\MamontEngine\vendor\fmt\Release\fmt.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -181,37 +189,38 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Distribution|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/Apps/VulkanSDK/Include"</AdditionalOptions>
+      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\vkbootstrap\src;D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\fmt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /external:I "D:/Apps/VulkanSDK/Include" /utf-8</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
-      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <ConformanceMode>true</ConformanceMode>
       <ExceptionHandling>Sync</ExceptionHandling>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <MinimalRebuild></MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <Optimization></Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>D:/Repos/MamontEngine/build/MamontEditor/CMakeFiles/MamontEditor.dir/Distribution/cmake_pch.hxx</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>D:/Repos/MamontEngine/build/MamontEditor/MamontEditor.dir/Distribution/cmake_pch.pch</PrecompiledHeaderOutputFile>
-      <RuntimeLibrary></RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <SupportJustMyCode></SupportJustMyCode>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;MM_DISTRIBUTION;NDEBUG;CMAKE_INTDIR="Distribution"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;MM_DISTRIBUTION;NDEBUG;BOOST_USE_WINAPI_VERSION=0x0A00;_WIN32_WINNT=0x0A00;CMAKE_INTDIR="Distribution"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;MM_DISTRIBUTION;NDEBUG;CMAKE_INTDIR=\"Distribution\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include;D:\Apps\VulkanSDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;MM_DISTRIBUTION;NDEBUG;BOOST_USE_WINAPI_VERSION=0x0A00;_WIN32_WINNT=0x0A00;CMAKE_INTDIR=\"Distribution\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\vkbootstrap\src;D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\fmt\include;D:\Apps\VulkanSDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;MM_DISTRIBUTION;NDEBUG;BOOST_USE_WINAPI_VERSION=0x0A00;_WIN32_WINNT=0x0A00;CMAKE_INTDIR="Distribution"</PreprocessorDefinitions>
+      <IncludePaths>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\vkbootstrap\src;D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\fmt\include;D:\Apps\VulkanSDK\Include;%(IncludePaths)</IncludePaths>
+      <AdditionalOptions>%(AdditionalOptions) /std:c++20 /permissive-</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </MASM>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\glfw-3.4\include;D:\Apps\VulkanSDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Repos\MamontEngine\MamontEditor\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\src;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\GLFW\include;D:\Repos\MamontEngine\MamontEditor\..\MamontEngine\vendor\glm;D:\Repos\MamontEngine\MamontEngine\src;D:\Repos\MamontEngine\MamontEngine\vendor;D:\Repos\MamontEngine\MamontEngine\vendor\vkbootstrap\src;D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\SDL\include;D:\Repos\MamontEngine\MamontEngine\vendor\fmt\include;D:\Apps\VulkanSDK\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -219,8 +228,8 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>..\MamontEngine\Distribution\MamontEngine.lib;D:\Apps\VulkanSDK\Lib\vulkan-1.lib;..\MamontEngine\vendor\glfw-3.4\src\Distribution\glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:/Repos/MamontEngine/MamontEngine/vendor/glfw-3.4;D:/Repos/MamontEngine/MamontEngine/vendor/glfw-3.4/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>..\MamontEngine\Distribution\MamontEngine.lib;D:\Apps\VulkanSDK\Lib\vulkan-1.lib;..\MamontEngine\vendor\vkbootstrap\Distribution\vk-bootstrap.lib;..\MamontEngine\vendor\SDL\Distribution\SDL3.lib;..\MamontEngine\vendor\fmt\Distribution\fmt.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64 /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -237,7 +246,7 @@
       <UseUtf8Encoding>Always</UseUtf8Encoding>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/Repos/MamontEngine/MamontEditor/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
-D:\Apps\CMake\bin\cmake.exe -SD:/Repos/MamontEngine -BD:/Repos/MamontEngine/build --check-stamp-file D:/Repos/MamontEngine/build/MamontEditor/CMakeFiles/generate.stamp
+D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -SD:/Repos/MamontEngine -BD:/Repos/MamontEngine/build --check-stamp-file D:/Repos/MamontEngine/build/MamontEditor/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -250,7 +259,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/Repos/MamontEngine/MamontEditor/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
-D:\Apps\CMake\bin\cmake.exe -SD:/Repos/MamontEngine -BD:/Repos/MamontEngine/build --check-stamp-file D:/Repos/MamontEngine/build/MamontEditor/CMakeFiles/generate.stamp
+D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -SD:/Repos/MamontEngine -BD:/Repos/MamontEngine/build --check-stamp-file D:/Repos/MamontEngine/build/MamontEditor/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -263,7 +272,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='Distribution|x64'">Building Custom Rule D:/Repos/MamontEngine/MamontEditor/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Distribution|x64'">setlocal
-D:\Apps\CMake\bin\cmake.exe -SD:/Repos/MamontEngine -BD:/Repos/MamontEngine/build --check-stamp-file D:/Repos/MamontEngine/build/MamontEditor/CMakeFiles/generate.stamp
+D:\Apps\VS\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -SD:/Repos/MamontEngine -BD:/Repos/MamontEngine/build --check-stamp-file D:/Repos/MamontEngine/build/MamontEditor/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -311,12 +320,21 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <Project>{359AD45E-234A-34D7-8D47-3F3F6E5CE0CC}</Project>
       <Name>MamontEngine</Name>
     </ProjectReference>
-    <ProjectReference Include="D:\Repos\MamontEngine\build\MamontEngine\vendor\glfw-3.4\src\glfw.vcxproj">
-      <Project>{2385CCD0-E29D-3E19-83A0-EB70A10D2E57}</Project>
-      <Name>glfw</Name>
+    <ProjectReference Include="D:\Repos\MamontEngine\build\MamontEngine\vendor\SDL\SDL3-shared.vcxproj">
+      <Project>{95C226D9-6066-3884-9AEC-61C404BAE3CB}</Project>
+      <Name>SDL3-shared</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Repos\MamontEngine\build\MamontEngine\vendor\fmt\fmt.vcxproj">
+      <Project>{D68AF507-7E57-3579-B72C-8A046CE7FFAE}</Project>
+      <Name>fmt</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Repos\MamontEngine\build\MamontEngine\vendor\vkbootstrap\vk-bootstrap.vcxproj">
+      <Project>{B06C904F-AA15-3305-AC2D-2EF36B04BD81}</Project>
+      <Name>vk-bootstrap</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>

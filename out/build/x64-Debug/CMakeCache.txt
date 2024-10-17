@@ -805,6 +805,18 @@ VK_BOOTSTRAP_VULKAN_HEADER_DIR:FILEPATH=
 VK_BOOTSTRAP_WERROR:BOOL=OFF
 
 //Value Computed by CMake
+VMA_BINARY_DIR:STATIC=D:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/vendor/vma
+
+//Install VulkanMemoryAllocator
+VMA_ENABLE_INSTALL:BOOL=OFF
+
+//Value Computed by CMake
+VMA_IS_TOP_LEVEL:STATIC=OFF
+
+//Value Computed by CMake
+VMA_SOURCE_DIR:STATIC=D:/Repos/MamontEngine/MamontEngine/vendor/vma
+
+//Value Computed by CMake
 VulkanBootstrap_BINARY_DIR:STATIC=D:/Repos/MamontEngine/out/build/x64-Debug/MamontEngine/vendor/vkbootstrap
 
 //Value Computed by CMake
@@ -963,7 +975,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_MT
 CMAKE_MT-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=8
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=9
 //Platform information initialized
 CMAKE_PLATFORM_INFO_INITIALIZED:INTERNAL=1
 //noop for ranlib

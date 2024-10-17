@@ -80,11 +80,20 @@ add_subdirectory("vendor/vkbootstrap")
 target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap)
 set_target_properties(vk-bootstrap PROPERTIES FOLDER "vendor")
 set_property(TARGET vk-bootstrap PROPERTY CXX_STANDARD 20)
+
+#SDL
 add_subdirectory("vendor/SDL")
 target_link_libraries(${PROJECT_NAME} PUBLIC SDL3::SDL3)
 
+#fmt
 add_subdirectory("vendor/fmt" EXCLUDE_FROM_ALL)
 target_link_libraries(${PROJECT_NAME} PUBLIC fmt::fmt)
+
+#vma
+add_subdirectory("vendor/vma" EXCLUDE_FROM_ALL)
+target_link_libraries(${PROJECT_NAME} PUBLIC GPUOpen::VulkanMemoryAllocator)
+
+#target_link_libraries(${PROJECT_NAME} PUBLIC VulkanMemoryAllocator)
 
 #target_include_directories(${PROJECT_NAME} PUBLIC "vendor/sdl/include")
 #sdl
