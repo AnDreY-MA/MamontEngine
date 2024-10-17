@@ -1,3 +1,0 @@
-D:\Apps\CMake\bin\cmake.exe -E rm -f CMakeFiles\MamontEditor.dir/objects.a
-D:\MinGW64\MinGW64\bin\ar.exe qc CMakeFiles\MamontEditor.dir/objects.a @CMakeFiles\MamontEditor.dir\objects1.rsp
-D:\MinGW64\MinGW64\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\MamontEditor.dir/objects.a -Wl,--no-whole-archive -o MamontEditor.exe -Wl,--out-implib,libMamontEditor.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\MamontEditor.dir\linkLibs.rsp

@@ -1,8 +1,0 @@
-# CMake generation dependency list for this directory.
-D:/Apps/CMake/share/cmake-3.30/Modules/ExternalProject/shared_internal_commands.cmake
-D:/Apps/CMake/share/cmake-3.30/Modules/FetchContent.cmake
-D:/Apps/CMake/share/cmake-3.30/Modules/FindPackageHandleStandardArgs.cmake
-D:/Apps/CMake/share/cmake-3.30/Modules/FindPackageMessage.cmake
-D:/Apps/CMake/share/cmake-3.30/Modules/FindVulkan.cmake
-D:/Repos/MamontEngine/MamontEngine/CMakeLists.txt
-D:/Repos/MamontEngine/cpm.cmake
