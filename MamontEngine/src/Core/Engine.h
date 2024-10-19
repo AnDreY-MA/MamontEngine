@@ -1,6 +1,13 @@
 #pragma once
 
 #include "vk_mem_alloc.h"
+#include "VkDestriptor.h"
+#include "pch.h"
+
+struct MPipeline
+{
+    VkPipeline Pipeline;
+};
 
 namespace MamontEngine
 {
@@ -42,6 +49,24 @@ namespace MamontEngine
 
     };
 
+    struct ComputePushConstants
+    {
+        glm::vec4 Data1;
+        glm::vec4 Data2;
+        glm::vec4 Data3;
+        glm::vec4 Data4;
+    };
+
+    struct ComputeEffect
+    {
+        const char *Name;
+        ::VkPipeline  Pipeline;
+        VkPipelineLayout Layout;
+        
+        //ComputePushConstants Data;
+    };
+
+
 	class MEngine
 	{
     public:
@@ -56,13 +81,22 @@ namespace MamontEngine
     private:
         void InitVulkan();
         void InitSwapchain();
-        void InitCommants();
+        void InitCommands();
         void InitSyncStructeres();
 
         void CreateSwapchain(const uint32_t inWidth, const uint32_t inHeight);
         void DestroySwapchain();
 
         void DrawBackground(VkCommandBuffer inCmd);
+        
+        void InitDescriptors();
+
+        void InitPipelines();
+        void InitBackgroundPipelines();
+
+        void InitImgui();
+        void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction);
+        void DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView);
 
     private:
         bool       m_IsInitialized{false};
@@ -99,6 +133,18 @@ namespace MamontEngine
 
         AllocatedImage m_DrawImage;
         VkExtent2D     m_DrawExtent;
+
+        VkDescriptor::DescriptorAllocator m_GlobalDescriptorAllocator;
+        VkDescriptorSet                   m_DrawImageDescriptors;
+        VkDescriptorSetLayout             m_DrawImageDescriptorLayout;
+
+        VkPipelineLayout m_GradientPipelineLayout;
+        //MPipeline        m_Pipeline;
+
+        VkFence         m_ImmFence;
+        VkCommandBuffer m_ImmCommandBuffer;
+        VkCommandPool   m_ImmCommandPool;
+
 
 	};
 }

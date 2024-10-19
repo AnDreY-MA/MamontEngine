@@ -2,6 +2,7 @@
 
 #include "VkInitializers.h"
 #include "VkImages.h"
+#include "VkPipelines.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
@@ -10,11 +11,16 @@
 #include <chrono>
 #include <thread>
 #include <VkBootstrap.h>
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_sdl3.h"
+#include "imgui/imgui_impl_vulkan.h"
+
 
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
 static SDL_Window* window = nullptr;
+VkPipeline         Pipeline;
 
 namespace MamontEngine
 {
@@ -24,6 +30,7 @@ namespace MamontEngine
     {
         return *loadedEngine;
     }
+
 
     void MEngine::Init()
     {
@@ -46,8 +53,12 @@ namespace MamontEngine
 
         InitVulkan();
         InitSwapchain();
-        InitCommants();
+        InitCommands();
         InitSyncStructeres();
+        InitDescriptors();
+        InitPipelines();
+
+        InitImgui();
 
         m_IsInitialized = true;
     }
@@ -77,17 +88,24 @@ namespace MamontEngine
                 {
                     m_StopRendering = false;
                 }
+
+                ImGui_ImplSDL3_ProcessEvent(&event);
             }
 
             if (m_StopRendering)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                continue;
             }
-            else
-            {
-                Draw();
-            }
+            ImGui_ImplVulkan_NewFrame();
+            ImGui_ImplSDL3_NewFrame();
+            ImGui::NewFrame();
 
+            ImGui::ShowDemoWindow();
+
+            ImGui::Render();
+
+            Draw();
         }
     }
 
@@ -131,14 +149,15 @@ namespace MamontEngine
         //}
 
         //// Проверка состояния флага
-        //VkResult status = vkGetFenceStatus(m_Device, m_Frames[m_FrameNumber].RenderFence);
-        //if (status == VK_ERROR_DEVICE_LOST)
-        //{
-        //    fmt::println("Device lost. Unable to wait for fence.");
-        //    return;
-        //}
+        VkResult status = vkGetFenceStatus(m_Device, m_Frames[m_FrameNumber].RenderFence);
+        if (status == VK_ERROR_DEVICE_LOST)
+        {
+            fmt::println("Device lost. Unable to wait for fence.");
+            return;
+        }
         fmt::println("Waiting for fence...");
-        VK_CHECK(vkWaitForFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence, true, 1000000000));
+        VK_CHECK_MESSAGE(vkWaitForFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence, VK_TRUE, 10000000000), "FENCE");
+        
         fmt::println("Fence signaled.");
         m_Frames[m_FrameNumber].Deleteions.Flush();
 
@@ -146,10 +165,11 @@ namespace MamontEngine
 
         uint32_t swapchainImageIndex;
         VkResult e = vkAcquireNextImageKHR(m_Device, m_Swapchain, 1000000000, m_Frames[m_FrameNumber].SwapchainSemaphore, nullptr, &swapchainImageIndex);
-        /*if (e == VK_ERROR_OUT_OF_DATE_KHR)
+        if (e == VK_ERROR_OUT_OF_DATE_KHR)
         {
+            fmt::println("Next image - VK_ERROR_OUT_OF_DATE_KHR");
             return;
-        }*/
+        }   
 
         VkCommandBuffer cmd = m_Frames[m_FrameNumber].MainCommandBuffer;
         VK_CHECK(vkResetCommandBuffer(cmd, 0));
@@ -166,6 +186,10 @@ namespace MamontEngine
         VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
         VkUtil::copy_image_to_image(cmd, m_DrawImage.Image, m_SwapchainImages[swapchainImageIndex], m_DrawExtent, m_SwapchainExtent);
+
+        VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+        DrawImGui(cmd, m_SwapchainImageViews[swapchainImageIndex]);
 
         VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
@@ -191,22 +215,43 @@ namespace MamontEngine
 
         presentInfo.pImageIndices = &swapchainImageIndex;
 
-        VK_CHECK(vkQueuePresentKHR(m_GraphicsQueue, &presentInfo));
+        VkResult presentResult = vkQueuePresentKHR(m_GraphicsQueue, &presentInfo);
+        if (presentResult != VK_SUCCESS)
+        {
+            fmt::println("present not Success");
+        }
 
         m_FrameNumber = (m_FrameNumber + 1) % FRAME_OVERLAP;
     }
 
     void MEngine::DrawBackground(VkCommandBuffer inCmd)
     {
-        VkClearColorValue clearValue;
+        /*VkClearColorValue clearValue;
         float             flash = std::abs(std::sin(m_FrameNumber / 12.f));
         fmt::println("Flash={}", flash);
         clearValue                         = {{0.0f, 0.0f, flash, 1.0f}};
         VkImageSubresourceRange clearRange = vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
 
-        vkCmdClearColorImage(inCmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
+        vkCmdClearColorImage(inCmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);*/
+
+        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
+
+        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipelineLayout, 0, 1, &m_DrawImageDescriptors, 0, nullptr);
+
+        vkCmdDispatch(inCmd, std::ceil(m_DrawExtent.width / 16.0), std::ceil(m_DrawExtent.height / 16.0), 1);
     }
 
+    void MEngine::DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView)
+    {
+        VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(inTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VkRenderingInfo           renderInfo      = vkinit::rendering_info(m_SwapchainExtent, &colorAttachment, nullptr);
+
+        vkCmdBeginRendering(inCmd, &renderInfo);
+
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), inCmd);
+
+        vkCmdEndRendering(inCmd);
+    }
     void MEngine::InitVulkan()
     {
         vkb::InstanceBuilder builder;
@@ -306,7 +351,7 @@ namespace MamontEngine
             });
 
     }
-    void MEngine::InitCommants()
+    void MEngine::InitCommands()
     {
         VkCommandPoolCreateInfo commandPoolInfo = vkinit::command_pool_create_info(m_GraphicsQueueFamily, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
@@ -318,6 +363,16 @@ namespace MamontEngine
 
             VK_CHECK(vkAllocateCommandBuffers(m_Device, &cmdAllocInfo, &m_Frames[i].MainCommandBuffer));
         }
+
+        VK_CHECK(vkCreateCommandPool(m_Device, &commandPoolInfo, nullptr, &m_ImmCommandPool));
+
+        VkCommandBufferAllocateInfo cmdAllocInfo = vkinit::command_buffer_allocate_info(m_ImmCommandPool, 1);
+
+        VK_CHECK(vkAllocateCommandBuffers(m_Device, &cmdAllocInfo, &m_ImmCommandBuffer));
+
+        m_MainDeletionQueue.PushFunction([=]() { vkDestroyCommandPool(m_Device, m_ImmCommandPool, nullptr);
+                });
+
     }
     void MEngine::InitSyncStructeres()
     {
@@ -336,6 +391,10 @@ namespace MamontEngine
             VK_CHECK(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_Frames[i].RenderSemaphore));
 
         }
+
+        VK_CHECK(vkCreateFence(m_Device, &fenceCreateInfo, nullptr, &m_ImmFence));
+        m_MainDeletionQueue.PushFunction([=]() { vkDestroyFence(m_Device, m_ImmFence, nullptr); });
+
     }
 
     void MEngine::CreateSwapchain(const uint32_t inWidth, const uint32_t inHeight)
@@ -364,5 +423,168 @@ namespace MamontEngine
         {
             vkDestroyImageView(m_Device, m_SwapchainImageViews[i], nullptr);
         }
+    }
+
+    void MEngine::InitDescriptors()
+    {
+        std::vector<VkDescriptor::DescriptorAllocator::PoolSizeRatio> sizes = {{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
+
+        m_GlobalDescriptorAllocator.init_pool(m_Device, 10, sizes);
+
+        {
+            VkDescriptor::DescriptorLayoutBuilder builder;
+            builder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+            m_DrawImageDescriptorLayout = builder.Build(m_Device, VK_SHADER_STAGE_COMPUTE_BIT);
+        }
+
+        m_DrawImageDescriptors = m_GlobalDescriptorAllocator.Allocate(m_Device, m_DrawImageDescriptorLayout);
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        imageInfo.imageView   = m_DrawImage.ImageView;
+
+        VkWriteDescriptorSet drawImageWrite = {};
+        drawImageWrite.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        drawImageWrite.pNext                = nullptr;
+        drawImageWrite.dstBinding      = 0;
+        drawImageWrite.dstSet          = m_DrawImageDescriptors;
+        drawImageWrite.descriptorCount = 1;
+        drawImageWrite.descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        drawImageWrite.pImageInfo      = &imageInfo;
+
+        vkUpdateDescriptorSets(m_Device, 1, &drawImageWrite, 0, nullptr);
+
+        m_MainDeletionQueue.PushFunction(
+                [&]()
+                {
+                    m_GlobalDescriptorAllocator.destroy_pool(m_Device);
+
+                    vkDestroyDescriptorSetLayout(m_Device, m_DrawImageDescriptorLayout, nullptr);
+                });
+
+    }
+
+    void MEngine::InitPipelines()
+    {
+        InitBackgroundPipelines();
+    }
+
+    void MEngine::InitBackgroundPipelines()
+    {
+        VkPipelineLayoutCreateInfo computeLayout{};
+        computeLayout.sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        computeLayout.pNext          = nullptr;
+        computeLayout.pSetLayouts    = &m_DrawImageDescriptorLayout;
+        computeLayout.setLayoutCount = 1;
+
+        VK_CHECK(vkCreatePipelineLayout(m_Device, &computeLayout, nullptr, &m_GradientPipelineLayout));
+
+        std::string    shaderPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/gradient.comp.spv";
+        VkShaderModule computeDrawShader;
+        fmt::println("Shader Path {}", shaderPath);
+        if (!VkPipeline::LoadShaderModule(shaderPath.c_str(), m_Device, &computeDrawShader))
+        {
+            fmt::print("Error when building the compute shader \n");
+        }
+
+        VkPipelineShaderStageCreateInfo stageinfo{};
+        stageinfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        stageinfo.pNext  = nullptr;
+        stageinfo.stage  = VK_SHADER_STAGE_COMPUTE_BIT;
+        stageinfo.module = computeDrawShader;
+        stageinfo.pName  = "main";
+
+        VkComputePipelineCreateInfo computePipelineCreateInfo{};
+        computePipelineCreateInfo.sType  = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+        computePipelineCreateInfo.pNext  = nullptr;
+        computePipelineCreateInfo.layout = m_GradientPipelineLayout;
+        computePipelineCreateInfo.stage  = stageinfo;
+
+        VK_CHECK(vkCreateComputePipelines(m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &Pipeline));
+
+        vkDestroyShaderModule(m_Device, computeDrawShader, nullptr);
+        m_MainDeletionQueue.PushFunction([&]() { 
+                    vkDestroyPipelineLayout(m_Device, m_GradientPipelineLayout, nullptr);
+                    vkDestroyPipeline(m_Device, Pipeline, nullptr);
+
+            });
+    }
+
+    void MEngine::InitImgui()
+    {
+        VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
+                                             {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+                                             {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
+                                             {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
+                                             {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
+                                             {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
+                                             {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+                                             {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
+                                             {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+                                             {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+                                             {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
+
+        VkDescriptorPoolCreateInfo poolInfo = {};
+        poolInfo.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.flags                       = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        poolInfo.maxSets                     = 1000;
+        poolInfo.poolSizeCount               = (uint32_t)std::size(poolSizes);
+        poolInfo.pPoolSizes                  = poolSizes;
+
+        VkDescriptorPool imguiPool;
+        VK_CHECK_MESSAGE(vkCreateDescriptorPool(m_Device, &poolInfo, nullptr, &imguiPool), "CreateDescPool");
+
+        ImGui::CreateContext();
+
+        ImGui_ImplSDL3_InitForVulkan(window);
+
+        ImGui_ImplVulkan_InitInfo initInfo = {};
+        initInfo.Instance                  = m_Instance;
+        initInfo.PhysicalDevice            = m_ChosenGPU;
+        initInfo.Device                    = m_Device;
+        initInfo.Queue                     = m_GraphicsQueue;
+        initInfo.DescriptorPool            = imguiPool;
+        initInfo.MinImageCount             = 3;
+        initInfo.ImageCount                = 3;
+        initInfo.MSAASamples               = VK_SAMPLE_COUNT_1_BIT;
+        initInfo.UseDynamicRendering       = true;
+
+        initInfo.PipelineRenderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
+        initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+        initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &m_SwapchainImageFormat;
+
+        ImGui_ImplVulkan_Init(&initInfo);
+
+        ImGui_ImplVulkan_CreateFontsTexture();
+
+        m_MainDeletionQueue.PushFunction(
+                [=]()
+                {
+                    ImGui_ImplVulkan_Shutdown();
+                    vkDestroyDescriptorPool(m_Device, imguiPool, nullptr);
+                });
+
+       
+    }
+    void MEngine::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& inFunction)
+    {
+        VK_CHECK(vkResetFences(m_Device, 1, &m_ImmFence));
+        VK_CHECK(vkResetCommandBuffer(m_ImmCommandBuffer, 0));
+
+        VkCommandBuffer cmd = m_ImmCommandBuffer;
+
+        VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+        VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
+
+        inFunction(cmd);
+
+        VK_CHECK(vkEndCommandBuffer(cmd));
+
+        VkCommandBufferSubmitInfo cmdInfo = vkinit::command_buffer_submit_info(cmd);
+        VkSubmitInfo2             submit  = vkinit::submit_info(&cmdInfo, nullptr, nullptr);
+
+        VK_CHECK(vkQueueSubmit2(m_GraphicsQueue, 1, &submit, m_ImmFence));
+
+        VK_CHECK_MESSAGE(vkWaitForFences(m_Device, 1, &m_ImmFence, VK_TRUE, 9999999999), "WaitFences ImmSubmit");
     }
 }

@@ -14,6 +14,7 @@
 #include <functional>
 #include <deque>
 #include <queue>
+#include <span>
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
