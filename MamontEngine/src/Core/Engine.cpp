@@ -20,7 +20,7 @@
 #include "vk_mem_alloc.h"
 
 static SDL_Window* window = nullptr;
-VkPipeline         Pipeline;
+VkPipeline         gradientPipeline;
 
 namespace MamontEngine
 {
@@ -101,9 +101,23 @@ namespace MamontEngine
             ImGui_ImplSDL3_NewFrame();
             ImGui::NewFrame();
 
-            ImGui::ShowDemoWindow();
+            if (ImGui::Begin("Background"))
+            {
+                ComputeEffect &selected = m_BackgroundEffects[m_CurrentBackgroundEffect];
+                ImGui::Text("Selected Effect: ", selected.Name);
+
+                ImGui::SliderInt("Effect Index", &m_CurrentBackgroundEffect, 0, m_BackgroundEffects.size() - 1);
+
+                ImGui::InputFloat4("data1", (float *)&selected.Data.Data1);
+                ImGui::InputFloat4("data2", (float *)&selected.Data.Data2);
+                ImGui::InputFloat4("data3", (float *)&selected.Data.Data3);
+                ImGui::InputFloat4("data4", (float *)&selected.Data.Data4);
+                ImGui::End();
+
+            }
 
             ImGui::Render();
+
 
             Draw();
         }
@@ -141,49 +155,41 @@ namespace MamontEngine
 
     void MEngine::Draw()
     {
-        
-        //if (m_Frames[m_FrameNumber].RenderFence == VK_NULL_HANDLE)
-        //{
-        //    fmt::println("RenderFence is not created correctly!");
-        //    return;
-        //}
-
-        //// Проверка состояния флага
-        VkResult status = vkGetFenceStatus(m_Device, m_Frames[m_FrameNumber].RenderFence);
-        if (status == VK_ERROR_DEVICE_LOST)
-        {
-            fmt::println("Device lost. Unable to wait for fence.");
-            return;
-        }
         fmt::println("Waiting for fence...");
-        VK_CHECK_MESSAGE(vkWaitForFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence, VK_TRUE, 10000000000), "FENCE");
-        
+        VK_CHECK_MESSAGE(vkWaitForFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence, VK_TRUE, 1000000000), "Wait FENCE");
         fmt::println("Fence signaled.");
+
         m_Frames[m_FrameNumber].Deleteions.Flush();
-
-        VK_CHECK(vkResetFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence));
-
         uint32_t swapchainImageIndex;
         VkResult e = vkAcquireNextImageKHR(m_Device, m_Swapchain, 1000000000, m_Frames[m_FrameNumber].SwapchainSemaphore, nullptr, &swapchainImageIndex);
         if (e == VK_ERROR_OUT_OF_DATE_KHR)
         {
             fmt::println("Next image - VK_ERROR_OUT_OF_DATE_KHR");
             return;
-        }   
+        } 
 
+        VK_CHECK(vkResetFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence));
+        VK_CHECK(vkResetCommandBuffer(m_Frames[m_FrameNumber].MainCommandBuffer, 0));
+          
         VkCommandBuffer cmd = m_Frames[m_FrameNumber].MainCommandBuffer;
-        VK_CHECK(vkResetCommandBuffer(cmd, 0));
         
         VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        //> draw_first
+        m_DrawExtent.width = m_DrawImage.ImageExtent.width;
+        m_DrawExtent.height = m_DrawImage.ImageExtent.height;
 
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
-        VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+        VkUtil::transition_image(cmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
         DrawBackground(cmd);
 
         VkUtil::transition_image(cmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-        VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+        //< draw_first
+    
+        //> imgui_draw
 
         VkUtil::copy_image_to_image(cmd, m_DrawImage.Image, m_SwapchainImages[swapchainImageIndex], m_DrawExtent, m_SwapchainExtent);
 
@@ -191,9 +197,10 @@ namespace MamontEngine
 
         DrawImGui(cmd, m_SwapchainImageViews[swapchainImageIndex]);
 
-        VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
         VK_CHECK(vkEndCommandBuffer(cmd));
+        //< imgui_draw
 
         VkCommandBufferSubmitInfo cmdInfo = vkinit::command_buffer_submit_info(cmd);
         VkSemaphoreSubmitInfo     waitInfo =
@@ -204,9 +211,8 @@ namespace MamontEngine
 
         VK_CHECK(vkQueueSubmit2(m_GraphicsQueue, 1, &submit, m_Frames[m_FrameNumber].RenderFence));
 
-        VkPresentInfoKHR presentInfo = {};
-        presentInfo.sType            = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.pNext            = nullptr;
+        // Prepare present
+        VkPresentInfoKHR presentInfo = vkinit::present_info();
         presentInfo.pSwapchains      = &m_Swapchain;
         presentInfo.swapchainCount   = 1;
 
@@ -226,18 +232,29 @@ namespace MamontEngine
 
     void MEngine::DrawBackground(VkCommandBuffer inCmd)
     {
-        /*VkClearColorValue clearValue;
-        float             flash = std::abs(std::sin(m_FrameNumber / 12.f));
-        fmt::println("Flash={}", flash);
-        clearValue                         = {{0.0f, 0.0f, flash, 1.0f}};
-        VkImageSubresourceRange clearRange = vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
 
-        vkCmdClearColorImage(inCmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);*/
-
-        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, Pipeline);
+        /*vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, gradientPipeline);
 
         vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipelineLayout, 0, 1, &m_DrawImageDescriptors, 0, nullptr);
 
+        ComputePushConstants pc;
+        pc.Data1 = glm::vec4(1, 0, 0, 1);
+        pc.Data2 = glm::vec4(0, 0, 0, 1);
+        
+        vkCmdPushConstants(inCmd, m_GradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &pc);
+
+        vkCmdDispatch(inCmd, std::ceil(m_DrawExtent.width / 16.0), std::ceil(m_DrawExtent.height / 16.0), 1);*/
+
+        ComputeEffect &effect = m_BackgroundEffects[m_CurrentBackgroundEffect];
+
+        // bind the background compute pipeline
+        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, effect.Pipeline);
+
+        // bind the descriptor set containing the draw image for the compute pipeline
+        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipelineLayout, 0, 1, &m_DrawImageDescriptors, 0, nullptr);
+
+        vkCmdPushConstants(inCmd, m_GradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.Data);
+        // execute the compute pipeline dispatch. We are using 16x16 workgroup size so we need to divide by it
         vkCmdDispatch(inCmd, std::ceil(m_DrawExtent.width / 16.0), std::ceil(m_DrawExtent.height / 16.0), 1);
     }
 
@@ -425,50 +442,9 @@ namespace MamontEngine
         }
     }
 
-    void MEngine::InitDescriptors()
-    {
-        std::vector<VkDescriptor::DescriptorAllocator::PoolSizeRatio> sizes = {{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
-
-        m_GlobalDescriptorAllocator.init_pool(m_Device, 10, sizes);
-
-        {
-            VkDescriptor::DescriptorLayoutBuilder builder;
-            builder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-            m_DrawImageDescriptorLayout = builder.Build(m_Device, VK_SHADER_STAGE_COMPUTE_BIT);
-        }
-
-        m_DrawImageDescriptors = m_GlobalDescriptorAllocator.Allocate(m_Device, m_DrawImageDescriptorLayout);
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        imageInfo.imageView   = m_DrawImage.ImageView;
-
-        VkWriteDescriptorSet drawImageWrite = {};
-        drawImageWrite.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        drawImageWrite.pNext                = nullptr;
-        drawImageWrite.dstBinding      = 0;
-        drawImageWrite.dstSet          = m_DrawImageDescriptors;
-        drawImageWrite.descriptorCount = 1;
-        drawImageWrite.descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        drawImageWrite.pImageInfo      = &imageInfo;
-
-        vkUpdateDescriptorSets(m_Device, 1, &drawImageWrite, 0, nullptr);
-
-        m_MainDeletionQueue.PushFunction(
-                [&]()
-                {
-                    m_GlobalDescriptorAllocator.destroy_pool(m_Device);
-
-                    vkDestroyDescriptorSetLayout(m_Device, m_DrawImageDescriptorLayout, nullptr);
-                });
-
-    }
+    
 
     void MEngine::InitPipelines()
-    {
-        InitBackgroundPipelines();
-    }
-
-    void MEngine::InitBackgroundPipelines()
     {
         VkPipelineLayoutCreateInfo computeLayout{};
         computeLayout.sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -476,21 +452,36 @@ namespace MamontEngine
         computeLayout.pSetLayouts    = &m_DrawImageDescriptorLayout;
         computeLayout.setLayoutCount = 1;
 
+        VkPushConstantRange pushConstant{};
+        pushConstant.offset     = 0;
+        pushConstant.size       = sizeof(ComputePushConstants);
+        pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        computeLayout.pPushConstantRanges    = &pushConstant;
+        computeLayout.pushConstantRangeCount = 1;
+
         VK_CHECK(vkCreatePipelineLayout(m_Device, &computeLayout, nullptr, &m_GradientPipelineLayout));
 
-        std::string    shaderPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/gradient.comp.spv";
-        VkShaderModule computeDrawShader;
-        fmt::println("Shader Path {}", shaderPath);
-        if (!VkPipeline::LoadShaderModule(shaderPath.c_str(), m_Device, &computeDrawShader))
+        std::string    shaderPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/gradient_color.comp.spv";
+        VkShaderModule gradientShader;
+        if (!VkPipeline::LoadShaderModule(shaderPath.c_str(), m_Device, &gradientShader))
         {
-            fmt::print("Error when building the compute shader \n");
+            fmt::print("Error when building the Gradient shader \n");
         }
+
+        VkShaderModule skyShader;
+        std::string    skyShaderPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/sky.comp.spv";
+        if (!VkPipeline::LoadShaderModule(skyShaderPath.c_str(), m_Device, &skyShader))
+        {
+            fmt::print("Error when building the Sky shader ");
+        }
+
 
         VkPipelineShaderStageCreateInfo stageinfo{};
         stageinfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         stageinfo.pNext  = nullptr;
         stageinfo.stage  = VK_SHADER_STAGE_COMPUTE_BIT;
-        stageinfo.module = computeDrawShader;
+        stageinfo.module = gradientShader;
         stageinfo.pName  = "main";
 
         VkComputePipelineCreateInfo computePipelineCreateInfo{};
@@ -499,14 +490,38 @@ namespace MamontEngine
         computePipelineCreateInfo.layout = m_GradientPipelineLayout;
         computePipelineCreateInfo.stage  = stageinfo;
 
-        VK_CHECK(vkCreateComputePipelines(m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &Pipeline));
+        ComputeEffect gradient;
+        gradient.Layout = m_GradientPipelineLayout;
+        gradient.Name   = "Gradient";
+        gradient.Data   = {};
 
-        vkDestroyShaderModule(m_Device, computeDrawShader, nullptr);
-        m_MainDeletionQueue.PushFunction([&]() { 
+        gradient.Data.Data1 = glm::vec4(1, 0, 0, 1);
+        gradient.Data.Data2 = glm::vec4(0, 0, 1, 1);
+
+        VK_CHECK(vkCreateComputePipelines(m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &gradient.Pipeline));
+
+        computePipelineCreateInfo.stage.module = skyShader;
+
+        ComputeEffect sky;
+        sky.Layout     = m_GradientPipelineLayout;
+        sky.Name       = "Sky";
+        sky.Data       = {};
+        sky.Data.Data1 = glm::vec4(0.1, 0.2, 0.4, 0.97);
+
+        VK_CHECK(vkCreateComputePipelines(m_Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &sky.Pipeline));
+
+        m_BackgroundEffects.push_back(gradient);
+        m_BackgroundEffects.push_back(sky);
+
+        vkDestroyShaderModule(m_Device, gradientShader, nullptr);
+        vkDestroyShaderModule(m_Device, skyShader, nullptr);
+        m_MainDeletionQueue.PushFunction(
+                [&]()
+                {
                     vkDestroyPipelineLayout(m_Device, m_GradientPipelineLayout, nullptr);
-                    vkDestroyPipeline(m_Device, Pipeline, nullptr);
-
-            });
+                    vkDestroyPipeline(m_Device, gradient.Pipeline, nullptr);
+                    vkDestroyPipeline(m_Device, sky.Pipeline, nullptr);
+                });
     }
 
     void MEngine::InitImgui()
@@ -565,6 +580,7 @@ namespace MamontEngine
 
        
     }
+    
     void MEngine::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& inFunction)
     {
         VK_CHECK(vkResetFences(m_Device, 1, &m_ImmFence));
@@ -586,5 +602,42 @@ namespace MamontEngine
         VK_CHECK(vkQueueSubmit2(m_GraphicsQueue, 1, &submit, m_ImmFence));
 
         VK_CHECK_MESSAGE(vkWaitForFences(m_Device, 1, &m_ImmFence, VK_TRUE, 9999999999), "WaitFences ImmSubmit");
+    }
+    
+    void MEngine::InitDescriptors()
+    {
+        std::vector<VkDescriptor::DescriptorAllocator::PoolSizeRatio> sizes = {{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
+
+        m_GlobalDescriptorAllocator.init_pool(m_Device, 10, sizes);
+
+        {
+            VkDescriptor::DescriptorLayoutBuilder builder;
+            builder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+            m_DrawImageDescriptorLayout = builder.Build(m_Device, VK_SHADER_STAGE_COMPUTE_BIT);
+        }
+
+        m_DrawImageDescriptors = m_GlobalDescriptorAllocator.Allocate(m_Device, m_DrawImageDescriptorLayout);
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        imageInfo.imageView   = m_DrawImage.ImageView;
+
+        VkWriteDescriptorSet drawImageWrite = {};
+        drawImageWrite.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        drawImageWrite.pNext                = nullptr;
+        drawImageWrite.dstBinding           = 0;
+        drawImageWrite.dstSet               = m_DrawImageDescriptors;
+        drawImageWrite.descriptorCount      = 1;
+        drawImageWrite.descriptorType       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        drawImageWrite.pImageInfo           = &imageInfo;
+
+        vkUpdateDescriptorSets(m_Device, 1, &drawImageWrite, 0, nullptr);
+
+        m_MainDeletionQueue.PushFunction(
+                [&]()
+                {
+                    m_GlobalDescriptorAllocator.destroy_pool(m_Device);
+
+                    vkDestroyDescriptorSetLayout(m_Device, m_DrawImageDescriptorLayout, nullptr);
+                });
     }
 }

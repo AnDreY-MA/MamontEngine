@@ -63,7 +63,7 @@ namespace MamontEngine
         ::VkPipeline  Pipeline;
         VkPipelineLayout Layout;
         
-        //ComputePushConstants Data;
+        ComputePushConstants Data;
     };
 
 
@@ -92,7 +92,6 @@ namespace MamontEngine
         void InitDescriptors();
 
         void InitPipelines();
-        void InitBackgroundPipelines();
 
         void InitImgui();
         void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction);
@@ -117,6 +116,7 @@ namespace MamontEngine
         std::vector<VkImage>     m_SwapchainImages;
         std::vector<VkImageView> m_SwapchainImageViews;
         VkExtent2D               m_SwapchainExtent;
+        VkExtent2D               m_DrawExtent;
 
         FrameData m_Frames[FRAME_OVERLAP];
         /*FrameData &GetCurrentFrame()
@@ -132,7 +132,6 @@ namespace MamontEngine
         VmaAllocator m_Allocator;
 
         AllocatedImage m_DrawImage;
-        VkExtent2D     m_DrawExtent;
 
         VkDescriptor::DescriptorAllocator m_GlobalDescriptorAllocator;
         VkDescriptorSet                   m_DrawImageDescriptors;
@@ -145,6 +144,7 @@ namespace MamontEngine
         VkCommandBuffer m_ImmCommandBuffer;
         VkCommandPool   m_ImmCommandPool;
 
-
+        std::vector<ComputeEffect> m_BackgroundEffects;
+        int                        m_CurrentBackgroundEffect{0};
 	};
 }
