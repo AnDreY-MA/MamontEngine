@@ -83,6 +83,8 @@ namespace MamontEngine
         void InitSwapchain();
         void InitCommands();
         void InitSyncStructeres();
+        void InitDefaultData();
+
 
         void CreateSwapchain(const uint32_t inWidth, const uint32_t inHeight);
         void DestroySwapchain();
@@ -91,11 +93,24 @@ namespace MamontEngine
         
         void InitDescriptors();
 
+
         void InitPipelines();
+        void InitBackgrounPipeline();
 
         void InitImgui();
         void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction);
         void DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView);
+
+        void InitTrianglePipeline();
+        void InitMeshPipeline();
+
+        void DrawGeometry(VkCommandBuffer inCmd);
+
+        AllocatedBuffer CreateBuffer(size_t inAllocSize, VkBufferUsageFlags inUsage, VmaMemoryUsage inMemoryUsage);
+        void            DestroyBuffer(const AllocatedBuffer &inBuffer);
+
+        GPUMeshBuffers UploadMesh(std::span<uint32_t> inIndices, std::span<Vertex> inVertices);
+
 
     private:
         bool       m_IsInitialized{false};
@@ -139,6 +154,11 @@ namespace MamontEngine
 
         VkPipelineLayout m_GradientPipelineLayout;
         //MPipeline        m_Pipeline;
+        VkPipelineLayout m_TrianglePipelineLayout;
+        VkPipeline       m_TrianglePipeline;
+        VkPipelineLayout m_MeshPipelineLayout;
+        VkPipeline       m_MeshPipeline;
+        VkViewport       m_Viewport;
 
         VkFence         m_ImmFence;
         VkCommandBuffer m_ImmCommandBuffer;
@@ -146,5 +166,9 @@ namespace MamontEngine
 
         std::vector<ComputeEffect> m_BackgroundEffects;
         int                        m_CurrentBackgroundEffect{0};
+
+        GPUMeshBuffers m_Rectangle;
+
+
 	};
 }

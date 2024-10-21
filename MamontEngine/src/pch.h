@@ -33,6 +33,35 @@ struct AllocatedImage
     VkFormat      ImageFormat;
 };
 
+struct AllocatedBuffer
+{
+    VkBuffer Buffer;
+    VmaAllocation Allocation;
+    VmaAllocationInfo Info;
+};
+
+struct Vertex
+{
+    glm::vec3 Position;
+    float     UV_X;
+    glm::vec3 Normal;
+    float     UV_Y;
+    glm::vec4 Color;
+};
+
+struct GPUMeshBuffers
+{
+    AllocatedBuffer IndexBuffer;
+    AllocatedBuffer VertexBuffer;
+    VkDeviceAddress VertexBufferAddress;
+};
+
+struct GPUDrawPushConstants
+{
+    glm::mat4 WorldMatrix;
+    VkDeviceAddress VertexBuffer;
+};
+
 #define VK_CHECK(x)                                                                                                                                            \
     do                                                                                                                                                         \
     {                                                                                                                                                          \

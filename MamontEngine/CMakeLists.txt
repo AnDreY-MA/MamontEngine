@@ -9,7 +9,7 @@ file(GLOB_RECURSE Core "src/Core/*.h" "src/Core/*.hpp" "src/Core/*.cpp")
 set(SOURCE_FILES ${src} ${Core})
 
 # Add library
-add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
+add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES} "src/Core/Loader.h")
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
@@ -80,7 +80,7 @@ add_library(imgui STATIC
     vendor/imgui/imgui_widgets.cpp 
     vendor/imgui/imgui_tables.cpp 
     vendor/imgui/imgui_impl_vulkan.cpp 
-    vendor/imgui/imgui_impl_sdl3.cpp)
+    vendor/imgui/imgui_impl_sdl3.cpp "src/Core/Loader.h")
 target_include_directories(imgui PUBLIC vendor/imgui)
 target_link_libraries(${PROJECT_NAME} PUBLIC imgui)
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)

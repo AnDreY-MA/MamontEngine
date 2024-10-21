@@ -56,7 +56,8 @@ namespace MamontEngine
         InitCommands();
         InitSyncStructeres();
         InitDescriptors();
-        InitPipelines();
+        InitPipelines();    
+        InitDefaultData();
 
         InitImgui();
 
@@ -153,11 +154,45 @@ namespace MamontEngine
         loadedEngine = nullptr;
     }
 
+    void MEngine::InitDefaultData()
+    {
+        std::array<Vertex, 4> rect_vertices;
+
+        rect_vertices[0].Position = {0.5, -0.5, 0};
+        rect_vertices[1].Position = {0.5, 0.5, 0};
+        rect_vertices[2].Position = {-0.5, -0.5, 0};
+        rect_vertices[3].Position = {-0.5, 0.5, 0};
+
+        rect_vertices[0].Color = {0, 0, 0, 1};
+        rect_vertices[1].Color = {0.5, 0.5, 0.5, 1};
+        rect_vertices[2].Color = {1, 0, 0, 1};
+        rect_vertices[3].Color = {0, 1, 0, 1};
+
+        std::array<uint32_t, 6> rect_indices;
+
+        rect_indices[0] = 0;
+        rect_indices[1] = 1;
+        rect_indices[2] = 2;
+
+        rect_indices[3] = 2;
+        rect_indices[4] = 1;
+        rect_indices[5] = 3;
+
+        m_Rectangle = UploadMesh(rect_indices, rect_vertices);
+
+        m_MainDeletionQueue.PushFunction(
+                [&]()
+                {
+                    DestroyBuffer(m_Rectangle.IndexBuffer);
+                    DestroyBuffer(m_Rectangle.VertexBuffer);
+                });
+
+    }
     void MEngine::Draw()
     {
-        fmt::println("Waiting for fence...");
+        //fmt::println("Waiting for fence...");
         VK_CHECK_MESSAGE(vkWaitForFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence, VK_TRUE, 1000000000), "Wait FENCE");
-        fmt::println("Fence signaled.");
+        //fmt::println("Fence signaled.");
 
         m_Frames[m_FrameNumber].Deleteions.Flush();
         uint32_t swapchainImageIndex;
@@ -184,7 +219,11 @@ namespace MamontEngine
 
         DrawBackground(cmd);
 
-        VkUtil::transition_image(cmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        VkUtil::transition_image(cmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+        DrawGeometry(cmd);
+
+        VkUtil::transition_image(cmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         //< draw_first
@@ -232,30 +271,61 @@ namespace MamontEngine
 
     void MEngine::DrawBackground(VkCommandBuffer inCmd)
     {
-
-        /*vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, gradientPipeline);
-
-        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipelineLayout, 0, 1, &m_DrawImageDescriptors, 0, nullptr);
-
-        ComputePushConstants pc;
-        pc.Data1 = glm::vec4(1, 0, 0, 1);
-        pc.Data2 = glm::vec4(0, 0, 0, 1);
-        
-        vkCmdPushConstants(inCmd, m_GradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &pc);
-
-        vkCmdDispatch(inCmd, std::ceil(m_DrawExtent.width / 16.0), std::ceil(m_DrawExtent.height / 16.0), 1);*/
-
         ComputeEffect &effect = m_BackgroundEffects[m_CurrentBackgroundEffect];
 
         // bind the background compute pipeline
         vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, effect.Pipeline);
 
-        // bind the descriptor set containing the draw image for the compute pipeline
         vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipelineLayout, 0, 1, &m_DrawImageDescriptors, 0, nullptr);
 
         vkCmdPushConstants(inCmd, m_GradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.Data);
-        // execute the compute pipeline dispatch. We are using 16x16 workgroup size so we need to divide by it
+
         vkCmdDispatch(inCmd, std::ceil(m_DrawExtent.width / 16.0), std::ceil(m_DrawExtent.height / 16.0), 1);
+    }
+
+    void MEngine::DrawGeometry(VkCommandBuffer inCmd)
+    {
+        VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(m_DrawImage.ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+        VkRenderingInfo renderInfo = vkinit::rendering_info(m_DrawExtent, &colorAttachment, nullptr);
+        vkCmdBeginRendering(inCmd, &renderInfo);
+
+        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_TrianglePipeline);
+
+        assert(m_DrawExtent.width > 0 && m_DrawExtent.height > 0);
+
+        m_Viewport.x          = 0;
+        m_Viewport.y          = 0;
+        m_Viewport.width      = m_DrawExtent.width;
+        m_Viewport.height     = m_DrawExtent.height;
+        m_Viewport.minDepth   = 0.f;
+        m_Viewport.maxDepth   = 1.f;
+
+        vkCmdSetViewport(inCmd, 0, 1, &m_Viewport);
+
+        VkRect2D scissor = {};
+        scissor.offset.x = 0;
+        scissor.offset.y = 0;
+        scissor.extent.width = m_DrawExtent.width;
+        scissor.extent.height = m_DrawExtent.height;
+
+        vkCmdSetScissor(inCmd, 0, 1, &scissor);
+
+        vkCmdDraw(inCmd, 3, 1, 0, 0);
+
+        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipeline);
+
+        GPUDrawPushConstants push_constants;
+        push_constants.WorldMatrix  = glm::mat4{1.f};
+        push_constants.VertexBuffer = m_Rectangle.VertexBufferAddress;
+
+        vkCmdPushConstants(inCmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+        vkCmdBindIndexBuffer(inCmd, m_Rectangle.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdDrawIndexed(inCmd, 6, 1, 0, 0, 0);
+
+        vkCmdEndRendering(inCmd);
+
     }
 
     void MEngine::DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView)
@@ -440,11 +510,18 @@ namespace MamontEngine
         {
             vkDestroyImageView(m_Device, m_SwapchainImageViews[i], nullptr);
         }
-    }
-
-    
+    } 
 
     void MEngine::InitPipelines()
+    {
+        InitBackgrounPipeline();
+
+        InitTrianglePipeline();
+
+        InitMeshPipeline();
+
+    }
+    void MEngine::InitBackgrounPipeline()
     {
         VkPipelineLayoutCreateInfo computeLayout{};
         computeLayout.sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -464,14 +541,14 @@ namespace MamontEngine
 
         std::string    shaderPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/gradient_color.comp.spv";
         VkShaderModule gradientShader;
-        if (!VkPipeline::LoadShaderModule(shaderPath.c_str(), m_Device, &gradientShader))
+        if (!VkPipelines::LoadShaderModule(shaderPath.c_str(), m_Device, &gradientShader))
         {
             fmt::print("Error when building the Gradient shader \n");
         }
 
         VkShaderModule skyShader;
         std::string    skyShaderPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/sky.comp.spv";
-        if (!VkPipeline::LoadShaderModule(skyShaderPath.c_str(), m_Device, &skyShader))
+        if (!VkPipelines::LoadShaderModule(skyShaderPath.c_str(), m_Device, &skyShader))
         {
             fmt::print("Error when building the Sky shader ");
         }
@@ -516,14 +593,122 @@ namespace MamontEngine
         vkDestroyShaderModule(m_Device, gradientShader, nullptr);
         vkDestroyShaderModule(m_Device, skyShader, nullptr);
         m_MainDeletionQueue.PushFunction(
-                [&]()
+                [=]()
                 {
                     vkDestroyPipelineLayout(m_Device, m_GradientPipelineLayout, nullptr);
-                    vkDestroyPipeline(m_Device, gradient.Pipeline, nullptr);
                     vkDestroyPipeline(m_Device, sky.Pipeline, nullptr);
+                    vkDestroyPipeline(  m_Device, gradient.Pipeline, nullptr);
                 });
     }
 
+    void MEngine::InitTrianglePipeline()
+    {
+        std::string    triangleFragPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/colored_triangle.frag.spv";
+        VkShaderModule triangleFragShader;
+        if (!VkPipelines::LoadShaderModule(triangleFragPath.c_str(), m_Device, &triangleFragShader))
+        {
+            fmt::println("Error when building the Triangle Frag shader");
+        }
+        else
+            fmt::println("Succes building the Triangle Frag shader");
+
+        std::string    triangleVertexPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/colored_triangle.vert.spv";
+        VkShaderModule triangleVertexShader;
+        if (!VkPipelines::LoadShaderModule(triangleVertexPath.c_str(), m_Device, &triangleVertexShader))
+        {
+            fmt::println("Error when building the Triangle Vertex shader \n");
+        }
+        else
+            fmt::println("Succes building the Triangle Vertex shader");
+
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkinit::pipeline_layout_create_info();
+        VK_CHECK(vkCreatePipelineLayout(m_Device, &pipelineLayoutInfo, nullptr, &m_TrianglePipelineLayout));
+
+        VkPipelines::PipelineBuilder pipelineBuilder;
+        pipelineBuilder.m_PipelineLayout  = m_TrianglePipelineLayout;
+        pipelineBuilder.SetShaders(triangleVertexShader, triangleFragShader);
+        pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
+        pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
+        pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+        pipelineBuilder.SetMultisamplingNone();
+        pipelineBuilder.DisableBlending();
+        pipelineBuilder.DisableDepthtest();
+
+        pipelineBuilder.SetColorAttachmentFormat(m_DrawImage.ImageFormat);
+        pipelineBuilder.SetDepthFormat(VK_FORMAT_UNDEFINED);
+
+        m_TrianglePipeline = pipelineBuilder.BuildPipline(m_Device);
+
+        vkDestroyShaderModule(m_Device, triangleFragShader, nullptr);
+        vkDestroyShaderModule(m_Device, triangleVertexShader, nullptr);
+
+        m_MainDeletionQueue.PushFunction(
+                [&]()
+                {
+                    vkDestroyPipelineLayout(m_Device, m_TrianglePipelineLayout, nullptr);
+                    vkDestroyPipeline(m_Device, m_TrianglePipeline, nullptr);
+                });
+    }
+
+    void MEngine::InitMeshPipeline()
+    {
+        std::string    triangleFragPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/colored_triangle.frag.spv";
+        VkShaderModule triangleFragShader;
+        if (!VkPipelines::LoadShaderModule(triangleFragPath.c_str(), m_Device, &triangleFragShader))
+        {
+            fmt::println("Error when building the Triangle Frag shader");
+        }
+        else
+            fmt::println("Succes building the Triangle Frag shader");
+
+        std::string    triangleVertexPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/colored_triangle_mesh.vert.spv";
+        VkShaderModule triangleVertexShader;
+        if (!VkPipelines::LoadShaderModule(triangleVertexPath.c_str(), m_Device, &triangleVertexShader))
+        {
+            fmt::println("Error when building the Triangle Vertex shader");
+        }
+        else
+            fmt::println("Succes building the Triangle Vertex shader");
+
+        VkPushConstantRange bufferRange{};
+        bufferRange.offset     = 0;
+        bufferRange.size       = sizeof(GPUDrawPushConstants);
+        bufferRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+        VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
+        pipeline_layout_info.pPushConstantRanges        = &bufferRange;
+        pipeline_layout_info.pushConstantRangeCount     = 1;
+
+        VK_CHECK(vkCreatePipelineLayout(m_Device, &pipeline_layout_info, nullptr, &m_MeshPipelineLayout));
+
+        VkPipelines::PipelineBuilder pipelineBuilder;
+
+        pipelineBuilder.m_PipelineLayout = m_MeshPipelineLayout;
+        pipelineBuilder.SetShaders(triangleVertexShader, triangleFragShader);
+        pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
+        pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+        pipelineBuilder.SetMultisamplingNone();
+        pipelineBuilder.DisableBlending();
+
+        pipelineBuilder.DisableDepthtest();
+
+        pipelineBuilder.SetColorAttachmentFormat(m_DrawImage.ImageFormat);
+        pipelineBuilder.SetDepthFormat(VK_FORMAT_UNDEFINED);
+
+        m_MeshPipeline = pipelineBuilder.BuildPipline(m_Device);
+
+        vkDestroyShaderModule(m_Device, triangleFragShader, nullptr);
+        vkDestroyShaderModule(m_Device, triangleVertexShader, nullptr);
+
+        m_MainDeletionQueue.PushFunction(
+                [&]()
+                {
+                    vkDestroyPipelineLayout(m_Device, m_MeshPipelineLayout, nullptr);
+                    vkDestroyPipeline(m_Device, m_MeshPipeline, nullptr);
+                });
+    }
+    
     void MEngine::InitImgui()
     {
         VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
@@ -640,4 +825,74 @@ namespace MamontEngine
                     vkDestroyDescriptorSetLayout(m_Device, m_DrawImageDescriptorLayout, nullptr);
                 });
     }
+
+    
+
+    AllocatedBuffer MEngine::CreateBuffer(size_t inAllocSize, VkBufferUsageFlags inUsage, VmaMemoryUsage inMemoryUsage)
+    {
+        VkBufferCreateInfo bufferInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+        bufferInfo.pNext              = nullptr;
+        bufferInfo.size               = inAllocSize;
+        bufferInfo.usage              = inUsage;
+        VmaAllocationCreateInfo vmaAllocInfo = {};
+        vmaAllocInfo.usage                   = inMemoryUsage;
+        vmaAllocInfo.flags                   = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+        AllocatedBuffer newBuffer{};
+
+        VK_CHECK(vmaCreateBuffer(m_Allocator, &bufferInfo, &vmaAllocInfo, &newBuffer.Buffer, &newBuffer.Allocation, &newBuffer.Info));
+
+        return newBuffer;
+    }
+
+    void MEngine::DestroyBuffer(const AllocatedBuffer &inBuffer)
+    {
+        vmaDestroyBuffer(m_Allocator, inBuffer.Buffer, inBuffer.Allocation);
+    }
+
+    GPUMeshBuffers MEngine::UploadMesh(std::span<uint32_t> inIndices, std::span<Vertex> inVertices)
+    {
+        const size_t vertexBufferSize{inVertices.size() * sizeof(Vertex)};
+        const size_t indexBufferSize{inIndices.size() * sizeof(uint32_t)};  
+
+        GPUMeshBuffers newSurface;
+
+        newSurface.VertexBuffer = CreateBuffer(vertexBufferSize,
+                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                             VMA_MEMORY_USAGE_GPU_ONLY);
+
+        VkBufferDeviceAddressInfo deviceAddressInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = newSurface.VertexBuffer.Buffer};
+
+        newSurface.IndexBuffer = CreateBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+
+        AllocatedBuffer staging = CreateBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+
+        void *data = staging.Allocation->GetMappedData();
+
+        memcpy(data, inVertices.data(), vertexBufferSize);
+        memcpy((char *)data + vertexBufferSize, inIndices.data(), indexBufferSize);
+
+        ImmediateSubmit(
+                [&](VkCommandBuffer cmd)
+                {
+                    VkBufferCopy vertexCopy{0};
+                    vertexCopy.dstOffset = 0;
+                    vertexCopy.srcOffset = 0;
+                    vertexCopy.size      = vertexBufferSize;
+
+                    vkCmdCopyBuffer(cmd, staging.Buffer, newSurface.VertexBuffer.Buffer, 1, &vertexCopy);
+
+                    VkBufferCopy indexCopy{0};
+                    indexCopy.dstOffset = 0;
+                    indexCopy.srcOffset = vertexBufferSize;
+                    indexCopy.size      = indexBufferSize;
+
+                    vkCmdCopyBuffer(cmd, staging.Buffer, newSurface.IndexBuffer.Buffer, 1, &indexCopy);
+                });
+
+        DestroyBuffer(staging);
+
+        return newSurface;
+    
+    }
+
 }
