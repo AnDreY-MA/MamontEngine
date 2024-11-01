@@ -32,6 +32,7 @@ namespace MamontEngine
         return *loadedEngine;
     }
 
+    const std::string RootDirectories = PROJECT_ROOT_DIR;
 
     void MEngine::Init()
     {
@@ -202,9 +203,53 @@ namespace MamontEngine
                     DestroyBuffer(m_Rectangle.IndexBuffer);
                     DestroyBuffer(m_Rectangle.VertexBuffer);
                 });
-        std::string meshPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/assets/basicmesh.glb";
+        std::string meshPath = RootDirectories + "/MamontEngine/assets/basicmesh.glb";
         fmt::println("MeshPath = {}", meshPath);
         m_TestMeshes         = LoadGltfMeshes(this, meshPath).value();
+
+        uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
+        m_WhiteImage    = CreateImage((void *)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
+
+        uint32_t grey = glm::packUnorm4x8(glm::vec4(0.66f, 0.66f, 0.66f, 1));
+        m_GreyImage   = CreateImage((void *)&grey, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
+
+        uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
+        m_BlackImage   = CreateImage((void *)&black, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
+
+        // checkerboard image
+        uint32_t                      magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+        std::array<uint32_t, 16 * 16> pixels; // for 16x16 checkerboard texture
+        for (int x = 0; x < 16; x++)
+        {
+            for (int y = 0; y < 16; y++)
+            {
+                pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+            }
+        }
+        m_ErrorCheckerboardImage = CreateImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
+
+        VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+
+        sampl.magFilter = VK_FILTER_NEAREST;
+        sampl.minFilter = VK_FILTER_NEAREST;
+
+        vkCreateSampler(m_Device, &sampl, nullptr, &m_DefaultSamplerNearest);
+
+        sampl.magFilter = VK_FILTER_LINEAR;
+        sampl.minFilter = VK_FILTER_LINEAR;
+        vkCreateSampler(m_Device, &sampl, nullptr, &m_DefaultSamplerLinear);
+
+        m_MainDeletionQueue.PushFunction(
+                [&]()
+                {
+                    vkDestroySampler(m_Device, m_DefaultSamplerNearest, nullptr);
+                    vkDestroySampler(m_Device, m_DefaultSamplerLinear, nullptr);
+
+                    DestroyImage(m_WhiteImage);
+                    DestroyImage(m_GreyImage);
+                    DestroyImage(m_BlackImage);
+                    DestroyImage(m_ErrorCheckerboardImage);
+                });
 
     }
     
@@ -338,20 +383,23 @@ namespace MamontEngine
 
         vkCmdSetScissor(inCmd, 0, 1, &scissor);
 
-        //> drawrect
+        //> meshdraw
         vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipeline);
 
-        GPUDrawPushConstants push_constants;
-        push_constants.WorldMatrix  = glm::mat4{1.f};
-        push_constants.VertexBuffer = m_Rectangle.VertexBufferAddress;
+        VkDescriptorSet imageSet = m_Frames[m_FrameNumber].FrameDescriptors.Allocate(m_Device, m_SingleImageDescriptorLayout);
+        {
+            VkDescriptor::DescriptoeWriter writer;
+            writer.WriteImage(0,
+                               m_ErrorCheckerboardImage.ImageView,
+                               m_DefaultSamplerNearest,
+                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-        vkCmdPushConstants(inCmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-        vkCmdBindIndexBuffer(inCmd, m_Rectangle.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+            writer.UpdateSet(m_Device, imageSet);
+        }
 
-        vkCmdDrawIndexed(inCmd, 6, 1, 0, 0, 0);
-        //< drawrect
+        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipelineLayout, 0, 1, &imageSet, 0, nullptr);
 
-        //> matview
         glm::mat4 view = glm::translate(glm::vec3{0, 0, -5});
         // camera projection
         glm::mat4 projection = glm::perspective(glm::radians(70.f), (float)m_DrawExtent.width / (float)m_DrawExtent.height, 10000.f, 0.1f);
@@ -360,15 +408,43 @@ namespace MamontEngine
         // to opengl and gltf axis
         projection[1][1] *= -1;
 
-        push_constants.WorldMatrix = projection * view;
-        //< matview
-        //> meshdraw
+        GPUDrawPushConstants push_constants;
+        push_constants.WorldMatrix  = projection * view;
         push_constants.VertexBuffer = m_TestMeshes[2]->MeshBuffers.VertexBufferAddress;
 
         vkCmdPushConstants(inCmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
         vkCmdBindIndexBuffer(inCmd, m_TestMeshes[2]->MeshBuffers.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdDrawIndexed(inCmd, m_TestMeshes[2]->Surfaces[0].Count, 1, m_TestMeshes[2]->Surfaces[0].StartIndex, 0, 0);
+
+        //GPUDrawPushConstants push_constants;
+        //push_constants.WorldMatrix  = glm::mat4{1.f};
+        //push_constants.VertexBuffer = m_Rectangle.VertexBufferAddress;
+
+        //vkCmdPushConstants(inCmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+        //vkCmdBindIndexBuffer(inCmd, m_Rectangle.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+
+        //vkCmdDrawIndexed(inCmd, 6, 1, 0, 0, 0);
+        ////< drawrect
+
+        ////> matview
+        //glm::mat4 view = glm::translate(glm::vec3{0, 0, -5});
+        //// camera projection
+        //glm::mat4 projection = glm::perspective(glm::radians(70.f), (float)m_DrawExtent.width / (float)m_DrawExtent.height, 10000.f, 0.1f);
+
+        //// invert the Y direction on projection matrix so that we are more similar
+        //// to opengl and gltf axis
+        //projection[1][1] *= -1;
+
+        //push_constants.WorldMatrix = projection * view;
+        ////< matview
+        ////> meshdraw
+        //push_constants.VertexBuffer = m_TestMeshes[2]->MeshBuffers.VertexBufferAddress;
+
+        //vkCmdPushConstants(inCmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+        //vkCmdBindIndexBuffer(inCmd, m_TestMeshes[2]->MeshBuffers.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+
+        //vkCmdDrawIndexed(inCmd, m_TestMeshes[2]->Surfaces[0].Count, 1, m_TestMeshes[2]->Surfaces[0].StartIndex, 0, 0);
         //< meshdraw
 
         ///
@@ -758,7 +834,7 @@ namespace MamontEngine
 
     void MEngine::InitMeshPipeline()
     {
-        std::string    triangleFragPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/colored_triangle.frag.spv";
+        const std::string    triangleFragPath = RootDirectories + "/MamontEngine/src/Shaders/tex_image.frag.spv";
         VkShaderModule triangleFragShader;
         if (!VkPipelines::LoadShaderModule(triangleFragPath.c_str(), m_Device, &triangleFragShader))
         {
@@ -767,7 +843,7 @@ namespace MamontEngine
         else
             fmt::println("Succes building the Triangle Frag shader");
 
-        std::string    triangleVertexPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/colored_triangle_mesh.vert.spv";
+        const std::string triangleVertexPath = RootDirectories + "/MamontEngine/src/Shaders/colored_triangle_mesh.vert.spv";
         VkShaderModule triangleVertexShader;
         if (!VkPipelines::LoadShaderModule(triangleVertexPath.c_str(), m_Device, &triangleVertexShader))
         {
@@ -784,6 +860,8 @@ namespace MamontEngine
         VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
         pipeline_layout_info.pPushConstantRanges        = &bufferRange;
         pipeline_layout_info.pushConstantRangeCount     = 1;
+        pipeline_layout_info.pSetLayouts                = &m_SingleImageDescriptorLayout;
+        pipeline_layout_info.setLayoutCount             = 1;
 
         VK_CHECK(vkCreatePipelineLayout(m_Device, &pipeline_layout_info, nullptr, &m_MeshPipelineLayout));
 
@@ -913,6 +991,12 @@ namespace MamontEngine
             m_GPUSceneDataDescriptorLayout = builder.Build(m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
         }
 
+        {
+            VkDescriptor::DescriptorLayoutBuilder builder;
+            builder.AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            m_SingleImageDescriptorLayout = builder.Build(m_Device, VK_SHADER_STAGE_FRAGMENT_BIT);
+        }
+
         m_DrawImageDescriptors = m_GlobalDescriptorAllocator.Allocate(m_Device, m_DrawImageDescriptorLayout);
         /*VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -1026,4 +1110,77 @@ namespace MamontEngine
     
     }
 
+    AllocatedImage MEngine::CreateImage(VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped)
+    {
+        AllocatedImage newImage;
+        newImage.ImageFormat = inFormat;
+        newImage.ImageExtent = inSize;
+
+        VkImageCreateInfo img_info = vkinit::image_create_info(inFormat, inUsage, inSize);
+        if (inIsMipMapped)
+        {
+            img_info.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(inSize.width, inSize.height)))) + 1;
+        }
+
+        // always allocate images on dedicated GPU memory
+        VmaAllocationCreateInfo allocinfo = {};
+        allocinfo.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
+        allocinfo.requiredFlags           = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        VK_CHECK(vmaCreateImage(m_Allocator, &img_info, &allocinfo, &newImage.Image, &newImage.Allocation, nullptr));
+
+
+        VkImageAspectFlags aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
+        if (inFormat == VK_FORMAT_D32_SFLOAT)
+        {
+            aspectFlag = VK_IMAGE_ASPECT_DEPTH_BIT;
+        }
+
+        VkImageViewCreateInfo view_info       = vkinit::imageview_create_info(inFormat, newImage.Image, aspectFlag);
+        view_info.subresourceRange.levelCount = img_info.mipLevels;
+
+        VK_CHECK(vkCreateImageView(m_Device, &view_info, nullptr, &newImage.ImageView));
+
+        return newImage;
+    }
+    AllocatedImage MEngine::CreateImage(void *inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped)
+    {
+        size_t          data_size    = inSize.depth * inSize.width * inSize.height * 4;
+        AllocatedBuffer uploadbuffer = CreateBuffer(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+        memcpy(uploadbuffer.Info.pMappedData, inData, data_size);
+
+        AllocatedImage new_image = CreateImage(inSize, inFormat, inUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, inIsMipMapped);
+
+        ImmediateSubmit(
+                [&](VkCommandBuffer cmd)
+                {
+                    VkUtil::transition_image(cmd, new_image.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+                    VkBufferImageCopy copyRegion = {};
+                    copyRegion.bufferOffset      = 0;
+                    copyRegion.bufferRowLength   = 0;
+                    copyRegion.bufferImageHeight = 0;
+
+                    copyRegion.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+                    copyRegion.imageSubresource.mipLevel       = 0;
+                    copyRegion.imageSubresource.baseArrayLayer = 0;
+                    copyRegion.imageSubresource.layerCount     = 1;
+                    copyRegion.imageExtent                     = inSize;
+
+                    // copy the buffer into the image
+                    vkCmdCopyBufferToImage(cmd, uploadbuffer.Buffer, new_image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+                    VkUtil::transition_image(cmd, new_image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                });
+
+        DestroyBuffer(uploadbuffer);
+
+        return new_image;
+    }
+    void MEngine::DestroyImage(const AllocatedImage &inImage)
+    {
+        vkDestroyImageView(m_Device, inImage.ImageView, nullptr);
+        vmaDestroyImage(m_Allocator, inImage.Image, inImage.Allocation);
+    }
 }

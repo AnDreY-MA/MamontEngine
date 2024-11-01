@@ -127,6 +127,10 @@ namespace MamontEngine
 
         void ResizeSwapchain();
 
+        AllocatedImage CreateImage(VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false);
+        AllocatedImage CreateImage(void* inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false);
+        void DestroyImage(const AllocatedImage &inImage);
+
     private:
         bool       m_IsInitialized{false};
         int        m_FrameNumber{0};
@@ -194,6 +198,16 @@ namespace MamontEngine
         GPUSceneData m_SceneData;
 
         VkDescriptorSetLayout m_GPUSceneDataDescriptorLayout;
+
+        AllocatedImage m_WhiteImage;
+        AllocatedImage m_BlackImage;
+        AllocatedImage m_GreyImage;
+        AllocatedImage m_ErrorCheckerboardImage;
+
+        VkSampler m_DefaultSamplerLinear;
+        VkSampler m_DefaultSamplerNearest;
+
+        VkDescriptorSetLayout m_SingleImageDescriptorLayout;
 
 	};
 }
