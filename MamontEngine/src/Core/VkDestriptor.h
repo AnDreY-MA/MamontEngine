@@ -31,4 +31,43 @@ namespace MamontEngine::VkDescriptor
         VkDescriptorPool m_Pool;
 
     };
+
+    struct DescriptorAllocatorGrowable
+    {
+    public:
+        struct PoolSizeRatio
+        {
+            VkDescriptorType type;
+            float            Ratio;
+        };
+
+        void Init(VkDevice inDevice, const uint32_t inInitialSets, std::span<PoolSizeRatio> inPoolRatios);
+        void ClearPools(VkDevice inDevice);
+        void DestroyPools(VkDevice inDevice);
+
+        VkDescriptorSet Allocate(VkDevice inDevice, VkDescriptorSetLayout inLayout, void *pNext = nullptr);
+
+    private:
+        VkDescriptorPool GetPool(VkDevice inDevice);
+        VkDescriptorPool CreatePool(VkDevice inDevice, const uint32_t inSetCount, std::span<PoolSizeRatio> inPoolRatios);
+
+        std::vector<PoolSizeRatio>    m_Ratios;
+        std::vector<VkDescriptorPool> m_FullPools;
+        std::vector<VkDescriptorPool> m_ReadyPools;
+        uint32_t                      m_SetsPerPool;
+    };
+
+    struct DescriptoeWriter
+    {
+        std::deque<VkDescriptorImageInfo>  m_ImageInfos;
+        std::deque<VkDescriptorBufferInfo> m_BufferInfos;
+        std::vector<VkWriteDescriptorSet>  m_Writes;
+
+        void WriteImage(const int inBinding, VkImageView inImage, VkSampler inSampler, VkImageLayout inLayout, VkDescriptorType inType);
+        void WriteBuffer(const int inBinding, VkBuffer inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType);
+
+        void Clear();
+        void UpdateSet(VkDevice inDevice, VkDescriptorSet inSet);
+    };
+
 }

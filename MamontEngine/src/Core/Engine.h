@@ -41,11 +41,14 @@ namespace MamontEngine
     {
         VkSemaphore     SwapchainSemaphore;
         VkSemaphore     RenderSemaphore;
+
         VkFence         RenderFence;
+        
         VkCommandPool   CommandPool;
         VkCommandBuffer MainCommandBuffer;
 
         DeletionQueue Deleteions;
+        VkDescriptor::DescriptorAllocatorGrowable FrameDescriptors;
 
     };
 
@@ -64,6 +67,16 @@ namespace MamontEngine
         VkPipelineLayout Layout;
         
         ComputePushConstants Data;
+    };
+
+    struct GPUSceneData
+    {
+        glm::mat4 View;
+        glm::mat4 Proj;
+        glm::mat4 Viewproj;
+        glm::vec4 AmbientColor;
+        glm::vec4 SunlightDirection;
+        glm::vec4 SunlightColor;
     };
 
 
@@ -178,6 +191,9 @@ namespace MamontEngine
 
         std::vector<std::shared_ptr<MeshAsset>> m_TestMeshes;
 
+        GPUSceneData m_SceneData;
+
+        VkDescriptorSetLayout m_GPUSceneDataDescriptorLayout;
 
 	};
 }
