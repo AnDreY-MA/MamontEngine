@@ -21,3 +21,6 @@
 [submodule "MamontEngine/vendor/imgui"]
 	path = MamontEngine/vendor/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "MamontEngine/vendor/fastgltf"]
+	path = MamontEngine/vendor/fastgltf
+	url = https://github.com/spnda/fastgltf.git

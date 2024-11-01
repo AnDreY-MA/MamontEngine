@@ -14,6 +14,7 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_sdl3.h"
 #include "imgui/imgui_impl_vulkan.h"
+#include <glm/gtx/transform.hpp>
 
 
 #define VMA_IMPLEMENTATION
@@ -39,7 +40,7 @@ namespace MamontEngine
 
         SDL_Init(SDL_INIT_VIDEO);
 
-        SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN);
+        SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 
         window = SDL_CreateWindow(
             "Mamont Engine", 
@@ -57,9 +58,10 @@ namespace MamontEngine
         InitSyncStructeres();
         InitDescriptors();
         InitPipelines();    
+        InitImgui();
+
         InitDefaultData();
 
-        InitImgui();
 
         m_IsInitialized = true;
     }
@@ -98,12 +100,20 @@ namespace MamontEngine
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 continue;
             }
+
+            if (m_IsResizeRequested)
+            {
+                ResizeSwapchain();
+            }
+
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplSDL3_NewFrame();
             ImGui::NewFrame();
 
             if (ImGui::Begin("Background"))
             {
+                ImGui::SliderFloat("Render Scale", &m_RenderScale, 0.3f, 1.f);
+
                 ComputeEffect &selected = m_BackgroundEffects[m_CurrentBackgroundEffect];
                 ImGui::Text("Selected Effect: ", selected.Name);
 
@@ -140,7 +150,13 @@ namespace MamontEngine
                 m_Frames[i].Deleteions.Flush();
 
             }
+            for (auto& mesh : m_TestMeshes)
+            {
+                DestroyBuffer(mesh->MeshBuffers.IndexBuffer);
+                DestroyBuffer(mesh->MeshBuffers.VertexBuffer);
+            }
             m_MainDeletionQueue.Flush();
+
             DestroySwapchain();
 
             vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
@@ -186,22 +202,29 @@ namespace MamontEngine
                     DestroyBuffer(m_Rectangle.IndexBuffer);
                     DestroyBuffer(m_Rectangle.VertexBuffer);
                 });
+        std::string meshPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/assets/basicmesh.glb";
+        fmt::println("MeshPath = {}", meshPath);
+        m_TestMeshes         = LoadGltfMeshes(this, meshPath).value();
 
     }
+    
     void MEngine::Draw()
     {
-        //fmt::println("Waiting for fence...");
         VK_CHECK_MESSAGE(vkWaitForFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence, VK_TRUE, 1000000000), "Wait FENCE");
-        //fmt::println("Fence signaled.");
 
         m_Frames[m_FrameNumber].Deleteions.Flush();
+
         uint32_t swapchainImageIndex;
         VkResult e = vkAcquireNextImageKHR(m_Device, m_Swapchain, 1000000000, m_Frames[m_FrameNumber].SwapchainSemaphore, nullptr, &swapchainImageIndex);
         if (e == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            fmt::println("Next image - VK_ERROR_OUT_OF_DATE_KHR");
+            //fmt::println("Next image - VK_ERROR_OUT_OF_DATE_KHR");
+            m_IsResizeRequested = true;
             return;
         } 
+
+        m_DrawExtent.height = std::min(m_SwapchainExtent.height, m_DrawImage.ImageExtent.height) * m_RenderScale;
+        m_DrawExtent.width  = std::min(m_SwapchainExtent.width, m_DrawImage.ImageExtent.width) * m_RenderScale;
 
         VK_CHECK(vkResetFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence));
         VK_CHECK(vkResetCommandBuffer(m_Frames[m_FrameNumber].MainCommandBuffer, 0));
@@ -210,8 +233,7 @@ namespace MamontEngine
         
         VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         //> draw_first
-        m_DrawExtent.width = m_DrawImage.ImageExtent.width;
-        m_DrawExtent.height = m_DrawImage.ImageExtent.height;
+        
 
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
@@ -220,6 +242,7 @@ namespace MamontEngine
         DrawBackground(cmd);
 
         VkUtil::transition_image(cmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VkUtil::transition_image(cmd, m_DepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
         DrawGeometry(cmd);
 
@@ -261,9 +284,11 @@ namespace MamontEngine
         presentInfo.pImageIndices = &swapchainImageIndex;
 
         VkResult presentResult = vkQueuePresentKHR(m_GraphicsQueue, &presentInfo);
-        if (presentResult != VK_SUCCESS)
+        if (presentResult == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            fmt::println("present not Success");
+            //fmt::println("Resize Request");
+            m_IsResizeRequested = true;
+            return;
         }
 
         m_FrameNumber = (m_FrameNumber + 1) % FRAME_OVERLAP;
@@ -286,33 +311,33 @@ namespace MamontEngine
     void MEngine::DrawGeometry(VkCommandBuffer inCmd)
     {
         VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(m_DrawImage.ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(m_DepthImage.ImageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-        VkRenderingInfo renderInfo = vkinit::rendering_info(m_DrawExtent, &colorAttachment, nullptr);
+        VkRenderingInfo renderInfo = vkinit::rendering_info(m_DrawExtent, &colorAttachment, &depthAttachment);
         vkCmdBeginRendering(inCmd, &renderInfo);
 
         vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_TrianglePipeline);
 
-        assert(m_DrawExtent.width > 0 && m_DrawExtent.height > 0);
+        // set dynamic viewport and scissor
+        VkViewport viewport = {};
+        viewport.x          = 0;
+        viewport.y          = 0;
+        viewport.width      = m_DrawExtent.width;
+        viewport.height     = m_DrawExtent.height;
+        viewport.minDepth   = 0.f;
+        viewport.maxDepth   = 1.f;
 
-        m_Viewport.x          = 0;
-        m_Viewport.y          = 0;
-        m_Viewport.width      = m_DrawExtent.width;
-        m_Viewport.height     = m_DrawExtent.height;
-        m_Viewport.minDepth   = 0.f;
-        m_Viewport.maxDepth   = 1.f;
+        vkCmdSetViewport(inCmd, 0, 1, &viewport);
 
-        vkCmdSetViewport(inCmd, 0, 1, &m_Viewport);
-
-        VkRect2D scissor = {};
-        scissor.offset.x = 0;
-        scissor.offset.y = 0;
-        scissor.extent.width = m_DrawExtent.width;
-        scissor.extent.height = m_DrawExtent.height;
+        VkRect2D scissor      = {};
+        scissor.offset.x      = 0;
+        scissor.offset.y      = 0;
+        scissor.extent.width  = viewport.width;
+        scissor.extent.height = viewport.height;
 
         vkCmdSetScissor(inCmd, 0, 1, &scissor);
 
-        vkCmdDraw(inCmd, 3, 1, 0, 0);
-
+        //> drawrect
         vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipeline);
 
         GPUDrawPushConstants push_constants;
@@ -323,6 +348,27 @@ namespace MamontEngine
         vkCmdBindIndexBuffer(inCmd, m_Rectangle.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdDrawIndexed(inCmd, 6, 1, 0, 0, 0);
+        //< drawrect
+
+        //> matview
+        glm::mat4 view = glm::translate(glm::vec3{0, 0, -5});
+        // camera projection
+        glm::mat4 projection = glm::perspective(glm::radians(70.f), (float)m_DrawExtent.width / (float)m_DrawExtent.height, 10000.f, 0.1f);
+
+        // invert the Y direction on projection matrix so that we are more similar
+        // to opengl and gltf axis
+        projection[1][1] *= -1;
+
+        push_constants.WorldMatrix = projection * view;
+        //< matview
+        //> meshdraw
+        push_constants.VertexBuffer = m_TestMeshes[2]->MeshBuffers.VertexBufferAddress;
+
+        vkCmdPushConstants(inCmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+        vkCmdBindIndexBuffer(inCmd, m_TestMeshes[2]->MeshBuffers.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdDrawIndexed(inCmd, m_TestMeshes[2]->Surfaces[0].Count, 1, m_TestMeshes[2]->Surfaces[0].StartIndex, 0, 0);
+        //< meshdraw
 
         vkCmdEndRendering(inCmd);
 
@@ -339,6 +385,7 @@ namespace MamontEngine
 
         vkCmdEndRendering(inCmd);
     }
+    
     void MEngine::InitVulkan()
     {
         vkb::InstanceBuilder builder;
@@ -346,7 +393,7 @@ namespace MamontEngine
         auto instRet = builder.set_app_name("Mamont App")
             .request_validation_layers(bUseValidationLayers)
             .use_default_debug_messenger()
-            .require_api_version(1, 3, 0)
+            .require_api_version(1, 3, 290)
             .build();
 
         vkb::Instance vkbInstance = instRet.value();
@@ -355,7 +402,7 @@ namespace MamontEngine
 
         if (!m_Instance || !m_DebugMessenger)
         {
-            fmt::print("NULL");
+            fmt::println("m_Instance || m_DebugMessenger is NULL");
         }
 
         if (!SDL_Vulkan_CreateSurface((SDL_Window*)m_Window, m_Instance, nullptr, &m_Surface))
@@ -369,8 +416,11 @@ namespace MamontEngine
         features.synchronization2 = true;
     
         VkPhysicalDeviceVulkan12Features features12{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
-        features12.bufferDeviceAddress = true;
-        features12.descriptorIndexing  = true;
+        features12.bufferDeviceAddress               = true;
+        features12.descriptorIndexing                = true;
+        features12.shaderInt8                        = true;
+        features12.uniformAndStorageBuffer8BitAccess = true;
+        features12.runtimeDescriptorArray            = true;
 
 
         vkb::PhysicalDeviceSelector selector{vkbInstance};
@@ -402,9 +452,12 @@ namespace MamontEngine
         allocatorInfo.flags                  = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
         vmaCreateAllocator(&allocatorInfo, &m_Allocator);
 
-        m_MainDeletionQueue.PushFunction([&]() { vmaDestroyAllocator(m_Allocator); });
+        m_MainDeletionQueue.PushFunction([&]() { 
+            vmaDestroyAllocator(m_Allocator); 
+            });
 
     }
+    
     void MEngine::InitSwapchain()
     {
         CreateSwapchain(m_WindowExtent.width, m_WindowExtent.height);
@@ -416,7 +469,7 @@ namespace MamontEngine
 
         VkImageUsageFlags drawImageUsages{};
         drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        //drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         drawImageUsages |= VK_IMAGE_USAGE_STORAGE_BIT;
         drawImageUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
@@ -432,12 +485,57 @@ namespace MamontEngine
 
         VK_CHECK(vkCreateImageView(m_Device, &rViewInfo, nullptr, &m_DrawImage.ImageView));
 
+    //> depthimg
+        m_DepthImage.ImageFormat = VK_FORMAT_D32_SFLOAT;
+        m_DepthImage.ImageExtent = drawImageExtent;
+        VkImageUsageFlags depthImageUsages{};
+        depthImageUsages |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+        VkImageCreateInfo dimgInfo = vkinit::image_create_info(m_DepthImage.ImageFormat, depthImageUsages, drawImageExtent);
+        vmaCreateImage(m_Allocator, &dimgInfo, &rImageAllocInfo, &m_DepthImage.Image, &m_DepthImage.Allocation, nullptr);
+
+        VkImageViewCreateInfo dViewInfo = vkinit::imageview_create_info(m_DepthImage.ImageFormat, m_DepthImage.Image, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+        VK_CHECK(vkCreateImageView(m_Device, &dViewInfo, nullptr, &m_DepthImage.ImageView));
+    //< depthimg
+
         m_MainDeletionQueue.PushFunction([=]() { 
                     vkDestroyImageView(m_Device, m_DrawImage.ImageView, nullptr);
                     vmaDestroyImage(m_Allocator, m_DrawImage.Image, m_DrawImage.Allocation);
+
+                    vkDestroyImageView(m_Device, m_DepthImage.ImageView, nullptr);
+                    vmaDestroyImage(m_Allocator, m_DepthImage.Image, m_DepthImage.Allocation);
             });
 
     }
+    
+    void MEngine::ResizeSwapchain()
+    {
+        vkDeviceWaitIdle(m_Device);
+
+        DestroySwapchain();
+
+        int w, h;
+        SDL_GetWindowSize(window, &w, &h);
+        m_WindowExtent.width  = w;
+        m_WindowExtent.height = h;
+
+        CreateSwapchain(m_WindowExtent.width, m_WindowExtent.height);
+
+        m_IsResizeRequested = false;
+    }
+
+    void MEngine::DestroySwapchain()
+    {
+        vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
+
+        for (int i = 0; i < m_SwapchainImageViews.size(); i++)
+        {
+            vkDestroyImageView(m_Device, m_SwapchainImageViews[i], nullptr);
+        }
+    } 
+
+
     void MEngine::InitCommands()
     {
         VkCommandPoolCreateInfo commandPoolInfo = vkinit::command_pool_create_info(m_GraphicsQueueFamily, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
@@ -457,10 +555,12 @@ namespace MamontEngine
 
         VK_CHECK(vkAllocateCommandBuffers(m_Device, &cmdAllocInfo, &m_ImmCommandBuffer));
 
-        m_MainDeletionQueue.PushFunction([=]() { vkDestroyCommandPool(m_Device, m_ImmCommandPool, nullptr);
-                });
+        m_MainDeletionQueue.PushFunction([=]() { 
+                vkDestroyCommandPool(m_Device, m_ImmCommandPool, nullptr);
+        });
 
     }
+    
     void MEngine::InitSyncStructeres()
     {
         VkFenceCreateInfo fenceCreateInfo = vkinit::fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT);
@@ -468,11 +568,7 @@ namespace MamontEngine
 
         for (int i = 0; i < FRAME_OVERLAP; i++)
         {
-            //VK_CHECK();
-            if (vkCreateFence(m_Device, &fenceCreateInfo, nullptr, &m_Frames[i].RenderFence) != VK_SUCCESS)
-            {
-                fmt::println("Failed Fence");
-            }
+            VK_CHECK(vkCreateFence(m_Device, &fenceCreateInfo, nullptr, &m_Frames[i].RenderFence));
 
             VK_CHECK(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_Frames[i].SwapchainSemaphore));
             VK_CHECK(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_Frames[i].RenderSemaphore));
@@ -501,16 +597,10 @@ namespace MamontEngine
         m_Swapchain       = vkbSwapchain.swapchain;
         m_SwapchainImages = vkbSwapchain.get_images().value();
         m_SwapchainImageViews = vkbSwapchain.get_image_views().value();
-    }
-    void MEngine::DestroySwapchain()
-    {
-        vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
 
-        for (int i = 0; i < m_SwapchainImageViews.size(); i++)
-        {
-            vkDestroyImageView(m_Device, m_SwapchainImageViews[i], nullptr);
-        }
-    } 
+        fmt::println("CreateSwapchain");
+    }
+    
 
     void MEngine::InitPipelines()
     {
@@ -521,6 +611,7 @@ namespace MamontEngine
         InitMeshPipeline();
 
     }
+    
     void MEngine::InitBackgrounPipeline()
     {
         VkPipelineLayoutCreateInfo computeLayout{};
@@ -569,7 +660,7 @@ namespace MamontEngine
 
         ComputeEffect gradient;
         gradient.Layout = m_GradientPipelineLayout;
-        gradient.Name   = "Gradient";
+        gradient.Name   = "gradient";
         gradient.Data   = {};
 
         gradient.Data.Data1 = glm::vec4(1, 0, 0, 1);
@@ -689,12 +780,12 @@ namespace MamontEngine
         pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
         pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
         pipelineBuilder.SetMultisamplingNone();
-        pipelineBuilder.DisableBlending();
+        pipelineBuilder.EnableBlendingAdditive();
 
-        pipelineBuilder.DisableDepthtest();
+        pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
         pipelineBuilder.SetColorAttachmentFormat(m_DrawImage.ImageFormat);
-        pipelineBuilder.SetDepthFormat(VK_FORMAT_UNDEFINED);
+        pipelineBuilder.SetDepthFormat(m_DepthImage.ImageFormat);
 
         m_MeshPipeline = pipelineBuilder.BuildPipline(m_Device);
 
@@ -786,7 +877,7 @@ namespace MamontEngine
 
         VK_CHECK(vkQueueSubmit2(m_GraphicsQueue, 1, &submit, m_ImmFence));
 
-        VK_CHECK_MESSAGE(vkWaitForFences(m_Device, 1, &m_ImmFence, VK_TRUE, 9999999999), "WaitFences ImmSubmit");
+        VK_CHECK(vkWaitForFences(m_Device, 1, &m_ImmFence, true, 9999999999));
     }
     
     void MEngine::InitDescriptors()
@@ -861,6 +952,7 @@ namespace MamontEngine
                              VMA_MEMORY_USAGE_GPU_ONLY);
 
         VkBufferDeviceAddressInfo deviceAddressInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = newSurface.VertexBuffer.Buffer};
+        newSurface.VertexBufferAddress              = vkGetBufferDeviceAddress(m_Device, &deviceAddressInfo);
 
         newSurface.IndexBuffer = CreateBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 

@@ -2,6 +2,7 @@
 
 #include "vk_mem_alloc.h"
 #include "VkDestriptor.h"
+#include "Loader.h"
 #include "pch.h"
 
 struct MPipeline
@@ -11,7 +12,6 @@ struct MPipeline
 
 namespace MamontEngine
 {
-    
     constexpr unsigned int FRAME_OVERLAP = 2;
 
     struct DeletionQueue
@@ -78,6 +78,9 @@ namespace MamontEngine
 
         static MEngine& Get();
 
+        GPUMeshBuffers UploadMesh(std::span<uint32_t> inIndices, std::span<Vertex> inVertices);
+
+
     private:
         void InitVulkan();
         void InitSwapchain();
@@ -109,13 +112,15 @@ namespace MamontEngine
         AllocatedBuffer CreateBuffer(size_t inAllocSize, VkBufferUsageFlags inUsage, VmaMemoryUsage inMemoryUsage);
         void            DestroyBuffer(const AllocatedBuffer &inBuffer);
 
-        GPUMeshBuffers UploadMesh(std::span<uint32_t> inIndices, std::span<Vertex> inVertices);
-
+        void ResizeSwapchain();
 
     private:
         bool       m_IsInitialized{false};
         int        m_FrameNumber{0};
         bool       m_StopRendering{false};
+        bool       m_IsResizeRequested{false};
+        bool       m_IsFreezeRendering{false};
+
         VkExtent2D m_WindowExtent{1700, 900};
 
         void *m_Window{nullptr};
@@ -132,6 +137,7 @@ namespace MamontEngine
         std::vector<VkImageView> m_SwapchainImageViews;
         VkExtent2D               m_SwapchainExtent;
         VkExtent2D               m_DrawExtent;
+        float                    m_RenderScale{1.f};
 
         FrameData m_Frames[FRAME_OVERLAP];
         /*FrameData &GetCurrentFrame()
@@ -147,6 +153,7 @@ namespace MamontEngine
         VmaAllocator m_Allocator;
 
         AllocatedImage m_DrawImage;
+        AllocatedImage m_DepthImage;
 
         VkDescriptor::DescriptorAllocator m_GlobalDescriptorAllocator;
         VkDescriptorSet                   m_DrawImageDescriptors;
@@ -168,6 +175,8 @@ namespace MamontEngine
         int                        m_CurrentBackgroundEffect{0};
 
         GPUMeshBuffers m_Rectangle;
+
+        std::vector<std::shared_ptr<MeshAsset>> m_TestMeshes;
 
 
 	};

@@ -19,9 +19,12 @@ namespace MamontEngine::VkPipelines
         void SetCullMode(VkCullModeFlags inCullMode, VkFrontFace inFrontFace);
         void SetMultisamplingNone();
         void DisableBlending();
+        void EnableBlendingAdditive();
+        void EnableBlendingAlphablend();
 
         void SetColorAttachmentFormat(VkFormat inFormat);
         void SetDepthFormat(VkFormat inFormat);
+        void EnableDepthTest(const bool inDepthWriteEnable, VkCompareOp inOp);
         void DisableDepthtest();
         void Clear();
 
