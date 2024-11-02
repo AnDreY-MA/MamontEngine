@@ -26,8 +26,8 @@
 
 struct AllocatedImage
 {
-    VkImage Image;
-    VkImageView ImageView;
+    VkImage       Image;
+    VkImageView   ImageView;
     VmaAllocation Allocation;
     VkExtent3D    ImageExtent;
     VkFormat      ImageFormat;
@@ -35,8 +35,8 @@ struct AllocatedImage
 
 struct AllocatedBuffer
 {
-    VkBuffer Buffer;
-    VmaAllocation Allocation;
+    VkBuffer          Buffer;
+    VmaAllocation     Allocation;
     VmaAllocationInfo Info;
 };
 
@@ -58,7 +58,7 @@ struct GPUMeshBuffers
 
 struct GPUDrawPushConstants
 {
-    glm::mat4 WorldMatrix;
+    glm::mat4       WorldMatrix;
     VkDeviceAddress VertexBuffer;
 };
 

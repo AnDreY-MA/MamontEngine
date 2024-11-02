@@ -3,7 +3,7 @@
 #include "vk_mem_alloc.h"
 #include "VkDestriptor.h"
 #include "Loader.h"
-#include "pch.h"
+#include "Renderer.h"
 
 struct MPipeline
 {
@@ -93,6 +93,25 @@ namespace MamontEngine
 
         GPUMeshBuffers UploadMesh(std::span<uint32_t> inIndices, std::span<Vertex> inVertices);
 
+        VkDevice GetDevice() const
+        {
+            return m_Device;
+        }
+
+        VkDescriptorSetLayout GetGPUSceneData() const
+        {
+            return m_GPUSceneDataDescriptorLayout;
+        }
+
+        AllocatedImage GetDrawImage() const
+        {
+            return m_DrawImage;
+        }
+        AllocatedImage GetDepthImage() const
+        {
+            return m_DepthImage;
+        }
+
 
     private:
         void InitVulkan();
@@ -172,7 +191,7 @@ namespace MamontEngine
         AllocatedImage m_DrawImage;
         AllocatedImage m_DepthImage;
 
-        VkDescriptor::DescriptorAllocator m_GlobalDescriptorAllocator;
+        VkDescriptor::DescriptorAllocatorGrowable m_GlobalDescriptorAllocator;
         VkDescriptorSet                   m_DrawImageDescriptors;
         VkDescriptorSetLayout             m_DrawImageDescriptorLayout;
 
@@ -209,5 +228,13 @@ namespace MamontEngine
 
         VkDescriptorSetLayout m_SingleImageDescriptorLayout;
 
-	};
+        MaterialInstance m_DefualtDataMatInstance;
+        GLTFMetallic_Roughness m_MetalRoughMaterial;
+
+        DrawContext m_MainDrawContext;
+        std::unordered_map<std::string, std::shared_ptr<Node>> m_LoadedNodes;
+
+        void UpdateScene();
+	
+    };
 }

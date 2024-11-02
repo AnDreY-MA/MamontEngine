@@ -185,7 +185,7 @@ namespace MamontEngine
         rect_vertices[2].Color = {1, 0, 0, 1};
         rect_vertices[3].Color = {0, 1, 0, 1};
 
-        std::array<uint32_t, 6> rect_indices;
+        std::array<uint32_t, 6> rect_indices{};
 
         rect_indices[0] = 0;
         rect_indices[1] = 1;
@@ -251,10 +251,47 @@ namespace MamontEngine
                     DestroyImage(m_ErrorCheckerboardImage);
                 });
 
+        GLTFMetallic_Roughness::MaterialResources materialResources;
+        // default the material textures
+        materialResources.ColorImage        = m_WhiteImage;
+        materialResources.ColorSampler      = m_DefaultSamplerLinear;
+        materialResources.MetalRoughImage   = m_WhiteImage;
+        materialResources.MetalRoughSampler = m_DefaultSamplerLinear;
+
+        // set the uniform buffer for the material data
+        AllocatedBuffer materialConstants =
+                CreateBuffer(sizeof(GLTFMetallic_Roughness::MaterialConstants), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+        // write the buffer
+        GLTFMetallic_Roughness::MaterialConstants *sceneUniformData =
+                (GLTFMetallic_Roughness::MaterialConstants *)materialConstants.Allocation->GetMappedData();
+        sceneUniformData->ColorFactors        = glm::vec4{1, 1, 1, 1};
+        sceneUniformData->Metal_rough_factors = glm::vec4{1, 0.5, 0, 0};
+
+        m_MainDeletionQueue.PushFunction([=, this]() { DestroyBuffer(materialConstants); });
+
+        materialResources.DataBuffer       = materialConstants.Buffer;
+        materialResources.DataBufferOffset = 0;
+
+        m_DefualtDataMatInstance = m_MetalRoughMaterial.WriteMaterial(m_Device, EMaterialPass::MAIN_COLOR, materialResources, m_GlobalDescriptorAllocator);
+
+
+       for (auto& m : m_TestMeshes)
+       {
+           std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>(glm::mat4{1.f}, glm::mat4{1.f}, m);
+
+           for (auto& s : newNode->Mesh->Surfaces)
+           {
+               s.Material = std::make_shared<GLTFMaterial>(m_DefualtDataMatInstance);
+           }
+
+           m_LoadedNodes[m->Name] = std::move(newNode);
+       }
     }
     
     void MEngine::Draw()
     {
+        UpdateScene();
         VK_CHECK_MESSAGE(vkWaitForFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence, VK_TRUE, 1000000000), "Wait FENCE");
 
         m_Frames[m_FrameNumber].Deleteions.Flush();
@@ -383,83 +420,36 @@ namespace MamontEngine
 
         vkCmdSetScissor(inCmd, 0, 1, &scissor);
 
-        //> meshdraw
-        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipeline);
+        vkCmdDraw(inCmd, 3, 1, 0, 0);
 
-        VkDescriptorSet imageSet = m_Frames[m_FrameNumber].FrameDescriptors.Allocate(m_Device, m_SingleImageDescriptorLayout);
-        {
-            VkDescriptor::DescriptoeWriter writer;
-            writer.WriteImage(0,
-                               m_ErrorCheckerboardImage.ImageView,
-                               m_DefaultSamplerNearest,
-                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-            writer.UpdateSet(m_Device, imageSet);
-        }
-
-        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_MeshPipelineLayout, 0, 1, &imageSet, 0, nullptr);
-
-        glm::mat4 view = glm::translate(glm::vec3{0, 0, -5});
-        // camera projection
-        glm::mat4 projection = glm::perspective(glm::radians(70.f), (float)m_DrawExtent.width / (float)m_DrawExtent.height, 10000.f, 0.1f);
-
-        // invert the Y direction on projection matrix so that we are more similar
-        // to opengl and gltf axis
-        projection[1][1] *= -1;
-
-        GPUDrawPushConstants push_constants;
-        push_constants.WorldMatrix  = projection * view;
-        push_constants.VertexBuffer = m_TestMeshes[2]->MeshBuffers.VertexBufferAddress;
-
-        vkCmdPushConstants(inCmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-        vkCmdBindIndexBuffer(inCmd, m_TestMeshes[2]->MeshBuffers.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
-
-        vkCmdDrawIndexed(inCmd, m_TestMeshes[2]->Surfaces[0].Count, 1, m_TestMeshes[2]->Surfaces[0].StartIndex, 0, 0);
-
-        //GPUDrawPushConstants push_constants;
-        //push_constants.WorldMatrix  = glm::mat4{1.f};
-        //push_constants.VertexBuffer = m_Rectangle.VertexBufferAddress;
-
-        //vkCmdPushConstants(inCmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-        //vkCmdBindIndexBuffer(inCmd, m_Rectangle.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
-
-        //vkCmdDrawIndexed(inCmd, 6, 1, 0, 0, 0);
-        ////< drawrect
-
-        ////> matview
-        //glm::mat4 view = glm::translate(glm::vec3{0, 0, -5});
-        //// camera projection
-        //glm::mat4 projection = glm::perspective(glm::radians(70.f), (float)m_DrawExtent.width / (float)m_DrawExtent.height, 10000.f, 0.1f);
-
-        //// invert the Y direction on projection matrix so that we are more similar
-        //// to opengl and gltf axis
-        //projection[1][1] *= -1;
-
-        //push_constants.WorldMatrix = projection * view;
-        ////< matview
-        ////> meshdraw
-        //push_constants.VertexBuffer = m_TestMeshes[2]->MeshBuffers.VertexBufferAddress;
-
-        //vkCmdPushConstants(inCmd, m_MeshPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
-        //vkCmdBindIndexBuffer(inCmd, m_TestMeshes[2]->MeshBuffers.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
-
-        //vkCmdDrawIndexed(inCmd, m_TestMeshes[2]->Surfaces[0].Count, 1, m_TestMeshes[2]->Surfaces[0].StartIndex, 0, 0);
-        //< meshdraw
-
-        ///
         AllocatedBuffer gpuSceneDataBuffer = CreateBuffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-        m_Frames[m_FrameNumber].Deleteions.PushFunction([=, this]() { 
-            DestroyBuffer(gpuSceneDataBuffer);
+        m_Frames[m_FrameNumber].Deleteions.PushFunction([=, this]() { DestroyBuffer(gpuSceneDataBuffer);
                 });
 
         GPUSceneData *sceneUniformData = (GPUSceneData *)gpuSceneDataBuffer.Allocation->GetMappedData();
         *sceneUniformData              = m_SceneData;
 
         VkDescriptorSet globalDescriptor = m_Frames[m_FrameNumber].FrameDescriptors.Allocate(m_Device, m_GPUSceneDataDescriptorLayout);
+
         VkDescriptor::DescriptoeWriter writer;
         writer.WriteBuffer(0, gpuSceneDataBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         writer.UpdateSet(m_Device, globalDescriptor);
+
+        for (const RenderObject& draw : m_MainDrawContext.OpaqueSurfaces)
+        {
+            vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Pipeline);
+            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
+            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Layout, 1, 1, &draw.Material->MaterialSet, 0, nullptr);
+
+            vkCmdBindIndexBuffer(inCmd, draw.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+            GPUDrawPushConstants pushConstants;
+            pushConstants.VertexBuffer = draw.VertexBufferAddress;
+            pushConstants.WorldMatrix  = draw.Transform;
+            vkCmdPushConstants(inCmd, draw.Material->Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &pushConstants);
+
+            vkCmdDrawIndexed(inCmd, draw.IndexCount, 1, draw.FirstIndex, 0, 0);
+        }
 
         vkCmdEndRendering(inCmd);
 
@@ -477,6 +467,30 @@ namespace MamontEngine
         vkCmdEndRendering(inCmd);
     }
     
+    void MEngine::UpdateScene()
+    {
+        m_MainDrawContext.OpaqueSurfaces.clear();
+
+        m_LoadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, m_MainDrawContext);
+
+        m_SceneData.View = glm::translate(glm::vec3{0, 0, -5});
+        m_SceneData.Proj = glm::perspective(glm::radians(70.f), (float)m_WindowExtent.width / (float)m_WindowExtent.height, 10000.f, 0.1f);
+        m_SceneData.Proj[1][1] *= -1;
+        m_SceneData.Viewproj = m_SceneData.Proj * m_SceneData.View;
+
+        m_SceneData.AmbientColor = glm::vec4(.1f);
+        m_SceneData.SunlightColor = glm::vec4(1.f);
+        m_SceneData.SunlightDirection = glm::vec4(0, 1, 0.5, 1.f);
+
+        for (int x = -3; x < 3; ++x)
+        {
+            glm::mat4 scale = glm::scale(glm::vec3{.2});
+            glm::mat4 translation = glm::translate(glm::vec3{x, 1, 0});
+
+            m_LoadedNodes["Cube"]->Draw(translation * scale, m_MainDrawContext);
+        }
+
+    }
     void MEngine::InitVulkan()
     {
         vkb::InstanceBuilder builder;
@@ -700,6 +714,8 @@ namespace MamontEngine
         InitTrianglePipeline();
 
         InitMeshPipeline();
+
+        m_MetalRoughMaterial.BuildPipelines(this);
 
     }
     
@@ -975,9 +991,9 @@ namespace MamontEngine
     
     void MEngine::InitDescriptors()
     {
-        std::vector<VkDescriptor::DescriptorAllocator::PoolSizeRatio> sizes = {{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
+        std::vector<VkDescriptor::DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
 
-        m_GlobalDescriptorAllocator.init_pool(m_Device, 10, sizes);
+        m_GlobalDescriptorAllocator.Init(m_Device, 10, sizes);
 
         {
             VkDescriptor::DescriptorLayoutBuilder builder;
@@ -1020,7 +1036,7 @@ namespace MamontEngine
         m_MainDeletionQueue.PushFunction(
                 [&]()
                 {
-                    m_GlobalDescriptorAllocator.destroy_pool(m_Device);
+                    m_GlobalDescriptorAllocator.DestroyPools(m_Device);
 
                     vkDestroyDescriptorSetLayout(m_Device, m_DrawImageDescriptorLayout, nullptr);
                 });
