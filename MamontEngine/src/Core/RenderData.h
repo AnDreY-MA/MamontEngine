@@ -3,8 +3,17 @@
 #include "VkDestriptor.h"
 #include "pch.h"
 
+
 namespace MamontEngine
 {
+    class MEngine;
+} // namespace MamontEngine
+
+namespace MamontEngine
+{
+    class MEngine;
+    struct MeshAsset;
+
 	enum class EMaterialPass : uint8_t
 	{
 		MAIN_COLOR, TRANSPARENT, OTHER
@@ -120,11 +129,42 @@ namespace MamontEngine
             }
         }
 
+        void SetLocalTransform(const glm::mat4& inNew)
+        {
+            m_LocalTransform = inNew;
+        }
+
+        glm::mat4& GetLocalTransform()
+        {
+            return m_LocalTransform;
+        }
+
+        glm::mat4 GetLocalTransform() const
+        {
+            return m_LocalTransform;
+        }
+
+        void AddChild(std::shared_ptr<Node> inChild)
+        {
+            m_Children.push_back(inChild);
+        }
+
+        void SetParent(std::weak_ptr<Node> inParent)
+        {
+            m_Parent = inParent;
+        }
+
+        std::shared_ptr<Node> ParentLock() const
+        {
+            return m_Parent.lock();
+        }
+
     protected:
         std::weak_ptr<Node>                m_Parent;
         std::vector<std::shared_ptr<Node>> m_Children;
         glm::mat4                          m_LocalTransform;
         glm::mat4                          m_WorldTransform;
+
     };
 
     struct MeshNode : public Node
