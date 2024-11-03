@@ -4,7 +4,6 @@
 #include "VkDestriptor.h"
 #include "Loader.h"
 #include "Renderer.h"
-#include "Camera.h"
 
 struct MPipeline
 {
@@ -82,7 +81,7 @@ namespace MamontEngine
 
 
 	class MEngine
-    {
+	{
     public:
         void Init();
         void Run();
@@ -90,7 +89,7 @@ namespace MamontEngine
 
         void Draw();
 
-        static MEngine &Get();
+        static MEngine& Get();
 
         GPUMeshBuffers UploadMesh(std::span<uint32_t> inIndices, std::span<Vertex> inVertices);
 
@@ -113,24 +112,6 @@ namespace MamontEngine
             return m_DepthImage;
         }
 
-        AllocatedImage GetErrorCheckboardImage()
-        {
-            return m_ErrorCheckerboardImage;
-        }
-
-        AllocatedBuffer CreateBuffer(size_t inAllocSize, VkBufferUsageFlags inUsage, VmaMemoryUsage inMemoryUsage);
-
-        void GetSetMaterialTextures(AllocatedImage &inImage, VkSampler &inSampler) const
-        {
-            inImage = m_WhiteImage;
-            inSampler = m_DefaultSamplerLinear;
-        }
-
-        MaterialInstance WriteMetalRoughMaterial(const EMaterialPass inType, GLTFMetallic_Roughness::MaterialResources inMterialResources,
-            VkDescriptor::DescriptorAllocatorGrowable inDiscriptorPool)
-        {
-            return m_MetalRoughMaterial.WriteMaterial(m_Device, inType, inMterialResources, inDiscriptorPool);
-        }
 
     private:
         void InitVulkan();
@@ -160,6 +141,7 @@ namespace MamontEngine
 
         void DrawGeometry(VkCommandBuffer inCmd);
 
+        AllocatedBuffer CreateBuffer(size_t inAllocSize, VkBufferUsageFlags inUsage, VmaMemoryUsage inMemoryUsage);
         void            DestroyBuffer(const AllocatedBuffer &inBuffer);
 
         void ResizeSwapchain();
@@ -167,9 +149,6 @@ namespace MamontEngine
         AllocatedImage CreateImage(VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false);
         AllocatedImage CreateImage(void* inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false);
         void DestroyImage(const AllocatedImage &inImage);
-
-        void UpdateScene();
-
 
     private:
         bool       m_IsInitialized{false};
@@ -254,9 +233,8 @@ namespace MamontEngine
 
         DrawContext m_MainDrawContext;
         std::unordered_map<std::string, std::shared_ptr<Node>> m_LoadedNodes;
-        std::unordered_map<std::string, std::shared_ptr<LoadedGLTF>> m_LoadedScenes;
 
-        Camera m_MainCamera;
+        void UpdateScene();
 	
     };
 }

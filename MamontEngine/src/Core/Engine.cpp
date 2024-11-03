@@ -1,26 +1,26 @@
 #include "Engine.h"
 
-#include "VkImages.h"
 #include "VkInitializers.h"
+#include "VkImages.h"
 #include "VkPipelines.h"
 
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_events.h>
 #include <SDL3/SDL_vulkan.h>
+#include <SDL3/SDL_events.h>
 
-#include <VkBootstrap.h>
 #include <chrono>
-#include <glm/gtx/transform.hpp>
 #include <thread>
+#include <VkBootstrap.h>
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_sdl3.h"
 #include "imgui/imgui_impl_vulkan.h"
+#include <glm/gtx/transform.hpp>
 
 
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
-static SDL_Window *window = nullptr;
+static SDL_Window* window = nullptr;
 VkPipeline         gradientPipeline;
 
 namespace MamontEngine
@@ -43,12 +43,13 @@ namespace MamontEngine
 
         SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 
-        window = SDL_CreateWindow("Mamont Engine",
-                                  // SDL_WINDOWPOS_UNDEFINED,
-                                  // SDL_WINDOWPOS_UNDEFINED,
-                                  m_WindowExtent.width,
-                                  m_WindowExtent.height,
-                                  window_flags);
+        window = SDL_CreateWindow(
+            "Mamont Engine", 
+            //SDL_WINDOWPOS_UNDEFINED, 
+            //SDL_WINDOWPOS_UNDEFINED, 
+            m_WindowExtent.width,
+            m_WindowExtent.height,
+            window_flags);
 
         m_Window = window;
 
@@ -57,19 +58,10 @@ namespace MamontEngine
         InitCommands();
         InitSyncStructeres();
         InitDescriptors();
-        InitPipelines();
+        InitPipelines();    
         InitImgui();
 
         InitDefaultData();
-
-        m_MainCamera.SetVelocity(glm::vec3(0.f));
-        m_MainCamera.SetPosition(glm::vec3(0, 0, 5));
-        const std::string structurePath = RootDirectories + "/MamontEngine/assets/structure.glb";
-        auto              structureFile = LoadGltf(this, structurePath);
-
-        assert(structureFile.has_value());
-
-        m_LoadedScenes["structure"] = *structureFile;
 
 
         m_IsInitialized = true;
@@ -83,11 +75,15 @@ namespace MamontEngine
         while (!bQuit)
         {
             while (SDL_PollEvent(&event) != 0)
-            {
+            { 
                 // close the window when user alt-f4s or clicks the X button
                 if (event.type == SDL_EVENT_QUIT)
                     bQuit = true;
 
+                /*if (event.type == SDL_WINDOWEVENT)
+                {
+                    
+                }*/
                 if (event.window.type == SDL_EVENT_WINDOW_MINIMIZED)
                 {
                     m_StopRendering = true;
@@ -97,7 +93,6 @@ namespace MamontEngine
                     m_StopRendering = false;
                 }
 
-                m_MainCamera.ProccessEvent(event);
                 ImGui_ImplSDL3_ProcessEvent(&event);
             }
 
@@ -130,11 +125,12 @@ namespace MamontEngine
                 ImGui::InputFloat4("data3", (float *)&selected.Data.Data3);
                 ImGui::InputFloat4("data4", (float *)&selected.Data.Data4);
                 ImGui::End();
+
             }
 
             ImGui::Render();
 
-            UpdateScene();
+
             Draw();
         }
     }
@@ -144,8 +140,6 @@ namespace MamontEngine
         if (m_IsInitialized)
         {
             vkDeviceWaitIdle(m_Device);
-            m_LoadedScenes.clear();
-
             for (int i = 0; i < FRAME_OVERLAP; i++)
             {
                 vkDestroyCommandPool(m_Device, m_Frames[i].CommandPool, nullptr);
@@ -155,8 +149,9 @@ namespace MamontEngine
                 vkDestroySemaphore(m_Device, m_Frames[i].SwapchainSemaphore, nullptr);
 
                 m_Frames[i].Deleteions.Flush();
+
             }
-            for (auto &mesh : m_TestMeshes)
+            for (auto& mesh : m_TestMeshes)
             {
                 DestroyBuffer(mesh->MeshBuffers.IndexBuffer);
                 DestroyBuffer(mesh->MeshBuffers.VertexBuffer);
@@ -210,10 +205,10 @@ namespace MamontEngine
                 });
         std::string meshPath = RootDirectories + "/MamontEngine/assets/basicmesh.glb";
         fmt::println("MeshPath = {}", meshPath);
-        // m_TestMeshes         = LoadGltfMeshes(this, meshPath).value();
+        m_TestMeshes         = LoadGltfMeshes(this, meshPath).value();
 
         uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
-        m_WhiteImage   = CreateImage((void *)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
+        m_WhiteImage    = CreateImage((void *)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
 
         uint32_t grey = glm::packUnorm4x8(glm::vec4(0.66f, 0.66f, 0.66f, 1));
         m_GreyImage   = CreateImage((void *)&grey, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
@@ -281,22 +276,22 @@ namespace MamontEngine
         m_DefualtDataMatInstance = m_MetalRoughMaterial.WriteMaterial(m_Device, EMaterialPass::MAIN_COLOR, materialResources, m_GlobalDescriptorAllocator);
 
 
-        for (auto &m : m_TestMeshes)
-        {
-            std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>(glm::mat4{1.f}, glm::mat4{1.f}, m);
+       for (auto& m : m_TestMeshes)
+       {
+           std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>(glm::mat4{1.f}, glm::mat4{1.f}, m);
 
-            for (auto &s : newNode->Mesh->Surfaces)
-            {
-                s.Material = std::make_shared<GLTFMaterial>(m_DefualtDataMatInstance);
-            }
+           for (auto& s : newNode->Mesh->Surfaces)
+           {
+               s.Material = std::make_shared<GLTFMaterial>(m_DefualtDataMatInstance);
+           }
 
-            m_LoadedNodes[m->Name] = std::move(newNode);
-        }
+           m_LoadedNodes[m->Name] = std::move(newNode);
+       }
     }
-
+    
     void MEngine::Draw()
     {
-
+        UpdateScene();
         VK_CHECK_MESSAGE(vkWaitForFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence, VK_TRUE, 1000000000), "Wait FENCE");
 
         m_Frames[m_FrameNumber].Deleteions.Flush();
@@ -306,22 +301,22 @@ namespace MamontEngine
         VkResult e = vkAcquireNextImageKHR(m_Device, m_Swapchain, 1000000000, m_Frames[m_FrameNumber].SwapchainSemaphore, nullptr, &swapchainImageIndex);
         if (e == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            // fmt::println("Next image - VK_ERROR_OUT_OF_DATE_KHR");
+            //fmt::println("Next image - VK_ERROR_OUT_OF_DATE_KHR");
             m_IsResizeRequested = true;
             return;
-        }
+        } 
 
         m_DrawExtent.height = std::min(m_SwapchainExtent.height, m_DrawImage.ImageExtent.height) * m_RenderScale;
         m_DrawExtent.width  = std::min(m_SwapchainExtent.width, m_DrawImage.ImageExtent.width) * m_RenderScale;
 
         VK_CHECK(vkResetFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence));
         VK_CHECK(vkResetCommandBuffer(m_Frames[m_FrameNumber].MainCommandBuffer, 0));
-
+          
         VkCommandBuffer cmd = m_Frames[m_FrameNumber].MainCommandBuffer;
-
+        
         VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         //> draw_first
-
+        
 
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
@@ -338,7 +333,7 @@ namespace MamontEngine
         VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         //< draw_first
-
+    
         //> imgui_draw
 
         VkUtil::copy_image_to_image(cmd, m_DrawImage.Image, m_SwapchainImages[swapchainImageIndex], m_DrawExtent, m_SwapchainExtent);
@@ -374,7 +369,7 @@ namespace MamontEngine
         VkResult presentResult = vkQueuePresentKHR(m_GraphicsQueue, &presentInfo);
         if (presentResult == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            // fmt::println("Resize Request");
+            //fmt::println("Resize Request");
             m_IsResizeRequested = true;
             return;
         }
@@ -428,7 +423,8 @@ namespace MamontEngine
         vkCmdDraw(inCmd, 3, 1, 0, 0);
 
         AllocatedBuffer gpuSceneDataBuffer = CreateBuffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-        m_Frames[m_FrameNumber].Deleteions.PushFunction([=, this]() { DestroyBuffer(gpuSceneDataBuffer); });
+        m_Frames[m_FrameNumber].Deleteions.PushFunction([=, this]() { DestroyBuffer(gpuSceneDataBuffer);
+                });
 
         GPUSceneData *sceneUniformData = (GPUSceneData *)gpuSceneDataBuffer.Allocation->GetMappedData();
         *sceneUniformData              = m_SceneData;
@@ -439,7 +435,7 @@ namespace MamontEngine
         writer.WriteBuffer(0, gpuSceneDataBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         writer.UpdateSet(m_Device, globalDescriptor);
 
-        for (const RenderObject &draw : m_MainDrawContext.OpaqueSurfaces)
+        for (const RenderObject& draw : m_MainDrawContext.OpaqueSurfaces)
         {
             vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Pipeline);
             vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
@@ -456,6 +452,7 @@ namespace MamontEngine
         }
 
         vkCmdEndRendering(inCmd);
+
     }
 
     void MEngine::DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView)
@@ -469,49 +466,40 @@ namespace MamontEngine
 
         vkCmdEndRendering(inCmd);
     }
-
+    
     void MEngine::UpdateScene()
     {
-        m_MainCamera.Update();
-        glm::mat4 view       = m_MainCamera.GetViewMatrix();
-        glm::mat4 projection = glm::perspective(glm::radians(70.f), (float)m_WindowExtent.width / (float)m_WindowExtent.height, 10000.f, 0.1f);
-        projection[1][1] *= -1;
-        m_SceneData.View     = view;
-        m_SceneData.Proj     = projection;
-        m_SceneData.Viewproj = projection * view;
-
         m_MainDrawContext.OpaqueSurfaces.clear();
 
-        //m_LoadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, m_MainDrawContext);
+        m_LoadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, m_MainDrawContext);
 
-        /*m_SceneData.View = glm::translate(glm::vec3{0, 0, -5});
+        m_SceneData.View = glm::translate(glm::vec3{0, 0, -5});
         m_SceneData.Proj = glm::perspective(glm::radians(70.f), (float)m_WindowExtent.width / (float)m_WindowExtent.height, 10000.f, 0.1f);
         m_SceneData.Proj[1][1] *= -1;
-        m_SceneData.Viewproj = m_SceneData.Proj * m_SceneData.View;*/
+        m_SceneData.Viewproj = m_SceneData.Proj * m_SceneData.View;
 
-        m_SceneData.AmbientColor      = glm::vec4(.1f);
-        m_SceneData.SunlightColor     = glm::vec4(1.f);
+        m_SceneData.AmbientColor = glm::vec4(.1f);
+        m_SceneData.SunlightColor = glm::vec4(1.f);
         m_SceneData.SunlightDirection = glm::vec4(0, 1, 0.5, 1.f);
 
-        /*for (int x = -3; x < 3; ++x)
+        for (int x = -3; x < 3; ++x)
         {
             glm::mat4 scale = glm::scale(glm::vec3{.2});
             glm::mat4 translation = glm::translate(glm::vec3{x, 1, 0});
 
             m_LoadedNodes["Cube"]->Draw(translation * scale, m_MainDrawContext);
-        }*/
+        }
 
-        m_LoadedScenes["structure"]->Draw(glm::mat4{1.f}, m_MainDrawContext);
     }
     void MEngine::InitVulkan()
     {
         vkb::InstanceBuilder builder;
 
         auto instRet = builder.set_app_name("Mamont App")
-                               .request_validation_layers(bUseValidationLayers)
-                               .use_default_debug_messenger()
-                               .require_api_version(1, 3, 290)
-                               .build();
+            .request_validation_layers(bUseValidationLayers)
+            .use_default_debug_messenger()
+            .require_api_version(1, 3, 290)
+            .build();
 
         vkb::Instance vkbInstance = instRet.value();
         m_Instance                = vkbInstance.instance;
@@ -522,7 +510,7 @@ namespace MamontEngine
             fmt::println("m_Instance || m_DebugMessenger is NULL");
         }
 
-        if (!SDL_Vulkan_CreateSurface((SDL_Window *)m_Window, m_Instance, nullptr, &m_Surface))
+        if (!SDL_Vulkan_CreateSurface((SDL_Window*)m_Window, m_Instance, nullptr, &m_Surface))
         {
             fmt::print("Surface is false");
             return;
@@ -531,7 +519,7 @@ namespace MamontEngine
         VkPhysicalDeviceVulkan13Features features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
         features.dynamicRendering = true;
         features.synchronization2 = true;
-
+    
         VkPhysicalDeviceVulkan12Features features12{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
         features12.bufferDeviceAddress               = true;
         features12.descriptorIndexing                = true;
@@ -542,23 +530,24 @@ namespace MamontEngine
 
         vkb::PhysicalDeviceSelector selector{vkbInstance};
 
-        vkb::PhysicalDevice physicalDevice = selector.set_minimum_version(1, 3)
-                                                     .set_required_features_13(features)
-                                                     .set_required_features_12(features12)
+        vkb::PhysicalDevice         physicalDevice = selector
+            .set_minimum_version(1, 3)
+            .set_required_features_13(features)
+            .set_required_features_12(features12)
                                                      .set_surface(m_Surface)
                                                      //.prefer_gpu_device_type(vkb::PreferredDeviceType::discrete)
-                                                     .select()
-                                                     .value();
+            .select()
+            .value();
 
         vkb::DeviceBuilder deviceBuilder{physicalDevice};
 
         vkb::Device vkbDevice = deviceBuilder.build().value();
 
-        m_Device    = vkbDevice.device;
+        m_Device = vkbDevice.device;
         m_ChosenGPU = physicalDevice.physical_device;
         fmt::print("Name {}", physicalDevice.name);
 
-        m_GraphicsQueue       = vkbDevice.get_queue(vkb::QueueType::graphics).value();
+        m_GraphicsQueue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
         m_GraphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
 
         VmaAllocatorCreateInfo allocatorInfo = {};
@@ -568,9 +557,12 @@ namespace MamontEngine
         allocatorInfo.flags                  = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
         vmaCreateAllocator(&allocatorInfo, &m_Allocator);
 
-        m_MainDeletionQueue.PushFunction([&]() { vmaDestroyAllocator(m_Allocator); });
-    }
+        m_MainDeletionQueue.PushFunction([&]() { 
+            vmaDestroyAllocator(m_Allocator); 
+            });
 
+    }
+    
     void MEngine::InitSwapchain()
     {
         CreateSwapchain(m_WindowExtent.width, m_WindowExtent.height);
@@ -582,7 +574,7 @@ namespace MamontEngine
 
         VkImageUsageFlags drawImageUsages{};
         drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        // drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        //drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         drawImageUsages |= VK_IMAGE_USAGE_STORAGE_BIT;
         drawImageUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
@@ -591,14 +583,14 @@ namespace MamontEngine
         VmaAllocationCreateInfo rImageAllocInfo = {};
         rImageAllocInfo.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
         rImageAllocInfo.requiredFlags           = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
+        
         vmaCreateImage(m_Allocator, &rImageInfo, &rImageAllocInfo, &m_DrawImage.Image, &m_DrawImage.Allocation, nullptr);
 
         VkImageViewCreateInfo rViewInfo = vkinit::imageview_create_info(m_DrawImage.ImageFormat, m_DrawImage.Image, VK_IMAGE_ASPECT_COLOR_BIT);
 
         VK_CHECK(vkCreateImageView(m_Device, &rViewInfo, nullptr, &m_DrawImage.ImageView));
 
-        //> depthimg
+    //> depthimg
         m_DepthImage.ImageFormat = VK_FORMAT_D32_SFLOAT;
         m_DepthImage.ImageExtent = drawImageExtent;
         VkImageUsageFlags depthImageUsages{};
@@ -610,19 +602,18 @@ namespace MamontEngine
         VkImageViewCreateInfo dViewInfo = vkinit::imageview_create_info(m_DepthImage.ImageFormat, m_DepthImage.Image, VK_IMAGE_ASPECT_DEPTH_BIT);
 
         VK_CHECK(vkCreateImageView(m_Device, &dViewInfo, nullptr, &m_DepthImage.ImageView));
-        //< depthimg
+    //< depthimg
 
-        m_MainDeletionQueue.PushFunction(
-                [=]()
-                {
+        m_MainDeletionQueue.PushFunction([=]() { 
                     vkDestroyImageView(m_Device, m_DrawImage.ImageView, nullptr);
                     vmaDestroyImage(m_Allocator, m_DrawImage.Image, m_DrawImage.Allocation);
 
                     vkDestroyImageView(m_Device, m_DepthImage.ImageView, nullptr);
                     vmaDestroyImage(m_Allocator, m_DepthImage.Image, m_DepthImage.Allocation);
-                });
-    }
+            });
 
+    }
+    
     void MEngine::ResizeSwapchain()
     {
         vkDeviceWaitIdle(m_Device);
@@ -647,7 +638,7 @@ namespace MamontEngine
         {
             vkDestroyImageView(m_Device, m_SwapchainImageViews[i], nullptr);
         }
-    }
+    } 
 
 
     void MEngine::InitCommands()
@@ -669,12 +660,15 @@ namespace MamontEngine
 
         VK_CHECK(vkAllocateCommandBuffers(m_Device, &cmdAllocInfo, &m_ImmCommandBuffer));
 
-        m_MainDeletionQueue.PushFunction([=]() { vkDestroyCommandPool(m_Device, m_ImmCommandPool, nullptr); });
-    }
+        m_MainDeletionQueue.PushFunction([=]() { 
+                vkDestroyCommandPool(m_Device, m_ImmCommandPool, nullptr);
+        });
 
+    }
+    
     void MEngine::InitSyncStructeres()
     {
-        VkFenceCreateInfo     fenceCreateInfo     = vkinit::fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT);
+        VkFenceCreateInfo fenceCreateInfo = vkinit::fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT);
         VkSemaphoreCreateInfo semaphoreCreateInfo = vkinit::semaphore_create_info();
 
         for (int i = 0; i < FRAME_OVERLAP; i++)
@@ -683,10 +677,12 @@ namespace MamontEngine
 
             VK_CHECK(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_Frames[i].SwapchainSemaphore));
             VK_CHECK(vkCreateSemaphore(m_Device, &semaphoreCreateInfo, nullptr, &m_Frames[i].RenderSemaphore));
+
         }
 
         VK_CHECK(vkCreateFence(m_Device, &fenceCreateInfo, nullptr, &m_ImmFence));
         m_MainDeletionQueue.PushFunction([=]() { vkDestroyFence(m_Device, m_ImmFence, nullptr); });
+
     }
 
     void MEngine::CreateSwapchain(const uint32_t inWidth, const uint32_t inHeight)
@@ -694,22 +690,22 @@ namespace MamontEngine
         vkb::SwapchainBuilder swapchainBuilder{m_ChosenGPU, m_Device, m_Surface};
         m_SwapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
 
-        vkb::Swapchain vkbSwapchain =
-                swapchainBuilder.set_desired_format(VkSurfaceFormatKHR{.format = m_SwapchainImageFormat, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
+        vkb::Swapchain vkbSwapchain = swapchainBuilder
+            .set_desired_format(VkSurfaceFormatKHR{.format = m_SwapchainImageFormat, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
                         .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
-                        .set_desired_extent(inWidth, inHeight)
-                        .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-                        .build()
-                        .value();
+            .set_desired_extent(inWidth, inHeight)
+            .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+            .build()
+            .value();
 
-        m_SwapchainExtent     = vkbSwapchain.extent;
-        m_Swapchain           = vkbSwapchain.swapchain;
-        m_SwapchainImages     = vkbSwapchain.get_images().value();
+        m_SwapchainExtent = vkbSwapchain.extent;
+        m_Swapchain       = vkbSwapchain.swapchain;
+        m_SwapchainImages = vkbSwapchain.get_images().value();
         m_SwapchainImageViews = vkbSwapchain.get_image_views().value();
 
         fmt::println("CreateSwapchain");
     }
-
+    
 
     void MEngine::InitPipelines()
     {
@@ -720,8 +716,9 @@ namespace MamontEngine
         InitMeshPipeline();
 
         m_MetalRoughMaterial.BuildPipelines(this);
-    }
 
+    }
+    
     void MEngine::InitBackgrounPipeline()
     {
         VkPipelineLayoutCreateInfo computeLayout{};
@@ -798,7 +795,7 @@ namespace MamontEngine
                 {
                     vkDestroyPipelineLayout(m_Device, m_GradientPipelineLayout, nullptr);
                     vkDestroyPipeline(m_Device, sky.Pipeline, nullptr);
-                    vkDestroyPipeline(m_Device, gradient.Pipeline, nullptr);
+                    vkDestroyPipeline(  m_Device, gradient.Pipeline, nullptr);
                 });
     }
 
@@ -826,7 +823,7 @@ namespace MamontEngine
         VK_CHECK(vkCreatePipelineLayout(m_Device, &pipelineLayoutInfo, nullptr, &m_TrianglePipelineLayout));
 
         VkPipelines::PipelineBuilder pipelineBuilder;
-        pipelineBuilder.m_PipelineLayout = m_TrianglePipelineLayout;
+        pipelineBuilder.m_PipelineLayout  = m_TrianglePipelineLayout;
         pipelineBuilder.SetShaders(triangleVertexShader, triangleFragShader);
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
         pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
@@ -853,8 +850,8 @@ namespace MamontEngine
 
     void MEngine::InitMeshPipeline()
     {
-        const std::string triangleFragPath = RootDirectories + "/MamontEngine/src/Shaders/tex_image.frag.spv";
-        VkShaderModule    triangleFragShader;
+        const std::string    triangleFragPath = RootDirectories + "/MamontEngine/src/Shaders/tex_image.frag.spv";
+        VkShaderModule triangleFragShader;
         if (!VkPipelines::LoadShaderModule(triangleFragPath.c_str(), m_Device, &triangleFragShader))
         {
             fmt::println("Error when building the Triangle Frag shader");
@@ -863,7 +860,7 @@ namespace MamontEngine
             fmt::println("Succes building the Triangle Frag shader");
 
         const std::string triangleVertexPath = RootDirectories + "/MamontEngine/src/Shaders/colored_triangle_mesh.vert.spv";
-        VkShaderModule    triangleVertexShader;
+        VkShaderModule triangleVertexShader;
         if (!VkPipelines::LoadShaderModule(triangleVertexPath.c_str(), m_Device, &triangleVertexShader))
         {
             fmt::println("Error when building the Triangle Vertex shader");
@@ -911,27 +908,27 @@ namespace MamontEngine
                     vkDestroyPipeline(m_Device, m_MeshPipeline, nullptr);
                 });
     }
-
+    
     void MEngine::InitImgui()
     {
         VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-                                            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-                                            {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-                                            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-                                            {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-                                            {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-                                            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-                                            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-                                            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-                                            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-                                            {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
+                                             {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+                                             {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
+                                             {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
+                                             {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
+                                             {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
+                                             {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+                                             {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
+                                             {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+                                             {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+                                             {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
 
         VkDescriptorPoolCreateInfo poolInfo = {};
-        poolInfo.sType                      = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.flags                      = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        poolInfo.maxSets                    = 1000;
-        poolInfo.poolSizeCount              = (uint32_t)std::size(poolSizes);
-        poolInfo.pPoolSizes                 = poolSizes;
+        poolInfo.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.flags                       = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        poolInfo.maxSets                     = 1000;
+        poolInfo.poolSizeCount               = (uint32_t)std::size(poolSizes);
+        poolInfo.pPoolSizes                  = poolSizes;
 
         VkDescriptorPool imguiPool;
         VK_CHECK_MESSAGE(vkCreateDescriptorPool(m_Device, &poolInfo, nullptr, &imguiPool), "CreateDescPool");
@@ -951,8 +948,8 @@ namespace MamontEngine
         initInfo.MSAASamples               = VK_SAMPLE_COUNT_1_BIT;
         initInfo.UseDynamicRendering       = true;
 
-        initInfo.PipelineRenderingCreateInfo                         = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
-        initInfo.PipelineRenderingCreateInfo.colorAttachmentCount    = 1;
+        initInfo.PipelineRenderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
+        initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
         initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &m_SwapchainImageFormat;
 
         ImGui_ImplVulkan_Init(&initInfo);
@@ -965,9 +962,11 @@ namespace MamontEngine
                     ImGui_ImplVulkan_Shutdown();
                     vkDestroyDescriptorPool(m_Device, imguiPool, nullptr);
                 });
-    }
 
-    void MEngine::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction)
+       
+    }
+    
+    void MEngine::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& inFunction)
     {
         VK_CHECK(vkResetFences(m_Device, 1, &m_ImmFence));
         VK_CHECK(vkResetCommandBuffer(m_ImmCommandBuffer, 0));
@@ -989,7 +988,7 @@ namespace MamontEngine
 
         VK_CHECK(vkWaitForFences(m_Device, 1, &m_ImmFence, true, 9999999999));
     }
-
+    
     void MEngine::InitDescriptors()
     {
         std::vector<VkDescriptor::DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
@@ -1058,13 +1057,13 @@ namespace MamontEngine
         }
     }
 
-
+    
     AllocatedBuffer MEngine::CreateBuffer(size_t inAllocSize, VkBufferUsageFlags inUsage, VmaMemoryUsage inMemoryUsage)
     {
-        VkBufferCreateInfo bufferInfo        = {.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-        bufferInfo.pNext                     = nullptr;
-        bufferInfo.size                      = inAllocSize;
-        bufferInfo.usage                     = inUsage;
+        VkBufferCreateInfo bufferInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+        bufferInfo.pNext              = nullptr;
+        bufferInfo.size               = inAllocSize;
+        bufferInfo.usage              = inUsage;
         VmaAllocationCreateInfo vmaAllocInfo = {};
         vmaAllocInfo.usage                   = inMemoryUsage;
         vmaAllocInfo.flags                   = VMA_ALLOCATION_CREATE_MAPPED_BIT;
@@ -1083,12 +1082,11 @@ namespace MamontEngine
     GPUMeshBuffers MEngine::UploadMesh(std::span<uint32_t> inIndices, std::span<Vertex> inVertices)
     {
         const size_t vertexBufferSize{inVertices.size() * sizeof(Vertex)};
-        const size_t indexBufferSize{inIndices.size() * sizeof(uint32_t)};
+        const size_t indexBufferSize{inIndices.size() * sizeof(uint32_t)};  
 
         GPUMeshBuffers newSurface;
 
-        newSurface.VertexBuffer =
-                CreateBuffer(vertexBufferSize,
+        newSurface.VertexBuffer = CreateBuffer(vertexBufferSize,
                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                              VMA_MEMORY_USAGE_GPU_ONLY);
 
@@ -1125,6 +1123,7 @@ namespace MamontEngine
         DestroyBuffer(staging);
 
         return newSurface;
+    
     }
 
     AllocatedImage MEngine::CreateImage(VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped)
@@ -1200,4 +1199,4 @@ namespace MamontEngine
         vkDestroyImageView(m_Device, inImage.ImageView, nullptr);
         vmaDestroyImage(m_Allocator, inImage.Image, inImage.Allocation);
     }
-} // namespace MamontEngine
+}
