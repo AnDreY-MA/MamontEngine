@@ -4,6 +4,7 @@
 #include "VkDestriptor.h"
 #include "Loader.h"
 #include "Renderer.h"
+#include "Camera.h"
 
 struct MPipeline
 {
@@ -120,14 +121,12 @@ namespace MamontEngine
         void InitSyncStructeres();
         void InitDefaultData();
 
-
         void CreateSwapchain(const uint32_t inWidth, const uint32_t inHeight);
         void DestroySwapchain();
 
         void DrawBackground(VkCommandBuffer inCmd);
         
         void InitDescriptors();
-
 
         void InitPipelines();
         void InitBackgrounPipeline();
@@ -235,6 +234,8 @@ namespace MamontEngine
         std::unordered_map<std::string, std::shared_ptr<Node>> m_LoadedNodes;
 
         void UpdateScene();
+
+        Camera m_MainCamera;
 	
     };
 }

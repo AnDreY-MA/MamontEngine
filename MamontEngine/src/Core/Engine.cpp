@@ -63,6 +63,9 @@ namespace MamontEngine
 
         InitDefaultData();
 
+        m_MainCamera.SetVelocity(glm::vec3(0.f));
+        m_MainCamera.SetPosition(glm::vec3(0, 0, 5));
+
 
         m_IsInitialized = true;
     }
@@ -80,10 +83,9 @@ namespace MamontEngine
                 if (event.type == SDL_EVENT_QUIT)
                     bQuit = true;
 
-                /*if (event.type == SDL_WINDOWEVENT)
-                {
-                    
-                }*/
+                m_MainCamera.ProccessEvent(event);
+                ImGui_ImplSDL3_ProcessEvent(&event);
+
                 if (event.window.type == SDL_EVENT_WINDOW_MINIMIZED)
                 {
                     m_StopRendering = true;
@@ -93,7 +95,6 @@ namespace MamontEngine
                     m_StopRendering = false;
                 }
 
-                ImGui_ImplSDL3_ProcessEvent(&event);
             }
 
             if (m_StopRendering)
@@ -469,14 +470,24 @@ namespace MamontEngine
     
     void MEngine::UpdateScene()
     {
+        m_MainCamera.Update();
+
+        glm::mat4 view = m_MainCamera.GetViewMatrix();
+        glm::mat4 projection = glm::perspective(glm::radians(70.f), (float)m_WindowExtent.width / (float)m_WindowExtent.height, 10000.f, 0.1f);
+        projection[1][1] *= -1;
+
+        m_SceneData.View = view;
+        m_SceneData.Proj = projection;
+        m_SceneData.Viewproj = projection * view;
+
         m_MainDrawContext.OpaqueSurfaces.clear();
 
         m_LoadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, m_MainDrawContext);
 
-        m_SceneData.View = glm::translate(glm::vec3{0, 0, -5});
+        /*m_SceneData.View = glm::translate(glm::vec3{0, 0, -5});
         m_SceneData.Proj = glm::perspective(glm::radians(70.f), (float)m_WindowExtent.width / (float)m_WindowExtent.height, 10000.f, 0.1f);
         m_SceneData.Proj[1][1] *= -1;
-        m_SceneData.Viewproj = m_SceneData.Proj * m_SceneData.View;
+        m_SceneData.Viewproj = m_SceneData.Proj * m_SceneData.View;*/
 
         m_SceneData.AmbientColor = glm::vec4(.1f);
         m_SceneData.SunlightColor = glm::vec4(1.f);
@@ -491,6 +502,7 @@ namespace MamontEngine
         }
 
     }
+    
     void MEngine::InitVulkan()
     {
         vkb::InstanceBuilder builder;
@@ -640,7 +652,6 @@ namespace MamontEngine
         }
     } 
 
-
     void MEngine::InitCommands()
     {
         VkCommandPoolCreateInfo commandPoolInfo = vkinit::command_pool_create_info(m_GraphicsQueueFamily, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
@@ -706,7 +717,6 @@ namespace MamontEngine
         fmt::println("CreateSwapchain");
     }
     
-
     void MEngine::InitPipelines()
     {
         InitBackgrounPipeline();
@@ -1056,7 +1066,6 @@ namespace MamontEngine
             m_MainDeletionQueue.PushFunction([&, i]() { m_Frames[i].FrameDescriptors.DestroyPools(m_Device); });
         }
     }
-
     
     AllocatedBuffer MEngine::CreateBuffer(size_t inAllocSize, VkBufferUsageFlags inUsage, VmaMemoryUsage inMemoryUsage)
     {

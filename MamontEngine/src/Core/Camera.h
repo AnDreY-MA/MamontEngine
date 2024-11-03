@@ -14,6 +14,16 @@ namespace MamontEngine
         void ProccessEvent(SDL_Event &inEvent);
         void Update();
 
+        void SetVelocity(const glm::vec3& inVelocity)
+        {
+            m_Velocity = inVelocity;
+        }
+
+        void SetPosition(const glm::vec3& inPosition)
+        {
+            m_Position = inPosition;
+        }
+
     private:
         glm::vec3 m_Velocity;
         glm::vec3 m_Position;
