@@ -80,6 +80,15 @@ namespace MamontEngine
         glm::vec4 SunlightColor;
     };
 
+    struct MEgnineStats
+    {
+        float frametime;
+        int   triangle_count;
+        int   drawcall_count;
+        float scene_update_time;
+        float mesh_draw_time;
+    };
+
 
 	class MEngine
 	{
@@ -240,7 +249,7 @@ namespace MamontEngine
 
         Camera m_MainCamera;
 
-
+        MEgnineStats stats;
 	
     };
 }

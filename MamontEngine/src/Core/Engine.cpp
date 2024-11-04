@@ -83,6 +83,8 @@ namespace MamontEngine
 
         while (!bQuit)
         {
+            auto start = std::chrono::system_clock::now();
+
             while (SDL_PollEvent(&event) != 0)
             { 
                 // close the window when user alt-f4s or clicks the X button
@@ -118,6 +120,15 @@ namespace MamontEngine
             ImGui_ImplSDL3_NewFrame();
             ImGui::NewFrame();
 
+            ImGui::Begin("Stats");
+
+            ImGui::Text("frametime %f ms", stats.frametime);
+            ImGui::Text("draw time %f ms", stats.mesh_draw_time);
+            ImGui::Text("update time %f ms", stats.scene_update_time);
+            ImGui::Text("triangles %i", stats.triangle_count);
+            ImGui::Text("draws %i", stats.drawcall_count);
+            ImGui::End();
+
             if (ImGui::Begin("Background"))
             {
                 ImGui::SliderFloat("Render Scale", &m_RenderScale, 0.3f, 1.f);
@@ -137,8 +148,15 @@ namespace MamontEngine
 
             ImGui::Render();
 
+            UpdateScene();
 
             Draw();
+
+            auto end = std::chrono::system_clock::now();
+
+            // convert to microseconds (integer), and then come back to miliseconds
+            auto elapsed    = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            stats.frametime = elapsed.count() / 1000.f;
         }
     }
 
@@ -298,10 +316,50 @@ namespace MamontEngine
            m_LoadedNodes[m->Name] = std::move(newNode);
        }
     }
-    
+    bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
+    {
+        std::array<glm::vec3, 8> corners{
+                glm::vec3{1, 1, 1},
+                glm::vec3{1, 1, -1},
+                glm::vec3{1, -1, 1},
+                glm::vec3{1, -1, -1},
+                glm::vec3{-1, 1, 1},
+                glm::vec3{-1, 1, -1},
+                glm::vec3{-1, -1, 1},
+                glm::vec3{-1, -1, -1},
+        };
+
+        glm::mat4 matrix = viewproj * obj.Transform;
+
+        glm::vec3 min = {1.5, 1.5, 1.5};
+        glm::vec3 max = {-1.5, -1.5, -1.5};
+
+        for (int c = 0; c < 8; c++)
+        {
+            // project each corner into clip space
+            glm::vec4 v = matrix * glm::vec4(obj.Bounds.origin + (corners[c] * obj.Bounds.extents), 1.f);
+
+            // perspective correction
+            v.x = v.x / v.w;
+            v.y = v.y / v.w;
+            v.z = v.z / v.w;
+
+            min = glm::min(glm::vec3{v.x, v.y, v.z}, min);
+            max = glm::max(glm::vec3{v.x, v.y, v.z}, max);
+        }
+
+        // check the clip space box is within the view
+        if (min.z > 1.f || max.z < 0.f || min.x > 1.f || max.x < -1.f || min.y > 1.f || max.y < -1.f)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
     void MEngine::Draw()
     {
-        UpdateScene();
         VK_CHECK_MESSAGE(vkWaitForFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence, VK_TRUE, 1000000000), "Wait FENCE");
 
         m_Frames[m_FrameNumber].Deleteions.Flush();
@@ -405,8 +463,40 @@ namespace MamontEngine
     {
 
     }
+    
     void MEngine::DrawGeometry(VkCommandBuffer inCmd)
     {
+        std::vector<uint32_t> opaque_draws;
+        opaque_draws.reserve(m_MainDrawContext.OpaqueSurfaces.size());
+
+        for (int i = 0; i < m_MainDrawContext.OpaqueSurfaces.size(); i++)
+        {
+            if (is_visible(m_MainDrawContext.OpaqueSurfaces[i], m_SceneData.Viewproj))
+            {
+                opaque_draws.push_back(i);
+            }
+        }
+
+        std::sort(opaque_draws.begin(),
+                  opaque_draws.end(),
+                  [&](const auto &iA, const auto &iB)
+                  {
+                      const RenderObject &A = m_MainDrawContext.OpaqueSurfaces[iA];
+                      const RenderObject &B = m_MainDrawContext.OpaqueSurfaces[iB];
+                      if (A.Material == B.Material)
+                      {
+                          return A.IndexBuffer < B.IndexBuffer;
+                      }
+                      else
+                      {
+                          return A.Material < B.Material;
+                      }
+                  });
+
+        stats.drawcall_count = 0;
+        stats.triangle_count = 0;
+        auto                      start           = std::chrono::system_clock::now();
+
         VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(m_DrawImage.ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(m_DepthImage.ImageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
@@ -415,24 +505,7 @@ namespace MamontEngine
 
         vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_TrianglePipeline);
 
-        // set dynamic viewport and scissor
-        VkViewport viewport = {};
-        viewport.x          = 0;
-        viewport.y          = 0;
-        viewport.width      = m_DrawExtent.width;
-        viewport.height     = m_DrawExtent.height;
-        viewport.minDepth   = 0.f;
-        viewport.maxDepth   = 1.f;
-
-        vkCmdSetViewport(inCmd, 0, 1, &viewport);
-
-        VkRect2D scissor      = {};
-        scissor.offset.x      = 0;
-        scissor.offset.y      = 0;
-        scissor.extent.width  = viewport.width;
-        scissor.extent.height = viewport.height;
-
-        vkCmdSetScissor(inCmd, 0, 1, &scissor);
+        //// set dynamic viewport and scissor
 
         vkCmdDraw(inCmd, 3, 1, 0, 0);
 
@@ -449,41 +522,64 @@ namespace MamontEngine
         writer.WriteBuffer(0, gpuSceneDataBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         writer.UpdateSet(m_Device, globalDescriptor);
 
-        for (const RenderObject& draw : m_MainDrawContext.OpaqueSurfaces)
-        {
-            vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Pipeline);
-            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
-            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Layout, 1, 1, &draw.Material->MaterialSet, 0, nullptr);
+        MaterialPipeline *lastPipeline    = nullptr;
+        MaterialInstance *lastMaterial    = nullptr;
+        VkBuffer          lastIndexBuffer = VK_NULL_HANDLE;
 
-            vkCmdBindIndexBuffer(inCmd, draw.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        auto draw = [&](const RenderObject &draw){
+            
+            if (draw.Material != lastMaterial)
+            {
+                lastMaterial = draw.Material;
+                if (draw.Material->Pipeline != lastPipeline)
+                {
+                    lastPipeline = draw.Material->Pipeline;
+                    vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Pipeline);
+                    vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
+
+                    VkViewport viewport = {};
+                    viewport.x          = 0;
+                    viewport.y          = 0;
+                    viewport.width      = (float)m_DrawExtent.width;
+                    viewport.height     = (float)m_DrawExtent.height;
+                    viewport.minDepth   = 0.f;
+                    viewport.maxDepth   = 1.f;
+
+                    vkCmdSetViewport(inCmd, 0, 1, &viewport);
+
+                    VkRect2D scissor      = {};
+                    scissor.offset.x      = 0;
+                    scissor.offset.y      = 0;
+                    scissor.extent.width  = m_DrawExtent.width;
+                    scissor.extent.height = m_DrawExtent.height;
+
+                    vkCmdSetScissor(inCmd, 0, 1, &scissor);
+                }
+                vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Layout, 1, 1, &draw.Material->MaterialSet, 0, nullptr);
+            }
+            
+            if (draw.IndexBuffer != lastIndexBuffer)
+            {
+                lastIndexBuffer = draw.IndexBuffer;
+                vkCmdBindIndexBuffer(inCmd, draw.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+            }
+
 
             GPUDrawPushConstants pushConstants;
+            pushConstants.WorldMatrix = draw.Transform;
             pushConstants.VertexBuffer = draw.VertexBufferAddress;
-            pushConstants.WorldMatrix  = draw.Transform;
+
             vkCmdPushConstants(inCmd, draw.Material->Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &pushConstants);
 
             vkCmdDrawIndexed(inCmd, draw.IndexCount, 1, draw.FirstIndex, 0, 0);
-        }
 
-        auto draw = [&](const RenderObject &draw)
-        {
-            vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Pipeline);
-            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
-            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Layout, 1, 1, &draw.Material->MaterialSet, 0, nullptr);
-
-            vkCmdBindIndexBuffer(inCmd, draw.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-            GPUDrawPushConstants pushConstants;
-            pushConstants.VertexBuffer = draw.VertexBufferAddress;
-            pushConstants.WorldMatrix  = draw.Transform;
-            vkCmdPushConstants(inCmd, draw.Material->Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &pushConstants);
-
-            vkCmdDrawIndexed(inCmd, draw.IndexCount, 1, draw.FirstIndex, 0, 0);
+            stats.drawcall_count++;
+            stats.triangle_count += draw.IndexCount / 3;
         };
 
-        for (auto &r : m_MainDrawContext.OpaqueSurfaces)
+        for (auto &r : opaque_draws)
         {
-            draw(r);
+            draw(m_MainDrawContext.OpaqueSurfaces[r]);
         }
 
         for (auto &r : m_MainDrawContext.TransparentSurfaces)
@@ -496,7 +592,11 @@ namespace MamontEngine
 
         vkCmdEndRendering(inCmd);
 
+        auto end = std::chrono::system_clock::now();
 
+        // convert to microseconds (integer), and then come back to miliseconds
+        auto elapsed         = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        stats.mesh_draw_time = elapsed.count() / 1000.f;
     }
 
     void MEngine::DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView)
@@ -1235,11 +1335,16 @@ namespace MamontEngine
                     // copy the buffer into the image
                     vkCmdCopyBufferToImage(cmd, uploadbuffer.Buffer, new_image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-                    VkUtil::transition_image(cmd, new_image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                    if (inIsMipMapped)
+                    {
+                        VkUtil::generate_mipmaps(cmd, new_image.Image, VkExtent2D{new_image.ImageExtent.width, new_image.ImageExtent.height});
+                    }
+                    else
+                    {
+                        VkUtil::transition_image(cmd, new_image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                    }
                 });
-
         DestroyBuffer(uploadbuffer);
-
         return new_image;
     }
     

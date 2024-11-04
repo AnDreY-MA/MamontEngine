@@ -19,6 +19,8 @@ struct GeoSurface
     uint32_t StartIndex;
     uint32_t Count;
 
+    BoundsData Bounds;
+
     std::shared_ptr<GLTFMaterial> Material;
 };
 

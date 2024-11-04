@@ -122,10 +122,26 @@ namespace MamontEngine
 
         for (auto &s : Mesh->Surfaces)
         {
-            RenderObject def(s.Count, s.StartIndex, Mesh->MeshBuffers.IndexBuffer.Buffer, &s.Material->Data, nodeMatrix, Mesh->MeshBuffers.VertexBufferAddress);
-            inContext.OpaqueSurfaces.push_back(def);
+            RenderObject def;
+            def.IndexCount          = s.Count;
+            def.FirstIndex          = s.StartIndex;
+            def.IndexBuffer         = Mesh->MeshBuffers.IndexBuffer.Buffer;
+            def.Material            = &s.Material->Data;
+            def.Bounds              = s.Bounds;
+            def.Transform           = nodeMatrix;
+            def.VertexBufferAddress = Mesh->MeshBuffers.VertexBufferAddress;
+
+            if (s.Material->Data.PassType == EMaterialPass::TRANSPARENT)
+            {
+                inContext.TransparentSurfaces.push_back(def);
+            }
+            else
+            {
+                inContext.OpaqueSurfaces.push_back(def);
+            }
         }
 
+        // recurse down
         Node::Draw(inTopMatrix, inContext);
     }
 

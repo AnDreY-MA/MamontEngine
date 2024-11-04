@@ -107,7 +107,7 @@ namespace MamontEngine
                                 imagesize.height = height;
                                 imagesize.depth  = 1;
 
-                                newImage = engine->CreateImage(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+                                newImage = engine->CreateImage(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, true);
 
                                 stbi_image_free(data);
                             }
@@ -123,7 +123,7 @@ namespace MamontEngine
                                 imagesize.height = height;
                                 imagesize.depth  = 1;
 
-                                newImage = engine->CreateImage(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+                                newImage = engine->CreateImage(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, true);
 
                                 stbi_image_free(data);
                             }
@@ -154,7 +154,7 @@ namespace MamontEngine
                                                                  imagesize.depth  = 1;
 
                                                                  newImage = engine->CreateImage(
-                                                                         data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+                                                                         data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, true);
 
                                                                  stbi_image_free(data);
                                                              }
@@ -428,8 +428,21 @@ namespace MamontEngine
                     newSurface.Material = materials[0];
                 }
 
+                glm::vec3 minpos = vertices[initial_vtx].Position;
+                glm::vec3 maxpos = vertices[initial_vtx].Position;
+                for (int i = initial_vtx; i < vertices.size(); i++)
+                {
+                    minpos = glm::min(minpos, vertices[i].Position);
+                    maxpos = glm::max(maxpos, vertices[i].Position);
+                }
+                // calculate origin and extents from the min/max, use extent lenght for radius
+                newSurface.Bounds.origin       = (maxpos + minpos) / 2.f;
+                newSurface.Bounds.extents      = (maxpos - minpos) / 2.f;
+                newSurface.Bounds.sphereRadius = glm::length(newSurface.Bounds.extents);
+
                 newmesh->Surfaces.push_back(newSurface);
             }
+
 
             newmesh->MeshBuffers = engine->UploadMesh(indices, vertices);
         }

@@ -23,6 +23,13 @@ namespace MamontEngine
         EMaterialPass      PassType;
 	};
 
+    struct BoundsData
+    {
+        glm::vec3 origin;
+        float     sphereRadius;
+        glm::vec3 extents;
+    };
+
 	struct RenderObject
 	{
         RenderObject() = default;
@@ -32,12 +39,14 @@ namespace MamontEngine
                      VkBuffer InIndexBuffer,
 
                      MaterialInstance* InMaterial,
+                     BoundsData InBounds,
 
                      glm::mat4       InTransform,
                      VkDeviceAddress InVertexBufferAdders)
             : IndexCount(InIndexCount)
             , FirstIndex(InFirstIndex)
             , IndexBuffer(InIndexBuffer)
+            , Bounds(InBounds)
             , Material(InMaterial)
             , Transform(InTransform)
             , VertexBufferAddress(InVertexBufferAdders)
@@ -49,6 +58,7 @@ namespace MamontEngine
         VkBuffer IndexBuffer;
 
 		MaterialInstance *Material;
+        BoundsData        Bounds;
 
 		glm::mat4 Transform;
         VkDeviceAddress VertexBufferAddress;
