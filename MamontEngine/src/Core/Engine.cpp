@@ -401,6 +401,10 @@ namespace MamontEngine
         vkCmdDispatch(inCmd, std::ceil(m_DrawExtent.width / 16.0), std::ceil(m_DrawExtent.height / 16.0), 1);
     }
 
+    void MEngine::DrawMain(VkCommandBuffer inCmd)
+    {
+
+    }
     void MEngine::DrawGeometry(VkCommandBuffer inCmd)
     {
         VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(m_DrawImage.ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -461,7 +465,37 @@ namespace MamontEngine
             vkCmdDrawIndexed(inCmd, draw.IndexCount, 1, draw.FirstIndex, 0, 0);
         }
 
+        auto draw = [&](const RenderObject &draw)
+        {
+            vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Pipeline);
+            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
+            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, draw.Material->Pipeline->Layout, 1, 1, &draw.Material->MaterialSet, 0, nullptr);
+
+            vkCmdBindIndexBuffer(inCmd, draw.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+            GPUDrawPushConstants pushConstants;
+            pushConstants.VertexBuffer = draw.VertexBufferAddress;
+            pushConstants.WorldMatrix  = draw.Transform;
+            vkCmdPushConstants(inCmd, draw.Material->Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &pushConstants);
+
+            vkCmdDrawIndexed(inCmd, draw.IndexCount, 1, draw.FirstIndex, 0, 0);
+        };
+
+        for (auto &r : m_MainDrawContext.OpaqueSurfaces)
+        {
+            draw(r);
+        }
+
+        for (auto &r : m_MainDrawContext.TransparentSurfaces)
+        {
+            draw(r);
+        }
+
+        m_MainDrawContext.OpaqueSurfaces.clear();
+        m_MainDrawContext.TransparentSurfaces.clear();
+
         vkCmdEndRendering(inCmd);
+
 
     }
 

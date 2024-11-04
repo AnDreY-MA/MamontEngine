@@ -149,6 +149,8 @@ namespace MamontEngine
         AllocatedImage CreateImage(void* inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false);
         void DestroyImage(const AllocatedImage &inImage);
 
+        void DrawMain(VkCommandBuffer inCmd);
+
     public:
         bool       m_IsInitialized{false};
         int        m_FrameNumber{0};
