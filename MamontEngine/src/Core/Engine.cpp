@@ -145,6 +145,7 @@ namespace MamontEngine
                 ImGui::End();
 
             }
+            ImGui::ShowDebugLogWindow();
 
             ImGui::Render();
 
@@ -166,22 +167,11 @@ namespace MamontEngine
         {
             vkDeviceWaitIdle(m_Device);
             loadedScenes.clear();
-            for (int i = 0; i < FRAME_OVERLAP; i++)
+            for (auto& frame : m_Frames)
             {
-                vkDestroyCommandPool(m_Device, m_Frames[i].CommandPool, nullptr);
-
-                vkDestroyFence(m_Device, m_Frames[i].RenderFence, nullptr);
-                vkDestroySemaphore(m_Device, m_Frames[i].RenderSemaphore, nullptr);
-                vkDestroySemaphore(m_Device, m_Frames[i].SwapchainSemaphore, nullptr);
-
-                m_Frames[i].Deleteions.Flush();
-
+                frame.Deleteions.Flush();
             }
-            for (auto& mesh : m_TestMeshes)
-            {
-                DestroyBuffer(mesh->MeshBuffers.IndexBuffer);
-                DestroyBuffer(mesh->MeshBuffers.VertexBuffer);
-            }
+
             m_MainDeletionQueue.Flush();
 
             DestroySwapchain();
@@ -225,16 +215,6 @@ namespace MamontEngine
 
         m_Rectangle = UploadMesh(rect_indices, rect_vertices);
 
-        m_MainDeletionQueue.PushFunction(
-                [&]()
-                {
-                    DestroyBuffer(m_Rectangle.IndexBuffer);
-                    DestroyBuffer(m_Rectangle.VertexBuffer);
-                });
-        std::string meshPath = RootDirectories + "/MamontEngine/assets/basicmesh.glb";
-        fmt::println("MeshPath = {}", meshPath);
-        m_TestMeshes         = LoadGltfMeshes(this, meshPath).value();
-
         uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
         m_WhiteImage    = CreateImage((void *)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
 
@@ -266,56 +246,8 @@ namespace MamontEngine
         sampl.magFilter = VK_FILTER_LINEAR;
         sampl.minFilter = VK_FILTER_LINEAR;
         vkCreateSampler(m_Device, &sampl, nullptr, &m_DefaultSamplerLinear);
-
-        m_MainDeletionQueue.PushFunction(
-                [&]()
-                {
-                    vkDestroySampler(m_Device, m_DefaultSamplerNearest, nullptr);
-                    vkDestroySampler(m_Device, m_DefaultSamplerLinear, nullptr);
-
-                    DestroyImage(m_WhiteImage);
-                    DestroyImage(m_GreyImage);
-                    DestroyImage(m_BlackImage);
-                    DestroyImage(m_ErrorCheckerboardImage);
-                });
-
-        GLTFMetallic_Roughness::MaterialResources materialResources;
-        // default the material textures
-        materialResources.ColorImage        = m_WhiteImage;
-        materialResources.ColorSampler      = m_DefaultSamplerLinear;
-        materialResources.MetalRoughImage   = m_WhiteImage;
-        materialResources.MetalRoughSampler = m_DefaultSamplerLinear;
-
-        // set the uniform buffer for the material data
-        AllocatedBuffer materialConstants =
-                CreateBuffer(sizeof(GLTFMetallic_Roughness::MaterialConstants), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-        // write the buffer
-        GLTFMetallic_Roughness::MaterialConstants *sceneUniformData =
-                (GLTFMetallic_Roughness::MaterialConstants *)materialConstants.Allocation->GetMappedData();
-        sceneUniformData->ColorFactors        = glm::vec4{1, 1, 1, 1};
-        sceneUniformData->Metal_rough_factors = glm::vec4{1, 0.5, 0, 0};
-
-        m_MainDeletionQueue.PushFunction([=, this]() { DestroyBuffer(materialConstants); });
-
-        materialResources.DataBuffer       = materialConstants.Buffer;
-        materialResources.DataBufferOffset = 0;
-
-        m_DefualtDataMatInstance = m_MetalRoughMaterial.WriteMaterial(m_Device, EMaterialPass::MAIN_COLOR, materialResources, m_GlobalDescriptorAllocator);
-
-
-       for (auto& m : m_TestMeshes)
-       {
-           std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>(glm::mat4{1.f}, glm::mat4{1.f}, m);
-
-           for (auto& s : newNode->Mesh->Surfaces)
-           {
-               s.Material = std::make_shared<GLTFMaterial>(m_DefualtDataMatInstance);
-           }
-
-           m_LoadedNodes[m->Name] = std::move(newNode);
-       }
     }
+    
     bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
     {
         std::array<glm::vec3, 8> corners{
@@ -358,6 +290,7 @@ namespace MamontEngine
             return true;
         }
     }
+    
     void MEngine::Draw()
     {
         VK_CHECK_MESSAGE(vkWaitForFences(m_Device, 1, &m_Frames[m_FrameNumber].RenderFence, VK_TRUE, 1000000000), "Wait FENCE");
@@ -384,18 +317,13 @@ namespace MamontEngine
         
         VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         //> draw_first
-        
 
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
         VkUtil::transition_image(cmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-        DrawBackground(cmd);
-
-        VkUtil::transition_image(cmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         VkUtil::transition_image(cmd, m_DepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-        DrawGeometry(cmd);
+        DrawMain(cmd);
 
         VkUtil::transition_image(cmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         VkUtil::transition_image(cmd, m_SwapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -445,7 +373,7 @@ namespace MamontEngine
         m_FrameNumber = (m_FrameNumber + 1) % FRAME_OVERLAP;
     }
 
-    void MEngine::DrawBackground(VkCommandBuffer inCmd)
+    void MEngine::DrawMain(VkCommandBuffer inCmd)
     {
         ComputeEffect &effect = m_BackgroundEffects[m_CurrentBackgroundEffect];
 
@@ -457,11 +385,29 @@ namespace MamontEngine
         vkCmdPushConstants(inCmd, m_GradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.Data);
 
         vkCmdDispatch(inCmd, std::ceil(m_DrawExtent.width / 16.0), std::ceil(m_DrawExtent.height / 16.0), 1);
-    }
 
-    void MEngine::DrawMain(VkCommandBuffer inCmd)
-    {
+        VkUtil::transition_image(inCmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
+        VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(m_DrawImage.ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(m_DepthImage.ImageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+        VkRenderingInfo renderInfo = vkinit::rendering_info(m_DrawExtent, &colorAttachment, &depthAttachment);
+
+        vkCmdBeginRendering(inCmd, &renderInfo);
+        auto start = std::chrono::system_clock::now();
+        DrawGeometry(inCmd);
+
+        auto end = std::chrono::system_clock::now();
+
+        // convert to microseconds (integer), and then come back to miliseconds
+        auto elapsed         = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        stats.mesh_draw_time = elapsed.count() / 1000.f;
+
+        vkCmdEndRendering(inCmd);
+
+        
+
+        //vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_TrianglePipeline);
     }
     
     void MEngine::DrawGeometry(VkCommandBuffer inCmd)
@@ -493,21 +439,19 @@ namespace MamontEngine
                       }
                   });
 
+        std::vector<uint32_t> transpDraws;
+        transpDraws.reserve(m_MainDrawContext.OpaqueSurfaces.size());
+
+        for (int i = 0; i < m_MainDrawContext.TransparentSurfaces.size(); i++)
+        {
+            if (is_visible(m_MainDrawContext.OpaqueSurfaces[i], m_SceneData.Viewproj))
+            {
+                transpDraws.push_back(i);
+            }
+        }
+
         stats.drawcall_count = 0;
         stats.triangle_count = 0;
-        auto                      start           = std::chrono::system_clock::now();
-
-        VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(m_DrawImage.ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(m_DepthImage.ImageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-
-        VkRenderingInfo renderInfo = vkinit::rendering_info(m_DrawExtent, &colorAttachment, &depthAttachment);
-        vkCmdBeginRendering(inCmd, &renderInfo);
-
-        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_TrianglePipeline);
-
-        //// set dynamic viewport and scissor
-
-        vkCmdDraw(inCmd, 3, 1, 0, 0);
 
         AllocatedBuffer gpuSceneDataBuffer = CreateBuffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
         m_Frames[m_FrameNumber].Deleteions.PushFunction([=, this]() { DestroyBuffer(gpuSceneDataBuffer);
@@ -582,21 +526,13 @@ namespace MamontEngine
             draw(m_MainDrawContext.OpaqueSurfaces[r]);
         }
 
-        for (auto &r : m_MainDrawContext.TransparentSurfaces)
+        for (auto &r : transpDraws)
         {
-            draw(r);
+            draw(m_MainDrawContext.TransparentSurfaces[r]);
         }
 
         m_MainDrawContext.OpaqueSurfaces.clear();
         m_MainDrawContext.TransparentSurfaces.clear();
-
-        vkCmdEndRendering(inCmd);
-
-        auto end = std::chrono::system_clock::now();
-
-        // convert to microseconds (integer), and then come back to miliseconds
-        auto elapsed         = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        stats.mesh_draw_time = elapsed.count() / 1000.f;
     }
 
     void MEngine::DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView)
@@ -623,27 +559,7 @@ namespace MamontEngine
         m_SceneData.Proj = projection;
         m_SceneData.Viewproj = projection * view;
 
-        m_MainDrawContext.OpaqueSurfaces.clear();
-
         loadedScenes["structure"]->Draw(glm::mat4{1.f}, m_MainDrawContext);
-        m_LoadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, m_MainDrawContext);
-
-        /*m_SceneData.View = glm::translate(glm::vec3{0, 0, -5});
-        m_SceneData.Proj = glm::perspective(glm::radians(70.f), (float)m_WindowExtent.width / (float)m_WindowExtent.height, 10000.f, 0.1f);
-        m_SceneData.Proj[1][1] *= -1;
-        m_SceneData.Viewproj = m_SceneData.Proj * m_SceneData.View;*/
-
-        m_SceneData.AmbientColor = glm::vec4(.1f);
-        m_SceneData.SunlightColor = glm::vec4(1.f);
-        m_SceneData.SunlightDirection = glm::vec4(0, 1, 0.5, 1.f);
-
-        for (int x = -3; x < 3; ++x)
-        {
-            glm::mat4 scale = glm::scale(glm::vec3{.2});
-            glm::mat4 translation = glm::translate(glm::vec3{x, 1, 0});
-
-            m_LoadedNodes["Cube"]->Draw(translation * scale, m_MainDrawContext);
-        }
 
     }
     
@@ -730,7 +646,7 @@ namespace MamontEngine
 
         VkImageUsageFlags drawImageUsages{};
         drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        //drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         drawImageUsages |= VK_IMAGE_USAGE_STORAGE_BIT;
         drawImageUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
@@ -858,7 +774,6 @@ namespace MamontEngine
         m_SwapchainImages = vkbSwapchain.get_images().value();
         m_SwapchainImageViews = vkbSwapchain.get_image_views().value();
 
-        fmt::println("CreateSwapchain");
     }
     
     void MEngine::InitPipelines()
@@ -931,7 +846,7 @@ namespace MamontEngine
 
         computePipelineCreateInfo.stage.module = skyShader;
 
-        ComputeEffect sky;
+        ComputeEffect sky{};
         sky.Layout     = m_GradientPipelineLayout;
         sky.Name       = "Sky";
         sky.Data       = {};
@@ -1108,13 +1023,13 @@ namespace MamontEngine
 
         ImGui_ImplVulkan_Init(&initInfo);
 
-        ImGui_ImplVulkan_CreateFontsTexture();
+        //ImmediateSubmit([&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(); });
 
         m_MainDeletionQueue.PushFunction(
                 [=]()
                 {
-                    ImGui_ImplVulkan_Shutdown();
                     vkDestroyDescriptorPool(m_Device, imguiPool, nullptr);
+                    ImGui_ImplVulkan_Shutdown();
                 });
 
        
@@ -1231,7 +1146,7 @@ namespace MamontEngine
         const size_t vertexBufferSize{inVertices.size() * sizeof(Vertex)};
         const size_t indexBufferSize{inIndices.size() * sizeof(uint32_t)};  
 
-        GPUMeshBuffers newSurface;
+        GPUMeshBuffers newSurface{};
 
         newSurface.VertexBuffer = CreateBuffer(vertexBufferSize,
                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,

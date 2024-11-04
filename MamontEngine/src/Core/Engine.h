@@ -133,8 +133,6 @@ namespace MamontEngine
         void CreateSwapchain(const uint32_t inWidth, const uint32_t inHeight);
         void DestroySwapchain();
 
-        void DrawBackground(VkCommandBuffer inCmd);
-        
         void InitDescriptors();
 
         void InitPipelines();

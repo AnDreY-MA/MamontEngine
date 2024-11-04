@@ -623,7 +623,7 @@ namespace MamontEngine
             }
 
             // display the vertex normals
-            constexpr bool OverrideColors = false;
+            constexpr bool OverrideColors = true;
             if (OverrideColors)
             {
                 for (Vertex &vtx : vertices)
