@@ -29,7 +29,7 @@ namespace MamontEngine
         matrixRange.size       = sizeof(GPUDrawPushConstants);
         matrixRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-        VkDescriptor::DescriptorLayoutBuilder layoutBuilder;
+        DescriptorLayoutBuilder layoutBuilder;
         layoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         layoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         layoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -85,7 +85,7 @@ namespace MamontEngine
     MaterialInstance GLTFMetallic_Roughness::WriteMaterial(VkDevice                                         device,
                                                            EMaterialPass                                    pass,
                                                            const GLTFMetallic_Roughness::MaterialResources &resources,
-                                                           VkDescriptor::DescriptorAllocatorGrowable       &descriptorAllocator)
+                                                           DescriptorAllocatorGrowable       &descriptorAllocator)
     {
         MaterialInstance matData;
         matData.PassType = pass;

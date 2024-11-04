@@ -88,7 +88,11 @@ target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
 #fast gltf
 add_subdirectory("vendor/fastgltf")
 target_link_libraries(${PROJECT_NAME} PUBLIC fastgltf::fastgltf)
-#target_link_libraries(${PROJECT_NAME} PUBLIC fastgltf::module)
+
+#stb
+add_subdirectory("vendor/stb")
+target_link_libraries(${PROJECT_NAME} PUBLIC stb::image)
+
 
 # PCH
 set(PCH_FILE src/pch.h)

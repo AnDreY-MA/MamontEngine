@@ -65,6 +65,12 @@ namespace MamontEngine
 
         m_MainCamera.SetVelocity(glm::vec3(0.f));
         m_MainCamera.SetPosition(glm::vec3(0, 0, 5));
+        std::string structurePath = RootDirectories + "/MamontEngine/assets/structure.glb";
+        auto        structureFile = loadGltf(this, structurePath);
+
+        assert(structureFile.has_value());
+
+        loadedScenes["structure"] = *structureFile;
 
 
         m_IsInitialized = true;
@@ -141,6 +147,7 @@ namespace MamontEngine
         if (m_IsInitialized)
         {
             vkDeviceWaitIdle(m_Device);
+            loadedScenes.clear();
             for (int i = 0; i < FRAME_OVERLAP; i++)
             {
                 vkDestroyCommandPool(m_Device, m_Frames[i].CommandPool, nullptr);
@@ -162,6 +169,8 @@ namespace MamontEngine
             DestroySwapchain();
 
             vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
+            vmaDestroyAllocator(m_Allocator);
+
             vkDestroyDevice(m_Device, nullptr);
             vkb::destroy_debug_utils_messenger(m_Instance, m_DebugMessenger);
             vkDestroyInstance(m_Instance, nullptr);
@@ -432,7 +441,7 @@ namespace MamontEngine
 
         VkDescriptorSet globalDescriptor = m_Frames[m_FrameNumber].FrameDescriptors.Allocate(m_Device, m_GPUSceneDataDescriptorLayout);
 
-        VkDescriptor::DescriptoeWriter writer;
+        DescriptoeWriter writer;
         writer.WriteBuffer(0, gpuSceneDataBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         writer.UpdateSet(m_Device, globalDescriptor);
 
@@ -482,6 +491,7 @@ namespace MamontEngine
 
         m_MainDrawContext.OpaqueSurfaces.clear();
 
+        loadedScenes["structure"]->Draw(glm::mat4{1.f}, m_MainDrawContext);
         m_LoadedNodes["Suzanne"]->Draw(glm::mat4{1.f}, m_MainDrawContext);
 
         /*m_SceneData.View = glm::translate(glm::vec3{0, 0, -5});
@@ -1001,66 +1011,60 @@ namespace MamontEngine
     
     void MEngine::InitDescriptors()
     {
-        std::vector<VkDescriptor::DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
+        std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
+                {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3},
+                {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3},
+                {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3},
+        };
 
         m_GlobalDescriptorAllocator.Init(m_Device, 10, sizes);
 
         {
-            VkDescriptor::DescriptorLayoutBuilder builder;
+            DescriptorLayoutBuilder builder;
             builder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
             m_DrawImageDescriptorLayout = builder.Build(m_Device, VK_SHADER_STAGE_COMPUTE_BIT);
         }
 
         {
-            VkDescriptor::DescriptorLayoutBuilder builder;
+            DescriptorLayoutBuilder builder;
             builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             m_GPUSceneDataDescriptorLayout = builder.Build(m_Device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
         }
 
         {
-            VkDescriptor::DescriptorLayoutBuilder builder;
+            DescriptorLayoutBuilder builder;
             builder.AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             m_SingleImageDescriptorLayout = builder.Build(m_Device, VK_SHADER_STAGE_FRAGMENT_BIT);
         }
 
-        m_DrawImageDescriptors = m_GlobalDescriptorAllocator.Allocate(m_Device, m_DrawImageDescriptorLayout);
-        /*VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        imageInfo.imageView   = m_DrawImage.ImageView;
-
-        VkWriteDescriptorSet drawImageWrite = {};
-        drawImageWrite.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        drawImageWrite.pNext                = nullptr;
-        drawImageWrite.dstBinding           = 0;
-        drawImageWrite.dstSet               = m_DrawImageDescriptors;
-        drawImageWrite.descriptorCount      = 1;
-        drawImageWrite.descriptorType       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        drawImageWrite.pImageInfo           = &imageInfo;
-
-        vkUpdateDescriptorSets(m_Device, 1, &drawImageWrite, 0, nullptr);*/
-
-        VkDescriptor::DescriptoeWriter writer;
-        writer.WriteImage(0, m_DrawImage.ImageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-        writer.UpdateSet(m_Device, m_DrawImageDescriptors);
-
         m_MainDeletionQueue.PushFunction(
                 [&]()
                 {
-                    m_GlobalDescriptorAllocator.DestroyPools(m_Device);
+                    //m_GlobalDescriptorAllocator.DestroyPools(m_Device);
 
                     vkDestroyDescriptorSetLayout(m_Device, m_DrawImageDescriptorLayout, nullptr);
+                    vkDestroyDescriptorSetLayout(m_Device, m_GPUSceneDataDescriptorLayout, nullptr);
                 });
+
+        m_DrawImageDescriptors = m_GlobalDescriptorAllocator.Allocate(m_Device, m_DrawImageDescriptorLayout);
+
+        {
+            DescriptoeWriter writer;
+            writer.WriteImage(0, m_DrawImage.ImageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+            writer.UpdateSet(m_Device, m_DrawImageDescriptors);
+        }
+
 
         for (int i = 0; i < FRAME_OVERLAP; i++)
         {
-            std::vector<VkDescriptor::DescriptorAllocatorGrowable::PoolSizeRatio> frame_sizes = {
+            std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> frame_sizes = {
                     {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3},
                     {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3},
                     {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
                     {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4},
             };
 
-            m_Frames[i].FrameDescriptors = VkDescriptor::DescriptorAllocatorGrowable{};
+            m_Frames[i].FrameDescriptors = DescriptorAllocatorGrowable{};
             m_Frames[i].FrameDescriptors.Init(m_Device, 1000, frame_sizes);
 
             m_MainDeletionQueue.PushFunction([&, i]() { m_Frames[i].FrameDescriptors.DestroyPools(m_Device); });
@@ -1168,6 +1172,7 @@ namespace MamontEngine
 
         return newImage;
     }
+    
     AllocatedImage MEngine::CreateImage(void *inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped)
     {
         size_t          data_size    = inSize.depth * inSize.width * inSize.height * 4;
@@ -1203,6 +1208,7 @@ namespace MamontEngine
 
         return new_image;
     }
+    
     void MEngine::DestroyImage(const AllocatedImage &inImage)
     {
         vkDestroyImageView(m_Device, inImage.ImageView, nullptr);

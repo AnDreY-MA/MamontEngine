@@ -83,12 +83,12 @@ namespace MamontEngine
             uint32_t       DataBufferOffset;
         };
 
-        VkDescriptor::DescriptoeWriter Writer;
+        DescriptoeWriter Writer;
 
         void BuildPipelines(class MEngine *engine);
         void ClearResources(VkDevice device);
 
-        MaterialInstance WriteMaterial(VkDevice device, EMaterialPass pass, const MaterialResources &resources, VkDescriptor::DescriptorAllocatorGrowable &descriptorAllocator);
+        MaterialInstance WriteMaterial(VkDevice device, EMaterialPass pass, const MaterialResources &resources, DescriptorAllocatorGrowable &descriptorAllocator);
     };
 
 
@@ -120,7 +120,6 @@ namespace MamontEngine
             }
         }
 
-    protected:
         std::weak_ptr<Node>                m_Parent;
         std::vector<std::shared_ptr<Node>> m_Children;
         glm::mat4                          m_LocalTransform;

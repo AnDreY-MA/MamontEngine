@@ -1,6 +1,6 @@
 #pragma once
 
-namespace MamontEngine::VkDescriptor
+namespace MamontEngine
 {
     struct DescriptorLayoutBuilder
     {

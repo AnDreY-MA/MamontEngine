@@ -49,7 +49,7 @@ namespace MamontEngine
         VkCommandBuffer MainCommandBuffer;
 
         DeletionQueue Deleteions;
-        VkDescriptor::DescriptorAllocatorGrowable FrameDescriptors;
+        DescriptorAllocatorGrowable FrameDescriptors;
 
     };
 
@@ -114,7 +114,7 @@ namespace MamontEngine
         }
 
 
-    private:
+    public:
         void InitVulkan();
         void InitSwapchain();
         void InitCommands();
@@ -149,7 +149,7 @@ namespace MamontEngine
         AllocatedImage CreateImage(void* inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false);
         void DestroyImage(const AllocatedImage &inImage);
 
-    private:
+    public:
         bool       m_IsInitialized{false};
         int        m_FrameNumber{0};
         bool       m_StopRendering{false};
@@ -190,7 +190,7 @@ namespace MamontEngine
         AllocatedImage m_DrawImage;
         AllocatedImage m_DepthImage;
 
-        VkDescriptor::DescriptorAllocatorGrowable m_GlobalDescriptorAllocator;
+        DescriptorAllocatorGrowable m_GlobalDescriptorAllocator;
         VkDescriptorSet                   m_DrawImageDescriptors;
         VkDescriptorSetLayout             m_DrawImageDescriptorLayout;
 
@@ -232,10 +232,13 @@ namespace MamontEngine
 
         DrawContext m_MainDrawContext;
         std::unordered_map<std::string, std::shared_ptr<Node>> m_LoadedNodes;
+        std::unordered_map<std::string, std::shared_ptr<LoadedGLTF>> loadedScenes;
 
         void UpdateScene();
 
         Camera m_MainCamera;
+
+
 	
     };
 }

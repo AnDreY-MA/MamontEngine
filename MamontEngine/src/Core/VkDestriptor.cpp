@@ -1,6 +1,6 @@
 #include "VkDestriptor.h"
 
-namespace MamontEngine::VkDescriptor
+namespace MamontEngine
 {
 
     void DescriptorLayoutBuilder::AddBinding(const uint32_t inBinding, VkDescriptorType inType)
