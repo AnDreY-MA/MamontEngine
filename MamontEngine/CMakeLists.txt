@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Gather source files
 file(GLOB src "src/*.h" "src/*.cpp" "src/*.hpp")
 file(GLOB_RECURSE Core "src/Core/*.h" "src/Core/*.hpp" "src/Core/*.cpp")
-set(SOURCE_FILES ${src} ${Core})
+file(GLOB_RECURSE Renderer "src/Renderer/*.h" "src/Renderer/*.hpp" "src/Renderer/*.cpp")
+set(SOURCE_FILES ${src} ${Core} ${Renderer})
 
 # Add library
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})

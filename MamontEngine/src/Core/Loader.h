@@ -63,7 +63,7 @@ private:
 
 };
 
-std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(MEngine *engine, std::string_view filePath);
+ [[nodiscard]] std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(MEngine *engine, std::string_view filePath);
 
-std::optional<std::vector<std::shared_ptr<MeshAsset>>> LoadGltfMeshes(MamontEngine::MEngine *inEngine, std::filesystem::path inFilePath);
+ [[nodiscard]] std::optional<std::vector<std::shared_ptr<MeshAsset>>> LoadGltfMeshes(MamontEngine::MEngine *inEngine, std::filesystem::path inFilePath);
 } // namespace MamontEngine

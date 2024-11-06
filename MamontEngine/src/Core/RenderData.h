@@ -5,6 +5,88 @@
 
 namespace MamontEngine
 {
+    struct AllocatedImage
+    {
+        VkImage       Image;
+        VkImageView   ImageView;
+        VmaAllocation Allocation;
+        VkExtent3D    ImageExtent;
+        VkFormat      ImageFormat;
+    };
+
+    struct AllocatedBuffer
+    {
+        VkBuffer          Buffer;
+        VmaAllocation     Allocation;
+        VmaAllocationInfo Info;
+    };
+
+    struct Vertex
+    {
+        glm::vec3 Position;
+        float     UV_X;
+        glm::vec3 Normal;
+        float     UV_Y;
+        glm::vec4 Color;
+    };
+
+    struct GPUMeshBuffers
+    {
+        AllocatedBuffer IndexBuffer;
+        AllocatedBuffer VertexBuffer;
+        VkDeviceAddress VertexBufferAddress;
+    };
+
+    struct GPUDrawPushConstants
+    {
+        glm::mat4       WorldMatrix;
+        VkDeviceAddress VertexBuffer;
+    };
+
+    struct DeletionQueue
+    {
+    public:
+        void PushFunction(std::function<void()> &&inFunction)
+        {
+            m_Deletors.push_back(inFunction);
+        }
+
+        void Flush()
+        {
+            for (auto it = m_Deletors.rbegin(); it != m_Deletors.rend(); it++)
+            {
+                (*it)();
+            }
+
+            m_Deletors.clear();
+        }
+
+    private:
+        std::deque<std::function<void()>> m_Deletors;
+    };
+
+    struct FrameData
+    {
+        VkSemaphore SwapchainSemaphore;
+        VkSemaphore RenderSemaphore;
+
+        VkFence RenderFence;
+
+        VkCommandPool   CommandPool;
+        VkCommandBuffer MainCommandBuffer;
+
+        DeletionQueue                      Deleteions;
+        struct DescriptorAllocatorGrowable FrameDescriptors;
+    };
+
+    struct ComputePushConstants
+    {
+        glm::vec4 Data1;
+        glm::vec4 Data2;
+        glm::vec4 Data3;
+        glm::vec4 Data4;
+    };
+
 	enum class EMaterialPass : uint8_t
 	{
 		MAIN_COLOR, TRANSPARENT, OTHER

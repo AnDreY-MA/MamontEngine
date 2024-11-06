@@ -19,10 +19,7 @@ namespace MamontEngine
 
     void LoadedGLTF::clearAll()
     {
-        VkDevice dv = creator->m_Device;
-
-        descriptorPool.DestroyPools(dv);
-        creator->DestroyBuffer(materialDataBuffer);
+        VkDevice dv = creator->GetDevice();
 
         for (auto &[k, v] : meshes)
         {
@@ -46,6 +43,12 @@ namespace MamontEngine
         {
             vkDestroySampler(dv, sampler, nullptr);
         }
+        
+        auto materialBuffer = materialDataBuffer;
+        auto &samplesToDestroy = samplers;
+
+        descriptorPool.DestroyPools(dv);
+        creator->DestroyBuffer(materialBuffer);
     }
     
     VkFilter extract_filter(fastgltf::Filter filter)
@@ -86,7 +89,7 @@ namespace MamontEngine
     {
         AllocatedImage newImage{};
 
-        int width, height, nrChannels;
+        int width = 0, height = 0, nrChannels = 0;
 
         std::visit(
                 fastgltf::visitor{
@@ -180,15 +183,15 @@ namespace MamontEngine
     {
         fmt::print("Loading GLTF: {}", filePath);
 
-        std::shared_ptr<LoadedGLTF> scene = std::make_shared<LoadedGLTF>();
+        auto scene = std::make_shared<LoadedGLTF>();
         scene->creator                    = engine;
-        LoadedGLTF &file                  = *scene.get();
+        LoadedGLTF &file                  = *scene;
 
         using fastgltf::Extensions;
         constexpr auto gltfExtensions = Extensions::KHR_texture_basisu | Extensions::KHR_mesh_quantization | Extensions::EXT_meshopt_compression |
                                         Extensions::KHR_lights_punctual | Extensions::KHR_materials_emissive_strength;
 
-        auto parser = fastgltf::Parser(gltfExtensions);
+        fastgltf::Parser parser{} /*fastgltf::Parser(gltfExtensions)*/;
 
         constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble | fastgltf::Options::LoadGLBBuffers |
                                      fastgltf::Options::LoadExternalBuffers;
@@ -237,7 +240,7 @@ namespace MamontEngine
         std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
                 {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3}, {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3}, {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}};
 
-        file.descriptorPool.Init(engine->m_Device, gltf.materials.size(), sizes);
+        file.descriptorPool.Init(engine->GetDevice(), gltf.materials.size(), sizes);
 
          // load samplers
         for (fastgltf::Sampler &sampler : gltf.samplers)
@@ -253,7 +256,7 @@ namespace MamontEngine
             sampl.mipmapMode = extract_mipmap_mode(sampler.minFilter.value_or(fastgltf::Filter::Nearest));
 
             VkSampler newSampler;
-            vkCreateSampler(engine->m_Device, &sampl, nullptr, &newSampler);
+            vkCreateSampler(engine->GetDevice(), &sampl, nullptr, &newSampler);
 
             file.samplers.push_back(newSampler);
         }
@@ -331,7 +334,7 @@ namespace MamontEngine
                 materialResources.ColorSampler = file.samplers[sampler];
             }
             // build material
-            newMat->Data = engine->m_MetalRoughMaterial.WriteMaterial(engine->m_Device, passType, materialResources, file.descriptorPool);
+            newMat->Data = engine->m_MetalRoughMaterial.WriteMaterial(engine->GetDevice(), passType, materialResources, file.descriptorPool);
 
             data_index++;
         }
@@ -348,7 +351,6 @@ namespace MamontEngine
             file.meshes[mesh.name.c_str()] = newmesh;
             newmesh->Name                  = mesh.name;
 
-            // clear the mesh arrays each mesh, we dont want to merge them by error
             indices.clear();
             vertices.clear();
 

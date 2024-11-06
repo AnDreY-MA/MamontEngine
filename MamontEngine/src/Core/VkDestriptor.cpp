@@ -220,6 +220,7 @@ namespace MamontEngine
 
         m_Writes.push_back(write);
     }
+    
     void DescriptoeWriter::WriteBuffer(const int inBinding, VkBuffer inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType)
     {
         VkDescriptorBufferInfo &info = m_BufferInfos.emplace_back(VkDescriptorBufferInfo{.buffer = inBuffer, .offset = inOffset, .range = inSize});
@@ -242,6 +243,7 @@ namespace MamontEngine
         m_Writes.clear();
         m_BufferInfos.clear();
     }
+    
     void DescriptoeWriter::UpdateSet(VkDevice inDevice, VkDescriptorSet inSet)
     {
         for (VkWriteDescriptorSet &write : m_Writes)

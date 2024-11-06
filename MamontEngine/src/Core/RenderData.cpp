@@ -87,7 +87,7 @@ namespace MamontEngine
                                                            const GLTFMetallic_Roughness::MaterialResources &resources,
                                                            DescriptorAllocatorGrowable       &descriptorAllocator)
     {
-        MaterialInstance matData;
+        MaterialInstance matData{};
         matData.PassType = pass;
         if (pass == EMaterialPass::TRANSPARENT)
         {
