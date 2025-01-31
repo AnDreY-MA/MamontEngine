@@ -25,6 +25,14 @@ namespace MamontEngine
     {
         if (inEvent.type == SDL_EVENT_KEY_DOWN)
         {
+            if (inEvent.key.key == SDLK_E)
+            {
+                m_Velocity.y = 1;
+            }
+            if (inEvent.key.key == SDLK_Q)
+            {
+                m_Velocity.y = -1;
+            }
             if (inEvent.key.key == SDLK_W)
             {
                 m_Velocity.z = -1;
@@ -45,6 +53,14 @@ namespace MamontEngine
 
         if (inEvent.type == SDL_EVENT_KEY_UP)
         {
+            if (inEvent.key.key == SDLK_E)
+            {
+                m_Velocity.y = 0;
+            }
+            if (inEvent.key.key == SDLK_Q)
+            {
+                m_Velocity.y = 0;
+            }
             if (inEvent.key.key == SDLK_W)
             {
                 m_Velocity.z = 0 ;

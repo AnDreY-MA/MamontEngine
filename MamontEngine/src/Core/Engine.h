@@ -1,12 +1,10 @@
 #pragma once
 
+#include "vk_mem_alloc.h"
 #include "VkDestriptor.h"
 #include "Loader.h"
 #include "Renderer.h"
 #include "Camera.h"
-#include "Renderer/SkyPipeline.h"
-#include "RenderData.h"
-#include "Renderer/MDevice.h"
 
 struct MPipeline
 {
@@ -17,7 +15,60 @@ namespace MamontEngine
 {
     constexpr unsigned int FRAME_OVERLAP = 2;
 
-    
+    struct DeletionQueue
+    {
+    public:
+        void PushFunction(std::function < void()>&& inFunction)
+        {
+            deletors.push_back(inFunction);
+        }
+
+        void Flush()
+        {
+            for (auto it = deletors.rbegin(); it != deletors.rend(); it++)
+            {
+                (*it)();
+            }
+
+            deletors.clear();
+        }
+
+    private:
+        std::deque<std::function<void()>> deletors;
+
+    };
+
+    struct FrameData
+    {
+        VkSemaphore     SwapchainSemaphore;
+        VkSemaphore     RenderSemaphore;
+
+        VkFence         RenderFence;
+        
+        VkCommandPool   CommandPool;
+        VkCommandBuffer MainCommandBuffer;
+
+        DeletionQueue Deleteions;
+        DescriptorAllocatorGrowable FrameDescriptors;
+
+    };
+
+    struct ComputePushConstants
+    {
+        glm::vec4 Data1;
+        glm::vec4 Data2;
+        glm::vec4 Data3;
+        glm::vec4 Data4;
+    };
+
+    struct ComputeEffect
+    {
+        const char *Name;
+        ::VkPipeline  Pipeline;
+        VkPipelineLayout Layout;
+        
+        ComputePushConstants Data;
+    };
 
     struct GPUSceneData
     {
@@ -29,13 +80,13 @@ namespace MamontEngine
         glm::vec4 SunlightColor;
     };
 
-    struct MEgnineStats
+    struct EngineStats
     {
-        float frametime;
-        int   triangle_count;
-        int   drawcall_count;
-        float scene_update_time;
-        float mesh_draw_time;
+        float FrameTime;
+        float SceneUpdateTime;
+        float MeshDrawTime;
+        int   TriangleCount;
+        int   DrawCallCount;
     };
 
 	class MEngine
@@ -53,7 +104,7 @@ namespace MamontEngine
 
         VkDevice GetDevice() const
         {
-            return m_MamontDevice.m_Device;
+            return m_Device;
         }
 
         VkDescriptorSetLayout GetGPUSceneData() const
@@ -70,6 +121,11 @@ namespace MamontEngine
             return m_DepthImage;
         }
 
+        AllocatedImage GetErrorImage() const
+        {
+            return m_ErrorCheckerboardImage;
+        }
+
 
     public:
         void InitVulkan();
@@ -81,31 +137,32 @@ namespace MamontEngine
         void CreateSwapchain(const uint32_t inWidth, const uint32_t inHeight);
         void DestroySwapchain();
 
+        void DrawBackground(VkCommandBuffer inCmd);
+        
         void InitDescriptors();
 
         void InitPipelines();
         void InitBackgrounPipeline();
 
         void InitImgui();
-        //void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction);
-        void DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView);
+        
+        void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction) const;
+        
+        void DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView) const;
 
-        void InitTrianglePipeline();
-        void InitMeshPipeline();
-
+        void DrawMain(VkCommandBuffer inCmd);
         void DrawGeometry(VkCommandBuffer inCmd);
 
-         [[nodiscard]] AllocatedBuffer CreateBuffer(size_t inAllocSize, VkBufferUsageFlags inUsage, VmaMemoryUsage inMemoryUsage);
-        void            DestroyBuffer(const AllocatedBuffer &inBuffer);
+        AllocatedBuffer CreateBuffer(size_t inAllocSize, VkBufferUsageFlags inUsage, VmaMemoryUsage inMemoryUsage) const;
+        void            DestroyBuffer(const AllocatedBuffer &inBuffer) const;
 
         void ResizeSwapchain();
 
-         [[nodiscard]] AllocatedImage CreateImage(VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false);
-        [[nodiscard]] AllocatedImage
-             CreateImage(void *inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false);
+        AllocatedImage CreateImage(VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false) const;
+        
+        AllocatedImage CreateImage(void* inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false);
+        
         void DestroyImage(const AllocatedImage &inImage);
-
-        void DrawMain(VkCommandBuffer inCmd);
 
     public:
         bool       m_IsInitialized{false};
@@ -116,10 +173,13 @@ namespace MamontEngine
 
         VkExtent2D m_WindowExtent{1700, 900};
 
-        struct MWindow *Window = nullptr;
+        void *m_Window{nullptr};
 
-        MDevice m_MamontDevice;
-        SkyPipeline m_SkyPipeline;
+        VkInstance               m_Instance;
+        VkDebugUtilsMessengerEXT m_DebugMessenger;
+        VkPhysicalDevice         m_ChosenGPU;
+        VkDevice                 m_Device;
+        VkSurfaceKHR             m_Surface;
 
         VkSwapchainKHR           m_Swapchain;
         VkFormat                 m_SwapchainImageFormat;
@@ -135,8 +195,12 @@ namespace MamontEngine
             return m_Frames[m_FrameNumber & FRAME_OVERLAP];
         }*/
 
+        VkQueue m_GraphicsQueue;
+        uint32_t m_GraphicsQueueFamily;
+
         DeletionQueue m_MainDeletionQueue;
 
+        VmaAllocator m_Allocator;
 
         AllocatedImage m_DrawImage;
         AllocatedImage m_DepthImage;
@@ -145,22 +209,19 @@ namespace MamontEngine
         VkDescriptorSet                   m_DrawImageDescriptors;
         VkDescriptorSetLayout             m_DrawImageDescriptorLayout;
 
-        //VkPipelineLayout m_GradientPipelineLayout;
-        //MPipeline        m_Pipeline;
+        VkPipelineLayout m_GradientPipelineLayout;
         VkPipelineLayout m_TrianglePipelineLayout;
         VkPipeline       m_TrianglePipeline;
         VkPipelineLayout m_MeshPipelineLayout;
         VkPipeline       m_MeshPipeline;
         VkViewport       m_Viewport;
 
+        VkFence         m_ImmFence;
+        VkCommandBuffer m_ImmCommandBuffer;
         VkCommandPool   m_ImmCommandPool;
 
-        /*std::vector<ComputeEffect> m_BackgroundEffects;
-        int                        m_CurrentBackgroundEffect{1};*/
-
-        GPUMeshBuffers m_Rectangle;
-
-        std::vector<std::shared_ptr<MeshAsset>> m_TestMeshes;
+        std::vector<ComputeEffect> m_BackgroundEffects;
+        int                        m_CurrentBackgroundEffect{0};
 
         GPUSceneData m_SceneData;
 
@@ -180,14 +241,14 @@ namespace MamontEngine
         GLTFMetallic_Roughness m_MetalRoughMaterial;
 
         DrawContext m_MainDrawContext;
-        std::unordered_map<std::string, std::shared_ptr<Node>> m_LoadedNodes;
         std::unordered_map<std::string, std::shared_ptr<LoadedGLTF>> loadedScenes;
 
+        EngineStats stats;
+
         void UpdateScene();
+        void InitRenderable();
 
         Camera m_MainCamera;
-
-        MEgnineStats stats;
 	
     };
 }

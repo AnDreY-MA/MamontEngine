@@ -5,88 +5,6 @@
 
 namespace MamontEngine
 {
-    struct AllocatedImage
-    {
-        VkImage       Image;
-        VkImageView   ImageView;
-        VmaAllocation Allocation;
-        VkExtent3D    ImageExtent;
-        VkFormat      ImageFormat;
-    };
-
-    struct AllocatedBuffer
-    {
-        VkBuffer          Buffer;
-        VmaAllocation     Allocation;
-        VmaAllocationInfo Info;
-    };
-
-    struct Vertex
-    {
-        glm::vec3 Position;
-        float     UV_X;
-        glm::vec3 Normal;
-        float     UV_Y;
-        glm::vec4 Color;
-    };
-
-    struct GPUMeshBuffers
-    {
-        AllocatedBuffer IndexBuffer;
-        AllocatedBuffer VertexBuffer;
-        VkDeviceAddress VertexBufferAddress;
-    };
-
-    struct GPUDrawPushConstants
-    {
-        glm::mat4       WorldMatrix;
-        VkDeviceAddress VertexBuffer;
-    };
-
-    struct DeletionQueue
-    {
-    public:
-        void PushFunction(std::function<void()> &&inFunction)
-        {
-            m_Deletors.push_back(inFunction);
-        }
-
-        void Flush()
-        {
-            for (auto it = m_Deletors.rbegin(); it != m_Deletors.rend(); it++)
-            {
-                (*it)();
-            }
-
-            m_Deletors.clear();
-        }
-
-    private:
-        std::deque<std::function<void()>> m_Deletors;
-    };
-
-    struct FrameData
-    {
-        VkSemaphore SwapchainSemaphore;
-        VkSemaphore RenderSemaphore;
-
-        VkFence RenderFence;
-
-        VkCommandPool   CommandPool;
-        VkCommandBuffer MainCommandBuffer;
-
-        DeletionQueue                      Deleteions;
-        struct DescriptorAllocatorGrowable FrameDescriptors;
-    };
-
-    struct ComputePushConstants
-    {
-        glm::vec4 Data1;
-        glm::vec4 Data2;
-        glm::vec4 Data3;
-        glm::vec4 Data4;
-    };
-
 	enum class EMaterialPass : uint8_t
 	{
 		MAIN_COLOR, TRANSPARENT, OTHER
@@ -105,11 +23,26 @@ namespace MamontEngine
         EMaterialPass      PassType;
 	};
 
-    struct BoundsData
+    struct GLTFMaterial
     {
-        glm::vec3 origin;
-        float     sphereRadius;
-        glm::vec3 extents;
+        MaterialInstance Data;
+    };
+
+    struct Bounds
+    {
+        glm::vec3 Origin;
+        glm::vec3 Extents;
+        float     SpherRadius;
+    };
+
+    struct GeoSurface
+    {
+        uint32_t StartIndex;
+        uint32_t Count;
+
+        Bounds Bound;
+
+        std::shared_ptr<GLTFMaterial> Material;
     };
 
 	struct RenderObject
@@ -121,14 +54,12 @@ namespace MamontEngine
                      VkBuffer InIndexBuffer,
 
                      MaterialInstance* InMaterial,
-                     BoundsData InBounds,
 
                      glm::mat4       InTransform,
                      VkDeviceAddress InVertexBufferAdders)
             : IndexCount(InIndexCount)
             , FirstIndex(InFirstIndex)
             , IndexBuffer(InIndexBuffer)
-            , Bounds(InBounds)
             , Material(InMaterial)
             , Transform(InTransform)
             , VertexBufferAddress(InVertexBufferAdders)
@@ -140,7 +71,7 @@ namespace MamontEngine
         VkBuffer IndexBuffer;
 
 		MaterialInstance *Material;
-        BoundsData        Bounds;
+        Bounds            Bound;
 
 		glm::mat4 Transform;
         VkDeviceAddress VertexBufferAddress;
@@ -176,7 +107,7 @@ namespace MamontEngine
             uint32_t       DataBufferOffset;
         };
 
-        DescriptoeWriter Writer;
+        DescriptorWriter Writer;
 
         void BuildPipelines(class MEngine *engine);
         void ClearResources(VkDevice device);
@@ -232,4 +163,6 @@ namespace MamontEngine
         
         std::shared_ptr<MeshAsset> Mesh;
     };
+
+
 }

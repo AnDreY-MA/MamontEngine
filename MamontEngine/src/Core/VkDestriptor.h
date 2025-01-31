@@ -1,7 +1,6 @@
 #pragma once
 
-namespace MamontEngine
-{
+
     struct DescriptorLayoutBuilder
     {
         void AddBinding(const uint32_t inBinding, VkDescriptorType inType);
@@ -57,7 +56,7 @@ namespace MamontEngine
         uint32_t                      m_SetsPerPool;
     };
 
-    struct DescriptoeWriter
+    struct DescriptorWriter
     {
         std::deque<VkDescriptorImageInfo>  m_ImageInfos;
         std::deque<VkDescriptorBufferInfo> m_BufferInfos;
@@ -70,4 +69,3 @@ namespace MamontEngine
         void UpdateSet(VkDevice inDevice, VkDescriptorSet inSet);
     };
 
-}

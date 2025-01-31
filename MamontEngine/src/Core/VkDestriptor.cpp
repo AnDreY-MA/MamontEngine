@@ -1,7 +1,6 @@
 #include "VkDestriptor.h"
 
-namespace MamontEngine
-{
+
 
     void DescriptorLayoutBuilder::AddBinding(const uint32_t inBinding, VkDescriptorType inType)
     {
@@ -206,7 +205,7 @@ namespace MamontEngine
 
 //// DescriptoeWriter
 
-    void DescriptoeWriter::WriteImage(const int inBinding, VkImageView inImage, VkSampler inSampler, VkImageLayout inLayout, VkDescriptorType inType)
+    void DescriptorWriter::WriteImage(const int inBinding, VkImageView inImage, VkSampler inSampler, VkImageLayout inLayout, VkDescriptorType inType)
     {
         VkDescriptorImageInfo &info = m_ImageInfos.emplace_back(VkDescriptorImageInfo{.sampler = inSampler, .imageView = inImage, .imageLayout = inLayout});
 
@@ -220,8 +219,7 @@ namespace MamontEngine
 
         m_Writes.push_back(write);
     }
-    
-    void DescriptoeWriter::WriteBuffer(const int inBinding, VkBuffer inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType)
+    void DescriptorWriter::WriteBuffer(const int inBinding, VkBuffer inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType)
     {
         VkDescriptorBufferInfo &info = m_BufferInfos.emplace_back(VkDescriptorBufferInfo{.buffer = inBuffer, .offset = inOffset, .range = inSize});
 
@@ -237,14 +235,13 @@ namespace MamontEngine
 
     }
 
-    void DescriptoeWriter::Clear()
+    void DescriptorWriter::Clear()
     {
         m_ImageInfos.clear();
         m_Writes.clear();
         m_BufferInfos.clear();
     }
-    
-    void DescriptoeWriter::UpdateSet(VkDevice inDevice, VkDescriptorSet inSet)
+    void DescriptorWriter::UpdateSet(VkDevice inDevice, VkDescriptorSet inSet)
     {
         for (VkWriteDescriptorSet &write : m_Writes)
         {
@@ -253,4 +250,3 @@ namespace MamontEngine
 
         vkUpdateDescriptorSets(inDevice, (uint32_t)m_Writes.size(), m_Writes.data(), 0, nullptr);
     }
-}

@@ -1,8 +1,8 @@
 #include "VkImages.h"
 #include "VkInitializers.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/include/stb_image.h>
 
 namespace MamontEngine::VkUtil
 {
@@ -138,7 +138,6 @@ namespace MamontEngine::VkUtil
             }
         }
 
-        // transition all mip levels into the final read_only layout
         transition_image(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 } // namespace MamontEngine::VkUtil

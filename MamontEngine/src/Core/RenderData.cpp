@@ -118,19 +118,12 @@ namespace MamontEngine
 
     void MeshNode::Draw(const glm::mat4 &inTopMatrix, DrawContext &inContext)
     {
-        glm::mat4 nodeMatrix = inTopMatrix * m_WorldTransform;
+        const glm::mat4 nodeMatrix = inTopMatrix * m_WorldTransform;
 
         for (auto &s : Mesh->Surfaces)
         {
-            RenderObject def;
-            def.IndexCount          = s.Count;
-            def.FirstIndex          = s.StartIndex;
-            def.IndexBuffer         = Mesh->MeshBuffers.IndexBuffer.Buffer;
-            def.Material            = &s.Material->Data;
-            def.Bounds              = s.Bounds;
-            def.Transform           = nodeMatrix;
-            def.VertexBufferAddress = Mesh->MeshBuffers.VertexBufferAddress;
-
+            RenderObject def(s.Count, s.StartIndex, Mesh->MeshBuffers.IndexBuffer.Buffer, &s.Material->Data, nodeMatrix, Mesh->MeshBuffers.VertexBufferAddress);
+            def.Bound = s.Bound;
             if (s.Material->Data.PassType == EMaterialPass::TRANSPARENT)
             {
                 inContext.TransparentSurfaces.push_back(def);
@@ -141,7 +134,6 @@ namespace MamontEngine
             }
         }
 
-        // recurse down
         Node::Draw(inTopMatrix, inContext);
     }
 
