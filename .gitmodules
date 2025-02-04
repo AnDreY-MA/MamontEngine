@@ -1,0 +1,26 @@
+[submodule "MamontEngine/vendor/glfw-3.4"]
+    path = MamontEngine/vendor/glfw-3.4
+    url = https://github.com/glfw/glfw
+    
+[submodule "MamontEngine/vendor/glm"]
+    path = MamontEngine/vendor/glm
+    url = https://github.com/g-truc/glm
+    
+[submodule "MamontEngine/vendor/ImGui"]
+    path = MamontEngine/vendor/ImGui
+    url = https://github.com/ocornut/imgui    
+[submodule "MamontEngine/vendor/sdl"]
+	path = MamontEngine/vendor/sdl
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "MamontEngine/vendor/vkbootstrap"]
+	path = MamontEngine/vendor/vkbootstrap
+	url = https://github.com/charles-lunarg/vk-bootstrap.git
+[submodule "MamontEngine/vendor/vma"]
+	path = MamontEngine/vendor/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "MamontEngine/vendor/imgui"]
+	path = MamontEngine/vendor/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "MamontEngine/vendor/fastgltf"]
+	path = MamontEngine/vendor/fastgltf
+	url = https://github.com/spnda/fastgltf.git
