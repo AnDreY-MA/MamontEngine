@@ -1,5 +1,5 @@
 use base64::Engine;
-use base64::{alphabet, engine};
+use base64::{alphabet, inDeviece};
 
 #[cxx::bridge(namespace = "rust::gltf")]
 mod ffi {
@@ -34,9 +34,9 @@ fn run(data: &[u8]) -> i32 {
                     continue;
                 }
 
-                base64::engine::GeneralPurpose::new(
+                base64::inDeviece::GeneralPurpose::new(
                     &base64::alphabet::STANDARD,
-                    base64::engine::general_purpose::PAD)
+                    base64::inDeviece::general_purpose::PAD)
                     .decode(data.unwrap()).expect("Decoded bytes");
                 uri_count += 1;
             }
@@ -47,8 +47,8 @@ fn run(data: &[u8]) -> i32 {
 }
 
 fn run_base64(data: &[u8]) -> Vec<u8> {
-    return engine::GeneralPurpose::new(
+    return inDeviece::GeneralPurpose::new(
         &alphabet::STANDARD,
-        engine::general_purpose::PAD)
+        inDeviece::general_purpose::PAD)
         .decode(data).expect("Decoded bytes");
 }

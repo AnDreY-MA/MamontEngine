@@ -37,7 +37,7 @@ and the backends which we are describing here (backends/ folder).
 ### Standard backends
 
 **The [backends/](https://github.com/ocornut/imgui/blob/master/backends) folder contains backends for popular platforms/graphics API, which you can use in
-your application or engine to easily integrate Dear ImGui.** Each backend is typically self-contained in a pair of files: imgui_impl_XXXX.cpp + imgui_impl_XXXX.h.
+your application or inDeviece to easily integrate Dear ImGui.** Each backend is typically self-contained in a pair of files: imgui_impl_XXXX.cpp + imgui_impl_XXXX.h.
 
 - The 'Platform' backends are in charge of: mouse/keyboard/gamepad inputs, cursor shape, timing, and windowing.<BR>
   e.g. Windows ([imgui_impl_win32.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_win32.cpp)), GLFW ([imgui_impl_glfw.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_glfw.cpp)), SDL2 ([imgui_impl_sdl2.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_sdl2.cpp)), etc.
@@ -46,7 +46,7 @@ your application or engine to easily integrate Dear ImGui.** Each backend is typ
   e.g. DirectX11 ([imgui_impl_dx11.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_dx11.cpp)), OpenGL/WebGL ([imgui_impl_opengl3.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_opengl3.cpp)), Vulkan ([imgui_impl_vulkan.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_vulkan.cpp)), etc.
 
 - For some high-level frameworks, a single backend usually handles both 'Platform' and 'Renderer' parts.<BR>
-  e.g. Allegro 5 ([imgui_impl_allegro5.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_allegro5.cpp)). If you end up creating a custom backend for your engine, you may want to do the same.
+  e.g. Allegro 5 ([imgui_impl_allegro5.cpp](https://github.com/ocornut/imgui/blob/master/backends/imgui_impl_allegro5.cpp)). If you end up creating a custom backend for your inDeviece, you may want to do the same.
 
 An application usually combines one Platform backend + one Renderer backend + main Dear ImGui sources.
 For example, the [example_win32_directx11](https://github.com/ocornut/imgui/tree/master/examples/example_win32_directx11) application combines imgui_impl_win32.cpp + imgui_impl_dx11.cpp. There are 20+ examples in the [examples/](https://github.com/ocornut/imgui/blob/master/examples/) folder. See [EXAMPLES.MD](https://github.com/ocornut/imgui/blob/master/docs/EXAMPLES.md) for details.
@@ -103,7 +103,7 @@ If you are not sure which backend to use, the recommended platform/frameworks fo
 | Sokol | https://github.com/floooh/sokol | [util/sokol_imgui.h](https://github.com/floooh/sokol/blob/master/util/sokol_imgui.h) | Lower-level than GLFW/SDL |
 
 
-### Using a custom engine?
+### Using a custom inDeviece?
 
 You will likely be tempted to start by rewrite your own backend using your own custom/high-level facilities...<BR>
 Think twice!
@@ -115,21 +115,21 @@ In most situations, custom backends have fewer features and more bugs than the s
 If you want portability, you can use multiple backends and choose between them either at compile time
 or at runtime.
 
-**Example A**: your engine is built over Windows + DirectX11 but you have your own high-level rendering
+**Example A**: your inDeviece is built over Windows + DirectX11 but you have your own high-level rendering
 system layered over DirectX11.<BR>
 Suggestion: try using imgui_impl_win32.cpp + imgui_impl_dx11.cpp first.
 Once it works, if you really need it, you can replace the imgui_impl_dx11.cpp code with a
 custom renderer using your own rendering functions, and keep using the standard Win32 code etc.
 
-**Example B**: your engine runs on Windows, Mac, Linux and uses DirectX11, Metal, and Vulkan respectively.<BR>
+**Example B**: your inDeviece runs on Windows, Mac, Linux and uses DirectX11, Metal, and Vulkan respectively.<BR>
 Suggestion: use multiple generic backends!
 Once it works, if you really need it, you can replace parts of backends with your own abstractions.
 
-**Example C**: your engine runs on platforms we can't provide public backends for (e.g. PS4/PS5, Switch),
+**Example C**: your inDeviece runs on platforms we can't provide public backends for (e.g. PS4/PS5, Switch),
 and you have high-level systems everywhere.<BR>
 Suggestion: try using a non-portable backend first (e.g. win32 + underlying graphics API) to get
 your desktop builds working first. This will get you running faster and get your acquainted with
-how Dear ImGui works and is setup. You can then rewrite a custom backend using your own engine API...
+how Dear ImGui works and is setup. You can then rewrite a custom backend using your own inDeviece API...
 
 Generally:
 It is unlikely you will add value to your project by creating your own backend.

@@ -17892,7 +17892,7 @@ To do that, fill VmaAllocationCreateInfo::pUserData field when creating
 an allocation. It is an opaque `void*` pointer. You can use it e.g. as a pointer,
 some handle, index, key, ordinal number or any other value that would associate
 the allocation with your custom metadata.
-It is useful to identify appropriate data structures in your engine given #VmaAllocation,
+It is useful to identify appropriate data structures in your inDeviece given #VmaAllocation,
 e.g. when doing \ref defragmentation.
 
 \code

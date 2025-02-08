@@ -2,7 +2,9 @@
 
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/parser.hpp>
-#include "Engine.h"
+#include "Core/Engine.h"
+#include "Core/VkDeviceContext.h"
+#include "Graphics/MScene.h"
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <stb/include/stb_image.h>
@@ -44,48 +46,8 @@ namespace MamontEngine
         }
     }
 
-    void LoadedGLTF::Draw(const glm::mat4 &topMatrix, DrawContext &ctx)
-    {
-        for (auto &n : topNodes)
-        {
-            n->Draw(topMatrix, ctx);
-        }
-    }
 
-    void LoadedGLTF::clearAll()
-    {
-        VkDevice dv = creator->GetDevice();
-
-        for (auto &[k, v] : meshes)
-        {
-            creator->DestroyBuffer(v->MeshBuffers.IndexBuffer);
-            creator->DestroyBuffer(v->MeshBuffers.VertexBuffer);
-        }
-
-        for (auto &[k, v] : images)
-        {
-
-            if (v.Image == creator->GetErrorImage().Image)
-            {
-                continue;
-            }
-            creator->DestroyImage(v);
-        }
-
-        for (auto &sampler : samplers)
-        {
-            vkDestroySampler(dv, sampler, nullptr);
-        }
-
-        auto materialBuffer    = materialDataBuffer;
-        auto samplersToDestroy = samplers;
-
-        descriptorPool.DestroyPools(dv);
-
-        creator->DestroyBuffer(materialBuffer);
-    }
-
-    static std::optional<AllocatedImage> load_image(MEngine *engine, fastgltf::Asset &asset, fastgltf::Image &image)
+    static std::optional<AllocatedImage> load_image(VkContextDevice &inDeviece, fastgltf::Asset &asset, fastgltf::Image &image)
     {
         AllocatedImage newImage{};
 
@@ -108,7 +70,7 @@ namespace MamontEngine
                                 imagesize.height = height;
                                 imagesize.depth  = 1;
 
-                                newImage = engine->CreateImage(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+                                newImage = inDeviece.CreateImage(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
                                 stbi_image_free(data);
                             }
@@ -124,7 +86,7 @@ namespace MamontEngine
                                 imagesize.height = height;
                                 imagesize.depth  = 1;
 
-                                newImage = engine->CreateImage(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+                                newImage = inDeviece.CreateImage(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
                                 stbi_image_free(data);
                             }
@@ -151,7 +113,7 @@ namespace MamontEngine
                                                                  imagesize.height = height;
                                                                  imagesize.depth  = 1;
 
-                                                                 newImage = engine->CreateImage(
+                                                                 newImage = inDeviece.CreateImage(
                                                                          data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
                                                                  stbi_image_free(data);
@@ -174,22 +136,22 @@ namespace MamontEngine
         }
     }
 
-    static std::vector<AllocatedImage> LoadTexture(MEngine *engine, LoadedGLTF &inFile, fastgltf::Asset &gltf)
+    static std::vector<AllocatedImage> LoadTexture(VkContextDevice &inDeviece, MScene &inFile, fastgltf::Asset &gltf)
     {
         std::vector<AllocatedImage> images;
 
         for (fastgltf::Image &image : gltf.images)
         {
-            std::optional<AllocatedImage> img = load_image(engine, gltf, image);
+            std::optional<AllocatedImage> img = load_image(inDeviece, gltf, image);
 
             if (img.has_value())
             {
                 images.push_back(*img);
-                inFile.images[image.name.c_str()] = *img;
+                inFile.Images[image.name.c_str()] = *img;
             }
             else
             {
-                images.push_back(engine->GetErrorImage());
+                images.push_back(inDeviece.ErrorCheckerboardImage);
                 std::cout << "gltf failed to load texture " << image.name << std::endl;
             }
         }
@@ -198,21 +160,21 @@ namespace MamontEngine
     }
 
     static std::vector<std::shared_ptr<GLTFMaterial>>
-    LoadMaterials(MEngine *engine, LoadedGLTF &inFile, fastgltf::Asset &gltf, const std::vector<AllocatedImage> &inImages)
+    LoadMaterials(VkContextDevice &inDeviece, MScene &inFile, fastgltf::Asset &gltf, const std::vector<AllocatedImage> &inImages)
     {
         std::vector<std::shared_ptr<GLTFMaterial>> materials;
 
-        inFile.materialDataBuffer = engine->CreateBuffer(
+        inFile.MaterialDataBuffer = inDeviece.CreateBuffer(
                 sizeof(GLTFMetallic_Roughness::MaterialConstants) * gltf.materials.size(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
         int                                        data_index = 0;
         GLTFMetallic_Roughness::MaterialConstants *sceneMaterialConstants =
-                (GLTFMetallic_Roughness::MaterialConstants *)inFile.materialDataBuffer.Info.pMappedData;
+                (GLTFMetallic_Roughness::MaterialConstants *)inFile.MaterialDataBuffer.Info.pMappedData;
 
         for (fastgltf::Material &mat : gltf.materials)
         {
             std::shared_ptr<GLTFMaterial> newMat = std::make_shared<GLTFMaterial>();
             materials.push_back(newMat);
-            inFile.materials[mat.name.c_str()] = newMat;
+            inFile.Materials[mat.name.c_str()] = newMat;
 
             GLTFMetallic_Roughness::MaterialConstants constants;
             constants.ColorFactors.x = mat.pbrData.baseColorFactor[0];
@@ -231,16 +193,15 @@ namespace MamontEngine
                 passType = EMaterialPass::TRANSPARENT;
             }
 
-            GLTFMetallic_Roughness::MaterialResources materialResources;
-            // default the material textures
-            materialResources.ColorImage        = engine->GetWhiteImage();
-            materialResources.ColorSampler      = engine->GetSamplerLinear();
-            materialResources.MetalRoughImage   = engine->GetWhiteImage();
-            materialResources.MetalRoughSampler = engine->GetSamplerLinear();
+            GLTFMetallic_Roughness::MaterialResources materialResources{};
+            materialResources.ColorImage        = inDeviece.WhiteImage;
+            materialResources.ColorSampler      = inDeviece.DefaultSamplerLinear;
+            materialResources.MetalRoughImage   = inDeviece.WhiteImage;
+            materialResources.MetalRoughSampler = inDeviece.DefaultSamplerLinear;
 
-            // set the uniform buffer for the material data
-            materialResources.DataBuffer       = inFile.materialDataBuffer.Buffer;
+            materialResources.DataBuffer       = inFile.MaterialDataBuffer.Buffer;
             materialResources.DataBufferOffset = data_index * sizeof(GLTFMetallic_Roughness::MaterialConstants);
+
             // grab textures from gltf file
             if (mat.pbrData.baseColorTexture.has_value())
             {
@@ -248,10 +209,10 @@ namespace MamontEngine
                 size_t sampler = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
 
                 materialResources.ColorImage   = inImages[img];
-                materialResources.ColorSampler = inFile.samplers[sampler];
+                materialResources.ColorSampler = inFile.Samplers[sampler];
             }
 
-            newMat->Data = engine->WriteMetalMaterial(passType, materialResources, inFile.descriptorPool);
+            newMat->Data = inDeviece.WriteMetalMaterial(passType, materialResources, inFile.DescriptorPool);
 
             data_index++;
         }
@@ -259,7 +220,7 @@ namespace MamontEngine
         return materials;
     }
 
-    static void LoadSamples(VkDevice inDevice, LoadedGLTF &inFile, std::vector<fastgltf::Sampler>& samplers)
+    static void LoadSamples(VkDevice inDevice, MScene &inFile, std::vector<fastgltf::Sampler> &samplers)
     {
         for (fastgltf::Sampler &sampler : samplers)
         {
@@ -276,12 +237,12 @@ namespace MamontEngine
             VkSampler newSampler;
             vkCreateSampler(inDevice, &sampl, nullptr, &newSampler);
 
-            inFile.samplers.push_back(newSampler);
+            inFile.Samplers.push_back(newSampler);
         }
     }
     
     static std::vector<std::shared_ptr<Mesh>>
-    LoadMeshes(MEngine *engine, fastgltf::Asset &gltf, LoadedGLTF &inFile, const std::vector<std::shared_ptr<GLTFMaterial>>& materials)
+    LoadMeshes(VkContextDevice &inDeviece, fastgltf::Asset &gltf, MScene &inFile, const std::vector<std::shared_ptr<GLTFMaterial>> &materials)
     {
         std::vector<std::shared_ptr<Mesh>>    meshes;
         std::vector<uint32_t>              indices;
@@ -290,7 +251,7 @@ namespace MamontEngine
         {
             std::shared_ptr<Mesh> newmesh = std::make_shared<Mesh>();
             meshes.push_back(newmesh);
-            inFile.meshes[mesh.name.c_str()] = newmesh;
+            inFile.Meshes[mesh.name.c_str()] = newmesh;
             newmesh->Name                  = mesh.name;
 
             indices.clear();
@@ -382,15 +343,14 @@ namespace MamontEngine
                 newmesh->Surfaces.push_back(newSurface);
             }
 
-            newmesh->MeshBuffers = engine->UploadMesh(indices, vertices);
+            newmesh->MeshBuffers = inDeviece.CreateGPUMeshBuffer(indices, vertices);
         }
 
         return meshes;
     }
 
     static std::vector<std::shared_ptr<Node>>
-    LoadNodes(std::vector<fastgltf::Node> &gltfNodes,
-                                                       LoadedGLTF &inFile, const std::vector<std::shared_ptr<Mesh>> &meshes)
+    LoadNodes(std::vector<fastgltf::Node> &gltfNodes, MScene &inFile, const std::vector<std::shared_ptr<Mesh>> &meshes)
     {
         std::vector<std::shared_ptr<Node>> nodes;
 
@@ -409,7 +369,7 @@ namespace MamontEngine
             }
 
             nodes.push_back(newNode);
-            inFile.nodes[node.name.c_str()];
+            inFile.Nodes[node.name.c_str()];
 
             std::visit(fastgltf::visitor{[&](fastgltf::Node::TransformMatrix matrix) { memcpy(&newNode->m_LocalTransform, matrix.data(), sizeof(matrix)); },
                                          [&](fastgltf::Node::TRS transform)
@@ -429,13 +389,13 @@ namespace MamontEngine
 
         return nodes;
     }
-    std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(MEngine* engine, std::string_view filePath)
+    
+    std::optional<std::shared_ptr<MScene>> loadGltf(VkContextDevice &inDeviece, std::string_view filePath)
     {
         fmt::print("Loading GLTF: {}", filePath);
 
-        std::shared_ptr<LoadedGLTF> scene = std::make_shared<LoadedGLTF>();
-        scene->creator                    = engine;
-        LoadedGLTF &file                  = *scene.get();
+        std::shared_ptr<MScene> scene     = std::make_shared<MScene>(inDeviece);
+        MScene &file                      = *scene.get();
 
         fastgltf::Parser parser{};
 
@@ -466,13 +426,13 @@ namespace MamontEngine
                 {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3}, 
                 {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}};
 
-        file.descriptorPool.Init(engine->GetDevice(), gltf.materials.size(), sizes);
+        file.DescriptorPool.Init(inDeviece.Device, gltf.materials.size(), sizes);
 
-        LoadSamples(engine->GetDevice(), file, gltf.samplers);
+        LoadSamples(inDeviece.Device, file, gltf.samplers);
 
-        const std::vector<AllocatedImage>                 images    = LoadTexture(engine, file, gltf);
-        const std::vector<std::shared_ptr<GLTFMaterial>> materials = LoadMaterials(engine, file, gltf, images);
-        const std::vector<std::shared_ptr<Mesh>> meshes = LoadMeshes(engine, gltf, file, materials);
+        const std::vector<AllocatedImage>                 images    = LoadTexture(inDeviece, file, gltf);
+        const std::vector<std::shared_ptr<GLTFMaterial>> materials = LoadMaterials(inDeviece, file, gltf, images);
+        const std::vector<std::shared_ptr<Mesh>> meshes = LoadMeshes(inDeviece, gltf, file, materials);
         
         std::vector<std::shared_ptr<Node>> nodes = LoadNodes(gltf.nodes, file, meshes);
         
@@ -492,7 +452,7 @@ namespace MamontEngine
         {
             if (node->m_Parent.lock() == nullptr)
             {
-                file.topNodes.push_back(node);
+                file.TopNodes.push_back(node);
                 node->RefreshTransform(glm::mat4{1.f});
             }
         }

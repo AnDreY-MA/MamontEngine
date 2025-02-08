@@ -680,7 +680,7 @@ int main()
 	if (error != 0)
 		return error;
 
-	// Note: the random engine uses a fixed seed to create consistent and reproducible test data
+	// Note: the random inDeviece uses a fixed seed to create consistent and reproducible test data
 	// test covariance matrix computation from different data sources
 	if(testCovar<2, float, glm::defaultp>(100, 12345) != 0)
 		error = failReport(__LINE__);

@@ -2,25 +2,24 @@
 #include "Engine.h"
 #include "VkPipelines.h"
 #include "VkInitializers.h"
-#include "Loader.h"
 #include "Graphics/Mesh.h"
 
 namespace MamontEngine
 {
     const std::string RootDirectories = PROJECT_ROOT_DIR;
 
-    void GLTFMetallic_Roughness::BuildPipelines(MEngine* engine)
+    void GLTFMetallic_Roughness::BuildPipelines(MEngine* inDeviece)
     {
         std::string    meshPath = RootDirectories + "/MamontEngine/src/Shaders/mesh.frag.spv";
         VkShaderModule meshFragShader;
-        if (!VkPipelines::LoadShaderModule(meshPath.c_str(), engine->GetDevice(), &meshFragShader))
+        if (!VkPipelines::LoadShaderModule(meshPath.c_str(), inDeviece->GetDevice(), &meshFragShader))
         {
             fmt::println("Error when building the triangle fragment shader module");
         }
 
         std::string    meshVertexShaderPath = RootDirectories + "/MamontEngine/src/Shaders/mesh.vert.spv";
         VkShaderModule meshVertexShader;
-        if (!VkPipelines::LoadShaderModule(meshVertexShaderPath.c_str(), engine->GetDevice(), &meshVertexShader))
+        if (!VkPipelines::LoadShaderModule(meshVertexShaderPath.c_str(), inDeviece->GetDevice(), &meshVertexShader))
         {
             fmt::println("Error when building the triangle vertex shader module");
         }
@@ -35,9 +34,9 @@ namespace MamontEngine
         layoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         layoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-        MaterialLayout = layoutBuilder.Build(engine->GetDevice(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+        MaterialLayout = layoutBuilder.Build(inDeviece->GetDevice(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
-        VkDescriptorSetLayout layouts[] = {engine->GetGPUSceneData(), MaterialLayout};
+        VkDescriptorSetLayout layouts[] = {inDeviece->GetGPUSceneData(), MaterialLayout};
 
         VkPipelineLayoutCreateInfo mesh_layout_info = vkinit::pipeline_layout_create_info();
         mesh_layout_info.setLayoutCount             = 2;
@@ -46,7 +45,7 @@ namespace MamontEngine
         mesh_layout_info.pushConstantRangeCount     = 1;
 
         VkPipelineLayout newLayout;
-        VK_CHECK(vkCreatePipelineLayout(engine->GetDevice(), &mesh_layout_info, nullptr, &newLayout));
+        VK_CHECK(vkCreatePipelineLayout(inDeviece->GetDevice(), &mesh_layout_info, nullptr, &newLayout));
 
         OpaquePipeline.Layout      = newLayout;
         TransparentPipeline.Layout = newLayout;
@@ -61,21 +60,21 @@ namespace MamontEngine
         pipelineBuilder.DisableBlending();
         pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
-        pipelineBuilder.SetColorAttachmentFormat(engine->GetDrawImage().ImageFormat);
-        pipelineBuilder.SetDepthFormat(engine->GetDepthImage().ImageFormat);
+        pipelineBuilder.SetColorAttachmentFormat(inDeviece->GetDrawImage().ImageFormat);
+        pipelineBuilder.SetDepthFormat(inDeviece->GetDepthImage().ImageFormat);
 
         pipelineBuilder.m_PipelineLayout = newLayout;
 
-        OpaquePipeline.Pipeline = pipelineBuilder.BuildPipline(engine->GetDevice());
+        OpaquePipeline.Pipeline = pipelineBuilder.BuildPipline(inDeviece->GetDevice());
 
         pipelineBuilder.EnableBlendingAdditive();
 
         pipelineBuilder.EnableDepthTest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
-        TransparentPipeline.Pipeline = pipelineBuilder.BuildPipline(engine->GetDevice());
+        TransparentPipeline.Pipeline = pipelineBuilder.BuildPipline(inDeviece->GetDevice());
 
-        vkDestroyShaderModule(engine->GetDevice(), meshFragShader, nullptr);
-        vkDestroyShaderModule(engine->GetDevice(), meshVertexShader, nullptr);
+        vkDestroyShaderModule(inDeviece->GetDevice(), meshFragShader, nullptr);
+        vkDestroyShaderModule(inDeviece->GetDevice(), meshVertexShader, nullptr);
 
     }
     void ClearResources(VkDevice device)

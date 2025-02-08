@@ -17,12 +17,9 @@
 #include <glm/gtx/transform.hpp>
 #include "Graphics/Vulkan/Swapchain.h"
 
-
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
-//static SDL_Window* window = nullptr;
-VkPipeline         gradientPipeline;
 
 namespace MamontEngine
 {
@@ -133,25 +130,14 @@ namespace MamontEngine
             if (ImGui::Begin("Background"))
             {
                 ImGui::SliderFloat("Render Scale", &m_RenderScale, 0.3f, 1.f);
-
-                ComputeEffect &selected = m_BackgroundEffects[m_CurrentBackgroundEffect];
-                ImGui::Text("Selected Effect: ", selected.Name);
-
-                ImGui::SliderInt("Effect Index", &m_CurrentBackgroundEffect, 0, m_BackgroundEffects.size() - 1);
-
-                ImGui::InputFloat4("data1", (float *)&selected.Data.Data1);
-                ImGui::InputFloat4("data2", (float *)&selected.Data.Data2);
-                ImGui::InputFloat4("data3", (float *)&selected.Data.Data3);
-                ImGui::InputFloat4("data4", (float *)&selected.Data.Data4);
                 ImGui::End();
-
             }
 
             ImGui::Render();
 
             UpdateScene();
-
             Draw();
+            
 
             const auto end     = std::chrono::system_clock::now();
             const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -186,39 +172,8 @@ namespace MamontEngine
 
     void MEngine::InitDefaultData()
     {
-        std::array<Vertex, 4> rect_vertices{};
-
-        rect_vertices[0].Position = { 0.5, -0.5, 0};
-        rect_vertices[1].Position = { 0.5, 0.5, 0};
-        rect_vertices[2].Position = { -0.5, -0.5, 0};
-        rect_vertices[3].Position = { -0.5, 0.5, 0};
-
-        rect_vertices[0].Color = { 0, 0, 0, 1};
-        rect_vertices[1].Color = { 0.5, 0.5, 0.5, 1};
-        rect_vertices[2].Color = { 1, 0, 0, 1};
-        rect_vertices[3].Color = { 0, 1, 0, 1};
-
-        rect_vertices[0].UV_X = 1;
-        rect_vertices[0].UV_Y = 0;
-        rect_vertices[1].UV_X = 0;
-        rect_vertices[1].UV_Y = 0;
-        rect_vertices[2].UV_X = 1;
-        rect_vertices[2].UV_Y = 1;
-        rect_vertices[3].UV_X = 0;
-        rect_vertices[3].UV_Y = 1;
-
-        std::array<uint32_t, 6> rect_indices{};
-
-        rect_indices[0] = 0;
-        rect_indices[1] = 1;
-        rect_indices[2] = 2;
-
-        rect_indices[3] = 2;
-        rect_indices[4] = 1;
-        rect_indices[5] = 3;
-
         uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
-        m_ContextDevice->WhiteImage    = CreateImage((void *)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
+        m_ContextDevice->WhiteImage    = m_ContextDevice->CreateImage((void *)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, true);
 
         uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
 
@@ -231,41 +186,40 @@ namespace MamontEngine
                 pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
             }
         }
-        m_ContextDevice->ErrorCheckerboardImage = CreateImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
+        m_ContextDevice->ErrorCheckerboardImage =
+                m_ContextDevice->CreateImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, true);
 
         VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
 
         sampl.magFilter = VK_FILTER_NEAREST;
         sampl.minFilter = VK_FILTER_NEAREST;
 
-        vkCreateSampler(m_ContextDevice->Device, &sampl, nullptr, &m_DefaultSamplerNearest);
+        vkCreateSampler(m_ContextDevice->Device, &sampl, nullptr, &m_ContextDevice->DefaultSamplerNearest);
 
         sampl.magFilter = VK_FILTER_LINEAR;
         sampl.minFilter = VK_FILTER_LINEAR;
 
-        vkCreateSampler(m_ContextDevice->Device, &sampl, nullptr, &m_DefaultSamplerLinear);
+        vkCreateSampler(m_ContextDevice->Device, &sampl, nullptr, &m_ContextDevice->DefaultSamplerLinear);
 
         m_MainDeletionQueue.PushFunction(
                 [&]()
                 {
-                    vkDestroySampler(m_ContextDevice->Device, m_DefaultSamplerNearest, nullptr);
-                    vkDestroySampler(m_ContextDevice->Device, m_DefaultSamplerLinear, nullptr);
+                    vkDestroySampler(m_ContextDevice->Device, m_ContextDevice->DefaultSamplerNearest, nullptr);
+                    vkDestroySampler(m_ContextDevice->Device, m_ContextDevice->DefaultSamplerLinear, nullptr);
 
-                    DestroyImage(m_ContextDevice->WhiteImage);
-                    DestroyImage(m_ContextDevice->ErrorCheckerboardImage);
+                    m_ContextDevice->DestroyImage(m_ContextDevice->WhiteImage);
+                    m_ContextDevice->DestroyImage(m_ContextDevice->ErrorCheckerboardImage);
                 });
     }
     
     void MEngine::Draw()
     {
-        VK_CHECK_MESSAGE(vkWaitForFences(m_ContextDevice->Device, 1, &m_Frames[m_FrameNumber].RenderFence, VK_TRUE, 1000000000), "Wait FENCE");
+        VK_CHECK_MESSAGE(vkWaitForFences(m_ContextDevice->Device, 1, &GetCurrentFrame().RenderFence, VK_TRUE, 1000000000), "Wait FENCE");
 
-        m_Frames[m_FrameNumber].Deleteions.Flush();
-        m_Frames[m_FrameNumber].FrameDescriptors.ClearPools(m_ContextDevice->Device);
+        GetCurrentFrame().Deleteions.Flush();
+        GetCurrentFrame().FrameDescriptors.ClearPools(m_ContextDevice->Device);
 
-        /*uint32_t swapchainImageIndex;
-        VkResult e = vkAcquireNextImageKHR(m_ContextDevice->Device, m_Swapchain, 1000000000, m_Frames[m_FrameNumber].SwapchainSemaphore, nullptr, &swapchainImageIndex);*/
-        const auto [e, swapchainImageIndex] = m_Swapchain.AcquireImage(m_ContextDevice->Device, m_Frames[m_FrameNumber].SwapchainSemaphore);
+        const auto [e, swapchainImageIndex] = m_Swapchain.AcquireImage(m_ContextDevice->Device, GetCurrentFrame() .SwapchainSemaphore);
         if (e == VK_ERROR_OUT_OF_DATE_KHR)
         {
             m_IsResizeRequested = true;
@@ -275,10 +229,10 @@ namespace MamontEngine
         m_DrawExtent.height              = std::min(swapchainExtent.height, m_Image.DrawImage.ImageExtent.height) * m_RenderScale;
         m_DrawExtent.width               = std::min(swapchainExtent.width, m_Image.DrawImage.ImageExtent.width) * m_RenderScale;
 
-        VK_CHECK(vkResetFences(m_ContextDevice->Device, 1, &m_Frames[m_FrameNumber].RenderFence));
-        VK_CHECK(vkResetCommandBuffer(m_Frames[m_FrameNumber].MainCommandBuffer, 0));
+        VK_CHECK(vkResetFences(m_ContextDevice->Device, 1, &GetCurrentFrame() .RenderFence));
+        VK_CHECK(vkResetCommandBuffer(GetCurrentFrame() .MainCommandBuffer, 0));
           
-        VkCommandBuffer cmd = m_Frames[m_FrameNumber].MainCommandBuffer;
+        VkCommandBuffer cmd = GetCurrentFrame() .MainCommandBuffer;
         
         VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         
@@ -311,21 +265,21 @@ namespace MamontEngine
 
         VkCommandBufferSubmitInfo cmdInfo = vkinit::command_buffer_submit_info(cmd);
         VkSemaphoreSubmitInfo     waitInfo =
-                vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, m_Frames[m_FrameNumber].SwapchainSemaphore);
-        VkSemaphoreSubmitInfo signalInfo = vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, m_Frames[m_FrameNumber].RenderSemaphore);
+                vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, GetCurrentFrame() .SwapchainSemaphore);
+        VkSemaphoreSubmitInfo signalInfo = vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, GetCurrentFrame() .RenderSemaphore);
 
         VkSubmitInfo2 submit = vkinit::submit_info(&cmdInfo, &signalInfo, &waitInfo);
 
-        VK_CHECK(vkQueueSubmit2(m_ContextDevice->GraphicsQueue, 1, &submit, m_Frames[m_FrameNumber].RenderFence));
+        VK_CHECK(vkQueueSubmit2(m_ContextDevice->GraphicsQueue, 1, &submit, GetCurrentFrame().RenderFence));
 
-        const VkResult presentResult = m_Swapchain.Present(m_ContextDevice->GraphicsQueue, &m_Frames[m_FrameNumber].RenderSemaphore, swapchainImageIndex);
+        const VkResult presentResult = m_Swapchain.Present(m_ContextDevice->GraphicsQueue, &GetCurrentFrame().RenderSemaphore, swapchainImageIndex);
         if (presentResult == VK_ERROR_OUT_OF_DATE_KHR)
         {
             m_IsResizeRequested = true;
             return;
         }
 
-        m_FrameNumber = (m_FrameNumber + 1) % FRAME_OVERLAP;
+        m_FrameNumber++;
     }
 
     void MEngine::DrawBackground(VkCommandBuffer inCmd)
@@ -439,15 +393,17 @@ namespace MamontEngine
             }
         }
 
-        AllocatedBuffer gpuSceneDataBuffer = CreateBuffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        AllocatedBuffer gpuSceneDataBuffer =
+                m_ContextDevice->CreateBuffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-        m_Frames[m_FrameNumber].Deleteions.PushFunction([=, this]() { DestroyBuffer(gpuSceneDataBuffer); });
+        GetCurrentFrame() .Deleteions.PushFunction([=, this]() { 
+            m_ContextDevice->DestroyBuffer(gpuSceneDataBuffer); });
 
         // write the buffer
         GPUSceneData *sceneUniformData = (GPUSceneData *)gpuSceneDataBuffer.Allocation->GetMappedData();
         *sceneUniformData              = m_SceneData;
 
-        VkDescriptorSet globalDescriptor = m_Frames[m_FrameNumber].FrameDescriptors.Allocate(m_ContextDevice->Device, m_GPUSceneDataDescriptorLayout/*, &allocArrayInfo*/);
+        VkDescriptorSet globalDescriptor = GetCurrentFrame() .FrameDescriptors.Allocate(m_ContextDevice->Device, m_GPUSceneDataDescriptorLayout/*, &allocArrayInfo*/);
 
         DescriptorWriter writer;
         writer.WriteBuffer(0, gpuSceneDataBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -539,8 +495,8 @@ namespace MamontEngine
     
     void MEngine::InitRenderable()
     {
-        const std::string structurePath = {RootDirectories + "/MamontEngine/assets/structure.glb"};
-        auto        structureFile = loadGltf(this, structurePath);
+        const std::string structurePath = {RootDirectories + "/MamontEngine/assets/structure_mat.glb"};
+        auto        structureFile = loadGltf(*m_ContextDevice, structurePath);
 
         assert(structureFile.has_value());
 
@@ -661,7 +617,7 @@ namespace MamontEngine
     {
         InitBackgrounPipeline();
 
-        m_MetalRoughMaterial.BuildPipelines(this);
+        m_ContextDevice->MetalRoughMaterial.BuildPipelines(this);
 
     }
     
@@ -862,117 +818,6 @@ namespace MamontEngine
         }
     }
     
-    AllocatedBuffer MEngine::CreateBuffer(size_t inAllocSize, VkBufferUsageFlags inUsage, VmaMemoryUsage inMemoryUsage) const
-    {
-        return m_ContextDevice->CreateBuffer(inAllocSize, inUsage, inMemoryUsage);
-    }
-
-    void MEngine::DestroyBuffer(const AllocatedBuffer &inBuffer)
-    {
-        m_ContextDevice->DestroyBuffer(inBuffer);
-    }
-
-    GPUMeshBuffers MEngine::UploadMesh(std::span<uint32_t> inIndices, std::span<Vertex> inVertices)
-    {
-        const size_t vertexBufferSize{inVertices.size() * sizeof(Vertex)};
-        const size_t indexBufferSize{inIndices.size() * sizeof(uint32_t)};  
-
-        GPUMeshBuffers newSurface{};
-
-        newSurface.VertexBuffer = CreateBuffer(vertexBufferSize,
-                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                             VMA_MEMORY_USAGE_GPU_ONLY);
-
-        VkBufferDeviceAddressInfo deviceAddressInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = newSurface.VertexBuffer.Buffer};
-        newSurface.VertexBufferAddress              = vkGetBufferDeviceAddress(m_ContextDevice->Device, &deviceAddressInfo);
-
-        newSurface.IndexBuffer = CreateBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-
-        AllocatedBuffer staging = CreateBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
-
-        void *data = staging.Allocation->GetMappedData();
-
-        memcpy(data, inVertices.data(), vertexBufferSize);
-        memcpy((char *)data + vertexBufferSize, inIndices.data(), indexBufferSize);
-
-        ImmediateSubmit(
-                [&](VkCommandBuffer cmd)
-                {
-                    VkBufferCopy vertexCopy{0};
-                    vertexCopy.dstOffset = 0;
-                    vertexCopy.srcOffset = 0;
-                    vertexCopy.size      = vertexBufferSize;
-
-                    vkCmdCopyBuffer(cmd, staging.Buffer, newSurface.VertexBuffer.Buffer, 1, &vertexCopy);
-
-                    VkBufferCopy indexCopy{0};
-                    indexCopy.dstOffset = 0;
-                    indexCopy.srcOffset = vertexBufferSize;
-                    indexCopy.size      = indexBufferSize;
-
-                    vkCmdCopyBuffer(cmd, staging.Buffer, newSurface.IndexBuffer.Buffer, 1, &indexCopy);
-                });
-
-        DestroyBuffer(staging);
-
-        return newSurface;
-    
-    }
-
-    AllocatedImage MEngine::CreateImage(VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const
-    {
-        return m_ContextDevice->CreateImage(inSize, inFormat, inUsage, inIsMipMapped);
-    }
-    
-    AllocatedImage MEngine::CreateImage(void *inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped)
-    {
-        size_t          data_size    = inSize.depth * inSize.width * inSize.height * 4;
-        AllocatedBuffer uploadbuffer = CreateBuffer(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-        memcpy(uploadbuffer.Info.pMappedData, inData, data_size);
-
-        AllocatedImage new_image = CreateImage(inSize, inFormat, inUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, inIsMipMapped);
-
-        ImmediateSubmit(
-                [&](VkCommandBuffer cmd)
-                {
-                    VkUtil::transition_image(cmd, new_image.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-                    VkBufferImageCopy copyRegion = {};
-                    copyRegion.bufferOffset      = 0;
-                    copyRegion.bufferRowLength   = 0;
-                    copyRegion.bufferImageHeight = 0;
-
-                    copyRegion.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-                    copyRegion.imageSubresource.mipLevel       = 0;
-                    copyRegion.imageSubresource.baseArrayLayer = 0;
-                    copyRegion.imageSubresource.layerCount     = 1;
-                    copyRegion.imageExtent                     = inSize;
-
-                    vkCmdCopyBufferToImage(cmd, uploadbuffer.Buffer, new_image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
-
-                    if (inIsMipMapped)
-                    {
-                        VkUtil::generate_mipmaps(cmd, new_image.Image, VkExtent2D{new_image.ImageExtent.width, new_image.ImageExtent.height});
-                    }
-                    else
-                    {
-                        VkUtil::transition_image(cmd, new_image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                    }
-
-                });
-
-        DestroyBuffer(uploadbuffer);
-
-        return new_image;
-    }
-    
-    void MEngine::DestroyImage(const AllocatedImage &inImage)
-    {
-        vkDestroyImageView(m_ContextDevice->Device, inImage.ImageView, nullptr);
-        vmaDestroyImage(m_ContextDevice->Allocator, inImage.Image, inImage.Allocation);
-    }
-
     FrameData &MEngine::GetCurrentFrame() 
     {
         return m_Frames.at(m_FrameNumber % FRAME_OVERLAP);

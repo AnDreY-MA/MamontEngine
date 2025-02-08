@@ -19,9 +19,9 @@ or view this file with any Markdown viewer.
 | **[How can I tell whether to dispatch mouse/keyboard to Dear ImGui or my application?](#q-how-can-i-tell-whether-to-dispatch-mousekeyboard-to-dear-imgui-or-my-application)** |
 | [How can I enable keyboard or gamepad controls?](#q-how-can-i-enable-keyboard-or-gamepad-controls) |
 | [How can I use this on a machine without mouse, keyboard or screen? (input share, remote display)](#q-how-can-i-use-this-on-a-machine-without-mouse-keyboard-or-screen-input-share-remote-display) |
-| [I integrated Dear ImGui in my engine and little squares are showing instead of text...](#q-i-integrated-dear-imgui-in-my-engine-and-little-squares-are-showing-instead-of-text) |
-| [I integrated Dear ImGui in my engine and some elements are clipping or disappearing when I move windows around...](#q-i-integrated-dear-imgui-in-my-engine-and-some-elements-are-clipping-or-disappearing-when-i-move-windows-around) |
-| [I integrated Dear ImGui in my engine and some elements are displaying outside their expected windows boundaries...](#q-i-integrated-dear-imgui-in-my-engine-and-some-elements-are-displaying-outside-their-expected-windows-boundaries) |
+| [I integrated Dear ImGui in my inDeviece and little squares are showing instead of text...](#q-i-integrated-dear-imgui-in-my-inDeviece-and-little-squares-are-showing-instead-of-text) |
+| [I integrated Dear ImGui in my inDeviece and some elements are clipping or disappearing when I move windows around...](#q-i-integrated-dear-imgui-in-my-inDeviece-and-some-elements-are-clipping-or-disappearing-when-i-move-windows-around) |
+| [I integrated Dear ImGui in my inDeviece and some elements are displaying outside their expected windows boundaries...](#q-i-integrated-dear-imgui-in-my-inDeviece-and-some-elements-are-displaying-outside-their-expected-windows-boundaries) |
 | **Q&A: Usage** |
 | **[About the ID Stack system..<br>Why is my widget not reacting when I click on it?<br>Why is the wrong widget reacting when I click on one?<br>How can I have widgets with an empty label?<br>How can I have multiple widgets with the same label?<br>How can I have multiple windows with the same label?](#q-about-the-id-stack-system)** |
 | [How can I display an image? What is ImTextureID, how does it work?](#q-how-can-i-display-an-image-what-is-imtextureid-how-does-it-work)|
@@ -51,7 +51,7 @@ or view this file with any Markdown viewer.
 **This library is poorly documented at the moment and expects the user to be acquainted with C/C++.**
 - The [Wiki](https://github.com/ocornut/imgui/wiki) is a hub to many resources and links.
 - Handy [Getting Started](https://github.com/ocornut/imgui/wiki/Getting-Started) guide to integrate Dear ImGui in an existing application.
-- 20+ standalone example applications using e.g. OpenGL/DirectX are provided in the [examples/](https://github.com/ocornut/imgui/blob/master/examples/) folder to explain how to integrate Dear ImGui with your own engine/application. You can run those applications and explore them.
+- 20+ standalone example applications using e.g. OpenGL/DirectX are provided in the [examples/](https://github.com/ocornut/imgui/blob/master/examples/) folder to explain how to integrate Dear ImGui with your own inDeviece/application. You can run those applications and explore them.
 - See demo code in [imgui_demo.cpp](https://github.com/ocornut/imgui/blob/master/imgui_demo.cpp) and particularly the `ImGui::ShowDemoWindow()` function. The demo covers most features of Dear ImGui, so you can read the code and see its output.
 - See documentation: [Backends](https://github.com/ocornut/imgui/blob/master/docs/BACKENDS.md), [Examples](https://github.com/ocornut/imgui/blob/master/docs/EXAMPLES.md), [Fonts](https://github.com/ocornut/imgui/blob/master/docs/FONTS.md).
 - See documentation and comments at the top of [imgui.cpp](https://github.com/ocornut/imgui/blob/master/imgui.cpp) + general API comments in [imgui.h](https://github.com/ocornut/imgui/blob/master/imgui.h).
@@ -108,7 +108,7 @@ For first-time users having issues compiling/linking/running or issues loading f
 You can read the `io.WantCaptureMouse`, `io.WantCaptureKeyboard` and `io.WantTextInput` flags from the ImGuiIO structure.
 - When `io.WantCaptureMouse` is set, you need to discard/hide the mouse inputs from your underlying application.
 - When `io.WantCaptureKeyboard` is set, you need to discard/hide the keyboard inputs from your underlying application.
-- When `io.WantTextInput` is set, you can notify your OS/engine to popup an on-screen keyboard, if available (e.g. on a mobile phone, or console OS).
+- When `io.WantTextInput` is set, you can notify your OS/inDeviece to popup an on-screen keyboard, if available (e.g. on a mobile phone, or console OS).
 
 Important: you should always pass your mouse/keyboard inputs to Dear ImGui, regardless of the value `io.WantCaptureMouse`/`io.WantCaptureKeyboard`. This is because e.g. we need to detect that you clicked in the void to unfocus its own windows, and other reasons.
 
@@ -159,7 +159,7 @@ Console SDK also sometimes provide equivalent tooling or wrapper for Synergy-lik
 
 ---
 
-### Q: I integrated Dear ImGui in my engine and little squares are showing instead of text...
+### Q: I integrated Dear ImGui in my inDeviece and little squares are showing instead of text...
 Your renderer backend is not using the font texture correctly or it hasn't been uploaded to the GPU.
 - If this happens using the standard backends: A) have you modified the font atlas after `ImGui_ImplXXX_NewFrame()`? B) maybe the texture failed to upload, which **can if your texture atlas is too big**. Also see [docs/FONTS.md](https://github.com/ocornut/imgui/blob/master/docs/FONTS.md).
 - If this happens with a custom backend: make sure you have uploaded the font texture to the GPU, that all shaders are rendering states are setup properly (e.g. texture is bound). Compare your code to existing backends and use a graphics debugger such as [RenderDoc](https://renderdoc.org) to debug your rendering states.
@@ -168,8 +168,8 @@ Your renderer backend is not using the font texture correctly or it hasn't been 
 
 ---
 
-### Q: I integrated Dear ImGui in my engine and some elements are clipping or disappearing when I move windows around...
-### Q: I integrated Dear ImGui in my engine and some elements are displaying outside their expected windows boundaries...
+### Q: I integrated Dear ImGui in my inDeviece and some elements are clipping or disappearing when I move windows around...
+### Q: I integrated Dear ImGui in my inDeviece and some elements are displaying outside their expected windows boundaries...
 You are probably mishandling the clipping rectangles in your render function.
 Each draw command needs the triangle rendered using the clipping rectangle provided in the ImDrawCmd structure (`ImDrawCmd->CllipRect`).
 Rectangles provided by Dear ImGui are defined as
@@ -380,7 +380,7 @@ node open/closed state differently. See what makes more sense in your situation!
 Short explanation:
 - Refer to [Image Loading and Displaying Examples](https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples) on the [Wiki](https://github.com/ocornut/imgui/wiki).
 - You may use functions such as `ImGui::Image()`, `ImGui::ImageButton()` or lower-level `ImDrawList::AddImage()` to emit draw calls that will use your own textures.
-- Actual textures are identified in a way that is up to the user/engine. Those identifiers are stored and passed as an opaque ImTextureID value.
+- Actual textures are identified in a way that is up to the user/inDeviece. Those identifiers are stored and passed as an opaque ImTextureID value.
 - By default ImTextureID can store up to 64-bits. You may `#define` it to a custom type/structure if you need.
 - Loading image files from the disk and turning them into a texture is not within the scope of Dear ImGui (for a good reason), but the examples linked above may be useful references.
 
@@ -388,7 +388,7 @@ Short explanation:
 
 Long explanation:
 - Dear ImGui's job is to create "meshes", defined in a renderer-agnostic format made of draw commands and vertices. At the end of the frame, those meshes (ImDrawList) will be displayed by your rendering function. They are made up of textured polygons and the code to render them is generally fairly short (a few dozen lines). In the examples/ folder, we provide functions for popular graphics APIs (OpenGL, DirectX, etc.).
-- Each rendering function decides on a data type to represent "textures". The concept of what is a "texture" is entirely tied to your underlying engine/graphics API.
+- Each rendering function decides on a data type to represent "textures". The concept of what is a "texture" is entirely tied to your underlying inDeviece/graphics API.
  We carry the information to identify a "texture" in the ImTextureID type.
 ImTextureID default to ImU64 aka 8 bytes worth of data: just enough to store one pointer or integer of your choice.
 Dear ImGui doesn't know or understand what you are storing in ImTextureID, it merely passes ImTextureID values until they reach your rendering function.
@@ -416,8 +416,8 @@ DirectX12:
 For example, in the OpenGL example backend we store raw OpenGL texture identifier (GLuint) inside ImTextureID.
 Whereas in the DirectX11 example backend we store a pointer to ID3D11ShaderResourceView inside ImTextureID, which is a higher-level structure tying together both the texture and information about its format and how to read it.
 
-- If you have a custom engine built over e.g. OpenGL, instead of passing GLuint around you may decide to use a high-level data type to carry information about the texture as well as how to display it (shaders, etc.). The decision of what to use as ImTextureID can always be made better by knowing how your codebase is designed. If your engine has high-level data types for "textures" and "material" then you may want to use them.
-If you are starting with OpenGL or DirectX or Vulkan and haven't built much of a rendering engine over them, keeping the default ImTextureID representation suggested by the example backends is probably the best choice.
+- If you have a custom inDeviece built over e.g. OpenGL, instead of passing GLuint around you may decide to use a high-level data type to carry information about the texture as well as how to display it (shaders, etc.). The decision of what to use as ImTextureID can always be made better by knowing how your codebase is designed. If your inDeviece has high-level data types for "textures" and "material" then you may want to use them.
+If you are starting with OpenGL or DirectX or Vulkan and haven't built much of a rendering inDeviece over them, keeping the default ImTextureID representation suggested by the example backends is probably the best choice.
 (Advanced users may also decide to keep a low-level type in ImTextureID, use ImDrawList callback and pass information to their renderer)
 
 User code may do:
@@ -476,7 +476,7 @@ This way you will be able to use your own types everywhere, e.g. passing `MyVect
 ---
 
 ### Q: How can I interact with standard C++ types (such as std::string and std::vector)?
-- Being highly portable (backends/bindings for several languages, frameworks, programming styles, obscure or older platforms/compilers), and aiming for compatibility & performance suitable for every modern real-time game engine, Dear ImGui does not use any of std C++ types. We use raw types (e.g. char* instead of std::string) because they adapt to more use cases.
+- Being highly portable (backends/bindings for several languages, frameworks, programming styles, obscure or older platforms/compilers), and aiming for compatibility & performance suitable for every modern real-time game inDeviece, Dear ImGui does not use any of std C++ types. We use raw types (e.g. char* instead of std::string) because they adapt to more use cases.
 - To use ImGui::InputText() with a std::string or any resizable string class, see [misc/cpp/imgui_stdlib.h](https://github.com/ocornut/imgui/blob/master/misc/cpp/imgui_stdlib.h).
 - To use combo boxes and list boxes with `std::vector` or any other data structure: the `BeginCombo()/EndCombo()` API
 lets you iterate and submit items yourself, so does the `ListBoxHeader()/ListBoxFooter()` API.

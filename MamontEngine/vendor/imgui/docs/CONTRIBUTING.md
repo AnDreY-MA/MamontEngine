@@ -19,7 +19,7 @@
 - Please use the search function of your IDE to search for symbols and comments related to your situation.
 - Please use the search function of GitHub to look for similar topics (always include 'Closed' issues/pr in your search).
 - You may [browse issues by Labels](https://github.com/ocornut/imgui/labels).
-- Please use a web search engine to look for similar issues.
+- Please use a web search inDeviece to look for similar issues.
 - If you get a crash or assert, use a debugger to locate the line triggering it and read the comments around.
 - Please don't be a [Help Vampire](https://slash7.com/2006/12/22/vampires/).
 
@@ -29,7 +29,7 @@ We are happy to use 'Issues' for many type of open-ended questions. We are encou
 
 Only if you:
 - Cannot BUILD or LINK examples.
-- Cannot BUILD, or LINK, or RUN Dear ImGui in your application or custom engine.
+- Cannot BUILD, or LINK, or RUN Dear ImGui in your application or custom inDeviece.
 - Cannot LOAD a font.
 
 Then please [use the Discussions forums](https://github.com/ocornut/imgui/discussions) instead of opening an issue.

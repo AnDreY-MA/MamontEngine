@@ -88,7 +88,7 @@ namespace MamontEngine
 
         DescriptorWriter Writer;
 
-        void BuildPipelines(class MEngine *engine);
+        void BuildPipelines(class MEngine *inDeviece);
         void ClearResources(VkDevice device);
 
         MaterialInstance WriteMaterial(VkDevice device, EMaterialPass pass, const MaterialResources &resources, DescriptorAllocatorGrowable &descriptorAllocator);

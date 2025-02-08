@@ -2355,7 +2355,7 @@ Simple, easy-to-follow examples with GLSL source code are provided, as well as a
 
 [***Outerra***](http://outerra.com/)
 
-A 3D planetary engine for seamless planet rendering from space down to the surface. Can use arbitrary resolution of elevation data, refining it to centimetre resolution using fractal algorithms.
+A 3D planetary inDeviece for seamless planet rendering from space down to the surface. Can use arbitrary resolution of elevation data, refining it to centimetre resolution using fractal algorithms.
 
 ![](./doc/manual/references-outerra1.jpg)
 

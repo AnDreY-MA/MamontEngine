@@ -1,7 +1,7 @@
 #pragma once
 
 #include "VkDestriptor.h"
-#include "Loader.h"
+#include "Utils/Loader.h"
 #include "Renderer.h"
 #include "Camera.h"
 #include "FrameData.h"
@@ -9,6 +9,7 @@
 #include "ContextDevice.h"
 #include "Graphics/Vulkan/GPUBuffer.h"
 #include "Graphics/Vulkan/Swapchain.h"
+#include "Graphics/MScene.h"
 
 struct MPipeline
 {
@@ -66,8 +67,6 @@ namespace MamontEngine
 
         static MEngine& Get();
 
-        GPUMeshBuffers UploadMesh(std::span<uint32_t> inIndices, std::span<Vertex> inVertices);
-
         VkDevice GetDevice() const
         {
             return m_ContextDevice->Device;
@@ -82,6 +81,7 @@ namespace MamontEngine
         {
             return m_Image.DrawImage;
         }
+        
         AllocatedImage GetWhiteImage() const
         {
             return m_ContextDevice->WhiteImage;
@@ -97,24 +97,9 @@ namespace MamontEngine
             return m_ContextDevice->ErrorCheckerboardImage;
         }
 
-        AllocatedBuffer CreateBuffer(size_t inAllocSize, VkBufferUsageFlags inUsage, VmaMemoryUsage inMemoryUsage) const;
-
-        void            DestroyBuffer(const AllocatedBuffer &inBuffer);
-
-        AllocatedImage  CreateImage(void *inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false);
-
-        void DestroyImage(const AllocatedImage &inImage);
-
         VkSampler GetSamplerLinear()
         {
-            return m_DefaultSamplerLinear;
-        }
-
-        MaterialInstance WriteMetalMaterial(EMaterialPass                                    pass,
-                                           const GLTFMetallic_Roughness::MaterialResources &resources,
-                                           DescriptorAllocatorGrowable                     &descriptorAllocator)
-        {
-            return m_MetalRoughMaterial.WriteMaterial(m_ContextDevice->Device, pass, resources, descriptorAllocator);
+            return m_ContextDevice->DefaultSamplerLinear;
         }
 
     private:
@@ -142,8 +127,6 @@ namespace MamontEngine
 
         void ResizeSwapchain();
 
-        AllocatedImage CreateImage(VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false) const;
-        
     private:
         bool       m_IsInitialized{false};
         int        m_FrameNumber{0};
@@ -180,20 +163,18 @@ namespace MamontEngine
         VkViewport       m_Viewport;
 
         std::vector<ComputeEffect> m_BackgroundEffects;
-        int                        m_CurrentBackgroundEffect{0};
+        int                        m_CurrentBackgroundEffect{1};
 
         GPUSceneData m_SceneData;
 
         VkDescriptorSetLayout m_GPUSceneDataDescriptorLayout;
 
-        VkSampler m_DefaultSamplerLinear;
-        VkSampler m_DefaultSamplerNearest;
+        
 
         MaterialInstance m_DefualtDataMatInstance;
-        GLTFMetallic_Roughness m_MetalRoughMaterial;
 
         DrawContext m_MainDrawContext;
-        std::unordered_map<std::string, std::shared_ptr<LoadedGLTF>> loadedScenes;
+        std::unordered_map<std::string, std::shared_ptr<MScene>> loadedScenes;
 
         EngineStats stats;
 

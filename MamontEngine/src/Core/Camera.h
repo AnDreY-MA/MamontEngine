@@ -8,8 +8,8 @@ namespace MamontEngine
 	{
     public:
         Camera() = default;
-        glm::mat4 GetViewMatrix();
-        glm::mat4 GetRotationMatrix();
+        glm::mat4 GetViewMatrix() const;
+        glm::mat4 GetRotationMatrix() const;
 
         void ProccessEvent(SDL_Event &inEvent);
         void Update();
@@ -25,9 +25,14 @@ namespace MamontEngine
         }
 
     private:
+        void Rotate(const SDL_MouseMotionEvent& inMotion);
+
+    private:
         glm::vec3 m_Velocity;
         glm::vec3 m_Position;
         float     m_Pitch{0.f};
         float     m_Yaw{0.f};
+        bool      m_IsRotating       = false;
+        float     m_MouseSensitivity = 0.001f;
 	};
 }

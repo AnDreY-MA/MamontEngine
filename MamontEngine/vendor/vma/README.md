@@ -164,10 +164,10 @@ See **[Documentation](https://gpuopen-librariesandsdks.github.io/VulkanMemoryAll
 - **[Vulkan Samples](https://github.com/LunarG/VulkanSamples)** - official Khronos Vulkan samples. License: Apache-style.
 - **[GFXReconstruct](https://github.com/LunarG/gfxreconstruct)** - a tools for the capture and replay of graphics API calls. License: MIT.
 - **[Anvil](https://github.com/GPUOpen-LibrariesAndSDKs/Anvil)** - cross-platform framework for Vulkan. License: MIT.
-- **[Filament](https://github.com/google/filament)** - physically based rendering engine for Android, Windows, Linux and macOS, from Google. Apache License 2.0.
-- **[Atypical Games - proprietary game engine](https://developer.samsung.com/galaxy-gamedev/gamedev-blog/infinitejet.html)**
+- **[Filament](https://github.com/google/filament)** - physically based rendering inDeviece for Android, Windows, Linux and macOS, from Google. Apache License 2.0.
+- **[Atypical Games - proprietary game inDeviece](https://developer.samsung.com/galaxy-gamedev/gamedev-blog/infinitejet.html)**
 - **[Flax Engine](https://flaxengine.com/)**
-- **[Godot Engine](https://github.com/godotengine/godot/)** - multi-platform 2D and 3D game engine. License: MIT.
+- **[Godot Engine](https://github.com/godotengine/godot/)** - multi-platform 2D and 3D game inDeviece. License: MIT.
 - **[Lightweight Java Game Library (LWJGL)](https://www.lwjgl.org/)** - includes binding of the library for Java. License: BSD.
 - **[LightweightVK](https://github.com/corporateshark/lightweightvk)** - lightweight C++ bindless Vulkan 1.3 wrapper. License: MIT.
 - **[PowerVR SDK](https://github.com/powervr-graphics/Native_SDK)** - C++ cross-platform 3D graphics SDK, from Imagination. License: MIT.
@@ -179,7 +179,7 @@ See **[Documentation](https://gpuopen-librariesandsdks.github.io/VulkanMemoryAll
 - **[Vulkan Best Practice for Mobile Developers](https://github.com/ARM-software/vulkan_best_practice_for_mobile_developers)** from ARM. License: MIT.
 - **[RPCS3](https://github.com/RPCS3/rpcs3)** - PlayStation 3 emulator/debugger. License: GNU GPLv2.
 - **[PPSSPP](https://github.com/hrydgard/ppsspp)** - Playstation Portable emulator/debugger. License: GNU GPLv2+.
-- **[Wicked Engine](https://github.com/turanszkij/WickedEngine)** - 3D engine with modern graphics 
+- **[Wicked Engine](https://github.com/turanszkij/WickedEngine)** - 3D inDeviece with modern graphics 
 
 [Many other projects on GitHub](https://github.com/search?q=AMD_VULKAN_MEMORY_ALLOCATOR_H&type=Code) and some game development studios that use Vulkan in their games.
 

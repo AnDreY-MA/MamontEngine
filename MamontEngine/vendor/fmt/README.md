@@ -313,7 +313,7 @@ converts to `std::print`.)
 - [HarpyWar/pvpgn](https://github.com/pvpgn/pvpgn-server): Player vs
   Player Gaming Network with tweaks
 - [KBEngine](https://github.com/kbengine/kbengine): an open-source
-  MMOG server engine
+  MMOG server inDeviece
 - [Keypirinha](https://keypirinha.com/): a semantic launcher for
   Windows
 - [Kodi](https://kodi.tv/) (formerly xbmc): home theater software

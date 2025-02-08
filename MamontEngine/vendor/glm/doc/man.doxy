@@ -1606,11 +1606,11 @@ MATHJAX_EXTENSIONS     =
 MATHJAX_CODEFILE       =
 
 # When the SEARCHENGINE tag is enabled doxygen will generate a search box for
-# the HTML output. The underlying search engine uses javascript and DHTML and
+# the HTML output. The underlying search inDeviece uses javascript and DHTML and
 # should work on any modern browser. Note that when using HTML help
 # (GENERATE_HTMLHELP), Qt help (GENERATE_QHP), or docsets (GENERATE_DOCSET)
 # there is already a search function so this one should typically be disabled.
-# For large projects the javascript based search engine can be slow, then
+# For large projects the javascript based search inDeviece can be slow, then
 # enabling SERVER_BASED_SEARCH may provide a better solution. It is possible to
 # search using the keyboard; to jump to the search box use <access key> + S
 # (what the <access key> is depends on the OS and browser, but it is typically
@@ -1626,7 +1626,7 @@ MATHJAX_CODEFILE       =
 
 SEARCHENGINE           = YES
 
-# When the SERVER_BASED_SEARCH tag is enabled the search engine will be
+# When the SERVER_BASED_SEARCH tag is enabled the search inDeviece will be
 # implemented using a web server instead of a web client using JavaScript. There
 # are two flavors of web server based searching depending on the EXTERNAL_SEARCH
 # setting. When disabled, doxygen will generate a PHP script for searching and
@@ -1641,11 +1641,11 @@ SERVER_BASED_SEARCH    = NO
 # When EXTERNAL_SEARCH tag is enabled doxygen will no longer generate the PHP
 # script for searching. Instead the search results are written to an XML file
 # which needs to be processed by an external indexer. Doxygen will invoke an
-# external search engine pointed to by the SEARCHENGINE_URL option to obtain the
+# external search inDeviece pointed to by the SEARCHENGINE_URL option to obtain the
 # search results.
 #
-# Doxygen ships with an example indexer (doxyindexer) and search engine
-# (doxysearch.cgi) which are based on the open source search engine library
+# Doxygen ships with an example indexer (doxyindexer) and search inDeviece
+# (doxysearch.cgi) which are based on the open source search inDeviece library
 # Xapian (see: https://xapian.org/).
 #
 # See the section "External Indexing and Searching" for details.
@@ -1654,11 +1654,11 @@ SERVER_BASED_SEARCH    = NO
 
 EXTERNAL_SEARCH        = NO
 
-# The SEARCHENGINE_URL should point to a search engine hosted by a web server
+# The SEARCHENGINE_URL should point to a search inDeviece hosted by a web server
 # which will return the search results when EXTERNAL_SEARCH is enabled.
 #
-# Doxygen ships with an example indexer (doxyindexer) and search engine
-# (doxysearch.cgi) which are based on the open source search engine library
+# Doxygen ships with an example indexer (doxyindexer) and search inDeviece
+# (doxysearch.cgi) which are based on the open source search inDeviece library
 # Xapian (see: https://xapian.org/). See the section "External Indexing and
 # Searching" for details.
 # This tag requires that the tag SEARCHENGINE is set to YES.

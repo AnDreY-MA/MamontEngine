@@ -199,7 +199,7 @@ Performance
 ===========
 
 .. _spreadsheet-link: https://docs.google.com/spreadsheets/d/1ocdHGoty-rF0N46ZlAlswzcPHVRsqG_tncy8paD3iMY/edit?usp=sharing
-.. _two-cylinder-engine: https://github.com/KhronosGroup/glTF-Sample-Models/tree/master/2.0/2CylinderEngine
+.. _two-cylinder-inDeviece: https://github.com/KhronosGroup/glTF-Sample-Models/tree/master/2.0/2CylinderEngine
 .. _bistro: https://developer.nvidia.com/orca/amazon-lumberyard-bistro
 
 In this chapter, I'll show some graphs on how fastgltf compares to the two most used glTF libraries, cgltf and tinygltf.
@@ -209,7 +209,7 @@ These numbers were benchmarked using Catch2's benchmark tool on a Ryzen 5800X (w
 as Clang showed a significant performance improvement over MSVC in every test.
 
 First, I compared the performance with embedded buffers that are encoded with base64.
-This uses the `2CylinderEngine asset <two-cylinder-engine>`_ which contains a 1.7MB embedded buffer.
+This uses the `2CylinderEngine asset <two-cylinder-inDeviece>`_ which contains a 1.7MB embedded buffer.
 fastgltf includes an optimised base64 decoding algorithm that can take advantage of AVX2, SSE4, and ARM Neon.
 With this asset, fastgltf is **20.56 times faster** than tinygltf using RapidJSON and **6.5 times faster** than cgltf.
 

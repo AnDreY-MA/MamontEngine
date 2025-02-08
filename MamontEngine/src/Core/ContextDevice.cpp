@@ -1,8 +1,13 @@
 #include "ContextDevice.h"
+
 #include <VkBootstrap.h>
 #include "Window.h"
 #include "VkInitializers.h"
 #include "VkImages.h"
+#include "Graphics/Vulkan/GPUBuffer.h"
+
+#include <vk_mem_alloc.h>
+
 
 namespace MamontEngine
 {
@@ -106,6 +111,56 @@ namespace MamontEngine
         return newBuffer;
     }
 
+    GPUMeshBuffers VkContextDevice::CreateGPUMeshBuffer(std::span<uint32_t> inIndices, std::span<Vertex> inVertices)
+    {
+        const size_t vertexBufferSize{inVertices.size() * sizeof(Vertex)};
+        const size_t indexBufferSize{inIndices.size() * sizeof(uint32_t)};
+
+        GPUMeshBuffers newSurface{};
+
+        newSurface.VertexBuffer =
+                CreateBuffer(vertexBufferSize,
+                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                             VMA_MEMORY_USAGE_GPU_ONLY);
+
+        VkBufferDeviceAddressInfo deviceAddressInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = newSurface.VertexBuffer.Buffer};
+        newSurface.VertexBufferAddress              = vkGetBufferDeviceAddress(Device, &deviceAddressInfo);
+
+        newSurface.IndexBuffer = CreateBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+
+        AllocatedBuffer staging = CreateBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+
+        VmaAllocationInfo allocInfo;
+        vmaGetAllocationInfo(Allocator, staging.Allocation, &allocInfo);
+        void *data = allocInfo.pMappedData;
+        //void *data = staging.Allocation->GetMappedData;   
+
+        memcpy(data, inVertices.data(), vertexBufferSize);
+        memcpy((char *)data + vertexBufferSize, inIndices.data(), indexBufferSize);
+
+        ImmediateSubmit(
+                [&](VkCommandBuffer cmd)
+                {
+                    VkBufferCopy vertexCopy{0};
+                    vertexCopy.dstOffset = 0;
+                    vertexCopy.srcOffset = 0;
+                    vertexCopy.size      = vertexBufferSize;
+
+                    vkCmdCopyBuffer(cmd, staging.Buffer, newSurface.VertexBuffer.Buffer, 1, &vertexCopy);
+
+                    VkBufferCopy indexCopy{0};
+                    indexCopy.dstOffset = 0;
+                    indexCopy.srcOffset = vertexBufferSize;
+                    indexCopy.size      = indexBufferSize;
+
+                    vkCmdCopyBuffer(cmd, staging.Buffer, newSurface.IndexBuffer.Buffer, 1, &indexCopy);
+                });
+
+        DestroyBuffer(staging);
+
+        return newSurface;
+    }
+    
     void VkContextDevice::DestroyBuffer(const AllocatedBuffer &inBuffer) const
     {
         vmaDestroyBuffer(Allocator, inBuffer.Buffer, inBuffer.Allocation);
@@ -210,4 +265,11 @@ namespace MamontEngine
 
         VK_CHECK(vkWaitForFences(Device, 1, &ImmFence, true, 9999999999));
     }
+
+    void VkContextDevice::DestroyImage(const AllocatedImage &inImage)
+    {
+        vkDestroyImageView(Device, inImage.ImageView, nullptr);
+        vmaDestroyImage(Allocator, inImage.Image, inImage.Allocation);
+    }
+
 }

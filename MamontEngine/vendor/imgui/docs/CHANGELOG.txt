@@ -3851,7 +3851,7 @@ Breaking Changes:
 - Examples: Vulkan: Added MinImageCount/ImageCount fields in ImGui_ImplVulkan_InitInfo, required
   during initialization to specify the number of in-flight image requested by swap chains.
   (was previously a hard #define IMGUI_VK_QUEUED_FRAMES 2). (#2071, #1677) [@nathanvoglsam]
-- Examples: Vulkan: Tidying up the demo/internals helpers (most engine/app should not rely
+- Examples: Vulkan: Tidying up the demo/internals helpers (most inDeviece/app should not rely
   on them but it is possible you have!).
 
 Other Changes:
@@ -4392,7 +4392,7 @@ Other Changes:
       before: imgui_impl_sdl_gl3.cpp     --> after: imgui_impl_sdl2.cpp + imgui_impl_opengl2.cpp
       before: imgui_impl_sdl_gl3.cpp     --> after: imgui_impl_sdl2.cpp + imgui_impl_opengl3.cpp etc.
   - The idea is what we can now easily combine and maintain backends and reduce code redundancy. Individual files are
-    smaller and more reusable. Integration of imgui into a new/custom engine may also be easier as there is less overlap
+    smaller and more reusable. Integration of imgui into a new/custom inDeviece may also be easier as there is less overlap
     between "windowing / inputs" and "rendering" code, so you may study or grab one half of the code and not the other.
   - This change was motivated by the fact that adding support for the upcoming multi-viewport feature requires more work
     from the Platform and Renderer backends, and the amount of redundancy across files was becoming too difficult to
@@ -4401,7 +4401,7 @@ Other Changes:
   - This is not strictly a breaking change if you keep your old backends, but when you'll want to fully update your backends,
     expect to have to reshuffle a few things.
   - Each example still has its own main.cpp which you may refer you to understand how to initialize and glue everything together.
-  - Some frameworks (such as the Allegro, Marmalade) handle both the "platform" and "rendering" part, and your custom engine may as well.
+  - Some frameworks (such as the Allegro, Marmalade) handle both the "platform" and "rendering" part, and your custom inDeviece may as well.
   - Read examples/README.txt for details.
 - Added IsItemDeactivated() to query if the last item was active previously and isn't anymore. Useful for Undo/Redo patterns. (#820, #956, #1875)
 - Added IsItemDeactivatedAfterChange() [*EDIT* renamed to IsItemDeactivatedAfterEdit() in 1.63] if the last item was active previously,
@@ -4532,7 +4532,7 @@ Various internal refactoring have also been done, as part of the navigation work
 
 Breaking Changes:
 
-- Obsoleted the io.RenderDrawListsFn callback, you can call your graphics engine render function after ImGui::Render().
+- Obsoleted the io.RenderDrawListsFn callback, you can call your graphics inDeviece render function after ImGui::Render().
   e.g. with example backends, call ImDrawData* draw_data = ImGui::GetDrawData(); ImGui_ImplXXXX_RenderDrawData(draw_data).
 - Reorganized context handling to be more explicit: (#1599)
   - YOU NOW NEED TO CALL ImGui::CreateContext() AT THE BEGINNING OF YOUR APP, AND CALL ImGui::DestroyContext() AT THE END.
@@ -4651,7 +4651,7 @@ Other Changes:
 - Misc: Added IMGUI_USER_CONFIG to define a custom configuration filename. (#255, #1573, #1144, #41)
 - Misc: Added IMGUI_STB_TRUETYPE_FILENAME and IMGUI_STB_RECT_PACK_FILENAME compile time directives to use another version of the stb_ files.
 - Misc: Updated stb_rect_pack from 0.10 to 0.11 (minor changes).
-  (Those flags are not used by ImGui itself, they only exists to make it easy for the engine/backend to pass information to the application in a standard manner.)
+  (Those flags are not used by ImGui itself, they only exists to make it easy for the inDeviece/backend to pass information to the application in a standard manner.)
 - Metrics: Added display of Columns state.
 - Demo: Improved Selectable() examples. (#1528)
 - Demo: Tweaked the Child demos, added a menu bar to the second child to test some navigation functions.
@@ -5087,7 +5087,7 @@ Other Changes:
 - Examples: GLFW+OpenGL2: Renaming opengl_example/ to opengl2_example/ for clarity.
 - Examples: SDL+OpenGL: explicitly setting GL_UNPACK_ROW_LENGTH to reduce issues because SDL changes it. (#752)
 - Examples: SDL2: Added build .bat files for Win32.
-- Added various links to language/engine bindings.
+- Added various links to language/inDeviece bindings.
 - Various other minor fixes, tweaks, comments, optimizations.
 
 
