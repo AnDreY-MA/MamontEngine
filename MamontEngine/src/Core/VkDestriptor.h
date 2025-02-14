@@ -1,6 +1,7 @@
 #pragma once
 
-
+namespace MamontEngine
+{
     struct DescriptorLayoutBuilder
     {
         void AddBinding(const uint32_t inBinding, VkDescriptorType inType);
@@ -28,7 +29,6 @@
 
     private:
         VkDescriptorPool m_Pool;
-
     };
 
     struct DescriptorAllocatorGrowable
@@ -68,4 +68,6 @@
         void Clear();
         void UpdateSet(VkDevice inDevice, VkDescriptorSet inSet);
     };
+}
+    
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Core/VkDestriptor.h"
+
 namespace MamontEngine
 {
     struct DeletionQueue

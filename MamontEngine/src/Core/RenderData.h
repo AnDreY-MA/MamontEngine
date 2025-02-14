@@ -95,13 +95,7 @@ namespace MamontEngine
     };
 
 
-    class IRenderable
-    {
-    public:
-        virtual void Draw(const glm::mat4 &inTopMatrix, DrawContext &inContext) = 0;
-    };
-
-    struct Node : public IRenderable
+    struct Node
     {
     public:
         Node() = default;
@@ -115,7 +109,7 @@ namespace MamontEngine
             m_WorldTransform = inParentMatrix * m_LocalTransform;
         }
 
-        virtual void Draw(const glm::mat4& inTopMatrix, DrawContext& inContext) override
+        virtual void Draw(const glm::mat4& inTopMatrix, DrawContext& inContext) 
         {
             for (auto& c : m_Children)
             {
@@ -126,7 +120,7 @@ namespace MamontEngine
         std::weak_ptr<Node>                m_Parent;
         std::vector<std::shared_ptr<Node>> m_Children;
         glm::mat4                          m_LocalTransform;
-        glm::mat4                          m_WorldTransform;
+        glm::mat4                          m_WorldTransform{1.f};
     };
 
     struct MeshNode : public Node

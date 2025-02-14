@@ -2,14 +2,16 @@
 
 #include "VkDestriptor.h"
 #include "Utils/Loader.h"
-#include "Renderer.h"
 #include "Camera.h"
 #include "FrameData.h"
 #include "Window.h"
 #include "ContextDevice.h"
 #include "Graphics/Vulkan/GPUBuffer.h"
 #include "Graphics/Vulkan/Swapchain.h"
-#include "Graphics/MScene.h"
+#include "Graphics/RenderScene.h"
+
+#include "Graphics/Vulkan/Pipelines/SkyPipeline.h"
+
 
 struct MPipeline
 {
@@ -20,22 +22,7 @@ namespace MamontEngine
 {
     constexpr unsigned int FRAME_OVERLAP = 2;
 
-    struct ComputePushConstants
-    {
-        glm::vec4 Data1;
-        glm::vec4 Data2;
-        glm::vec4 Data3;
-        glm::vec4 Data4;
-    };
-
-    struct ComputeEffect
-    {
-        const char *Name;
-        ::VkPipeline  Pipeline;
-        VkPipelineLayout Layout;
-        
-        ComputePushConstants Data;
-    };
+    class Scene;
 
     struct GPUSceneData
     {
@@ -109,16 +96,11 @@ namespace MamontEngine
         void InitSyncStructeres();
         void InitDefaultData();
 
-        void DrawBackground(VkCommandBuffer inCmd);
-        
         void InitDescriptors();
 
         void InitPipelines();
-        void InitBackgrounPipeline();
 
         void InitImgui();
-        
-        void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction) const;
         
         void DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView) const;
 
@@ -126,6 +108,9 @@ namespace MamontEngine
         void DrawGeometry(VkCommandBuffer inCmd);
 
         void ResizeSwapchain();
+
+        void InitScene();
+        void UpdateScene();
 
     private:
         bool       m_IsInitialized{false};
@@ -155,32 +140,25 @@ namespace MamontEngine
         VkDescriptorSet                   m_DrawImageDescriptors;
         VkDescriptorSetLayout             m_DrawImageDescriptorLayout;
 
+        std::unique_ptr<SkyPipeline> m_SkyPipeline;
+
         VkPipelineLayout m_GradientPipelineLayout;
-        VkPipelineLayout m_TrianglePipelineLayout;
-        VkPipeline       m_TrianglePipeline;
         VkPipelineLayout m_MeshPipelineLayout;
         VkPipeline       m_MeshPipeline;
         VkViewport       m_Viewport;
-
-        std::vector<ComputeEffect> m_BackgroundEffects;
-        int                        m_CurrentBackgroundEffect{1};
 
         GPUSceneData m_SceneData;
 
         VkDescriptorSetLayout m_GPUSceneDataDescriptorLayout;
 
-        
-
         MaterialInstance m_DefualtDataMatInstance;
 
         DrawContext m_MainDrawContext;
-        std::unordered_map<std::string, std::shared_ptr<MScene>> loadedScenes;
+        std::unordered_map<std::string, std::shared_ptr<RenderScene>> loadedScenes;
+
+        std::shared_ptr<Scene> m_Scene;
 
         EngineStats stats;
-
-        void UpdateScene();
-        void InitRenderable();
-
         Camera m_MainCamera;
 	
     };

@@ -10,9 +10,10 @@
 namespace MamontEngine
 {
 
-	struct MScene
+	struct RenderScene
     {
-        explicit MScene(VkContextDevice &inDevice);
+        explicit RenderScene(VkContextDevice &inDevice);
+        ~RenderScene();
 
         std::unordered_map<std::string, std::shared_ptr<Mesh>>         Meshes;
         std::unordered_map<std::string, std::shared_ptr<Node>>         Nodes;
@@ -27,16 +28,11 @@ namespace MamontEngine
 
         AllocatedBuffer MaterialDataBuffer;
 
-
-        ~MScene();
-
         void Draw(const glm::mat4 &topMatrix, DrawContext &ctx);
 
     private:
         void ClearAll();
 
         VkContextDevice &Device;
-
-
 	};
 }

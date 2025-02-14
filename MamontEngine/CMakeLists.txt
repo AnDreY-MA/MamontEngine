@@ -6,9 +6,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Gather source files
 file(GLOB src "src/*.h" "src/*.cpp" "src/*.hpp")
 file(GLOB_RECURSE Core "src/Core/*.h" "src/Core/*.hpp" "src/Core/*.cpp")
-file(GLOB_RECURSE Renderer "src/Renderer/*.h" "src/Graphics/*.hpp" "src/Graphics/*.cpp")
+file(GLOB_RECURSE Renderer "src/Graphics/*.h" "src/Graphics/*.hpp" "src/Graphics/*.cpp")
 file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.hpp" "src/Utils/*.cpp")
-set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Utils})
+file(GLOB_RECURSE ECS "src/ECS/*.h" "src/ECS/*.hpp" "src/ECS/*.cpp")
+set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Utils} ${ECS})
 
 # Add library
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
@@ -53,7 +54,7 @@ if (VULKAN_SDK)
 endif()
 find_package(Vulkan REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
-
+    
 # GLSL Compilation
 find_program(GLSL_VALIDATOR glslangValidator HINTS /usr/bin /usr/local/bin $ENV{VULKAN_SDK}/Bin/ $ENV{VULKAN_SDK}/Bin32/)
 file(GLOB_RECURSE GLSL_SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/Shaders/*.frag" "${PROJECT_SOURCE_DIR}/src/Shaders/*.vert" "${PROJECT_SOURCE_DIR}/src/Shaders/*.comp")
@@ -68,11 +69,12 @@ add_custom_target(Shaders DEPENDS ${SPIRV_BINARY_FILES})
 # Vendor dependencies
 add_subdirectory("vendor/glm")
 add_subdirectory("vendor/vkbootstrap")
-add_subdirectory("vendor/SDL")
+add_subdirectory("vendor/sdl" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/fmt" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/vma" EXCLUDE_FROM_ALL)
+add_subdirectory("vendor/entt" EXCLUDE_FROM_ALL)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GPUOpen::VulkanMemoryAllocator)
+target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GPUOpen::VulkanMemoryAllocator EnTT::EnTT)
 
 # imgui
 add_library(imgui STATIC 
@@ -82,7 +84,7 @@ add_library(imgui STATIC
     vendor/imgui/imgui_widgets.cpp 
     vendor/imgui/imgui_tables.cpp 
     vendor/imgui/imgui_impl_vulkan.cpp 
-    vendor/imgui/imgui_impl_sdl3.cpp "src/Core/FrameData.h")
+    vendor/imgui/imgui_impl_sdl3.cpp)
 target_include_directories(imgui PUBLIC vendor/imgui)
 target_link_libraries(${PROJECT_NAME} PUBLIC imgui)
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)

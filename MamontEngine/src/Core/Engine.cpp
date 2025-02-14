@@ -17,6 +17,10 @@
 #include <glm/gtx/transform.hpp>
 #include "Graphics/Vulkan/Swapchain.h"
 
+#include "ECS/Scene.h"
+#include "ECS/Entity.h"
+#include <ECS/Components/MeshComponent.h>
+
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
@@ -42,6 +46,7 @@ namespace MamontEngine
 
         m_ContextDevice = std::make_unique<VkContextDevice>();
 
+
         InitVulkan();
         
         InitSwapchain();
@@ -56,12 +61,12 @@ namespace MamontEngine
 
         InitDefaultData();
 
-        InitRenderable();
+        InitScene();
 
         InitImgui();
 
         m_MainCamera.SetVelocity(glm::vec3(0.f));
-        m_MainCamera.SetPosition(glm::vec3(0, 0, 0));
+        m_MainCamera.SetPosition(glm::vec3(1, 1, 0));
 
         m_IsInitialized = true;
     }
@@ -73,7 +78,7 @@ namespace MamontEngine
 
         while (!bQuit)
         {
-            const auto start = std::chrono::system_clock::now();
+            const auto start = std::chrono::high_resolution_clock::now();
 
             while (SDL_PollEvent(&event) != 0)
             { 
@@ -135,11 +140,13 @@ namespace MamontEngine
 
             ImGui::Render();
 
-            UpdateScene();
-            Draw();
-            
+            if (!m_IsResizeRequested)
+            {
+                UpdateScene();
+                Draw();
+            }
 
-            const auto end     = std::chrono::system_clock::now();
+            const auto end     = std::chrono::high_resolution_clock::now();
             const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
             stats.FrameTime = elapsed.count() / 1000.f;
@@ -279,32 +286,13 @@ namespace MamontEngine
             return;
         }
 
-        m_FrameNumber++;
-    }
-
-    void MEngine::DrawBackground(VkCommandBuffer inCmd)
-    {
-        ComputeEffect &effect = m_BackgroundEffects[m_CurrentBackgroundEffect];
-
-        // bind the background compute pipeline
-        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, effect.Pipeline);
-
-        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipelineLayout, 0, 1, &m_DrawImageDescriptors, 0, nullptr);
-
-        vkCmdPushConstants(inCmd, m_GradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.Data);
-
-        vkCmdDispatch(inCmd, std::ceil(m_DrawExtent.width / 16.0), std::ceil(m_DrawExtent.height / 16.0), 1);
+        ++m_FrameNumber;
     }
 
     void MEngine::DrawMain(VkCommandBuffer inCmd)
     {
-        const ComputeEffect &effect = m_BackgroundEffects[m_CurrentBackgroundEffect];
+        m_SkyPipeline->Draw(inCmd, &m_DrawImageDescriptors);
 
-        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, effect.Pipeline);
-
-        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipelineLayout, 0, 1, &m_DrawImageDescriptors, 0, nullptr);
-
-        vkCmdPushConstants(inCmd, m_GradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &effect.Data);
         const VkExtent2D extent = m_Window->GetExtent();
         vkCmdDispatch(inCmd, std::ceil(extent.width / 16.0), std::ceil(extent.height / 16.0), 1);
 
@@ -313,15 +301,15 @@ namespace MamontEngine
         VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(m_Image.DrawImage.ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(m_Image.DepthImage.ImageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-        VkRenderingInfo renderInfo = vkinit::rendering_info(extent, &colorAttachment, &depthAttachment);
+        const VkRenderingInfo renderInfo = vkinit::rendering_info(extent, &colorAttachment, &depthAttachment);
 
         vkCmdBeginRendering(inCmd, &renderInfo);
 
-        const auto start = std::chrono::system_clock::now();
+        const auto start = std::chrono::high_resolution_clock::now();
 
         DrawGeometry(inCmd);
 
-        const auto end     = std::chrono::system_clock::now();
+        const auto end     = std::chrono::high_resolution_clock::now();
         const auto  elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
         stats.MeshDrawTime = elapsed.count() / 1000.f;
@@ -452,7 +440,7 @@ namespace MamontEngine
                 vkCmdBindIndexBuffer(inCmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
             }
 
-            GPUDrawPushConstants push_constants;
+            GPUDrawPushConstants push_constants{};
             push_constants.WorldMatrix  = r.Transform;
             push_constants.VertexBuffer = r.VertexBufferAddress;
 
@@ -493,8 +481,12 @@ namespace MamontEngine
         vkCmdEndRendering(inCmd);
     }
     
-    void MEngine::InitRenderable()
+    void MEngine::InitScene()
     {
+        m_Scene = std::make_shared<Scene>();
+        auto entity = m_Scene->CreateEntity("Cube");
+        entity.AddComponent<MeshComponent>();
+
         const std::string structurePath = {RootDirectories + "/MamontEngine/assets/structure_mat.glb"};
         auto        structureFile = loadGltf(*m_ContextDevice, structurePath);
 
@@ -615,90 +607,11 @@ namespace MamontEngine
 
     void MEngine::InitPipelines()
     {
-        InitBackgrounPipeline();
-
+        m_SkyPipeline = std::make_unique<SkyPipeline>();
+        m_SkyPipeline->Init(m_ContextDevice->Device, &m_DrawImageDescriptorLayout, m_MainDeletionQueue);
+        
         m_ContextDevice->MetalRoughMaterial.BuildPipelines(this);
 
-    }
-    
-    void MEngine::InitBackgrounPipeline()
-    {
-        VkPipelineLayoutCreateInfo computeLayout{};
-        computeLayout.sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        computeLayout.pNext          = nullptr;
-        computeLayout.pSetLayouts    = &m_DrawImageDescriptorLayout;
-        computeLayout.setLayoutCount = 1;
-
-        VkPushConstantRange pushConstant{};
-        pushConstant.offset     = 0;
-        pushConstant.size       = sizeof(ComputePushConstants);
-        pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-        computeLayout.pPushConstantRanges    = &pushConstant;
-        computeLayout.pushConstantRangeCount = 1;
-
-        VK_CHECK(vkCreatePipelineLayout(m_ContextDevice->Device, &computeLayout, nullptr, &m_GradientPipelineLayout));
-
-        const std::string    shaderPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/gradient_color.comp.spv";
-        VkShaderModule gradientShader;
-        if (!VkPipelines::LoadShaderModule(shaderPath.c_str(), m_ContextDevice->Device, &gradientShader))
-        {
-            fmt::print("Error when building the Gradient shader \n");
-        }
-
-        VkShaderModule skyShader;
-        const std::string    skyShaderPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/sky.comp.spv";
-        if (!VkPipelines::LoadShaderModule(skyShaderPath.c_str(), m_ContextDevice->Device, &skyShader))
-        {
-            fmt::print("Error when building the Sky shader ");
-        }
-
-
-        VkPipelineShaderStageCreateInfo stageinfo{};
-        stageinfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        stageinfo.pNext  = nullptr;
-        stageinfo.stage  = VK_SHADER_STAGE_COMPUTE_BIT;
-        stageinfo.module = gradientShader;
-        stageinfo.pName  = "main";
-
-        VkComputePipelineCreateInfo computePipelineCreateInfo{};
-        computePipelineCreateInfo.sType  = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-        computePipelineCreateInfo.pNext  = nullptr;
-        computePipelineCreateInfo.layout = m_GradientPipelineLayout;
-        computePipelineCreateInfo.stage  = stageinfo;
-
-        ComputeEffect gradient;
-        gradient.Layout = m_GradientPipelineLayout;
-        gradient.Name   = "gradient";
-        gradient.Data   = {};
-
-        gradient.Data.Data1 = glm::vec4(1, 0, 0, 1);
-        gradient.Data.Data2 = glm::vec4(0, 0, 1, 1);
-
-        VK_CHECK(vkCreateComputePipelines(m_ContextDevice->Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &gradient.Pipeline));
-
-        computePipelineCreateInfo.stage.module = skyShader;
-
-        ComputeEffect sky{};
-        sky.Layout     = m_GradientPipelineLayout;
-        sky.Name       = "Sky";
-        sky.Data       = {};
-        sky.Data.Data1 = glm::vec4(0.1, 0.2, 0.4, 0.97);
-
-        VK_CHECK(vkCreateComputePipelines(m_ContextDevice->Device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &sky.Pipeline));
-
-        m_BackgroundEffects.push_back(gradient);
-        m_BackgroundEffects.push_back(sky);
-
-        vkDestroyShaderModule(m_ContextDevice->Device, gradientShader, nullptr);
-        vkDestroyShaderModule(m_ContextDevice->Device, skyShader, nullptr);
-        m_MainDeletionQueue.PushFunction(
-                [=]()
-                {
-                    vkDestroyPipelineLayout(m_ContextDevice->Device, m_GradientPipelineLayout, nullptr);
-                    vkDestroyPipeline(m_ContextDevice->Device, sky.Pipeline, nullptr);
-                    vkDestroyPipeline(  m_ContextDevice->Device, gradient.Pipeline, nullptr);
-                });
     }
     
     void MEngine::InitImgui()
@@ -756,11 +669,6 @@ namespace MamontEngine
                     vkDestroyDescriptorPool(m_ContextDevice->Device, imguiPool, nullptr);
                 });
        
-    }
-    
-    void MEngine::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& inFunction) const
-    {
-        m_ContextDevice->ImmediateSubmit(std::move(inFunction));
     }
     
     void MEngine::InitDescriptors()

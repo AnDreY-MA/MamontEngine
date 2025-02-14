@@ -1,21 +1,20 @@
-#include "Graphics/MScene.h"
+#include "Graphics/RenderScene.h"
 #include "Core/Engine.h"
-#include "Graphics/MScene.h"
 
 
 namespace MamontEngine
 {
-    MScene::MScene(VkContextDevice &inDevice) : Device(inDevice)
+    RenderScene::RenderScene(VkContextDevice &inDevice) : Device(inDevice)
     {
     
     }
 
-    MScene::~MScene()
+    RenderScene::~RenderScene()
     {
         ClearAll();
     }
 
-    void MScene::Draw(const glm::mat4 &topMatrix, DrawContext &ctx)
+    void RenderScene::Draw(const glm::mat4 &topMatrix, DrawContext &ctx)
     {
         for (auto &n : TopNodes)
         {
@@ -23,7 +22,7 @@ namespace MamontEngine
         }
     }
 
-    void MScene::ClearAll()
+    void RenderScene::ClearAll()
     {
         for (auto &[k, v] : Meshes)
         {

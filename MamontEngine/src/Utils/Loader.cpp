@@ -4,7 +4,7 @@
 #include <fastgltf/parser.hpp>
 #include "Core/Engine.h"
 #include "Core/VkDeviceContext.h"
-#include "Graphics/MScene.h"
+#include "Graphics/RenderScene.h"
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <stb/include/stb_image.h>
@@ -136,7 +136,7 @@ namespace MamontEngine
         }
     }
 
-    static std::vector<AllocatedImage> LoadTexture(VkContextDevice &inDeviece, MScene &inFile, fastgltf::Asset &gltf)
+    static std::vector<AllocatedImage> LoadTexture(VkContextDevice &inDeviece, RenderScene &inFile, fastgltf::Asset &gltf)
     {
         std::vector<AllocatedImage> images;
 
@@ -160,7 +160,7 @@ namespace MamontEngine
     }
 
     static std::vector<std::shared_ptr<GLTFMaterial>>
-    LoadMaterials(VkContextDevice &inDeviece, MScene &inFile, fastgltf::Asset &gltf, const std::vector<AllocatedImage> &inImages)
+    LoadMaterials(VkContextDevice &inDeviece, RenderScene &inFile, fastgltf::Asset &gltf, const std::vector<AllocatedImage> &inImages)
     {
         std::vector<std::shared_ptr<GLTFMaterial>> materials;
 
@@ -220,7 +220,7 @@ namespace MamontEngine
         return materials;
     }
 
-    static void LoadSamples(VkDevice inDevice, MScene &inFile, std::vector<fastgltf::Sampler> &samplers)
+    static void LoadSamples(VkDevice inDevice, RenderScene &inFile, std::vector<fastgltf::Sampler> &samplers)
     {
         for (fastgltf::Sampler &sampler : samplers)
         {
@@ -242,7 +242,7 @@ namespace MamontEngine
     }
     
     static std::vector<std::shared_ptr<Mesh>>
-    LoadMeshes(VkContextDevice &inDeviece, fastgltf::Asset &gltf, MScene &inFile, const std::vector<std::shared_ptr<GLTFMaterial>> &materials)
+    LoadMeshes(VkContextDevice &inDeviece, fastgltf::Asset &gltf, RenderScene &inFile, const std::vector<std::shared_ptr<GLTFMaterial>> &materials)
     {
         std::vector<std::shared_ptr<Mesh>>    meshes;
         std::vector<uint32_t>              indices;
@@ -350,7 +350,7 @@ namespace MamontEngine
     }
 
     static std::vector<std::shared_ptr<Node>>
-    LoadNodes(std::vector<fastgltf::Node> &gltfNodes, MScene &inFile, const std::vector<std::shared_ptr<Mesh>> &meshes)
+    LoadNodes(std::vector<fastgltf::Node> &gltfNodes, RenderScene &inFile, const std::vector<std::shared_ptr<Mesh>> &meshes)
     {
         std::vector<std::shared_ptr<Node>> nodes;
 
@@ -390,12 +390,12 @@ namespace MamontEngine
         return nodes;
     }
     
-    std::optional<std::shared_ptr<MScene>> loadGltf(VkContextDevice &inDeviece, std::string_view filePath)
+    std::optional<std::shared_ptr<RenderScene>> loadGltf(VkContextDevice &inDeviece, std::string_view filePath)
     {
         fmt::print("Loading GLTF: {}", filePath);
 
-        std::shared_ptr<MScene> scene     = std::make_shared<MScene>(inDeviece);
-        MScene &file                      = *scene.get();
+        std::shared_ptr<RenderScene> scene     = std::make_shared<RenderScene>(inDeviece);
+        RenderScene &file                      = *scene.get();
 
         fastgltf::Parser parser{};
 

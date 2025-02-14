@@ -1,7 +1,7 @@
 #include "VkDestriptor.h"
 
-
-
+namespace MamontEngine
+{
     void DescriptorLayoutBuilder::AddBinding(const uint32_t inBinding, VkDescriptorType inType)
     {
         VkDescriptorSetLayoutBinding newBind{};
@@ -17,10 +17,8 @@
         m_Bindings.clear();
     }
 
-    VkDescriptorSetLayout DescriptorLayoutBuilder::Build(VkDevice                         inDevice,
-                                                                                     VkShaderStageFlags               inShaderStages,
-                                                                                     void                            *pNext,
-                                                                                     VkDescriptorSetLayoutCreateFlags flags)
+    VkDescriptorSetLayout
+    DescriptorLayoutBuilder::Build(VkDevice inDevice, VkShaderStageFlags inShaderStages, void *pNext, VkDescriptorSetLayoutCreateFlags flags)
     {
         for (auto &b : m_Bindings)
         {
@@ -39,7 +37,7 @@
 
         return set;
     }
-    
+
     void DescriptorAllocator::init_pool(VkDevice inDevice, const uint32_t inMaxSets, std::span<PoolSizeRatio> inPoolRatios)
     {
         std::vector<VkDescriptorPoolSize> poolSizes;
@@ -70,9 +68,9 @@
     VkDescriptorSet DescriptorAllocator::Allocate(VkDevice inDevice, VkDescriptorSetLayout inLayout)
     {
         VkDescriptorSetAllocateInfo allocInfo{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
-        allocInfo.pNext = nullptr;
-        allocInfo.descriptorPool = m_Pool;
-        allocInfo.descriptorSetCount = 1; 
+        allocInfo.pNext              = nullptr;
+        allocInfo.descriptorPool     = m_Pool;
+        allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts        = &inLayout;
 
         VkDescriptorSet ds;
@@ -82,8 +80,8 @@
     }
 
 
-///// DescriptorAllocatorGrowable
-    
+    ///// DescriptorAllocatorGrowable
+
     void DescriptorAllocatorGrowable::Init(VkDevice inDevice, const uint32_t inInitialSets, std::span<PoolSizeRatio> inPoolRatios)
     {
         m_Ratios.clear();
@@ -112,7 +110,7 @@
 
         m_FullPools.clear();
     }
-    
+
     void DescriptorAllocatorGrowable::DestroyPools(VkDevice inDevice)
     {
         for (auto p : m_ReadyPools)
@@ -128,7 +126,7 @@
         m_FullPools.clear();
     }
 
-    VkDescriptorSet DescriptorAllocatorGrowable::Allocate(VkDevice inDevice, VkDescriptorSetLayout inLayout, void* pNext)
+    VkDescriptorSet DescriptorAllocatorGrowable::Allocate(VkDevice inDevice, VkDescriptorSetLayout inLayout, void *pNext)
     {
         VkDescriptorPool poolToUse = GetPool(inDevice);
 
@@ -185,25 +183,22 @@
         std::vector<VkDescriptorPoolSize> poolSizes;
         for (auto ratio : inPoolRatios)
         {
-            poolSizes.push_back(VkDescriptorPoolSize{
-                .type = ratio.type, .descriptorCount = uint32_t(ratio.Ratio * inSetCount)
-                });
-
+            poolSizes.push_back(VkDescriptorPoolSize{.type = ratio.type, .descriptorCount = uint32_t(ratio.Ratio * inSetCount)});
         }
 
         VkDescriptorPoolCreateInfo poolInfo = {};
-        poolInfo.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.flags                       = 0;
-        poolInfo.maxSets                     = inSetCount;
-        poolInfo.poolSizeCount               = (uint32_t)poolSizes.size();
-        poolInfo.pPoolSizes                  = poolSizes.data();
+        poolInfo.sType                      = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.flags                      = 0;
+        poolInfo.maxSets                    = inSetCount;
+        poolInfo.poolSizeCount              = (uint32_t)poolSizes.size();
+        poolInfo.pPoolSizes                 = poolSizes.data();
 
         VkDescriptorPool newPool;
         vkCreateDescriptorPool(inDevice, &poolInfo, nullptr, &newPool);
         return newPool;
     }
 
-//// DescriptoeWriter
+    //// DescriptoeWriter
 
     void DescriptorWriter::WriteImage(const int inBinding, VkImageView inImage, VkSampler inSampler, VkImageLayout inLayout, VkDescriptorType inType)
     {
@@ -232,7 +227,6 @@
         write.pBufferInfo     = &info;
 
         m_Writes.push_back(write);
-
     }
 
     void DescriptorWriter::Clear()
@@ -250,3 +244,5 @@
 
         vkUpdateDescriptorSets(inDevice, (uint32_t)m_Writes.size(), m_Writes.data(), 0, nullptr);
     }
+
+}
