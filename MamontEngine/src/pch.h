@@ -26,14 +26,7 @@
 
 
 
-struct Vertex
-{
-    glm::vec3 Position;
-    float     UV_X;
-    glm::vec3 Normal;
-    float     UV_Y;
-    glm::vec4 Color;
-};
+
 
 struct GPUDrawPushConstants
 {

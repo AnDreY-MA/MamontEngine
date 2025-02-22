@@ -122,7 +122,7 @@ namespace MamontEngine
 
         for (auto &s : Mesh->Surfaces)
         {
-            RenderObject def(s.Count, s.StartIndex, Mesh->MeshBuffers.IndexBuffer.Buffer, &s.Material->Data, nodeMatrix, Mesh->MeshBuffers.VertexBufferAddress);
+            RenderObject def(s.Count, s.StartIndex, Mesh->MeshBuffers.IndexBuffer.Buffer, &s.Material->Data , nodeMatrix, Mesh->MeshBuffers.VertexBufferAddress);
             def.Bound = s.Bound;
             if (s.Material->Data.PassType == EMaterialPass::TRANSPARENT)
             {

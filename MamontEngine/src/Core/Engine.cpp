@@ -17,6 +17,8 @@
 #include <glm/gtx/transform.hpp>
 #include "Graphics/Vulkan/Swapchain.h"
 
+#include "ImGuiRenderer.h"
+
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
 #include <ECS/Components/MeshComponent.h>
@@ -46,6 +48,8 @@ namespace MamontEngine
 
         m_ContextDevice = std::make_unique<VkContextDevice>();
 
+        m_Renderer = Renderer::CreateRenderer();
+        
 
         InitVulkan();
         
@@ -64,6 +68,8 @@ namespace MamontEngine
         InitScene();
 
         InitImgui();
+        //m_ImGuiRenderer = std::make_unique<ImGuiRenderer>();
+        //m_ImGuiRenderer.Init(*m_ContextDevice, m_Window->GetWindow(), m_Swapchain.GetImageFormat(), m_MainDeletionQueue);
 
         m_MainCamera.SetVelocity(glm::vec3(0.f));
         m_MainCamera.SetPosition(glm::vec3(1, 1, 0));
@@ -221,7 +227,10 @@ namespace MamontEngine
     
     void MEngine::Draw()
     {
-        VK_CHECK_MESSAGE(vkWaitForFences(m_ContextDevice->Device, 1, &GetCurrentFrame().RenderFence, VK_TRUE, 1000000000), "Wait FENCE");
+        if (vkGetFenceStatus(m_ContextDevice->Device, GetCurrentFrame().RenderFence) != VK_SUCCESS)
+        {
+            VK_CHECK_MESSAGE(vkWaitForFences(m_ContextDevice->Device, 1, &GetCurrentFrame().RenderFence, VK_TRUE, 1000000000), "Wait FENCE");
+        }
 
         GetCurrentFrame().Deleteions.Flush();
         GetCurrentFrame().FrameDescriptors.ClearPools(m_ContextDevice->Device);
@@ -230,16 +239,17 @@ namespace MamontEngine
         if (e == VK_ERROR_OUT_OF_DATE_KHR)
         {
             m_IsResizeRequested = true;
+            ResizeSwapchain();
             return;
         } 
         const VkExtent2D swapchainExtent = m_Swapchain.GetExtent();
         m_DrawExtent.height              = std::min(swapchainExtent.height, m_Image.DrawImage.ImageExtent.height) * m_RenderScale;
         m_DrawExtent.width               = std::min(swapchainExtent.width, m_Image.DrawImage.ImageExtent.width) * m_RenderScale;
 
-        VK_CHECK(vkResetFences(m_ContextDevice->Device, 1, &GetCurrentFrame() .RenderFence));
-        VK_CHECK(vkResetCommandBuffer(GetCurrentFrame() .MainCommandBuffer, 0));
+        VK_CHECK(vkResetFences(m_ContextDevice->Device, 1, &GetCurrentFrame().RenderFence));
+        VK_CHECK(vkResetCommandBuffer(GetCurrentFrame().MainCommandBuffer, 0));
           
-        VkCommandBuffer cmd = GetCurrentFrame() .MainCommandBuffer;
+        VkCommandBuffer cmd = GetCurrentFrame().MainCommandBuffer;
         
         VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         
@@ -413,22 +423,11 @@ namespace MamontEngine
                     vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Pipeline);
                     vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
 
-                    VkViewport viewport = {};
-                    viewport.x          = 0;
-                    viewport.y          = 0;
-                    viewport.width      = (float)m_DrawExtent.width;
-                    viewport.height     = (float)m_DrawExtent.height;
-                    viewport.minDepth   = 0.f;
-                    viewport.maxDepth   = 1.f;
+                    const VkViewport viewport = {0, 0, (float)m_DrawExtent.width, (float)m_DrawExtent.height, 0.f, 1.f};
 
                     vkCmdSetViewport(inCmd, 0, 1, &viewport);
 
-                    VkRect2D scissor      = {};
-                    scissor.offset.x      = 0;
-                    scissor.offset.y      = 0;
-                    scissor.extent.width  = m_DrawExtent.width;
-                    scissor.extent.height = m_DrawExtent.height;
-
+                    const VkRect2D scissor      = {0, 0, m_DrawExtent.width, m_DrawExtent.height};
                     vkCmdSetScissor(inCmd, 0, 1, &scissor);
                 }
 
@@ -440,9 +439,7 @@ namespace MamontEngine
                 vkCmdBindIndexBuffer(inCmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
             }
 
-            GPUDrawPushConstants push_constants{};
-            push_constants.WorldMatrix  = r.Transform;
-            push_constants.VertexBuffer = r.VertexBufferAddress;
+            const GPUDrawPushConstants push_constants{r.Transform, r.VertexBufferAddress};
 
             vkCmdPushConstants(inCmd, r.Material->Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
 
@@ -469,16 +466,17 @@ namespace MamontEngine
 
     }
 
-    void MEngine::DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView) const
+    void MEngine::DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView)
     {
-        VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(inTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        m_ImGuiRenderer.Draw(inCmd, inTargetImageView, m_Swapchain.GetExtent());
+        /*VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(inTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         const VkRenderingInfo     renderInfo      = vkinit::rendering_info(m_Swapchain.GetExtent(), &colorAttachment, nullptr);
 
         vkCmdBeginRendering(inCmd, &renderInfo);
 
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), inCmd);
 
-        vkCmdEndRendering(inCmd);
+        vkCmdEndRendering(inCmd);*/
     }
     
     void MEngine::InitScene()
@@ -487,11 +485,16 @@ namespace MamontEngine
         auto entity = m_Scene->CreateEntity("Cube");
         entity.AddComponent<MeshComponent>();
 
-        const std::string structurePath = {RootDirectories + "/MamontEngine/assets/structure_mat.glb"};
-        auto        structureFile = loadGltf(*m_ContextDevice, structurePath);
+        /*const std::string housePath = {RootDirectories + "/MamontEngine/assets/house.glb"};
+        auto              houseFile = loadGltf(*m_ContextDevice, housePath);*/
 
+        const std::string structurePath = {RootDirectories + "/MamontEngine/assets/house.glb"};
+        auto              structureFile = loadGltf(*m_ContextDevice, structurePath);
+
+        //assert(houseFile.has_value());
         assert(structureFile.has_value());
 
+        //loadedScenes["house"] = *houseFile;
         loadedScenes["structure"] = *structureFile;
     }
 
@@ -616,7 +619,7 @@ namespace MamontEngine
     
     void MEngine::InitImgui()
     {
-        VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
+        const VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
                                              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
                                              {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
                                              {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
@@ -655,7 +658,7 @@ namespace MamontEngine
 
         initInfo.PipelineRenderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
         initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-        auto ColorFormat = m_Swapchain.GetImageFormat();
+        const auto ColorFormat = m_Swapchain.GetImageFormat();
         initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &ColorFormat;
 
         ImGui_ImplVulkan_Init(&initInfo);
@@ -674,7 +677,7 @@ namespace MamontEngine
     void MEngine::InitDescriptors()
     {
         std::vector<DescriptorAllocator::PoolSizeRatio> sizes = {
-                {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3},
+                {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3    },
                 {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3},
                 {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3},
         };
@@ -707,15 +710,17 @@ namespace MamontEngine
             writer.WriteImage(0, m_Image.DrawImage.ImageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
             writer.UpdateSet(m_ContextDevice->Device, m_DrawImageDescriptors);
         }
-
+        
+        std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> frame_sizes = {
+                {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3},
+                {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3},
+                {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
+                {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4},
+        };
+        
         for (int i = 0; i < FRAME_OVERLAP; i++)
         {
-            std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> frame_sizes = {
-                    {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3},
-                    {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3},
-                    {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
-                    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4},
-            };
+            
 
             m_Frames[i].FrameDescriptors = DescriptorAllocatorGrowable{};
             m_Frames[i].FrameDescriptors.Init(m_ContextDevice->Device, 1000, frame_sizes);

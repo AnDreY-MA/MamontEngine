@@ -3,7 +3,6 @@
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/parser.hpp>
 #include "Core/Engine.h"
-#include "Core/VkDeviceContext.h"
 #include "Graphics/RenderScene.h"
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -241,15 +240,15 @@ namespace MamontEngine
         }
     }
     
-    static std::vector<std::shared_ptr<Mesh>>
+    static std::vector<std::shared_ptr<MeshTest>>
     LoadMeshes(VkContextDevice &inDeviece, fastgltf::Asset &gltf, RenderScene &inFile, const std::vector<std::shared_ptr<GLTFMaterial>> &materials)
     {
-        std::vector<std::shared_ptr<Mesh>>    meshes;
+        std::vector<std::shared_ptr<MeshTest>>    meshes;
         std::vector<uint32_t>              indices;
         std::vector<Vertex>                vertices;
         for (fastgltf::Mesh &mesh : gltf.meshes)
         {
-            std::shared_ptr<Mesh> newmesh = std::make_shared<Mesh>();
+            std::shared_ptr<MeshTest> newmesh = std::make_shared<MeshTest>();
             meshes.push_back(newmesh);
             inFile.Meshes[mesh.name.c_str()] = newmesh;
             newmesh->Name                  = mesh.name;
@@ -282,7 +281,7 @@ namespace MamontEngine
                                                                   {
                                                                       Vertex newvtx;
                                                                       newvtx.Position               = v;
-                                                                      newvtx.Normal                 = {1, 0, 0};
+                                                                      newvtx.Normal                 = {1, 1, 1};
                                                                       newvtx.Color                  = glm::vec4{1.f};
                                                                       newvtx.UV_X                   = 0;
                                                                       newvtx.UV_Y                   = 0;
@@ -350,7 +349,7 @@ namespace MamontEngine
     }
 
     static std::vector<std::shared_ptr<Node>>
-    LoadNodes(std::vector<fastgltf::Node> &gltfNodes, RenderScene &inFile, const std::vector<std::shared_ptr<Mesh>> &meshes)
+    LoadNodes(std::vector<fastgltf::Node> &gltfNodes, RenderScene &inFile, const std::vector<std::shared_ptr<MeshTest>> &meshes)
     {
         std::vector<std::shared_ptr<Node>> nodes;
 
@@ -407,7 +406,7 @@ namespace MamontEngine
 
         fastgltf::Asset gltf;
 
-        std::filesystem::path path = filePath;
+        const std::filesystem::path path = filePath;
 
         const auto type = fastgltf::determineGltfFileType(&data);
 
@@ -432,12 +431,12 @@ namespace MamontEngine
 
         const std::vector<AllocatedImage>                 images    = LoadTexture(inDeviece, file, gltf);
         const std::vector<std::shared_ptr<GLTFMaterial>> materials = LoadMaterials(inDeviece, file, gltf, images);
-        const std::vector<std::shared_ptr<Mesh>> meshes = LoadMeshes(inDeviece, gltf, file, materials);
+        const std::vector<std::shared_ptr<MeshTest>> meshes = LoadMeshes(inDeviece, gltf, file, materials);
         
         std::vector<std::shared_ptr<Node>> nodes = LoadNodes(gltf.nodes, file, meshes);
         
          for (int i = 0; i < gltf.nodes.size(); i++)
-        {
+         {
             fastgltf::Node        &node      = gltf.nodes[i];
             std::shared_ptr<Node> &sceneNode = nodes[i];
 
@@ -446,7 +445,8 @@ namespace MamontEngine
                 sceneNode->m_Children.push_back(nodes[c]);
                 nodes[c]->m_Parent = sceneNode;
             }
-        }
+
+         }
 
         for (auto &node : nodes)
         {

@@ -12,6 +12,9 @@
 
 #include "Graphics/Vulkan/Pipelines/SkyPipeline.h"
 
+#include "Graphics/Renderer.h"
+#include "ImGuiRenderer.h"
+
 
 struct MPipeline
 {
@@ -20,7 +23,7 @@ struct MPipeline
 
 namespace MamontEngine
 {
-    constexpr unsigned int FRAME_OVERLAP = 2;
+    constexpr unsigned int FRAME_OVERLAP = 3;
 
     class Scene;
 
@@ -102,7 +105,7 @@ namespace MamontEngine
 
         void InitImgui();
         
-        void DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView) const;
+        void DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView);
 
         void DrawMain(VkCommandBuffer inCmd);
         void DrawGeometry(VkCommandBuffer inCmd);
@@ -121,10 +124,12 @@ namespace MamontEngine
 
         std::shared_ptr<WindowCore> m_Window;
 
+        std::shared_ptr<Renderer> m_Renderer;
+        ImGuiRenderer m_ImGuiRenderer;
+
         std::unique_ptr<VkContextDevice> m_ContextDevice;
         MSwapchain                       m_Swapchain;
         
-
         VkExtent2D               m_DrawExtent;
         float                    m_RenderScale{1.f};
 
@@ -141,11 +146,6 @@ namespace MamontEngine
         VkDescriptorSetLayout             m_DrawImageDescriptorLayout;
 
         std::unique_ptr<SkyPipeline> m_SkyPipeline;
-
-        VkPipelineLayout m_GradientPipelineLayout;
-        VkPipelineLayout m_MeshPipelineLayout;
-        VkPipeline       m_MeshPipeline;
-        VkViewport       m_Viewport;
 
         GPUSceneData m_SceneData;
 

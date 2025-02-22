@@ -6,6 +6,8 @@
 #include "Graphics/Vulkan/VkMaterial.h"
 #include "Core/RenderData.h"
 
+#include "Graphics/Mesh.h"
+
 namespace MamontEngine
 {
     class WindowCore;
@@ -13,6 +15,8 @@ namespace MamontEngine
 
 	struct VkContextDevice
 	{
+        VkContextDevice() = default;
+
         ~VkContextDevice();
 
         void Init(WindowCore* inWindow);

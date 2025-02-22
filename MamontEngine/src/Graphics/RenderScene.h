@@ -15,7 +15,7 @@ namespace MamontEngine
         explicit RenderScene(VkContextDevice &inDevice);
         ~RenderScene();
 
-        std::unordered_map<std::string, std::shared_ptr<Mesh>>         Meshes;
+        std::unordered_map<std::string, std::shared_ptr<MeshTest>>         Meshes;
         std::unordered_map<std::string, std::shared_ptr<Node>>         Nodes;
         std::unordered_map<std::string, AllocatedImage>                Images;
         std::unordered_map<std::string, std::shared_ptr<GLTFMaterial>> Materials;

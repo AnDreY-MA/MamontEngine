@@ -9,15 +9,15 @@ namespace MamontEngine
 {
     struct Bounds
     {
-        glm::vec3 Origin;
-        glm::vec3 Extents;
-        float     SpherRadius;
+        glm::vec3 Origin = {0.0f, 0.0f, 0.0f};
+        glm::vec3 Extents = {0.0f, 0.0f, 0.0f};
+        float     SpherRadius{0.0f};
     };
 
     struct GeoSurface
     {
-        uint32_t StartIndex;
-        uint32_t Count;
+        uint32_t StartIndex{0};
+        uint32_t Count{0};
 
         Bounds Bound;
 
@@ -111,10 +111,10 @@ namespace MamontEngine
 
         virtual void Draw(const glm::mat4& inTopMatrix, DrawContext& inContext) 
         {
-            for (auto& c : m_Children)
+            /*for (auto& c : m_Children)
             {
                 c->Draw(inTopMatrix, inContext);
-            }
+            }*/
         }
 
         std::weak_ptr<Node>                m_Parent;
@@ -127,14 +127,14 @@ namespace MamontEngine
     {
     public:
         MeshNode() = default;
-        MeshNode(const glm::mat4 &inLocalTransform, const glm::mat4 &inWorldTransform, std::shared_ptr<struct Mesh> inMesh)
+        MeshNode(const glm::mat4 &inLocalTransform, const glm::mat4 &inWorldTransform, std::shared_ptr<struct MeshTest> inMesh)
             : Node(inLocalTransform, inWorldTransform), Mesh(inMesh)
         {
         }
         virtual void Draw(const glm::mat4 &inTopMatrix, DrawContext &inContext) override;
 
         
-        std::shared_ptr<Mesh> Mesh;
+        std::shared_ptr<MeshTest> Mesh;
     };
 
 
