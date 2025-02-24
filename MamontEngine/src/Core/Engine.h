@@ -16,6 +16,7 @@
 #include "ImGuiRenderer.h"
 
 
+
 struct MPipeline
 {
     VkPipeline Pipeline;
@@ -154,7 +155,7 @@ namespace MamontEngine
         MaterialInstance m_DefualtDataMatInstance;
 
         DrawContext m_MainDrawContext;
-        std::unordered_map<std::string, std::shared_ptr<RenderScene>> loadedScenes;
+        std::unordered_map<std::string, std::shared_ptr<Mesh>> loadedScenes;
 
         std::shared_ptr<Scene> m_Scene;
 

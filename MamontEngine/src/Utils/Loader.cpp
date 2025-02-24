@@ -135,7 +135,7 @@ namespace MamontEngine
         }
     }
 
-    static std::vector<AllocatedImage> LoadTexture(VkContextDevice &inDeviece, RenderScene &inFile, fastgltf::Asset &gltf)
+    static std::vector<AllocatedImage> LoadTexture(VkContextDevice &inDeviece, Mesh &inFile, fastgltf::Asset &gltf)
     {
         std::vector<AllocatedImage> images;
 
@@ -159,7 +159,7 @@ namespace MamontEngine
     }
 
     static std::vector<std::shared_ptr<GLTFMaterial>>
-    LoadMaterials(VkContextDevice &inDeviece, RenderScene &inFile, fastgltf::Asset &gltf, const std::vector<AllocatedImage> &inImages)
+    LoadMaterials(VkContextDevice &inDeviece, Mesh &inFile, fastgltf::Asset &gltf, const std::vector<AllocatedImage> &inImages)
     {
         std::vector<std::shared_ptr<GLTFMaterial>> materials;
 
@@ -219,7 +219,7 @@ namespace MamontEngine
         return materials;
     }
 
-    static void LoadSamples(VkDevice inDevice, RenderScene &inFile, std::vector<fastgltf::Sampler> &samplers)
+    static void LoadSamples(VkDevice inDevice, Mesh &inFile, std::vector<fastgltf::Sampler> &samplers)
     {
         for (fastgltf::Sampler &sampler : samplers)
         {
@@ -240,18 +240,18 @@ namespace MamontEngine
         }
     }
     
-    static std::vector<std::shared_ptr<MeshTest>>
-    LoadMeshes(VkContextDevice &inDeviece, fastgltf::Asset &gltf, RenderScene &inFile, const std::vector<std::shared_ptr<GLTFMaterial>> &materials)
+    static std::vector<std::shared_ptr<Mesh::Primitive>>
+    LoadMeshes(VkContextDevice &inDeviece, fastgltf::Asset &gltf, Mesh &inFile, const std::vector<std::shared_ptr<GLTFMaterial>> &materials)
     {
-        std::vector<std::shared_ptr<MeshTest>>    meshes;
+        std::vector<std::shared_ptr<Mesh::Primitive>> meshes;
         std::vector<uint32_t>              indices;
         std::vector<Vertex>                vertices;
         for (fastgltf::Mesh &mesh : gltf.meshes)
         {
-            std::shared_ptr<MeshTest> newmesh = std::make_shared<MeshTest>();
+            std::shared_ptr<Mesh::Primitive> newmesh = std::make_shared<Mesh::Primitive>();
             meshes.push_back(newmesh);
-            inFile.Meshes[mesh.name.c_str()] = newmesh;
-            newmesh->Name                  = mesh.name;
+            inFile.Primitives[mesh.name.c_str()] = newmesh;
+            //newmesh->Name                  = mesh.name;
 
             indices.clear();
             vertices.clear();
@@ -262,13 +262,13 @@ namespace MamontEngine
                 newSurface.StartIndex = (uint32_t)indices.size();
                 newSurface.Count      = (uint32_t)gltf.accessors[p.indicesAccessor.value()].count;
 
-                size_t initial_vtx = vertices.size();
+                const size_t initial_vtx = vertices.size();
 
                 {
                     fastgltf::Accessor &indexaccessor = gltf.accessors[p.indicesAccessor.value()];
                     indices.reserve(indices.size() + indexaccessor.count);
 
-                    fastgltf::iterateAccessor<std::uint32_t>(gltf, indexaccessor, [&](std::uint32_t idx) { indices.push_back(idx + initial_vtx); });
+                    fastgltf::iterateAccessor<std::uint32_t>(gltf, indexaccessor, [&](const std::uint32_t idx) { indices.push_back(idx + initial_vtx); });
                 }
 
                 {
@@ -277,7 +277,7 @@ namespace MamontEngine
 
                     fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf,
                                                                   posAccessor,
-                                                                  [&](glm::vec3 v, size_t index)
+                                                                  [&](const glm::vec3& v, const size_t index)
                                                                   {
                                                                       Vertex newvtx;
                                                                       newvtx.Position               = v;
@@ -342,46 +342,41 @@ namespace MamontEngine
                 newmesh->Surfaces.push_back(newSurface);
             }
 
-            newmesh->MeshBuffers = inDeviece.CreateGPUMeshBuffer(indices, vertices);
+            newmesh->Buffers = inDeviece.CreateGPUMeshBuffer(indices, vertices);
         }
 
         return meshes;
     }
 
-    static std::vector<std::shared_ptr<Node>>
-    LoadNodes(std::vector<fastgltf::Node> &gltfNodes, RenderScene &inFile, const std::vector<std::shared_ptr<MeshTest>> &meshes)
+    static std::vector<std::shared_ptr<Mesh::Node>>
+    LoadNodes(std::vector<fastgltf::Node> &gltfNodes, Mesh &inFile, const std::vector<std::shared_ptr<Mesh::Primitive>> &meshes)
     {
-        std::vector<std::shared_ptr<Node>> nodes;
+        std::vector<std::shared_ptr<Mesh::Node>> nodes;
 
         for (fastgltf::Node &node : gltfNodes)
         {
-            std::shared_ptr<Node> newNode;
+            std::shared_ptr<Mesh::Node> newNode = std::make_shared<Mesh::Node>();
 
             if (node.meshIndex.has_value())
             {
-                newNode                                      = std::make_shared<MeshNode>();
-                static_cast<MeshNode *>(newNode.get())->Mesh = meshes[*node.meshIndex];
-            }
-            else
-            {
-                newNode = std::make_shared<Node>();
+                newNode->Primitive = meshes[*node.meshIndex];
             }
 
             nodes.push_back(newNode);
-            inFile.Nodes[node.name.c_str()];
+            //inFile.Nodes[node.name.c_str()];
 
-            std::visit(fastgltf::visitor{[&](fastgltf::Node::TransformMatrix matrix) { memcpy(&newNode->m_LocalTransform, matrix.data(), sizeof(matrix)); },
-                                         [&](fastgltf::Node::TRS transform)
+            std::visit(fastgltf::visitor{[&](const fastgltf::Node::TransformMatrix& matrix) { memcpy(&newNode->LocalTransform, matrix.data(), sizeof(matrix)); },
+                                         [&](const fastgltf::Node::TRS& transform)
                                          {
-                                             glm::vec3 tl(transform.translation[0], transform.translation[1], transform.translation[2]);
-                                             glm::quat rot(transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]);
-                                             glm::vec3 sc(transform.scale[0], transform.scale[1], transform.scale[2]);
+                                             const glm::vec3  tl(transform.translation[0], transform.translation[1], transform.translation[2]);
+                                             const glm::quat  rot(transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]);
+                                             const glm::vec3 sc(transform.scale[0], transform.scale[1], transform.scale[2]);
 
-                                             glm::mat4 tm = glm::translate(glm::mat4(1.f), tl);
-                                             glm::mat4 rm = glm::toMat4(rot);
-                                             glm::mat4 sm = glm::scale(glm::mat4(1.f), sc);
+                                             const glm::mat4 tm = glm::translate(glm::mat4(1.f), tl);
+                                             const glm::mat4  rm = glm::toMat4(rot);
+                                             const glm::mat4  sm = glm::scale(glm::mat4(1.f), sc);
 
-                                             newNode->m_LocalTransform = tm * rm * sm;
+                                             newNode->LocalTransform = tm * rm * sm;
                                          }},
                        node.transform);
         }
@@ -389,12 +384,12 @@ namespace MamontEngine
         return nodes;
     }
     
-    std::optional<std::shared_ptr<RenderScene>> loadGltf(VkContextDevice &inDeviece, std::string_view filePath)
+    std::optional<std::shared_ptr<Mesh>> loadGltf(VkContextDevice &inDeviece, std::string_view filePath)
     {
         fmt::print("Loading GLTF: {}", filePath);
 
-        std::shared_ptr<RenderScene> scene     = std::make_shared<RenderScene>(inDeviece);
-        RenderScene &file                      = *scene.get();
+        std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(inDeviece);
+        Mesh                 &file = *mesh.get();
 
         fastgltf::Parser parser{};
 
@@ -431,32 +426,34 @@ namespace MamontEngine
 
         const std::vector<AllocatedImage>                 images    = LoadTexture(inDeviece, file, gltf);
         const std::vector<std::shared_ptr<GLTFMaterial>> materials = LoadMaterials(inDeviece, file, gltf, images);
-        const std::vector<std::shared_ptr<MeshTest>> meshes = LoadMeshes(inDeviece, gltf, file, materials);
+        const std::vector<std::shared_ptr<Mesh::Primitive>> meshes    = LoadMeshes(inDeviece, gltf, file, materials);
         
-        std::vector<std::shared_ptr<Node>> nodes = LoadNodes(gltf.nodes, file, meshes);
+        std::vector<std::shared_ptr<Mesh::Node>> nodes = LoadNodes(gltf.nodes, file, meshes);
         
-         for (int i = 0; i < gltf.nodes.size(); i++)
+         for (size_t i = 0; i < gltf.nodes.size(); i++)
          {
             fastgltf::Node        &node      = gltf.nodes[i];
-            std::shared_ptr<Node> &sceneNode = nodes[i];
+            std::shared_ptr<Mesh::Node> &sceneNode = nodes[i];
 
             for (auto &c : node.children)
             {
-                sceneNode->m_Children.push_back(nodes[c]);
-                nodes[c]->m_Parent = sceneNode;
+                sceneNode->Children.push_back(nodes[c]);
+                nodes[c]->Parent = sceneNode;
             }
 
          }
 
         for (auto &node : nodes)
         {
-            if (node->m_Parent.lock() == nullptr)
+            if (node->Parent.lock() == nullptr)
             {
-                file.TopNodes.push_back(node);
+                file.Nodes.push_back(node);
                 node->RefreshTransform(glm::mat4{1.f});
             }
         }
-        return scene;
+        fmt::println("Mesh lenght {}", mesh->Nodes.size());
+
+        return mesh;
     }
 
 } // namespace MamontEngine

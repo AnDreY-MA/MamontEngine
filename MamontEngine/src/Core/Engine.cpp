@@ -329,7 +329,7 @@ namespace MamontEngine
 
     static bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
     {
-        std::array<glm::vec3, 8> corners{
+        const std::array<glm::vec3, 8> corners{
                 glm::vec3{1, 1, 1},
                 glm::vec3{1, 1, -1},
                 glm::vec3{1, -1, 1},
@@ -340,7 +340,7 @@ namespace MamontEngine
                 glm::vec3{-1, -1, -1},
         };
 
-        glm::mat4 matrix = viewproj * obj.Transform;
+        const glm::mat4 matrix = viewproj * obj.Transform;
 
         glm::vec3 min = {1.5, 1.5, 1.5};
         glm::vec3 max = {-1.5, -1.5, -1.5};
@@ -418,7 +418,6 @@ namespace MamontEngine
                 lastMaterial = r.Material;
                 if (r.Material->Pipeline != lastPipeline)
                 {
-
                     lastPipeline = r.Material->Pipeline;
                     vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Pipeline);
                     vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
@@ -485,16 +484,11 @@ namespace MamontEngine
         auto entity = m_Scene->CreateEntity("Cube");
         entity.AddComponent<MeshComponent>();
 
-        /*const std::string housePath = {RootDirectories + "/MamontEngine/assets/house.glb"};
-        auto              houseFile = loadGltf(*m_ContextDevice, housePath);*/
-
-        const std::string structurePath = {RootDirectories + "/MamontEngine/assets/house.glb"};
+        const std::string structurePath = {RootDirectories + "/MamontEngine/assets/cube.glb"};
         auto              structureFile = loadGltf(*m_ContextDevice, structurePath);
 
-        //assert(houseFile.has_value());
         assert(structureFile.has_value());
 
-        //loadedScenes["house"] = *houseFile;
         loadedScenes["structure"] = *structureFile;
     }
 
@@ -613,7 +607,8 @@ namespace MamontEngine
         m_SkyPipeline = std::make_unique<SkyPipeline>();
         m_SkyPipeline->Init(m_ContextDevice->Device, &m_DrawImageDescriptorLayout, m_MainDeletionQueue);
         
-        m_ContextDevice->MetalRoughMaterial.BuildPipelines(this);
+        m_ContextDevice->MetalRoughMaterial.BuildPipelines(
+                m_ContextDevice->Device, m_GPUSceneDataDescriptorLayout, m_Image.DrawImage.ImageFormat, m_Image.DepthImage.ImageFormat);
 
     }
     

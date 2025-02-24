@@ -4,26 +4,11 @@
 #include "pch.h"
 #include "Graphics/Vulkan/Image.h"
 #include "Graphics/Vulkan/VkMaterial.h"
+#include "Graphics/Mesh.h"
+
 
 namespace MamontEngine
 {
-    struct Bounds
-    {
-        glm::vec3 Origin = {0.0f, 0.0f, 0.0f};
-        glm::vec3 Extents = {0.0f, 0.0f, 0.0f};
-        float     SpherRadius{0.0f};
-    };
-
-    struct GeoSurface
-    {
-        uint32_t StartIndex{0};
-        uint32_t Count{0};
-
-        Bounds Bound;
-
-        std::shared_ptr<GLTFMaterial> Material;
-    };
-
 	struct RenderObject
 	{
         RenderObject() = default;
@@ -33,13 +18,14 @@ namespace MamontEngine
                      VkBuffer InIndexBuffer,
 
                      MaterialInstance* InMaterial,
-
+                     Bounds inBound,
                      glm::mat4       InTransform,
                      VkDeviceAddress InVertexBufferAdders)
             : IndexCount(InIndexCount)
             , FirstIndex(InFirstIndex)
             , IndexBuffer(InIndexBuffer)
             , Material(InMaterial)
+            , Bound(inBound)
             , Transform(InTransform)
             , VertexBufferAddress(InVertexBufferAdders)
         {
@@ -88,54 +74,10 @@ namespace MamontEngine
 
         DescriptorWriter Writer;
 
-        void BuildPipelines(class MEngine *inDeviece);
+        void BuildPipelines(VkDevice inDevice, VkDescriptorSetLayout inDescriptorLayout, VkFormat inDrawFormat, VkFormat inDepthFormat);
         void ClearResources(VkDevice device);
 
         MaterialInstance WriteMaterial(VkDevice device, EMaterialPass pass, const MaterialResources &resources, DescriptorAllocatorGrowable &descriptorAllocator);
     };
-
-
-    struct Node
-    {
-    public:
-        Node() = default;
-        Node(const glm::mat4 &inLocalTransform, const glm::mat4 &inWorldTransform)
-            : m_LocalTransform(inLocalTransform), m_WorldTransform(inWorldTransform)
-        {
-        }
-
-        void RefreshTransform(const glm::mat4 inParentMatrix)
-        {
-            m_WorldTransform = inParentMatrix * m_LocalTransform;
-        }
-
-        virtual void Draw(const glm::mat4& inTopMatrix, DrawContext& inContext) 
-        {
-            /*for (auto& c : m_Children)
-            {
-                c->Draw(inTopMatrix, inContext);
-            }*/
-        }
-
-        std::weak_ptr<Node>                m_Parent;
-        std::vector<std::shared_ptr<Node>> m_Children;
-        glm::mat4                          m_LocalTransform;
-        glm::mat4                          m_WorldTransform{1.f};
-    };
-
-    struct MeshNode : public Node
-    {
-    public:
-        MeshNode() = default;
-        MeshNode(const glm::mat4 &inLocalTransform, const glm::mat4 &inWorldTransform, std::shared_ptr<struct MeshTest> inMesh)
-            : Node(inLocalTransform, inWorldTransform), Mesh(inMesh)
-        {
-        }
-        virtual void Draw(const glm::mat4 &inTopMatrix, DrawContext &inContext) override;
-
-        
-        std::shared_ptr<MeshTest> Mesh;
-    };
-
 
 }

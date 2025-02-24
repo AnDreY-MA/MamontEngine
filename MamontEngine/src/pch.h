@@ -24,10 +24,6 @@
 #include <fmt/core.h>
 #include <vk_mem_alloc.h>
 
-
-
-
-
 struct GPUDrawPushConstants
 {
     glm::mat4       WorldMatrix;

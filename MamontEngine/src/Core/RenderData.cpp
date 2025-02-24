@@ -1,42 +1,38 @@
 #include "RenderData.h"
-#include "Engine.h"
 #include "VkPipelines.h"
 #include "VkInitializers.h"
-#include "Graphics/Mesh.h"
+#include <glm/gtx/transform.hpp>
 
 namespace MamontEngine
 {
     const std::string RootDirectories = PROJECT_ROOT_DIR;
 
-    void GLTFMetallic_Roughness::BuildPipelines(MEngine* inDeviece)
+    void GLTFMetallic_Roughness::BuildPipelines(VkDevice inDevice, VkDescriptorSetLayout inDescriptorLayout, VkFormat inDrawFormat, VkFormat inDepthFormat)
     {
-        std::string    meshPath = RootDirectories + "/MamontEngine/src/Shaders/mesh.frag.spv";
+        const std::string meshPath = RootDirectories + "/MamontEngine/src/Shaders/mesh.frag.spv";
         VkShaderModule meshFragShader;
-        if (!VkPipelines::LoadShaderModule(meshPath.c_str(), inDeviece->GetDevice(), &meshFragShader))
+        if (!VkPipelines::LoadShaderModule(meshPath.c_str(), inDevice, &meshFragShader))
         {
             fmt::println("Error when building the triangle fragment shader module");
         }
 
-        std::string    meshVertexShaderPath = RootDirectories + "/MamontEngine/src/Shaders/mesh.vert.spv";
+        const std::string    meshVertexShaderPath = RootDirectories + "/MamontEngine/src/Shaders/mesh.vert.spv";
         VkShaderModule meshVertexShader;
-        if (!VkPipelines::LoadShaderModule(meshVertexShaderPath.c_str(), inDeviece->GetDevice(), &meshVertexShader))
+        if (!VkPipelines::LoadShaderModule(meshVertexShaderPath.c_str(), inDevice, &meshVertexShader))
         {
             fmt::println("Error when building the triangle vertex shader module");
         }
 
-        VkPushConstantRange matrixRange{};
-        matrixRange.offset     = 0;
-        matrixRange.size       = sizeof(GPUDrawPushConstants);
-        matrixRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
+        const VkPushConstantRange matrixRange{.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(GPUDrawPushConstants)};
+        
         DescriptorLayoutBuilder layoutBuilder;
         layoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         layoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         layoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-        MaterialLayout = layoutBuilder.Build(inDeviece->GetDevice(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+        MaterialLayout = layoutBuilder.Build(inDevice, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
-        VkDescriptorSetLayout layouts[] = {inDeviece->GetGPUSceneData(), MaterialLayout};
+        const VkDescriptorSetLayout layouts[] = {inDescriptorLayout, MaterialLayout};
 
         VkPipelineLayoutCreateInfo mesh_layout_info = vkinit::pipeline_layout_create_info();
         mesh_layout_info.setLayoutCount             = 2;
@@ -45,7 +41,7 @@ namespace MamontEngine
         mesh_layout_info.pushConstantRangeCount     = 1;
 
         VkPipelineLayout newLayout;
-        VK_CHECK(vkCreatePipelineLayout(inDeviece->GetDevice(), &mesh_layout_info, nullptr, &newLayout));
+        VK_CHECK(vkCreatePipelineLayout(inDevice, &mesh_layout_info, nullptr, &newLayout));
 
         OpaquePipeline.Layout      = newLayout;
         TransparentPipeline.Layout = newLayout;
@@ -60,24 +56,25 @@ namespace MamontEngine
         pipelineBuilder.DisableBlending();
         pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
-        pipelineBuilder.SetColorAttachmentFormat(inDeviece->GetDrawImage().ImageFormat);
-        pipelineBuilder.SetDepthFormat(inDeviece->GetDepthImage().ImageFormat);
+        pipelineBuilder.SetColorAttachmentFormat(inDrawFormat);
+        pipelineBuilder.SetDepthFormat(inDepthFormat);
 
         pipelineBuilder.m_PipelineLayout = newLayout;
 
-        OpaquePipeline.Pipeline = pipelineBuilder.BuildPipline(inDeviece->GetDevice());
+        OpaquePipeline.Pipeline = pipelineBuilder.BuildPipline(inDevice);
 
         pipelineBuilder.EnableBlendingAdditive();
 
         pipelineBuilder.EnableDepthTest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
-        TransparentPipeline.Pipeline = pipelineBuilder.BuildPipline(inDeviece->GetDevice());
+        TransparentPipeline.Pipeline = pipelineBuilder.BuildPipline(inDevice);
 
-        vkDestroyShaderModule(inDeviece->GetDevice(), meshFragShader, nullptr);
-        vkDestroyShaderModule(inDeviece->GetDevice(), meshVertexShader, nullptr);
+        vkDestroyShaderModule(inDevice, meshFragShader, nullptr);
+        vkDestroyShaderModule(inDevice, meshVertexShader, nullptr);
 
     }
-    void ClearResources(VkDevice device)
+    
+    void GLTFMetallic_Roughness::ClearResources(VkDevice device)
     {
 
     }
@@ -116,25 +113,6 @@ namespace MamontEngine
         return matData;
     }
 
-    void MeshNode::Draw(const glm::mat4 &inTopMatrix, DrawContext &inContext)
-    {
-        const glm::mat4 nodeMatrix = inTopMatrix * m_WorldTransform;
-
-        for (auto &s : Mesh->Surfaces)
-        {
-            RenderObject def(s.Count, s.StartIndex, Mesh->MeshBuffers.IndexBuffer.Buffer, &s.Material->Data , nodeMatrix, Mesh->MeshBuffers.VertexBufferAddress);
-            def.Bound = s.Bound;
-            if (s.Material->Data.PassType == EMaterialPass::TRANSPARENT)
-            {
-                inContext.TransparentSurfaces.push_back(def);
-            }
-            else
-            {
-                inContext.OpaqueSurfaces.push_back(def);
-            }
-        }
-
-        Node::Draw(inTopMatrix, inContext);
-    }
+    
 
 } // namespace MamontEngine
