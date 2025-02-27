@@ -44,17 +44,18 @@ namespace MamontEngine
 
     struct DrawContext
     {
+        void                      Clear()
+        {
+            OpaqueSurfaces.clear();
+            TransparentSurfaces.clear();
+        }
+
         std::vector<RenderObject> OpaqueSurfaces;
         std::vector<RenderObject> TransparentSurfaces;
     };
 
 	struct GLTFMetallic_Roughness
     {
-        MaterialPipeline OpaquePipeline;
-        MaterialPipeline TransparentPipeline;
-
-        VkDescriptorSetLayout MaterialLayout;
-
         struct MaterialConstants
         {
             glm::vec4 ColorFactors;
@@ -71,13 +72,6 @@ namespace MamontEngine
             VkBuffer       DataBuffer;
             uint32_t       DataBufferOffset;
         };
-
-        DescriptorWriter Writer;
-
-        void BuildPipelines(VkDevice inDevice, VkDescriptorSetLayout inDescriptorLayout, VkFormat inDrawFormat, VkFormat inDepthFormat);
-        void ClearResources(VkDevice device);
-
-        MaterialInstance WriteMaterial(VkDevice device, EMaterialPass pass, const MaterialResources &resources, DescriptorAllocatorGrowable &descriptorAllocator);
     };
 
 }

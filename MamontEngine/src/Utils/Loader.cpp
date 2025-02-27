@@ -3,7 +3,6 @@
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/parser.hpp>
 #include "Core/Engine.h"
-#include "Graphics/RenderScene.h"
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <stb/include/stb_image.h>
@@ -162,12 +161,42 @@ namespace MamontEngine
     LoadMaterials(VkContextDevice &inDeviece, Mesh &inFile, fastgltf::Asset &gltf, const std::vector<AllocatedImage> &inImages)
     {
         std::vector<std::shared_ptr<GLTFMaterial>> materials;
+        materials.reserve(gltf.materials.size());
 
         inFile.MaterialDataBuffer = inDeviece.CreateBuffer(
                 sizeof(GLTFMetallic_Roughness::MaterialConstants) * gltf.materials.size(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
         int                                        data_index = 0;
         GLTFMetallic_Roughness::MaterialConstants *sceneMaterialConstants =
                 (GLTFMetallic_Roughness::MaterialConstants *)inFile.MaterialDataBuffer.Info.pMappedData;
+        DescriptorWriter Writer;
+
+        auto writerMaterial =
+                [&](const EMaterialPass pass, GLTFMetallic_Roughness::MaterialResources materialResources, DescriptorAllocatorGrowable &descriptorAllocator)
+                {
+                    MaterialInstance matData{};
+                    matData.PassType    = pass;
+                    matData.Pipeline =
+                            pass == EMaterialPass::TRANSPARENT ? &inDeviece.RenderPipeline->TransparentPipeline : &inDeviece.RenderPipeline->OpaquePipeline;
+                    matData.MaterialSet = descriptorAllocator.Allocate(inDeviece.Device, inDeviece.RenderPipeline->Layout);
+
+                    Writer.Clear();
+                    Writer.WriteBuffer(
+                            0, materialResources.DataBuffer, sizeof(GLTFMetallic_Roughness::MaterialConstants), materialResources.DataBufferOffset, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+                    Writer.WriteImage(1,
+                                      materialResources.ColorImage.ImageView,
+                                      materialResources.ColorSampler,
+                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                    Writer.WriteImage(2,
+                                      materialResources.MetalRoughImage.ImageView,
+                                      materialResources.MetalRoughSampler,
+                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+                    Writer.UpdateSet(inDeviece.Device, matData.MaterialSet);
+
+                    return matData;
+                };
 
         for (fastgltf::Material &mat : gltf.materials)
         {
@@ -175,7 +204,7 @@ namespace MamontEngine
             materials.push_back(newMat);
             inFile.Materials[mat.name.c_str()] = newMat;
 
-            GLTFMetallic_Roughness::MaterialConstants constants;
+            GLTFMetallic_Roughness::MaterialConstants constants{};
             constants.ColorFactors.x = mat.pbrData.baseColorFactor[0];
             constants.ColorFactors.y = mat.pbrData.baseColorFactor[1];
             constants.ColorFactors.z = mat.pbrData.baseColorFactor[2];
@@ -186,11 +215,7 @@ namespace MamontEngine
             // write material parameters to buffer
             sceneMaterialConstants[data_index] = constants;
 
-            EMaterialPass passType = EMaterialPass::MAIN_COLOR;
-            if (mat.alphaMode == fastgltf::AlphaMode::Blend)
-            {
-                passType = EMaterialPass::TRANSPARENT;
-            }
+            const EMaterialPass passType = mat.alphaMode == fastgltf::AlphaMode::Blend ? EMaterialPass::TRANSPARENT : EMaterialPass::MAIN_COLOR;
 
             GLTFMetallic_Roughness::MaterialResources materialResources{};
             materialResources.ColorImage        = inDeviece.WhiteImage;
@@ -204,14 +229,14 @@ namespace MamontEngine
             // grab textures from gltf file
             if (mat.pbrData.baseColorTexture.has_value())
             {
-                size_t img     = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex].imageIndex.value();
-                size_t sampler = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
+                const size_t img     = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex].imageIndex.value();
+                const size_t sampler = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
 
                 materialResources.ColorImage   = inImages[img];
                 materialResources.ColorSampler = inFile.Samplers[sampler];
             }
 
-            newMat->Data = inDeviece.WriteMetalMaterial(passType, materialResources, inFile.DescriptorPool);
+            newMat->Data = writerMaterial(passType, materialResources, inFile.DescriptorPool);
 
             data_index++;
         }

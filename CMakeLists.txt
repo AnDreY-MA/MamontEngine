@@ -11,10 +11,10 @@ set(CMAKE_VS_PLATFORM_NAME "x64")
 
 
 set(CMAKE_CONFIGURATION_TYPES
-"Debug"
-"Release"
-"Distribution"
-CACHE STRING "" FORCE
+    "Debug"
+    "Release"
+    "Distribution"
+    CACHE STRING "" FORCE
 )
 
 

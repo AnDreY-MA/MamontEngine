@@ -14,7 +14,7 @@ namespace MamontEngine
         ClearAll();
     }
 
-    void Mesh::Draw(const glm::mat4& inTopMatrix, DrawContext& inContext)
+    void Mesh::Draw(const glm::mat4& inTopMatrix, DrawContext& inContext)   
     {
         for (auto& node : Nodes)
         {

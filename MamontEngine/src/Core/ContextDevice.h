@@ -1,17 +1,21 @@
 #pragma once
 
-#include "vk_mem_alloc.h"
 #include "Graphics/Vulkan/GPUBuffer.h"
 #include "Graphics/Vulkan/Image.h"
 #include "Graphics/Vulkan/VkMaterial.h"
+#include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
 #include "Core/RenderData.h"
 
 #include "Graphics/Mesh.h"
+#include "FrameData.h"
+
 
 namespace MamontEngine
 {
     class WindowCore;
     struct AllocatedImage;
+    
+    constexpr unsigned int FRAME_OVERLAP = 3;
 
 	struct VkContextDevice
 	{
@@ -33,10 +37,15 @@ namespace MamontEngine
 
         void            ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction) const;
 
-        MaterialInstance
-        WriteMetalMaterial(EMaterialPass pass, const GLTFMetallic_Roughness::MaterialResources &resources, DescriptorAllocatorGrowable &descriptorAllocator)
+        FrameData &GetCurrentFrame();
+        inline FrameData& GetFrameAt(const size_t inIndex)
         {
-            return MetalRoughMaterial.WriteMaterial(Device, pass, resources, descriptorAllocator);
+            return m_Frames.at(inIndex);
+        }
+
+        inline void IncrementFrameNumber()
+        {
+            ++m_FrameNumber;
         }
 
         VkInstance               Instance;
@@ -60,7 +69,12 @@ namespace MamontEngine
         VkSampler DefaultSamplerLinear;
         VkSampler DefaultSamplerNearest;
 
-        GLTFMetallic_Roughness MetalRoughMaterial;
+        std::shared_ptr<RenderPipeline> RenderPipeline;
+
+    private:
+        std::array<FrameData, FRAME_OVERLAP> m_Frames{};
+        int                                  m_FrameNumber{0};
+
 
 	};
 }

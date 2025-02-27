@@ -8,13 +8,13 @@
 #include "ContextDevice.h"
 #include "Graphics/Vulkan/GPUBuffer.h"
 #include "Graphics/Vulkan/Swapchain.h"
-#include "Graphics/RenderScene.h"
 
 #include "Graphics/Vulkan/Pipelines/SkyPipeline.h"
 
 #include "Graphics/Renderer.h"
 #include "ImGuiRenderer.h"
-
+#include <ECS/SceneRenderer.h>
+#include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
 
 
 struct MPipeline
@@ -24,19 +24,7 @@ struct MPipeline
 
 namespace MamontEngine
 {
-    constexpr unsigned int FRAME_OVERLAP = 3;
-
     class Scene;
-
-    struct GPUSceneData
-    {
-        glm::mat4 View;
-        glm::mat4 Proj;
-        glm::mat4 Viewproj;
-        glm::vec4 AmbientColor;
-        glm::vec4 SunlightDirection;
-        glm::vec4 SunlightColor;
-    };
 
     struct EngineStats
     {
@@ -118,7 +106,6 @@ namespace MamontEngine
 
     private:
         bool       m_IsInitialized{false};
-        int        m_FrameNumber{0};
         bool       m_StopRendering{false};
         bool       m_IsResizeRequested{false};
         bool       m_IsFreezeRendering{false};
@@ -126,6 +113,7 @@ namespace MamontEngine
         std::shared_ptr<WindowCore> m_Window;
 
         std::shared_ptr<Renderer> m_Renderer;
+        std::shared_ptr<SceneRenderer> m_SceneRenderer;
         ImGuiRenderer m_ImGuiRenderer;
 
         std::unique_ptr<VkContextDevice> m_ContextDevice;
@@ -133,10 +121,6 @@ namespace MamontEngine
         
         VkExtent2D               m_DrawExtent;
         float                    m_RenderScale{1.f};
-
-        std::array<FrameData, FRAME_OVERLAP> m_Frames{};
-
-        FrameData &GetCurrentFrame();
 
         DeletionQueue m_MainDeletionQueue;
 
@@ -147,20 +131,14 @@ namespace MamontEngine
         VkDescriptorSetLayout             m_DrawImageDescriptorLayout;
 
         std::unique_ptr<SkyPipeline> m_SkyPipeline;
-
-        GPUSceneData m_SceneData;
+        std::shared_ptr<RenderPipeline> m_RenderPipeline;
 
         VkDescriptorSetLayout m_GPUSceneDataDescriptorLayout;
-
-        MaterialInstance m_DefualtDataMatInstance;
-
-        DrawContext m_MainDrawContext;
-        std::unordered_map<std::string, std::shared_ptr<Mesh>> loadedScenes;
 
         std::shared_ptr<Scene> m_Scene;
 
         EngineStats stats;
-        Camera m_MainCamera;
+        std::shared_ptr<Camera> m_MainCamera;
 	
     };
 }

@@ -19,7 +19,7 @@ namespace MamontEngine
             return m_Window;
 		}
 
-		VkExtent2D GetExtent()
+		VkExtent2D GetExtent() const
 		{
             return m_WindowExtent;
 		}

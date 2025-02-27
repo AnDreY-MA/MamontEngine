@@ -17,6 +17,8 @@ namespace MamontEngine
 
         const auto pos = SDL_WINDOWPOS_CENTERED;
         SDL_SetWindowPosition(m_Window, pos, pos);
+        SDL_SetWindowSurfaceVSync(m_Window, false);
+        fmt::println("Win sync {}", SDL_SyncWindow(m_Window));
     }
 
     void WindowCore::Close()

@@ -58,9 +58,9 @@ namespace MamontEngine
 
     struct DescriptorWriter
     {
-        std::deque<VkDescriptorImageInfo>  m_ImageInfos;
-        std::deque<VkDescriptorBufferInfo> m_BufferInfos;
-        std::vector<VkWriteDescriptorSet>  m_Writes;
+        std::deque<VkDescriptorImageInfo>  ImageInfos;
+        std::deque<VkDescriptorBufferInfo> BufferInfos;
+        std::vector<VkWriteDescriptorSet>  Writes;
 
         void WriteImage(const int inBinding, VkImageView inImage, VkSampler inSampler, VkImageLayout inLayout, VkDescriptorType inType);
         void WriteBuffer(const int inBinding, VkBuffer inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType);

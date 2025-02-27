@@ -84,11 +84,7 @@ namespace MamontEngine
 
     void DescriptorAllocatorGrowable::Init(VkDevice inDevice, const uint32_t inInitialSets, std::span<PoolSizeRatio> inPoolRatios)
     {
-        m_Ratios.clear();
-        for (auto r : inPoolRatios)
-        {
-            m_Ratios.push_back(r);
-        }
+        m_Ratios.assign(inPoolRatios.begin(), inPoolRatios.end());
 
         VkDescriptorPool newPool = CreatePool(inDevice, inInitialSets, inPoolRatios);
         m_SetsPerPool            = inInitialSets * 1.5;
@@ -202,7 +198,7 @@ namespace MamontEngine
 
     void DescriptorWriter::WriteImage(const int inBinding, VkImageView inImage, VkSampler inSampler, VkImageLayout inLayout, VkDescriptorType inType)
     {
-        VkDescriptorImageInfo &info = m_ImageInfos.emplace_back(VkDescriptorImageInfo{.sampler = inSampler, .imageView = inImage, .imageLayout = inLayout});
+        VkDescriptorImageInfo &info = ImageInfos.emplace_back(VkDescriptorImageInfo{.sampler = inSampler, .imageView = inImage, .imageLayout = inLayout});
 
         VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 
@@ -212,11 +208,11 @@ namespace MamontEngine
         write.descriptorType  = inType;
         write.pImageInfo      = &info;
 
-        m_Writes.push_back(write);
+        Writes.push_back(write);
     }
     void DescriptorWriter::WriteBuffer(const int inBinding, VkBuffer inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType)
     {
-        VkDescriptorBufferInfo &info = m_BufferInfos.emplace_back(VkDescriptorBufferInfo{.buffer = inBuffer, .offset = inOffset, .range = inSize});
+        VkDescriptorBufferInfo &info = BufferInfos.emplace_back(VkDescriptorBufferInfo{.buffer = inBuffer, .offset = inOffset, .range = inSize});
 
         VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 
@@ -226,23 +222,23 @@ namespace MamontEngine
         write.descriptorType  = inType;
         write.pBufferInfo     = &info;
 
-        m_Writes.push_back(write);
+        Writes.push_back(write);
     }
 
     void DescriptorWriter::Clear()
     {
-        m_ImageInfos.clear();
-        m_Writes.clear();
-        m_BufferInfos.clear();
+        ImageInfos.clear();
+        Writes.clear();
+        BufferInfos.clear();
     }
     void DescriptorWriter::UpdateSet(VkDevice inDevice, VkDescriptorSet inSet)
     {
-        for (VkWriteDescriptorSet &write : m_Writes)
+        for (VkWriteDescriptorSet &write : Writes)
         {
             write.dstSet = inSet;
         }
 
-        vkUpdateDescriptorSets(inDevice, (uint32_t)m_Writes.size(), m_Writes.data(), 0, nullptr);
+        vkUpdateDescriptorSets(inDevice, (uint32_t)Writes.size(), Writes.data(), 0, nullptr);
     }
 
 }

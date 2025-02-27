@@ -15,6 +15,11 @@ namespace MamontEngine
 
     VkContextDevice::~VkContextDevice()
     {
+        for (auto &frame : m_Frames)
+        {
+            frame.Deleteions.Flush();
+        }
+
         vkDestroySurfaceKHR(Instance, Surface, nullptr);
 
         vmaDestroyAllocator(Allocator);
@@ -272,4 +277,8 @@ namespace MamontEngine
         vmaDestroyImage(Allocator, inImage.Image, inImage.Allocation);
     }
 
+    FrameData &VkContextDevice::GetCurrentFrame()
+    {
+        return m_Frames.at(m_FrameNumber % FRAME_OVERLAP);
+    }
 }
