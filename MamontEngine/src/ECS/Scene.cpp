@@ -23,11 +23,11 @@ namespace MamontEngine
 
     void Scene::Init(VkContextDevice &inContextDevice)
     {
-        const std::string structurePath = {RootDirectories + "/MamontEngine/assets/cube.glb"};
+        const std::string structurePath = {RootDirectories + "/MamontEngine/assets/house2.glb"};
         auto              structureFile = loadGltf(inContextDevice, structurePath);
         assert(structureFile.has_value());
 
-        auto entity = CreateEntity("cube");
+        auto entity = CreateEntity("House");
         entity.AddComponent<MeshComponent>(*structureFile);
     }
 
