@@ -2,6 +2,7 @@
 #include "Core/ContextDevice.h"
 
 #include <Core/RenderData.h>
+#include <glm/gtx/transform.hpp>
 
 namespace MamontEngine
 {
@@ -25,6 +26,7 @@ namespace MamontEngine
                 continue;
 
             const glm::mat4 nodeMatrix = inTopMatrix * node->WorldTransform;
+            
 
             for (auto &surface : primitive->Surfaces)
             {

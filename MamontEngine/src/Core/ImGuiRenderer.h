@@ -8,7 +8,7 @@ namespace MamontEngine
     struct VkContextDevice;
     struct DeletionQueue;
 
-    class ImGuiRenderer
+    class ImGuiRenderer final
     {
     public:
         void Init(VkContextDevice &inContextDevice,

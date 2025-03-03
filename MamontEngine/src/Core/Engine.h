@@ -15,6 +15,7 @@
 #include "ImGuiRenderer.h"
 #include <ECS/SceneRenderer.h>
 #include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
+#include "ImGuiLayer.h"
 
 
 struct MPipeline
@@ -42,7 +43,6 @@ namespace MamontEngine
         void Run();
         void Cleanup();
 
-        void Draw();
 
         static MEngine& Get();
 
@@ -81,6 +81,13 @@ namespace MamontEngine
             return m_ContextDevice->DefaultSamplerLinear;
         }
 
+        std::shared_ptr<Scene> GetScene()
+        {
+            return m_Scene;
+        }
+
+        void PushGuiLayer(ImGuiLayer *inLayer);
+
     private:
         void InitVulkan();
         void InitSwapchain();
@@ -93,6 +100,8 @@ namespace MamontEngine
         void InitPipelines();
 
         void InitImgui();
+
+        void Draw();
         
         void DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView);
 
@@ -115,6 +124,7 @@ namespace MamontEngine
         std::shared_ptr<Renderer> m_Renderer;
         std::shared_ptr<SceneRenderer> m_SceneRenderer;
         ImGuiRenderer m_ImGuiRenderer;
+        std::unique_ptr<ImGuiLayer>    m_GuiLayer;
 
         std::unique_ptr<VkContextDevice> m_ContextDevice;
         MSwapchain                       m_Swapchain;

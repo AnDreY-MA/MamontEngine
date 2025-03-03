@@ -23,21 +23,25 @@ namespace MamontEngine
 
     void Scene::Init(VkContextDevice &inContextDevice)
     {
-        const std::string structurePath = {RootDirectories + "/MamontEngine/assets/house2.glb"};
+        const std::string structurePath = {RootDirectories + "/MamontEngine/assets/cube.glb"};
         auto              structureFile = loadGltf(inContextDevice, structurePath);
         assert(structureFile.has_value());
 
-        auto entity = CreateEntity("House");
+        auto entity = CreateEntity("cube");
         entity.AddComponent<MeshComponent>(*structureFile);
     }
-
-    
 
     void Scene::Update()
     {
         const auto meshes = m_Registry.view<MeshComponent, TransformComponent, TagComponent>();
         for (const auto &&[entity, meshComponent, transform, tag] : meshes.each())
         {
+            for (auto& n : meshComponent.Mesh->Nodes)
+            {
+                n->LocalTransform = transform.GetTransform();
+                n->RefreshTransform({1.f});
+            }
+
             if (meshComponent.Dirty == true)
             {
                 m_SceneRenderer->SubmitMesh(meshComponent);
@@ -61,9 +65,9 @@ namespace MamontEngine
     Entity Scene::CreateEntity(UID inId, std::string_view inName)
     {
         Entity entity = {m_Registry.create(), this};
-        entity.AddComponent<TransformComponent>();
         auto &tag = entity.AddComponent<TagComponent>();
         tag.Tag   = inName.empty() ? "Enity" : inName;
+        entity.AddComponent<TransformComponent>();
 
         m_Entities.emplace(inId, entity);
 

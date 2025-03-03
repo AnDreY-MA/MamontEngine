@@ -125,17 +125,19 @@ namespace MamontEngine
 
             ImGui::NewFrame();
 
+            m_GuiLayer->ImGuiRender();
+
             if (ImGui::Begin("Stats"))
             {
                 ImGui::Text("frametime %f ms", stats.FrameTime);
                 ImGui::Text("drawtime %f ms", stats.MeshDrawTime);
-                ImGui::Text("triangles %i", stats.TriangleCount);
-                ImGui::Text("draws %i", stats.DrawCallCount);
+                //ImGui::Text("triangles %i", stats.TriangleCount);
+                //ImGui::Text("draws %i", stats.DrawCallCount);
                 ImGui::End();
             }
                 
 
-            if (ImGui::Begin("Background"))
+            if (ImGui::Begin("Settings"))
             {
                 ImGui::SliderFloat("Render Scale", &m_RenderScale, 0.3f, 1.f);
                 ImGui::End();
@@ -161,7 +163,9 @@ namespace MamontEngine
         if (m_IsInitialized)
         {
             vkDeviceWaitIdle(m_ContextDevice->Device);
-
+            
+            m_GuiLayer->Deactivate();
+            
             m_SceneRenderer->Clear();
             
             m_MainDeletionQueue.Flush();
@@ -544,6 +548,13 @@ namespace MamontEngine
                     vkDestroyDescriptorPool(m_ContextDevice->Device, imguiPool, nullptr);
                 });
        
+    }
+
+    void MEngine::PushGuiLayer(ImGuiLayer *inLayer)
+    {
+        m_GuiLayer = std::unique_ptr<ImGuiLayer>(inLayer);
+        m_GuiLayer->Init();
+
     }
     
     void MEngine::InitDescriptors()

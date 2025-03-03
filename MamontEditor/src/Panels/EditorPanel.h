@@ -5,11 +5,24 @@
 
 namespace MamontEditor
 {
-	class EditorPanel
-	{
-        explicit EditorPanel(std::string_view inName);
+    class EditorPanel
+    {
+    public:
+        explicit EditorPanel(std::string_view inName = "EditorPanel");
+        virtual ~EditorPanel() = default;
 
-	private:
+        virtual void Init() {};
+        virtual void Deactivate() {};
+
+        virtual void GuiRender() {};
+
+    protected:
+        bool OnBegin(int32_t inWindowFlags = 0);
+        void OnEnd() const;
+
+
+	protected:
         std::string m_Name;
+        bool        isVisible{true};
 	};
 }

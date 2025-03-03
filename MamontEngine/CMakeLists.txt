@@ -9,7 +9,8 @@ file(GLOB_RECURSE Core "src/Core/*.h" "src/Core/*.hpp" "src/Core/*.cpp")
 file(GLOB_RECURSE Renderer "src/Graphics/*.h" "src/Graphics/*.hpp" "src/Graphics/*.cpp")
 file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.hpp" "src/Utils/*.cpp")
 file(GLOB_RECURSE ECS "src/ECS/*.h" "src/ECS/*.hpp" "src/ECS/*.cpp")
-set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Utils} ${ECS})
+file(GLOB_RECURSE UI "src/UI/*.h" "src/UI/*.hpp" "src/UI/*.cpp")
+set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Utils} ${ECS} ${UI})
 
 # Add library
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
@@ -19,7 +20,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
 
 # Compile definitions
-target_compile_definitions(${PROJECT_NAME} PRIVATE
+target_compile_definitions(${PROJECT_NAME} PUBLIC
   "$<$<CONFIG:Debug>:MM_DEBUG;_DEBUG>"
   "$<$<CONFIG:Release>:MM_RELEASE;NDEBUG>"
   "$<$<CONFIG:Distribution>:MM_DISTRIBUTION;NDEBUG>"

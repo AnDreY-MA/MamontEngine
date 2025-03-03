@@ -13,6 +13,7 @@ namespace MamontEngine
 	class Scene
 	{
     public:
+        Scene() = default;
         explicit Scene(const std::shared_ptr<SceneRenderer> &inSceneRenderer);
         ~Scene();
 
@@ -23,6 +24,11 @@ namespace MamontEngine
 		void Update();
 		
         void   DestroyEntity(Entity inEntity);
+
+		entt::registry& GetRegistry()
+		{
+            return m_Registry;
+		}
 
 	private:
 		Entity CreateEntity(UID inId, std::string_view inName);
@@ -35,6 +41,7 @@ namespace MamontEngine
 		std::unordered_map<UID, entt::entity> m_Entities;
 
 		friend class Entity;
+        friend class SceneHierarchyPanel;
 	};
 
 } // namespace MamontEngine

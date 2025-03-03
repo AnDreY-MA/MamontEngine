@@ -1,9 +1,10 @@
 set(PROJECT_NAME MamontEditor)
 
 file(GLOB src "src/*.h" "src/*.cpp" "src/*.hpp")
-source_group("src" FILES ${src})
+file(GLOB panels "src/Panels/*.h" "src/Panels/*.cpp" "src/Panels/*.hpp")
+source_group("src" FILES ${src} ${panels})
 
-set (EDITOR_SOURCE_FILES ${src})
+set (EDITOR_SOURCE_FILES ${src} ${panels})
 
 add_executable(${PROJECT_NAME} ${EDITOR_SOURCE_FILES})
 
