@@ -11,6 +11,8 @@ namespace MamontEngine
     class MEngine;
     struct VkContextDevice;
 
+    std::optional<std::shared_ptr<Mesh>> loadGltf(std::string_view filePath);
+
     std::optional<std::shared_ptr<Mesh>> loadGltf(VkContextDevice &inDeviece, std::string_view filePath);
 
 } // namespace MamontEngine

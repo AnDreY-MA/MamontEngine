@@ -30,6 +30,7 @@ namespace MamontEngine
         template <typename T>
         bool HasComponent()
         {
+            auto id = m_Scene->m_Registry.try_get<T>();
             return m_Scene->m_Registry.any_of<T>(m_EntityHandle);
         }
 

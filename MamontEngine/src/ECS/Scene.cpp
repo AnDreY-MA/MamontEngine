@@ -36,10 +36,15 @@ namespace MamontEngine
         const auto meshes = m_Registry.view<MeshComponent, TransformComponent, TagComponent>();
         for (const auto &&[entity, meshComponent, transform, tag] : meshes.each())
         {
-            for (auto& n : meshComponent.Mesh->Nodes)
             {
-                n->LocalTransform = transform.GetTransform();
-                n->RefreshTransform({1.f});
+                if (meshComponent.Mesh && !meshComponent.Mesh->Nodes.empty())
+                {
+                    for (auto &n : meshComponent.Mesh->Nodes)
+                    {
+                        n->LocalTransform = transform.GetTransform();
+                        n->RefreshTransform({1.f});
+                    }
+                }
             }
 
             if (meshComponent.Dirty == true)
@@ -65,6 +70,7 @@ namespace MamontEngine
     Entity Scene::CreateEntity(UID inId, std::string_view inName)
     {
         Entity entity = {m_Registry.create(), this};
+        entity.AddComponent<IDComponent>().ID = inId;
         auto &tag = entity.AddComponent<TagComponent>();
         tag.Tag   = inName.empty() ? "Enity" : inName;
         entity.AddComponent<TransformComponent>();

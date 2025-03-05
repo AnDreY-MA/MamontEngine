@@ -409,6 +409,11 @@ namespace MamontEngine
         return nodes;
     }
     
+    std::optional<std::shared_ptr<Mesh>> loadGltf(std::string_view filePath)
+    {
+        return loadGltf(MEngine::Get().GetContextDevice(), filePath);
+    }
+
     std::optional<std::shared_ptr<Mesh>> loadGltf(VkContextDevice &inDeviece, std::string_view filePath)
     {
         fmt::print("Loading GLTF: {}", filePath);

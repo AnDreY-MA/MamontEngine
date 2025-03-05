@@ -79,7 +79,7 @@ namespace MamontEngine
 
         DescriptorAllocatorGrowable DescriptorPool;
 
-        AllocatedBuffer MaterialDataBuffer;
+        AllocatedBuffer MaterialDataBuffer; 
 
         void Draw(const glm::mat4 &inTopMatrix, struct DrawContext &inContext);
 

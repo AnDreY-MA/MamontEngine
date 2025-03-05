@@ -34,6 +34,8 @@ namespace MamontEditor
     private:
         void DrawEntityNode(MamontEngine::Entity inEntity);
 
+        void DrawContextMenu();
+
     private:
         std::shared_ptr<MamontEngine::Scene> m_Scene;
         MamontEngine::Entity                 m_SeletctedEntity;

@@ -51,6 +51,11 @@ namespace MamontEngine
             return m_ContextDevice->Device;
         }
 
+        VkContextDevice& GetContextDevice()
+        {
+            return *m_ContextDevice;
+        }
+
         VkDescriptorSetLayout GetGPUSceneData() const
         {
             return m_GPUSceneDataDescriptorLayout;

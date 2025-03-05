@@ -61,9 +61,9 @@ namespace MamontEditor
     }
 
     template <typename Component>
-    void InspectorPanel::draw_add_component(entt::registry &reg, MamontEngine::Entity inEntity, std::string_view inName)
+    void InspectorPanel::DrawAddComponent(entt::registry &reg, MamontEngine::Entity inEntity, std::string_view inName)
     {
-        if (ImGui::MenuItem(inName))
+        if (ImGui::MenuItem(inName.data()))
         {
             if (!reg.all_of<Component>(inEntity))
             {
@@ -91,6 +91,17 @@ namespace MamontEditor
         ImGui::PopItemWidth();
         ImGui::SameLine();
 
+        if (ImGui::Button("Add Component"))
+        {
+            ImGui::OpenPopup("Add Component");
+        }
+        if (ImGui::BeginPopup("Add Component"))
+        {
+            DrawAddComponent<MeshComponent>(m_SceneContext->GetRegistry(), m_Selected, "Mesh");
+
+            ImGui::EndPopup();
+        }
+
 
         ImGui::SameLine();
 
@@ -108,6 +119,16 @@ namespace MamontEditor
                 MUI::DrawVec3Control("Scale", component.Scale, 1.f);
                 //MUI::EndProperties();
             });
+
+        DrawComponent<MeshComponent>(" Transform Component",
+                                          m_SceneContext->GetRegistry(),
+                                          inEntity,
+                                            [](MeshComponent &component, entt::entity entity)
+                                          {
+                                              // MUI::BeginProperties();
+                                            ImGui::Text("%s Text");
+                                              // MUI::EndProperties();
+                                          });
 
     }
     
