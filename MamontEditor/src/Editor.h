@@ -1,8 +1,10 @@
 #pragma once 
-#include <Panels/SceneHierarchyPanel.h>
 #include <memory>
 #include "Core/ImGuiLayer.h"
+
+#include <Panels/SceneHierarchyPanel.h>
 #include <Panels/InspectorPanel.h>
+#include <Panels/StatisticsPanel.h>
 
 namespace MamontEditor
 {
@@ -34,6 +36,7 @@ namespace MamontEditor
 	private:
         std::unique_ptr<SceneHierarchyPanel> m_SceneHierarchy;
         std::unique_ptr<InspectorPanel>      m_Inspector;
+        std::unique_ptr<StatisticsPanel>     m_StatsPanel;
 
 		static Editor* s_Instance;
 	};

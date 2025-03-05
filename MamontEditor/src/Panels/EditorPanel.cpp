@@ -3,7 +3,7 @@
 
 namespace MamontEditor
 {
-    EditorPanel::EditorPanel(std::string_view inName) : 
+    EditorPanel::EditorPanel(const std::string &inName) : 
         m_Name(inName)
     {
 
@@ -13,7 +13,7 @@ namespace MamontEditor
         if (!isVisible)
             return false;
 
-        ImGui::SetNextWindowSize(ImVec2(480, 640), ImGuiCond_Once);
+        //ImGui::SetNextWindowSize(ImVec2(480, 640), ImGuiCond_Once);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 2.0f);
         
         ImGui::Begin(m_Name.c_str(), &isVisible, inWindowFlags | ImGuiWindowFlags_NoCollapse);

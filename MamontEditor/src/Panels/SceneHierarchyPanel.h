@@ -11,7 +11,7 @@ namespace MamontEditor
     class SceneHierarchyPanel final : public EditorPanel
     {
     public:
-        explicit SceneHierarchyPanel(std::string_view inName = "Scene Hierachy");
+        explicit SceneHierarchyPanel(const std::string &inName = "Scene Hierachy");
 
         ~SceneHierarchyPanel() = default;
 

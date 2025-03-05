@@ -43,7 +43,6 @@ namespace MamontEngine
         void Run();
         void Cleanup();
 
-
         static MEngine& Get();
 
         VkDevice GetDevice() const
@@ -54,6 +53,11 @@ namespace MamontEngine
         VkContextDevice& GetContextDevice()
         {
             return *m_ContextDevice;
+        }
+
+        const EngineStats& GetStats() const
+        {
+            return stats;
         }
 
         VkDescriptorSetLayout GetGPUSceneData() const

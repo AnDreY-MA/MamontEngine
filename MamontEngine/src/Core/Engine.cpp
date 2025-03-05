@@ -127,22 +127,6 @@ namespace MamontEngine
 
             m_GuiLayer->ImGuiRender();
 
-            if (ImGui::Begin("Stats"))
-            {
-                ImGui::Text("frametime %f ms", stats.FrameTime);
-                ImGui::Text("drawtime %f ms", stats.MeshDrawTime);
-                //ImGui::Text("triangles %i", stats.TriangleCount);
-                //ImGui::Text("draws %i", stats.DrawCallCount);
-                ImGui::End();
-            }
-                
-
-            if (ImGui::Begin("Settings"))
-            {
-                ImGui::SliderFloat("Render Scale", &m_RenderScale, 0.3f, 1.f);
-                ImGui::End();
-            }
-
             ImGui::Render();
 
             if (!m_IsResizeRequested)

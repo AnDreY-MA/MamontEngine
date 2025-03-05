@@ -8,7 +8,7 @@ namespace MamontEditor
     class EditorPanel
     {
     public:
-        explicit EditorPanel(std::string_view inName = "EditorPanel");
+        explicit EditorPanel(const std::string &inName = "EditorPanel");
         virtual ~EditorPanel() = default;
 
         virtual void Init() {};
