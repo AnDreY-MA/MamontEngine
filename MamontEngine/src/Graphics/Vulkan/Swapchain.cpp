@@ -75,7 +75,7 @@ namespace MamontEngine
         fmt::println("CreateSwapchain");
     }
 
-    std::pair<VkResult, uint32_t> MSwapchain::AcquireImage(VkDevice inDevice, VkSemaphore &inSemaphore)
+    std::pair<VkResult, uint32_t> MSwapchain::AcquireImage(VkDevice inDevice, VkSemaphore &inSemaphore) const
     {
         uint32_t swapchainImageIndex;
         const VkResult result = vkAcquireNextImageKHR(inDevice, m_Swapchain, 1000000000, inSemaphore, nullptr, &swapchainImageIndex);
@@ -93,9 +93,9 @@ namespace MamontEngine
 
         presentInfo.pImageIndices = &inImageIndex;
 
-        VkResult presentResult = vkQueuePresentKHR(inQueue, &presentInfo);
+        const VkResult presentResult = vkQueuePresentKHR(inQueue, &presentInfo);
 
-        return VkResult();
+        return presentResult;
     }
 
     void MSwapchain::Destroy(VkDevice inDevice)

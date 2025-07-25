@@ -308,46 +308,6 @@ namespace MamontEngine
         vkCmdEndRendering(inCmd);
     }
 
-    static bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
-    {
-        const std::array<glm::vec3, 8> corners{
-                glm::vec3{1, 1, 1},
-                glm::vec3{1, 1, -1},
-                glm::vec3{1, -1, 1},
-                glm::vec3{1, -1, -1},
-                glm::vec3{-1, 1, 1},
-                glm::vec3{-1, 1, -1},
-                glm::vec3{-1, -1, 1},
-                glm::vec3{-1, -1, -1},
-        };
-
-        const glm::mat4 matrix = viewproj * obj.Transform;
-
-        glm::vec3 min = {1.5, 1.5, 1.5};
-        glm::vec3 max = {-1.5, -1.5, -1.5};
-
-        for (int c = 0; c < 8; c++)
-        {
-            glm::vec4 v = matrix * glm::vec4(obj.Bound.Origin + (corners[c] * obj.Bound.Extents), 1.f);
-
-            v.x = v.x / v.w;
-            v.y = v.y / v.w;
-            v.z = v.z / v.w;
-
-            min = glm::min(glm::vec3{v.x, v.y, v.z}, min);
-            max = glm::max(glm::vec3{v.x, v.y, v.z}, max);
-        }
-
-        if (min.z > 1.f || max.z < 0.f || min.x > 1.f || max.x < -1.f || min.y > 1.f || max.y < -1.f)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    }
-
     void MEngine::DrawGeometry(VkCommandBuffer inCmd)
     {
         const AllocatedBuffer gpuSceneDataBuffer =
@@ -390,9 +350,7 @@ namespace MamontEngine
     void MEngine::UpdateScene()
     {
         m_MainCamera->Update();
-
         m_Scene->Update();
-
         m_SceneRenderer->Update(m_Window->GetExtent());
 
     }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ECS/Scene.h"
-
 #include "entt/entt.hpp"
 #include "Components/IDComponent.h"
 
@@ -37,8 +36,14 @@ namespace MamontEngine
         template<typename T>
         void RemoveComponent()
         {
+            //m_Scene->RemoveComponent<T>(this);
             m_Scene->m_Registry.remove<T>(m_EntityHandle);
         }
+
+        /*void RemoveComponent()
+        {
+            m_Scene->DestroyEntity(*this);
+        }*/
 
         UID GetID()
         {

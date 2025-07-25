@@ -28,7 +28,7 @@ namespace MamontEngine
 
 		static bool InputText(const char            *inLabel,
                               std::string           *str,
-                              size_t                 bufSize,
+                              size_t                 bufSize = 256,
                               ImGuiInputTextFlags    flags    = 0,
                               ImGuiInputTextCallback callback = NULL,
                               void                  *userData = NULL);

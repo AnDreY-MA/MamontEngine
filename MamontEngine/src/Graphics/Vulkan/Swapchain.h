@@ -12,7 +12,7 @@ namespace MamontEngine
 
         void Create(const VkContextDevice &inDevice, const uint32_t inWidth, const uint32_t inHeight);
 
-        std::pair<VkResult, uint32_t> AcquireImage(VkDevice inDevice, VkSemaphore &inSemaphore);
+        std::pair<VkResult, uint32_t> AcquireImage(VkDevice inDevice, VkSemaphore &inSemaphore) const;
 
         VkResult Present(VkQueue inQueue, const VkSemaphore *inRenderSemaphore, const uint32_t inImageIndex);
 

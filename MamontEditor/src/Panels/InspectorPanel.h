@@ -17,7 +17,7 @@ namespace MamontEditor
         void DrawComponents(MamontEngine::Entity inEntity);
 
         template <typename Component>
-        static void DrawAddComponent(entt::registry &reg, MamontEngine::Entity inEntity, std::string_view inName);
+        static void DrawAddComponent(entt::registry &reg, MamontEngine::Entity& inEntity, std::string_view inName);
 
     private:
         MamontEngine::Entity m_Selected;

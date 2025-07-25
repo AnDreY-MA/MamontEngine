@@ -29,6 +29,17 @@ namespace MamontEngine
 
         void Clear();
 
+        void RemoveMeshComponent(MeshComponent& inMeshComponent)
+        {
+            m_MeshComponents.erase(std::remove_if(m_MeshComponents.begin(),
+                                                  m_MeshComponents.end(),
+                                                  [&inMeshComponent](const MeshComponent &comp)
+                                                  {
+                                                      return comp.Mesh == inMeshComponent.Mesh;
+                                                  }),
+                                   m_MeshComponents.end());
+        }
+
         void SubmitMesh(const MeshComponent &inMesh);
 
         GPUSceneData &GetGPUSceneData()

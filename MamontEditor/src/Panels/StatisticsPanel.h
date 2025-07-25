@@ -7,7 +7,7 @@ namespace MamontEditor
 	class StatisticsPanel final : public EditorPanel
 	{
     public:
-        explicit StatisticsPanel(const std::string& inName);
+        explicit StatisticsPanel(const std::string &inName = "Stats");
 
         ~StatisticsPanel() = default;
 

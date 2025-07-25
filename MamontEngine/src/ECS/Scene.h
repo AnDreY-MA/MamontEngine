@@ -5,6 +5,7 @@
 #include "Core/Camera.h"
 #include "ECS/SceneRenderer.h"
 
+
 namespace MamontEngine
 {
     class Entity;
@@ -22,6 +23,14 @@ namespace MamontEngine
 		Entity CreateEntity(std::string_view inName = std::string_view());
 
 		void Update();
+
+		template<typename T>
+        void RemoveComponent(Entity inEntity)
+		{
+            m_Registry.remove<T>(inEntity);
+		}
+		template<>
+		void RemoveComponent<MeshComponent>(Entity inEntity);
 		
         void   DestroyEntity(Entity inEntity);
 

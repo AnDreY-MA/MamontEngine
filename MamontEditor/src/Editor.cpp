@@ -1,4 +1,6 @@
 #include "Editor.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 
 namespace MamontEditor
 {
@@ -18,25 +20,27 @@ namespace MamontEditor
     {
         fmt::println("Editor init");
 
-        m_SceneHierarchy = std::make_unique<SceneHierarchyPanel>("Scene");
-        m_SceneHierarchy->Init();
-        m_Inspector = std::make_unique<InspectorPanel>();
-        m_Inspector->Init();
-        m_StatsPanel = std::make_unique<StatisticsPanel>("Stats");
-        m_StatsPanel->Init();
+        AddPanel<SceneHierarchyPanel>();
+        AddPanel<InspectorPanel>();
+        AddPanel<StatisticsPanel>();
+
     }
 
     void Editor::Deactivate()
     {
-        m_SceneHierarchy->Deactivate();
-        m_Inspector->Deactivate();
-        m_StatsPanel->Deactivate();
+        for (auto &[hash, panel] : m_Panels)
+        {
+            panel->Deactivate();
+        }
+        m_Panels.clear();
     }
 
     void Editor::ImGuiRender()
     {
-        m_SceneHierarchy->GuiRender();
-        m_Inspector->GuiRender();
-        m_StatsPanel->GuiRender();
+        for (auto &[hash, panel] : m_Panels)
+        {
+            panel->GuiRender();
+        }
+        
     }
 }

@@ -44,6 +44,8 @@ namespace MamontEngine
                         n->LocalTransform = transform.GetTransform();
                         n->RefreshTransform({1.f});
                     }
+                    
+
                 }
             }
 
@@ -52,6 +54,7 @@ namespace MamontEngine
                 m_SceneRenderer->SubmitMesh(meshComponent);
                 meshComponent.Dirty = false;
             }
+
 
         }
     }
@@ -78,6 +81,14 @@ namespace MamontEngine
         m_Entities.emplace(inId, entity);
 
         return entity;
+    }
+
+    template<>
+    void Scene::RemoveComponent<MeshComponent>(Entity inEntity)
+    {
+        MeshComponent component = inEntity.GetComponent<MeshComponent>();
+        m_SceneRenderer->RemoveMeshComponent(component);
+        m_Registry.remove<MeshComponent>(inEntity);
     }
 
 } // namespace MamontEngine

@@ -36,6 +36,6 @@ namespace MamontEngine
 
         SDL_Window* m_Window;
 
-        VkExtent2D  m_WindowExtent{1700, 900};
+        VkExtent2D  m_WindowExtent{1900, 1060};
 	};
 }

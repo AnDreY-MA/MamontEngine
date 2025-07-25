@@ -25,18 +25,31 @@ namespace MamontEditor
 
 		MamontEngine::Entity GetSelectedEntity()
         {
-            return m_SceneHierarchy->GetSelectedEntity();
+            return GetPanel<SceneHierarchyPanel>()->GetSelectedEntity();
         }
 
 		MamontEngine::Scene* GetSceneContext()
 		{
-            return m_SceneHierarchy->GetSceneContext();
+            return GetPanel<SceneHierarchyPanel>()->GetSceneContext();
+		}
+
+    private:
+		
+		template<typename T>
+		void AddPanel()
+		{
+            m_Panels.emplace(typeid(T).hash_code(), std::make_unique<T>());
+		}
+
+		template <typename T>
+		T* GetPanel()
+		{
+            const size_t hashCode = typeid(T).hash_code();
+            return (T *)(m_Panels[hashCode].get());
 		}
 
 	private:
-        std::unique_ptr<SceneHierarchyPanel> m_SceneHierarchy;
-        std::unique_ptr<InspectorPanel>      m_Inspector;
-        std::unique_ptr<StatisticsPanel>     m_StatsPanel;
+        std::unordered_map<size_t, std::unique_ptr<EditorPanel>> m_Panels;
 
 		static Editor* s_Instance;
 	};

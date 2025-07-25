@@ -46,6 +46,7 @@ namespace MamontEngine
 
 	struct Mesh
     {
+    public:
         explicit Mesh(VkContextDevice &inDevice);
 
         ~Mesh();
@@ -58,8 +59,8 @@ namespace MamontEngine
 
         struct Node
         {
-            std::weak_ptr<Node> Parent;
-            std::vector<std::shared_ptr<Node>> Children;
+            std::weak_ptr<Node>                 Parent;
+            std::vector<std::shared_ptr<Node>>  Children;
             glm::mat4                           LocalTransform;
             glm::mat4                           WorldTransform{1.f};
 
