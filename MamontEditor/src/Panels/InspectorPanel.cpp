@@ -1,6 +1,7 @@
 #include "Panels/InspectorPanel.h"
 #include "Editor.h"
 #include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 #include <ECS/Components/TagComponent.h>
 #include <ECS/Components/TransformComponent.h>
 #include <ECS/Entity.h>

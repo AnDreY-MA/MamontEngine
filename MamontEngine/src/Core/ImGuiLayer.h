@@ -9,6 +9,9 @@ namespace MamontEngine
 
         virtual void Init() {};
 
+        virtual void Begin() {};
+        virtual void End() {};
+
         virtual void Deactivate() {};
 
         virtual void ImGuiRender() {};

@@ -55,7 +55,6 @@ namespace MamontEngine
                 meshComponent.Dirty = false;
             }
 
-
         }
     }
 

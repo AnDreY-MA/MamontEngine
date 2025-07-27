@@ -4,6 +4,8 @@
 
 namespace MamontEngine
 {
+    constexpr float FOV = 70.f;
+
     SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera, const std::shared_ptr<RenderPipeline> &inRenderPipeline)
         : m_Camera(inCamera), m_RenderPipeline(inRenderPipeline)
     {
@@ -22,12 +24,16 @@ namespace MamontEngine
     void SceneRenderer::Update(const VkExtent2D &inWindowExtent)
     {
         const glm::mat4 view       = m_Camera->GetViewMatrix();
-        glm::mat4       projection = glm::perspective(glm::radians(70.f), (float)inWindowExtent.width / (float)inWindowExtent.height, 10000.f, 0.1f);
-        projection[1][1] *= -1;
+
+        m_Camera->UpdateProjection(inWindowExtent);
+        
+        //const auto AspectRaio{(float)inWindowExtent.width / (float)inWindowExtent.height};
+        //glm::mat4  projection = glm::perspective(glm::radians(FOV), AspectRaio, 10000.f, 0.1f);
+        //projection[1][1] *= -1;
 
         m_SceneData.View     = view;
-        m_SceneData.Proj     = projection;
-        m_SceneData.Viewproj = projection * view;
+        m_SceneData.Proj     = m_Camera->GetProjection();
+        m_SceneData.Viewproj = m_Camera->GetProjection() * view;
 
         for (auto& mesh : m_MeshComponents)
         {

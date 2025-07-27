@@ -47,6 +47,11 @@ namespace MamontEngine
             return m_SceneData;
         }
 
+        const Camera* GetCamera() const
+        {
+            return m_Camera.get();
+        }
+
 	private:
         std::vector<MeshComponent> m_MeshComponents;
         std::shared_ptr<Camera>    m_Camera;

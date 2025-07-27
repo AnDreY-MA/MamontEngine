@@ -112,4 +112,11 @@ namespace MamontEngine
         const glm::mat4 cameraRotation = GetRotationMatrix();
         m_Position += glm::vec3(cameraRotation * glm::vec4(m_Velocity * 0.5f, 0.f));
     }
+
+    void Camera::UpdateProjection(const VkExtent2D &inWindowExtent)
+    {
+        const auto AspectRaio{(float)inWindowExtent.width / (float)inWindowExtent.height};
+        m_Projection = glm::perspective(glm::radians(m_FOV), AspectRaio, 10000.f, 0.1f);
+        m_Projection[1][1] *= -1;
+    }
 } // namespace MamontEngine

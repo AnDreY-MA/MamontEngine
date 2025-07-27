@@ -1,5 +1,7 @@
 #include "Panels/EditorPanel.h"
-#include <imgui.h>
+
+#include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 
 namespace MamontEditor
 {
@@ -17,7 +19,6 @@ namespace MamontEditor
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 2.0f);
         
         ImGui::Begin(m_Name.c_str(), &isVisible, inWindowFlags | ImGuiWindowFlags_NoCollapse);
-
         return true;
     }
 

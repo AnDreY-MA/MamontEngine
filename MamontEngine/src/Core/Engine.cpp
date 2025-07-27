@@ -12,16 +12,18 @@
 #include <thread>
 #include <VkBootstrap.h>
 #include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 #include "imgui/imgui_impl_sdl3.h"
 #include "imgui/imgui_impl_vulkan.h"
 #include <glm/gtx/transform.hpp>
 #include "Graphics/Vulkan/Swapchain.h"
-
 #include "ImGuiRenderer.h"
 
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
 #include <ECS/Components/MeshComponent.h>
+
+#include "ImGuizmo/ImGuizmo.h"
 
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
@@ -119,18 +121,14 @@ namespace MamontEngine
                 ResizeSwapchain();
             }
 
-            ImGui_ImplVulkan_NewFrame();
-            
-            ImGui_ImplSDL3_NewFrame();
-
-            ImGui::NewFrame();
-
-            m_GuiLayer->ImGuiRender();
-
-            ImGui::Render();
-
             if (!m_IsResizeRequested)
             {
+                m_GuiLayer->Begin();
+
+                m_GuiLayer->ImGuiRender();
+
+                m_GuiLayer->End();
+
                 UpdateScene();
                 Draw();
             }

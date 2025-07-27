@@ -1,6 +1,7 @@
 #include "StatisticsPanel.h"
 #include "Core/Engine.h"
 #include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 
 namespace MamontEditor
 {

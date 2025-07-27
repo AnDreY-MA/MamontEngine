@@ -90,12 +90,17 @@ namespace MamontEngine
             return m_ContextDevice->DefaultSamplerLinear;
         }
 
-        std::shared_ptr<Scene> GetScene()
+        std::shared_ptr<Scene>& GetScene()
         {
             return m_Scene;
         }
 
         void PushGuiLayer(ImGuiLayer *inLayer);
+
+        const Camera* GetMainCamera() const
+        {
+            return m_SceneRenderer->GetCamera();
+        }
 
     private:
         void InitVulkan();

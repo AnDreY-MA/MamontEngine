@@ -21,6 +21,9 @@ namespace MamontEditor
 
 		virtual void Deactivate() override;
 
+		virtual void Begin() override;
+		virtual void End() override;
+
 		virtual void ImGuiRender() override;
 
 		MamontEngine::Entity GetSelectedEntity()
@@ -50,6 +53,8 @@ namespace MamontEditor
 
 	private:
         std::unordered_map<size_t, std::unique_ptr<EditorPanel>> m_Panels;
+
+		glm::vec2 m_ViewportBounds[2];
 
 		static Editor* s_Instance;
 	};

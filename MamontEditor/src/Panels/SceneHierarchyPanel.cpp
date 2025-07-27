@@ -2,6 +2,7 @@
 #include "Core/Engine.h"
 
 #include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 #include <ECS/Components/TagComponent.h>
 
 #include "UI/UI.h"

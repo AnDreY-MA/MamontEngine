@@ -28,3 +28,6 @@
 [submodule "MamontEngine/vendor/entt"]
 	path = MamontEngine/vendor/entt
 	url = https://github.com/skypjack/entt.git
+[submodule "MamontEngine/vendor/ImGuizmo"]
+	path = MamontEngine/vendor/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git

@@ -15,6 +15,8 @@ set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Utils} ${ECS} ${UI})
 # Add library
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 
+#include(ImGuizmo "vendor/ImGuizmo")
+
 target_include_directories(${PROJECT_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
@@ -78,6 +80,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GP
 
 # imgui
 add_library(imgui STATIC 
+    vendor/imgui/imgui.h 
     vendor/imgui/imgui.cpp 
     vendor/imgui/imgui_demo.cpp 
     vendor/imgui/imgui_draw.cpp 
@@ -86,8 +89,8 @@ add_library(imgui STATIC
     vendor/imgui/imgui_impl_vulkan.cpp 
     vendor/imgui/imgui_impl_sdl3.cpp)
 target_include_directories(imgui PUBLIC vendor/imgui)
-target_link_libraries(${PROJECT_NAME} PUBLIC imgui)
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
+target_link_libraries(${PROJECT_NAME} PUBLIC imgui)
 
 #fast gltf
 add_subdirectory("vendor/fastgltf")
@@ -97,6 +100,27 @@ target_link_libraries(${PROJECT_NAME} PUBLIC fastgltf::fastgltf)
 add_subdirectory("vendor/stb")
 target_link_libraries(${PROJECT_NAME} PUBLIC stb::image)
 
+add_library(ImGuizmo STATIC 
+    vendor/ImGuizmo/ImGuizmo.cpp 
+    vendor/ImGuizmo/ImSequencer.cpp 
+    vendor/ImGuizmo/GraphEditor.cpp 
+    vendor/ImGuizmo/ImCurveEdit.cpp 
+    vendor/ImGuizmo/ImGradient.cpp)
+
+#target_include_directories(ImGuizmo PUBLIC vendor/ImGuizmo)
+#target_link_libraries(${PROJECT_NAME} PUBLIC ImGuizmo)
+target_include_directories(ImGuizmo PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
+)
+target_compile_definitions(ImGuizmo PRIVATE 
+    IMGUI_DEFINE_MATH_OPERATORS
+)
+
+target_link_libraries(ImGuizmo PUBLIC imgui)
+
+# Связываем с основным проектом
+target_link_libraries(${PROJECT_NAME} PUBLIC ImGuizmo)
 
 # PCH
 set(PCH_FILE src/pch.h)

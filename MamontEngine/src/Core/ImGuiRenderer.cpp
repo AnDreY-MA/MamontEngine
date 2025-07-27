@@ -2,11 +2,13 @@
 #include "ContextDevice.h"
 #include "VkDestriptor.h"
 #include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_vulkan.h>
 #include "FrameData.h"
 
 #include "VkInitializers.h"
+
 
 namespace MamontEngine
 {
@@ -17,7 +19,6 @@ namespace MamontEngine
                              VkDescriptorPool existingPool)
     {
         ImGui::CreateContext();
-        ImGui_ImplSDL3_InitForVulkan(inWindow);
 
         ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance                  = inContextDevice.Instance;
@@ -35,12 +36,14 @@ namespace MamontEngine
         auto ColorFormat                                             = inColorFormat;
         initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &ColorFormat;
 
+        ImGui_ImplSDL3_InitForVulkan(inWindow);
         ImGui_ImplVulkan_Init(&initInfo);
         ImGui_ImplVulkan_CreateFontsTexture();
         fmt::println("InitImGuiRenderer");
 
         
     }
+
 
     void ImGuiRenderer::Draw(VkCommandBuffer inCmd, VkImageView inTargetImageView, VkExtent2D inRenderExtent)
     {
