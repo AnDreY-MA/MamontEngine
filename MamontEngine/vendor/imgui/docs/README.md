@@ -16,7 +16,7 @@ Businesses: support continued development and maintenance via invoiced sponsorin
 | [The Pitch](#the-pitch) - [Usage](#usage) - [How it works](#how-it-works) - [Releases & Changelogs](#releases--changelogs) - [Demo](#demo) - [Getting Started & Integration](#getting-started--integration) |
 :----------------------------------------------------------: |
 | [Gallery](#gallery) - [Support, FAQ](#support-frequently-asked-questions-faq) -  [How to help](#how-to-help) - **[Funding & Sponsors](https://github.com/ocornut/imgui/wiki/Funding)** - [Credits](#credits) - [License](#license) |
-| [Wiki](https://github.com/ocornut/imgui/wiki) - [Extensions](https://github.com/ocornut/imgui/wiki/Useful-Extensions) - [Languages bindings & frameworks backends](https://github.com/ocornut/imgui/wiki/Bindings) - [Software using Dear ImGui](https://github.com/ocornut/imgui/wiki/Software-using-dear-imgui) - [User quotes](https://github.com/ocornut/imgui/wiki/Quotes) |
+| [Wiki](https://github.com/ocornut/imgui/wiki) - [Extensions](https://github.com/ocornut/imgui/wiki/Useful-Extensions) - [Language bindings & framework backends](https://github.com/ocornut/imgui/wiki/Bindings) - [Software using Dear ImGui](https://github.com/ocornut/imgui/wiki/Software-using-dear-imgui) - [User quotes](https://github.com/ocornut/imgui/wiki/Quotes) |
 
 ### The Pitch
 
@@ -39,7 +39,7 @@ Dear ImGui is particularly suited to integration in game engines (for tooling), 
 
 ### Usage
 
-**The core of Dear ImGui is self-contained within a few platform-agnostic files** which you can easily compile in your application/inDeviece. They are all the files in the root folder of the repository (imgui*.cpp, imgui*.h). **No specific build process is required**. You can add the .cpp files into your existing project.
+**The core of Dear ImGui is self-contained within a few platform-agnostic files** which you can easily compile in your application/engine. They are all the files in the root folder of the repository (imgui*.cpp, imgui*.h). **No specific build process is required**. You can add the .cpp files into your existing project.
 
 **Backends for a variety of graphics API and rendering platforms** are provided in the [backends/](https://github.com/ocornut/imgui/tree/master/backends) folder, along with example applications in the [examples/](https://github.com/ocornut/imgui/tree/master/examples) folder. You may also create your own backend. Anywhere where you can render textured triangles, you can render Dear ImGui.
 
@@ -90,7 +90,7 @@ ImGui::End();
 ```
 ![my_first_tool_v188](https://user-images.githubusercontent.com/8225057/191055698-690a5651-458f-4856-b5a9-e8cc95c543e2.gif)
 
-Dear ImGui allows you to **create elaborate tools** as well as very short-lived ones. On the extreme side of short-livedness: using the Edit&Continue (hot code reload) feature of modern compilers you can add a few widgets to tweak variables while your application is running, and remove the code a minute later! Dear ImGui is not just for tweaking values. You can use it to trace a running algorithm by just emitting text commands. You can use it along with your own reflection data to browse your dataset live. You can use it to expose the internals of a subsystem in your inDeviece, to create a logger, an inspection tool, a profiler, a debugger, an entire game-making editor/framework, etc.
+Dear ImGui allows you to **create elaborate tools** as well as very short-lived ones. On the extreme side of short-livedness: using the Edit&Continue (hot code reload) feature of modern compilers you can add a few widgets to tweak variables while your application is running, and remove the code a minute later! Dear ImGui is not just for tweaking values. You can use it to trace a running algorithm by just emitting text commands. You can use it along with your own reflection data to browse your dataset live. You can use it to expose the internals of a subsystem in your engine, to create a logger, an inspection tool, a profiler, a debugger, an entire game-making editor/framework, etc.
 
 ### How it works
 
@@ -110,7 +110,7 @@ Reading the changelogs is a good way to keep up to date with the things Dear ImG
 Calling the `ImGui::ShowDemoWindow()` function will create a demo window showcasing a variety of features and examples. The code is always available for reference in `imgui_demo.cpp`. [Here's how the demo looks](https://raw.githubusercontent.com/wiki/ocornut/imgui/web/v167/v167-misc.png).
 
 You should be able to build the examples from sources. If you don't, let us know! If you want to have a quick look at some Dear ImGui features, you can download Windows binaries of the demo app here:
-- [imgui-demo-binaries-20240105.zip](https://www.dearimgui.com/binaries/imgui-demo-binaries-20240105.zip) (Windows, 1.90.1 WIP, built 2024/01/05, master) or [older binaries](https://www.dearimgui.com/binaries).
+- [imgui-demo-binaries-20250625.zip](https://www.dearimgui.com/binaries/imgui-demo-binaries-20250625.zip) (Windows, 1.92.0, built 2025/06/25, master) or [older binaries](https://www.dearimgui.com/binaries).
 
 The demo applications are not DPI aware so expect some blurriness on a 4K screen. For DPI awareness in your application, you can load/reload your font at a different scale and scale your style with `style.ScaleAllSizes()` (see [FAQ](https://www.dearimgui.com/faq)).
 
@@ -118,12 +118,12 @@ The demo applications are not DPI aware so expect some blurriness on a 4K screen
 
 See the [Getting Started](https://github.com/ocornut/imgui/wiki/Getting-Started) guide for details.
 
-On most platforms and when using C++, **you should be able to use a combination of the [imgui_impl_xxxx](https://github.com/ocornut/imgui/tree/master/backends) backends without modification** (e.g. `imgui_impl_win32.cpp` + `imgui_impl_dx11.cpp`). If your inDeviece supports multiple platforms, consider using more imgui_impl_xxxx files instead of rewriting them: this will be less work for you, and you can get Dear ImGui running immediately. You can _later_ decide to rewrite a custom backend using your custom inDeviece functions if you wish so.
+On most platforms and when using C++, **you should be able to use a combination of the [imgui_impl_xxxx](https://github.com/ocornut/imgui/tree/master/backends) backends without modification** (e.g. `imgui_impl_win32.cpp` + `imgui_impl_dx11.cpp`). If your engine supports multiple platforms, consider using more imgui_impl_xxxx files instead of rewriting them: this will be less work for you, and you can get Dear ImGui running immediately. You can _later_ decide to rewrite a custom backend using your custom engine functions if you wish so.
 
-Integrating Dear ImGui within your custom inDeviece is a matter of 1) wiring mouse/keyboard/gamepad inputs 2) uploading a texture to your GPU/render inDeviece 3) providing a render function that can bind textures and render textured triangles, which is essentially what Backends are doing. The [examples/](https://github.com/ocornut/imgui/tree/master/examples) folder is populated with applications doing just that: setting up a window and using backends. If you follow the [Getting Started](https://github.com/ocornut/imgui/wiki/Getting-Started) guide it should in theory takes you less than an hour to integrate Dear ImGui.  **Make sure to spend time reading the [FAQ](https://www.dearimgui.com/faq), comments, and the examples applications!**
+Integrating Dear ImGui within your custom engine is a matter of 1) wiring mouse/keyboard/gamepad inputs 2) uploading a texture to your GPU/render engine 3) providing a render function that can bind textures and render textured triangles, which is essentially what Backends are doing. The [examples/](https://github.com/ocornut/imgui/tree/master/examples) folder is populated with applications doing just that: setting up a window and using backends. If you follow the [Getting Started](https://github.com/ocornut/imgui/wiki/Getting-Started) guide it should in theory take you less than an hour to integrate Dear ImGui.  **Make sure to spend time reading the [FAQ](https://www.dearimgui.com/faq), comments, and the examples applications!**
 
 Officially maintained backends/bindings (in repository):
-- Renderers: DirectX9, DirectX10, DirectX11, DirectX12, Metal, OpenGL/ES/ES2, SDL_Renderer, Vulkan, WebGPU.
+- Renderers: DirectX9, DirectX10, DirectX11, DirectX12, Metal, OpenGL/ES/ES2, SDL_GPU, SDL_Renderer2/3, Vulkan, WebGPU.
 - Platforms: GLFW, SDL2/SDL3, Win32, Glut, OSX, Android.
 - Frameworks: Allegro5, Emscripten.
 
@@ -147,8 +147,8 @@ For a list of third-party widgets and extensions, check out the [Useful Extensio
 
 |  |  |
 |--|--|
-| Custom inDeviece [erhe](https://github.com/tksuoran/erhe) (docking branch)<BR>[![erhe](https://user-images.githubusercontent.com/8225057/190203358-6988b846-0686-480e-8663-1311fbd18abd.jpg)](https://user-images.githubusercontent.com/994606/147875067-a848991e-2ad2-4fd3-bf71-4aeb8a547bcf.png) | Custom inDeviece for [Wonder Boy: The Dragon's Trap](http://www.TheDragonsTrap.com) (2017)<BR>[![the dragon's trap](https://user-images.githubusercontent.com/8225057/190203379-57fcb80e-4aec-4fec-959e-17ddd3cd71e5.jpg)](https://cloud.githubusercontent.com/assets/8225057/20628927/33e14cac-b329-11e6-80f6-9524e93b048a.png) |
-| Custom inDeviece (untitled)<BR>[![editor white](https://user-images.githubusercontent.com/8225057/190203393-c5ac9f22-b900-4d1e-bfeb-6027c63e3d92.jpg)](https://raw.githubusercontent.com/wiki/ocornut/imgui/web/v160/editor_white.png) | Tracy Profiler ([github](https://github.com/wolfpld/tracy))<BR>[![tracy profiler](https://user-images.githubusercontent.com/8225057/190203401-7b595f6e-607c-44d3-97ea-4c2673244dfb.jpg)](https://raw.githubusercontent.com/wiki/ocornut/imgui/web/v176/tracy_profiler.png) |
+| Custom engine [erhe](https://github.com/tksuoran/erhe) (docking branch)<BR>[![erhe](https://user-images.githubusercontent.com/8225057/190203358-6988b846-0686-480e-8663-1311fbd18abd.jpg)](https://user-images.githubusercontent.com/994606/147875067-a848991e-2ad2-4fd3-bf71-4aeb8a547bcf.png) | Custom engine for [Wonder Boy: The Dragon's Trap](http://www.TheDragonsTrap.com) (2017)<BR>[![the dragon's trap](https://user-images.githubusercontent.com/8225057/190203379-57fcb80e-4aec-4fec-959e-17ddd3cd71e5.jpg)](https://cloud.githubusercontent.com/assets/8225057/20628927/33e14cac-b329-11e6-80f6-9524e93b048a.png) |
+| Custom engine (untitled)<BR>[![editor white](https://user-images.githubusercontent.com/8225057/190203393-c5ac9f22-b900-4d1e-bfeb-6027c63e3d92.jpg)](https://raw.githubusercontent.com/wiki/ocornut/imgui/web/v160/editor_white.png) | Tracy Profiler ([github](https://github.com/wolfpld/tracy))<BR>[![tracy profiler](https://user-images.githubusercontent.com/8225057/190203401-7b595f6e-607c-44d3-97ea-4c2673244dfb.jpg)](https://raw.githubusercontent.com/wiki/ocornut/imgui/web/v176/tracy_profiler.png) |
 
 ### Support, Frequently Asked Questions (FAQ)
 

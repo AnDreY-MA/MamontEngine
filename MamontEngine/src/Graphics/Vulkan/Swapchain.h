@@ -18,6 +18,8 @@ namespace MamontEngine
 
         void Destroy(VkDevice inDevice);
 
+        void CreateFrameBuffers(VkDevice inDevice, VkRenderPass inRenderPass, VkImageView inDepthImageView);
+
         const std::vector<VkImage>& GetImages()
         {
             return m_SwapchainImages;
@@ -28,7 +30,7 @@ namespace MamontEngine
             return m_SwapchainImageViews.at(inIndex);
         }
 
-        VkExtent2D GetExtent() const
+        const VkExtent2D& GetExtent() const
         {
             return m_SwapchainExtent;
         }
@@ -44,6 +46,7 @@ namespace MamontEngine
         std::vector<VkImage>     m_SwapchainImages;
         std::vector<VkImageView> m_SwapchainImageViews;
         VkExtent2D               m_SwapchainExtent;
+        std::vector<VkFramebuffer> m_Framebuffers;
 
 	};
 }

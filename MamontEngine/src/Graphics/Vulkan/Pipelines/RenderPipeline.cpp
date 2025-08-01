@@ -15,7 +15,7 @@ namespace MamontEngine
 {
     const std::string RootDirectories = PROJECT_ROOT_DIR;
 
-    void RenderPipeline::Init(VkDevice inDevice, VkDescriptorSetLayout inDescriptorLayout, std::pair<VkFormat, VkFormat> inImageFormats)
+    void RenderPipeline::Init(VkDevice inDevice, VkDescriptorSetLayout inDescriptorLayout, std::pair<VkFormat, VkFormat> inImageFormats, VkRenderPass inRenderPass)
     {
         const std::string meshPath = RootDirectories + "/MamontEngine/src/Shaders/mesh.frag.spv";
 
@@ -69,13 +69,13 @@ namespace MamontEngine
 
         pipelineBuilder.m_PipelineLayout = newLayout;
 
-        OpaquePipeline.Pipeline = pipelineBuilder.BuildPipline(inDevice);
+        OpaquePipeline.Pipeline = pipelineBuilder.BuildPipline(inDevice, inRenderPass);
 
         pipelineBuilder.EnableBlendingAdditive();
 
         pipelineBuilder.EnableDepthTest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
-        TransparentPipeline.Pipeline = pipelineBuilder.BuildPipline(inDevice);
+        TransparentPipeline.Pipeline = pipelineBuilder.BuildPipline(inDevice, inRenderPass);
 
         vkDestroyShaderModule(inDevice, meshFragShader, nullptr);
         vkDestroyShaderModule(inDevice, meshVertexShader, nullptr);

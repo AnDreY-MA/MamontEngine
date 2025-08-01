@@ -62,6 +62,8 @@ namespace MamontEngine
         AllocatedImage WhiteImage;
         AllocatedImage ErrorCheckerboardImage;
 
+        Image Image;
+
         VkFence         ImmFence;
         VkCommandBuffer ImmCommandBuffer;
         VkCommandPool   ImmCommandPool;
@@ -70,6 +72,8 @@ namespace MamontEngine
         VkSampler DefaultSamplerNearest;
 
         std::shared_ptr<RenderPipeline> RenderPipeline;
+
+        VkDescriptorSet ViewportDescriptor;
 
     private:
         std::array<FrameData, FRAME_OVERLAP> m_Frames{};

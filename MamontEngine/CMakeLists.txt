@@ -86,8 +86,8 @@ add_library(imgui STATIC
     vendor/imgui/imgui_draw.cpp 
     vendor/imgui/imgui_widgets.cpp 
     vendor/imgui/imgui_tables.cpp 
-    vendor/imgui/imgui_impl_vulkan.cpp 
-    vendor/imgui/imgui_impl_sdl3.cpp)
+    vendor/imgui/backends/imgui_impl_vulkan.cpp 
+    vendor/imgui/backends/imgui_impl_sdl3.cpp)
 target_include_directories(imgui PUBLIC vendor/imgui)
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
 target_link_libraries(${PROJECT_NAME} PUBLIC imgui)

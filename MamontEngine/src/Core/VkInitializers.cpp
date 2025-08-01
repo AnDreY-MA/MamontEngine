@@ -297,6 +297,17 @@ VkImageViewCreateInfo MamontEngine::vkinit::imageview_create_info(VkFormat forma
 
     return info;
 }
+
+VkImageView MamontEngine::vkinit::create_imageview(VkDevice inDevice, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
+{
+    VkImageViewCreateInfo viewInfo = imageview_create_info(format, image, aspectFlags);
+    VkImageView           imageView;
+    if (vkCreateImageView(inDevice, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create image view");
+    }
+    return imageView;
+} 
 //< image_set
 VkPipelineLayoutCreateInfo MamontEngine::vkinit::pipeline_layout_create_info()
 {

@@ -5,8 +5,9 @@
 int main(int argc, char** argv) 
 {
     MamontEngine::MEngine Engine;
-    Engine.Init();
     Engine.PushGuiLayer(new MamontEditor::Editor());
+
+    Engine.Init();
     
     Engine.Run();
 

@@ -67,7 +67,7 @@ namespace MamontEngine
 
         AllocatedImage GetDrawImage() const
         {
-            return m_Image.DrawImage;
+            return m_ContextDevice->Image.DrawImage;
         }
         
         AllocatedImage GetWhiteImage() const
@@ -77,7 +77,7 @@ namespace MamontEngine
 
         AllocatedImage GetDepthImage() const
         {
-            return m_Image.DepthImage;
+            return m_ContextDevice->Image.DepthImage;
         }
 
         AllocatedImage GetErrorImage() const
@@ -102,6 +102,20 @@ namespace MamontEngine
             return m_SceneRenderer->GetCamera();
         }
 
+        uint32_t FindMemoryType(const uint32_t inFilterType, const VkMemoryPropertyFlags inProperties) const;
+        VkCommandBuffer BeginSingleTimeCommands(const VkCommandPool &inCommandPool) const;
+        void            EndSingleTimeCommands(VkCommandBuffer commandBuffer, const VkCommandPool &cmdPool) const;
+
+        void InsertImageMemoryBarrier(VkCommandBuffer         cmdbuffer,
+                                      VkImage                 image,
+                                      VkAccessFlags           srcAccessMask,
+                                      VkAccessFlags           dstAccessMask,
+                                      VkImageLayout           oldImageLayout,
+                                      VkImageLayout           newImageLayout,
+                                      VkPipelineStageFlags    srcStageMask,
+                                      VkPipelineStageFlags    dstStageMask,
+                                      VkImageSubresourceRange subresourceRange) const;
+
     private:
         void InitVulkan();
         void InitSwapchain();
@@ -110,10 +124,12 @@ namespace MamontEngine
         void InitDefaultData();
 
         void InitDescriptors();
-
+        void CreateRenderPass();
         void InitPipelines();
 
         void InitImgui();
+
+        void InitFrameBuffers();
 
         void Draw();
         
@@ -126,6 +142,9 @@ namespace MamontEngine
 
         void InitScene();
         void UpdateScene();
+
+        VkFormat FindDepthFormat() const;
+        VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 
     private:
         bool       m_IsInitialized{false};
@@ -142,13 +161,13 @@ namespace MamontEngine
 
         std::unique_ptr<VkContextDevice> m_ContextDevice;
         MSwapchain                       m_Swapchain;
+
+        VkRenderPass m_RenderPass;
         
         VkExtent2D               m_DrawExtent;
         float                    m_RenderScale{1.f};
 
         DeletionQueue m_MainDeletionQueue;
-
-        Image m_Image;
 
         DescriptorAllocator m_GlobalDescriptorAllocator;
         VkDescriptorSet                   m_DrawImageDescriptors;

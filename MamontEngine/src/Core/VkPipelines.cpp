@@ -130,7 +130,7 @@ namespace MamontEngine::VkPipelines
     void PipelineBuilder::DisableDepthtest()
     {
         m_DepthStencil.depthTestEnable       = VK_FALSE;
-        m_DepthStencil.depthWriteEnable     = VK_FALSE;
+        m_DepthStencil.depthWriteEnable      = VK_FALSE;
         m_DepthStencil.depthCompareOp        = VK_COMPARE_OP_NEVER;
         m_DepthStencil.depthBoundsTestEnable = VK_FALSE;
         m_DepthStencil.stencilTestEnable     = VK_FALSE;
@@ -158,7 +158,7 @@ namespace MamontEngine::VkPipelines
 
         m_ShaderStages.clear();
     }
-    VkPipeline PipelineBuilder::BuildPipline(VkDevice inDevice)
+    VkPipeline PipelineBuilder::BuildPipline(VkDevice inDevice, VkRenderPass inRenderPass)
     {
         VkPipelineViewportStateCreateInfo viewportState = {};
         viewportState.sType                             = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -189,6 +189,7 @@ namespace MamontEngine::VkPipelines
         pipelineInfo.pColorBlendState             = &colorBlending;
         pipelineInfo.pDepthStencilState           = &m_DepthStencil;
         pipelineInfo.layout                       = m_PipelineLayout;
+        pipelineInfo.renderPass                   = inRenderPass;
 
         VkDynamicState state[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 

@@ -28,7 +28,7 @@ namespace MamontEditor
 
         MamontEngine::Scene* GetSceneContext()
         {
-            return m_Scene.get();
+            return m_Scene != nullptr ? m_Scene.get() : nullptr;
         }
 
     private:

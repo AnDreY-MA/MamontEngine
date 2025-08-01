@@ -102,9 +102,38 @@ namespace MamontEngine
     {
         vkDestroySwapchainKHR(inDevice, m_Swapchain, nullptr);
 
+        for (size_t i = 0; i < m_Framebuffers.size(); i++)
+        {
+            vkDestroyFramebuffer(inDevice, m_Framebuffers[i], nullptr);
+        }
+
         for (int i = 0; i < m_SwapchainImageViews.size(); ++i)
         {
             vkDestroyImageView(inDevice, m_SwapchainImageViews[i], nullptr);
+        }
+    }
+
+    void MSwapchain::CreateFrameBuffers(VkDevice inDevice, VkRenderPass inRenderPass, VkImageView inDepthImageView)
+    {
+        m_Framebuffers.resize(m_SwapchainImageViews.size());
+
+        for (size_t i = 0; i < m_SwapchainImageViews.size(); i++)
+        {
+            std::array<VkImageView, 2> attachments = {m_SwapchainImageViews[i], inDepthImageView};
+
+            VkFramebufferCreateInfo framebufferInfo{};
+            framebufferInfo.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            framebufferInfo.renderPass      = inRenderPass;
+            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+            framebufferInfo.pAttachments    = attachments.data();
+            framebufferInfo.width           = m_SwapchainExtent.width;
+            framebufferInfo.height          = m_SwapchainExtent.height;
+            framebufferInfo.layers          = 1;
+
+            if (vkCreateFramebuffer(inDevice, &framebufferInfo, nullptr, &m_Framebuffers[i]) != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to create framebuffer!");
+            }
         }
     }
 

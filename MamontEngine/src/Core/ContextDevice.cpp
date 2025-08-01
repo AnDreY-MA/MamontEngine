@@ -203,13 +203,18 @@ namespace MamontEngine
 
         VK_CHECK(vkCreateImageView(Device, &view_info, nullptr, &newImage.ImageView));
 
+        fmt::println("Create Image 1");
+        newImage.ImTextID = ImGui_ImplVulkan_AddTexture(DefaultSamplerLinear, newImage.ImageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+
+
         return newImage;
     }
 
     AllocatedImage VkContextDevice::CreateImage(void *inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped)
     {
-        size_t          data_size    = inSize.depth * inSize.width * inSize.height * 4;
-        AllocatedBuffer uploadbuffer = CreateBuffer(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        const size_t          data_size    = inSize.depth * inSize.width * inSize.height * 4;
+        const AllocatedBuffer uploadbuffer = CreateBuffer(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
         memcpy(uploadbuffer.Info.pMappedData, inData, data_size);
 
@@ -244,6 +249,9 @@ namespace MamontEngine
                 });
 
         DestroyBuffer(uploadbuffer);
+
+        fmt::println("Create Image 1");
+
 
         return new_image;
     }

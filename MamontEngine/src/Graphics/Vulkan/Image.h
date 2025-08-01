@@ -1,5 +1,7 @@
 #pragma once 
 
+#include "imgui/imgui.h"
+
 namespace MamontEngine
 {
     struct AllocatedImage
@@ -9,6 +11,8 @@ namespace MamontEngine
         VmaAllocation Allocation;
         VkExtent3D    ImageExtent;
         VkFormat      ImageFormat;
+
+        ImTextureRef ImTextID;
     };
 
     struct Image

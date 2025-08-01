@@ -6,7 +6,7 @@ source_group("src" FILES ${src} ${panels})
 
 set (EDITOR_SOURCE_FILES ${src} ${panels})
 
-add_executable(${PROJECT_NAME} ${EDITOR_SOURCE_FILES})
+add_executable(${PROJECT_NAME} ${EDITOR_SOURCE_FILES} )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     TARGET_NAME_DEBUG "MamontEditor"

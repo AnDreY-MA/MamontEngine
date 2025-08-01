@@ -1,13 +1,16 @@
 #pragma once
 
 #include <SDL3/SDL.h>
-
+#include <backends/imgui_impl_vulkan.h>
 
 namespace MamontEngine
 {
 	class WindowCore
 	{
     public:
+        explicit WindowCore();
+        ~WindowCore();
+
         void Init();
 
         void Close();
@@ -31,10 +34,11 @@ namespace MamontEngine
 		}
 
 		VkExtent2D Resize();
-
 	private:
 
         SDL_Window* m_Window;
+
+		ImGui_ImplVulkanH_Window VulkanWindow;
 
         VkExtent2D  m_WindowExtent{1900, 1060};
 	};

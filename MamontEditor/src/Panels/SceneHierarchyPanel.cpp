@@ -21,15 +21,20 @@ namespace MamontEditor
 
     void SceneHierarchyPanel::Init()
     {
-        m_Scene = MamontEngine::MEngine::Get().GetScene();
+        //m_Scene = MamontEngine::MEngine::Get().GetScene();
 
-        fmt::println("SceneHierarchy inintialized, scene = {}", m_Scene.use_count());
+        //fmt::println("SceneHierarchy inintialized, scene = {}", m_Scene != nullptr ? m_Scene.use_count() : 0);
     }
 
     void SceneHierarchyPanel::GuiRender()
     {
-        if (!m_Scene)
-            return;
+        if (m_Scene == nullptr)
+        {
+            m_Scene = MamontEngine::MEngine::Get().GetScene();
+            if (m_Scene == nullptr)
+                nullptr;
+
+        }
 
         if (OnBegin(ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar))
         {
@@ -46,6 +51,7 @@ namespace MamontEditor
                 DrawContextMenu();
                 ImGui::EndPopup();
             }
+            
 
             ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
             auto view = m_Scene->GetRegistry().view<entt::entity>();
