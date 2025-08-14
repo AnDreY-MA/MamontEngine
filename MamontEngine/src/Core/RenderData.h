@@ -44,7 +44,7 @@ namespace MamontEngine
 
     struct DrawContext
     {
-        void                      Clear()
+        void Clear()
         {
             OpaqueSurfaces.clear();
             TransparentSurfaces.clear();

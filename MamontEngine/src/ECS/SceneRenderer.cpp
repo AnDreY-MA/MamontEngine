@@ -6,8 +6,8 @@ namespace MamontEngine
 {
     constexpr float FOV = 70.f;
 
-    SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera, const std::shared_ptr<RenderPipeline> &inRenderPipeline)
-        : m_Camera(inCamera), m_RenderPipeline(inRenderPipeline)
+    SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera, DrawContext &inDrawContext) 
+        : m_Camera(inCamera), m_DrawContext(inDrawContext)
     {
 
     }
@@ -37,7 +37,7 @@ namespace MamontEngine
 
         for (auto& mesh : m_MeshComponents)
         {
-            mesh.Mesh->Draw(glm::mat4{1.f}, m_RenderPipeline->MainDrawContext);
+            mesh.Mesh->Draw(glm::mat4{1.f}, m_DrawContext);
         }
     }
 

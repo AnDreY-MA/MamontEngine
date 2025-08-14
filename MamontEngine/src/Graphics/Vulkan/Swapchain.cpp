@@ -8,7 +8,7 @@ namespace MamontEngine
 {
     void MSwapchain::Init(VkContextDevice &inDevice, const VkExtent2D& inExtent, Image &inImage)
     {
-        Create(inDevice, inExtent.width, inExtent.height);
+        Create(inDevice, inExtent);
 
         const VkExtent3D drawImageExtent = {inExtent.width, inExtent.height, 1};
 
@@ -48,15 +48,15 @@ namespace MamontEngine
         VK_CHECK(vkCreateImageView(inDevice.Device, &dViewInfo, nullptr, &inImage.DepthImage.ImageView));
     }
 
-    void MSwapchain::Create(const VkContextDevice &inDevice, const uint32_t inWidth, const uint32_t inHeight)
+    void MSwapchain::Create(const VkContextDevice &inDevice, const VkExtent2D &inExtent)
     {
         vkb::SwapchainBuilder swapchainBuilder{inDevice.ChosenGPU, inDevice.Device, inDevice.Surface};
         m_SwapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
 
-        auto resultSwapchain =
+        const auto resultSwapchain =
                 swapchainBuilder.set_desired_format(VkSurfaceFormatKHR{.format = m_SwapchainImageFormat, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
                         .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
-                        .set_desired_extent(inWidth, inHeight)
+                        .set_desired_extent(inExtent.width, inExtent.height)
                         .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                         .build();
 
@@ -72,7 +72,6 @@ namespace MamontEngine
         m_SwapchainImages     = vkbSwapchain.get_images().value();
         m_SwapchainImageViews = vkbSwapchain.get_image_views().value();
 
-        fmt::println("CreateSwapchain");
     }
 
     std::pair<VkResult, uint32_t> MSwapchain::AcquireImage(VkDevice inDevice, VkSemaphore &inSemaphore) const
@@ -102,38 +101,14 @@ namespace MamontEngine
     {
         vkDestroySwapchainKHR(inDevice, m_Swapchain, nullptr);
 
-        for (size_t i = 0; i < m_Framebuffers.size(); i++)
+        /*for (size_t i = 0; i < m_Framebuffers.size(); i++)
         {
             vkDestroyFramebuffer(inDevice, m_Framebuffers[i], nullptr);
-        }
+        }*/
 
-        for (int i = 0; i < m_SwapchainImageViews.size(); ++i)
+        for (size_t i{0}; i < m_SwapchainImageViews.size(); ++i)
         {
             vkDestroyImageView(inDevice, m_SwapchainImageViews[i], nullptr);
-        }
-    }
-
-    void MSwapchain::CreateFrameBuffers(VkDevice inDevice, VkRenderPass inRenderPass, VkImageView inDepthImageView)
-    {
-        m_Framebuffers.resize(m_SwapchainImageViews.size());
-
-        for (size_t i = 0; i < m_SwapchainImageViews.size(); i++)
-        {
-            std::array<VkImageView, 2> attachments = {m_SwapchainImageViews[i], inDepthImageView};
-
-            VkFramebufferCreateInfo framebufferInfo{};
-            framebufferInfo.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            framebufferInfo.renderPass      = inRenderPass;
-            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-            framebufferInfo.pAttachments    = attachments.data();
-            framebufferInfo.width           = m_SwapchainExtent.width;
-            framebufferInfo.height          = m_SwapchainExtent.height;
-            framebufferInfo.layers          = 1;
-
-            if (vkCreateFramebuffer(inDevice, &framebufferInfo, nullptr, &m_Framebuffers[i]) != VK_SUCCESS)
-            {
-                throw std::runtime_error("failed to create framebuffer!");
-            }
         }
     }
 

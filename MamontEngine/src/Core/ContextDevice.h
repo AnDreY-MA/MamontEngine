@@ -8,6 +8,7 @@
 
 #include "Graphics/Mesh.h"
 #include "FrameData.h"
+#include "Graphics/Vulkan/Swapchain.h"
 
 
 namespace MamontEngine
@@ -15,7 +16,7 @@ namespace MamontEngine
     class WindowCore;
     struct AllocatedImage;
     
-    constexpr unsigned int FRAME_OVERLAP = 3;
+    constexpr size_t FRAME_OVERLAP = 3;
 
 	struct VkContextDevice
 	{
@@ -33,9 +34,31 @@ namespace MamontEngine
         AllocatedImage  CreateImage(const VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const;
         AllocatedImage  CreateImage(void *inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped);
 
+        void InitDefaultImages();
+
         void DestroyImage(const AllocatedImage &inImage);
 
         void            ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction) const;
+
+        void InitCommands(DeletionQueue& inDeletionQueue);
+
+        void InitSyncStructeres();
+        void DestroySyncStructeres();
+
+        void InitDescriptors();
+        void DestroyDescriptors();
+
+        void CreateRenderPass();
+
+        void InitSamples();
+
+        void CreateAllFrameOffscreans(const VkExtent2D &inExtent, const VkFormat inFormat, std::vector<VkImageView> inImageView);
+        void CreateFrameOffscreen(FrameData &inFrame, const VkExtent2D &inExtent, const VkFormat inFormat, VkImageView inImageView);
+
+        void InitSwapchain(const VkExtent2D &inWindowExtent);
+        void ResizeSwapchain(const VkExtent2D &inWindowExtent);
+
+        void DestroyImage();
 
         FrameData &GetCurrentFrame();
         inline FrameData& GetFrameAt(const size_t inIndex)
@@ -46,6 +69,11 @@ namespace MamontEngine
         inline void IncrementFrameNumber()
         {
             ++m_FrameNumber;
+        }
+
+        inline size_t GetFrame() const
+        {
+            return m_FrameNumber;
         }
 
         VkInstance               Instance;
@@ -64,6 +92,8 @@ namespace MamontEngine
 
         Image Image;
 
+        MSwapchain Swapchain;
+
         VkFence         ImmFence;
         VkCommandBuffer ImmCommandBuffer;
         VkCommandPool   ImmCommandPool;
@@ -71,14 +101,19 @@ namespace MamontEngine
         VkSampler DefaultSamplerLinear;
         VkSampler DefaultSamplerNearest;
 
-        std::shared_ptr<RenderPipeline> RenderPipeline;
+        DescriptorAllocator   GlobalDescriptorAllocator;
+        VkDescriptorSet       DrawImageDescriptors;
+        VkDescriptorSetLayout DrawImageDescriptorLayout;
+        VkDescriptorSetLayout GPUSceneDataDescriptorLayout;
+
+        VkRenderPass RenderPass;
+
+        RenderPipeline* RenderPipeline;
 
         VkDescriptorSet ViewportDescriptor;
 
     private:
         std::array<FrameData, FRAME_OVERLAP> m_Frames{};
-        int                                  m_FrameNumber{0};
-
-
+        size_t                                  m_FrameNumber{0};
 	};
 }

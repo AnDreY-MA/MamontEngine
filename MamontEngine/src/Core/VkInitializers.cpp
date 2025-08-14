@@ -3,11 +3,13 @@
 //> init_cmd
 VkCommandPoolCreateInfo MamontEngine::vkinit::command_pool_create_info(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags /*= 0*/)
 {
-    VkCommandPoolCreateInfo info = {};
-    info.sType                   = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    info.pNext                   = nullptr;
-    info.queueFamilyIndex        = queueFamilyIndex;
-    info.flags                   = flags;
+    const VkCommandPoolCreateInfo info = {
+        .sType                   = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .pNext                   = nullptr,
+        .flags                   = flags,
+        .queueFamilyIndex = queueFamilyIndex
+    };
+
     return info;
 }
 
@@ -85,7 +87,7 @@ VkCommandBufferSubmitInfo MamontEngine::vkinit::command_buffer_submit_info(VkCom
     return info;
 }
 
-VkSubmitInfo2 MamontEngine::vkinit::submit_info(VkCommandBufferSubmitInfo *cmd, VkSemaphoreSubmitInfo *signalSemaphoreInfo, VkSemaphoreSubmitInfo *waitSemaphoreInfo)
+VkSubmitInfo2 MamontEngine::vkinit::submit_info(const VkCommandBufferSubmitInfo *cmd, const VkSemaphoreSubmitInfo *signalSemaphoreInfo, const VkSemaphoreSubmitInfo *waitSemaphoreInfo)
 {
     VkSubmitInfo2 info = {};
     info.sType         = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
@@ -156,8 +158,9 @@ VkRenderingAttachmentInfo MamontEngine::vkinit::depth_attachment_info(VkImageVie
 }
 //< depth_info
 //> render_info
-VkRenderingInfo
-MamontEngine::vkinit::rendering_info(VkExtent2D renderExtent, VkRenderingAttachmentInfo *colorAttachment, VkRenderingAttachmentInfo *depthAttachment)
+VkRenderingInfo MamontEngine::vkinit::rendering_info(VkExtent2D                       renderExtent,
+                                                     const VkRenderingAttachmentInfo *colorAttachment,
+                                                     const VkRenderingAttachmentInfo *depthAttachment)
 {
     VkRenderingInfo renderInfo{};
     renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
@@ -338,4 +341,23 @@ MamontEngine::vkinit::pipeline_shader_stage_create_info(VkShaderStageFlagBits st
     // the entry point of the shader
     info.pName = entry;
     return info;
+}
+
+VkRenderPassBeginInfo MamontEngine::vkinit::create_render_pass_info(VkRenderPass inRenderPass, VkFramebuffer inFrameBuffer, const VkExtent2D &inSwachainExtent)
+{
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass        = inRenderPass;
+    renderPassInfo.framebuffer       = inFrameBuffer;
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = inSwachainExtent;
+
+    std::array<VkClearValue, 2> clearValues{};
+    clearValues[0].color        = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    clearValues[1].depthStencil = {1.0f, 0};
+
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues    = clearValues.data();
+
+    return renderPassInfo;
 }

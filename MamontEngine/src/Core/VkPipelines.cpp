@@ -158,7 +158,7 @@ namespace MamontEngine::VkPipelines
 
         m_ShaderStages.clear();
     }
-    VkPipeline PipelineBuilder::BuildPipline(VkDevice inDevice, VkRenderPass inRenderPass)
+    VkPipeline PipelineBuilder::BuildPipline(VkDevice inDevice)
     {
         VkPipelineViewportStateCreateInfo viewportState = {};
         viewportState.sType                             = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -189,13 +189,16 @@ namespace MamontEngine::VkPipelines
         pipelineInfo.pColorBlendState             = &colorBlending;
         pipelineInfo.pDepthStencilState           = &m_DepthStencil;
         pipelineInfo.layout                       = m_PipelineLayout;
-        pipelineInfo.renderPass                   = inRenderPass;
 
-        VkDynamicState state[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        constexpr VkDynamicState state[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
-        VkPipelineDynamicStateCreateInfo dynamicInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
-        dynamicInfo.pDynamicStates                   = &state[0];
-        dynamicInfo.dynamicStateCount                = 2;
+        const VkPipelineDynamicStateCreateInfo dynamicInfo = {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .dynamicStateCount = 2,
+            .pDynamicStates                   = &state[0]
+            };
         
         pipelineInfo.pDynamicState = &dynamicInfo;
 

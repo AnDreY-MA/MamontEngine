@@ -21,7 +21,7 @@ namespace MamontEngine
 	class SceneRenderer
 	{
     public:
-        SceneRenderer(const std::shared_ptr<Camera>& inCamera, const std::shared_ptr<RenderPipeline> &inRenderPipeline);
+        SceneRenderer(const std::shared_ptr<Camera> &inCamera, DrawContext &inDrawContext);
 
         ~SceneRenderer();
 
@@ -55,7 +55,7 @@ namespace MamontEngine
 	private:
         std::vector<MeshComponent> m_MeshComponents;
         std::shared_ptr<Camera>    m_Camera;
-        std::shared_ptr<RenderPipeline> m_RenderPipeline;
+        DrawContext&                m_DrawContext;
 
         GPUSceneData m_SceneData;
 	};

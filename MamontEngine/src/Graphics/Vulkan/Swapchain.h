@@ -10,7 +10,7 @@ namespace MamontEngine
     public:
         void Init(VkContextDevice &inDevice, const VkExtent2D& inExtent, Image& inImage);
 
-        void Create(const VkContextDevice &inDevice, const uint32_t inWidth, const uint32_t inHeight);
+        void Create(const VkContextDevice &inDevice, const VkExtent2D &inExtent);
 
         std::pair<VkResult, uint32_t> AcquireImage(VkDevice inDevice, VkSemaphore &inSemaphore) const;
 
@@ -18,17 +18,20 @@ namespace MamontEngine
 
         void Destroy(VkDevice inDevice);
 
-        void CreateFrameBuffers(VkDevice inDevice, VkRenderPass inRenderPass, VkImageView inDepthImageView);
-
         const std::vector<VkImage>& GetImages()
         {
             return m_SwapchainImages;
         }
 
-        VkImageView GetImageView(const size_t inIndex)
+        VkImageView& GetImageView(const size_t inIndex)
         {
             return m_SwapchainImageViews.at(inIndex);
         }
+        std::vector<VkImageView> GetImageViews()
+        {
+            return m_SwapchainImageViews;
+        }
+
 
         const VkExtent2D& GetExtent() const
         {
@@ -40,13 +43,12 @@ namespace MamontEngine
             return m_SwapchainImageFormat;
         }
 
-	private:
+    private:
         VkSwapchainKHR           m_Swapchain;
         VkFormat                 m_SwapchainImageFormat;
         std::vector<VkImage>     m_SwapchainImages;
         std::vector<VkImageView> m_SwapchainImageViews;
         VkExtent2D               m_SwapchainExtent;
-        std::vector<VkFramebuffer> m_Framebuffers;
 
 	};
 }

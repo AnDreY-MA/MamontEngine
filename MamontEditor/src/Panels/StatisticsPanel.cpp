@@ -18,9 +18,11 @@ namespace MamontEditor
     {
         if (OnBegin())
         {
-            const MamontEngine::EngineStats &stats = MamontEngine::MEngine::Get().GetStats();
-            ImGui::Text("frametime %f ms", stats.FrameTime);
-            ImGui::Text("drawtime %f ms", stats.MeshDrawTime);
+            const ImGuiIO& io = ImGui::GetIO();
+            const MamontEngine::RenderStats &stats = MamontEngine::MEngine::Get().GetStats();
+            //ImGui::Text("frametime %f ms", stats.FrameTime);
+            ImGui::Text("Framerate: %f ms", io.Framerate);
+            ImGui::Text("Drawtime: %f ms", stats.MeshDrawTime);
 
             OnEnd();
         }

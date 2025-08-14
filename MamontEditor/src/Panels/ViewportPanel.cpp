@@ -23,17 +23,16 @@ namespace MamontEditor
     void ViewportPanel::GuiRender()
     {
         constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar;
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+        //ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
+        //ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
         auto &ContextDevice = MamontEngine::MEngine::Get().GetContextDevice();
         if (OnBegin(flags))
         {
-            ImGui::Image(ContextDevice.Image.DrawImage.ImTextID, ImGui::GetWindowSize());
-            //ImGui::Image(ContextDevice.Image.DepthImage.ImTextID, ImGui::GetWindowSize());
-
+            ImGui::Image(ContextDevice.GetCurrentFrame().OffscreenImage.ImTextID, ImGui::GetContentRegionAvail());
+            //ImGui::Image(ContextDevice.Image.DrawImage.ImTextID.GetTexID(), ImGui::GetContentRegionAvail());
         }
 
-        ImGui::PopStyleVar(2);
+        //ImGui::PopStyleVar(2);
         OnEnd();
 
     }

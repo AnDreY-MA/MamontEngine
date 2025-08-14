@@ -15,7 +15,7 @@ namespace MamontEngine
 {
     const std::string RootDirectories = PROJECT_ROOT_DIR;
 
-    void RenderPipeline::Init(VkDevice inDevice, VkDescriptorSetLayout inDescriptorLayout, std::pair<VkFormat, VkFormat> inImageFormats, VkRenderPass inRenderPass)
+    RenderPipeline::RenderPipeline(VkDevice inDevice, VkDescriptorSetLayout inDescriptorLayout, const std::pair<VkFormat, VkFormat> inImageFormats)
     {
         const std::string meshPath = RootDirectories + "/MamontEngine/src/Shaders/mesh.frag.spv";
 
@@ -32,7 +32,10 @@ namespace MamontEngine
             fmt::println("Error when building the triangle vertex shader module");
         }
 
-        const VkPushConstantRange matrixRange{.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(GPUDrawPushConstants)};
+        constexpr VkPushConstantRange matrixRange {
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT, 
+            .offset = 0, 
+            .size = sizeof(GPUDrawPushConstants)};
 
         DescriptorLayoutBuilder layoutBuilder{};
         layoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -69,13 +72,13 @@ namespace MamontEngine
 
         pipelineBuilder.m_PipelineLayout = newLayout;
 
-        OpaquePipeline.Pipeline = pipelineBuilder.BuildPipline(inDevice, inRenderPass);
+        OpaquePipeline.Pipeline = pipelineBuilder.BuildPipline(inDevice);
 
         pipelineBuilder.EnableBlendingAdditive();
 
         pipelineBuilder.EnableDepthTest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
-        TransparentPipeline.Pipeline = pipelineBuilder.BuildPipline(inDevice, inRenderPass);
+        TransparentPipeline.Pipeline = pipelineBuilder.BuildPipline(inDevice);
 
         vkDestroyShaderModule(inDevice, meshFragShader, nullptr);
         vkDestroyShaderModule(inDevice, meshVertexShader, nullptr);

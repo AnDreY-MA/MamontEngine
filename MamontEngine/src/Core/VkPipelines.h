@@ -28,7 +28,7 @@ namespace MamontEngine::VkPipelines
         void DisableDepthtest();
         void Clear();
 
-        VkPipeline BuildPipline(VkDevice inDevice, VkRenderPass inRenderPass);
+        VkPipeline BuildPipline(VkDevice inDevice);
 
         
         VkPipelineLayout m_PipelineLayout;

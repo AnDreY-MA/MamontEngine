@@ -14,11 +14,13 @@ namespace MamontEngine
         void Init(VkContextDevice &inContextDevice,
                   SDL_Window      *inWindow,
                   VkFormat         inColorFormat,
-                  DeletionQueue   &inDeletionQueue, VkDescriptorPool &outPoolResult);
+                  VkDescriptorPool &outPoolResult);
 
         void Draw(VkCommandBuffer inCmd, VkImageView inTargetImageView, VkExtent2D inRenderExtent);
 
         void CreateImGuiFrameBuffers(VkDevice inDevie, const VkExtent2D &inExtent, const std::vector<VkImageView>& inSwapchainImageViews);
+
+        void CreateViewportFrameBuffers(VkDevice inDevice, const VkExtent2D &inSwapchainExtent, VkImageView inDepthImageView);
 
         void CreateImGuiRenderPass(VkDevice inDevie, VkFormat inSwapChainImageFormat);
 
@@ -32,8 +34,17 @@ namespace MamontEngine
             return m_ViewportCommandPool;
         }
 
-        void CreateViewportImage(VkDevice inDevice, const size_t inSizeSwapchainImages, const VkExtent2D &inSwapchainExtent);
-        void CreateViewportImageViews(VkDevice inDevice);
+        void CreateImage(VkDevice inDevice, const size_t inSizeSwapchainImages, const VkExtent2D &inSwapchainExtent);
+
+        VkDescriptorSet GetDescriptorTexture(const size_t inIndex)
+        {
+            return m_ImGuiTextureDescriptors.at(inIndex);
+        }
+
+        VkFramebuffer& GetViewportFrameBuffers(const size_t inIndex)
+        {
+            return m_ViewportFrameBuffers.at(inIndex);
+        }
 
     private:
         VkRenderPass               m_ImGuiRenderPass;
@@ -45,8 +56,11 @@ namespace MamontEngine
         //Viewport
         std::vector<VkImage>        m_ViewportImages;
         std::vector<VkImageView>    m_ViewportImageViews;
+        std::vector<VkFramebuffer>  m_ViewportFrameBuffers;
 
         std::vector<VkDeviceMemory> m_DstImageMemory;
         VkCommandPool                m_ViewportCommandPool;
+
+        std::vector<VkDescriptorSet> m_ImGuiTextureDescriptors;
     };
 }

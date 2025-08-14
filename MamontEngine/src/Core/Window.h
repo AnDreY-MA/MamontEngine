@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include <backends/imgui_impl_vulkan.h>
+#include "Core/ContextDevice.h"
 
 namespace MamontEngine
 {
@@ -17,12 +18,14 @@ namespace MamontEngine
 
 		void CreateSurface(VkInstance instance, VkSurfaceKHR *surface);
 
+		void SetupVulkanWindow(VkContextDevice &inContextDevice, VkSurfaceKHR surface, int width, int height);
+
 		SDL_Window *GetWindow()
         {
             return m_Window;
 		}
 
-		VkExtent2D GetExtent() const
+		const VkExtent2D& GetExtent() const
 		{
             return m_WindowExtent;
 		}
@@ -37,8 +40,7 @@ namespace MamontEngine
 	private:
 
         SDL_Window* m_Window;
-
-		ImGui_ImplVulkanH_Window VulkanWindow;
+        ImGui_ImplVulkanH_Window *m_VulkanWindow;
 
         VkExtent2D  m_WindowExtent{1900, 1060};
 	};

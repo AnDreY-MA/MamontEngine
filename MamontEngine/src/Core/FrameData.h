@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/VkDestriptor.h"
+#include "Graphics/Vulkan/Image.h"
 
 namespace MamontEngine
 {
@@ -32,7 +33,9 @@ namespace MamontEngine
         VkPipeline                   ViewportPipeline;
         VkCommandPool                ViewportCommandPool;
         std::vector<VkFramebuffer>   ViewportFramebuffers;
-        std::vector<VkCommandBuffer> ViewportCommandBuffers;
+        VkCommandBuffer              ViewportCommandBuffer;
+
+        VkDescriptorSet              ViewportDescriptor;
     };
 
     struct FrameData
@@ -49,5 +52,8 @@ namespace MamontEngine
 
         DeletionQueue               Deleteions;
         DescriptorAllocatorGrowable FrameDescriptors;
+
+        AllocatedImage OffscreenImage;
+        AllocatedImage OffscreenDepth;
     };
 }

@@ -10,7 +10,8 @@ namespace MamontEngine
 {
     const std::string RootDirectories = PROJECT_ROOT_DIR;
 
-    Scene::Scene(const std::shared_ptr<SceneRenderer> &inSceneRenderer) : m_SceneRenderer(inSceneRenderer)
+    Scene::Scene(const std::shared_ptr<SceneRenderer> &inSceneRenderer) 
+        : m_SceneRenderer(inSceneRenderer)
     {
         
     }
@@ -44,8 +45,6 @@ namespace MamontEngine
                         n->LocalTransform = transform.GetTransform();
                         n->RefreshTransform({1.f});
                     }
-                    
-
                 }
             }
 
@@ -54,7 +53,6 @@ namespace MamontEngine
                 m_SceneRenderer->SubmitMesh(meshComponent);
                 meshComponent.Dirty = false;
             }
-
         }
     }
 

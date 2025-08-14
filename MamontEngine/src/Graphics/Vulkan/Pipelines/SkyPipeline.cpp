@@ -5,7 +5,7 @@
 
 namespace MamontEngine
 {
-    void SkyPipeline::Init(VkDevice inDevice, const VkDescriptorSetLayout *inDrawImageDescriptorLayout, DeletionQueue &inDeletionQueue)
+    SkyPipeline::SkyPipeline(VkDevice inDevice, const VkDescriptorSetLayout *inDrawImageDescriptorLayout)
     {
         VkPipelineLayoutCreateInfo computeLayout{};
         computeLayout.sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -13,10 +13,11 @@ namespace MamontEngine
         computeLayout.pSetLayouts    = inDrawImageDescriptorLayout;
         computeLayout.setLayoutCount = 1;
 
-        VkPushConstantRange pushConstant{};
-        pushConstant.offset     = 0;
-        pushConstant.size       = sizeof(ComputePushConstants);
-        pushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        constexpr VkPushConstantRange pushConstant {
+            .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+            .offset = 0,
+            .size       = sizeof(ComputePushConstants)
+        };
 
         computeLayout.pPushConstantRanges    = &pushConstant;
         computeLayout.pushConstantRangeCount = 1;
@@ -74,13 +75,6 @@ namespace MamontEngine
 
         vkDestroyShaderModule(inDevice, gradientShader, nullptr);
         vkDestroyShaderModule(inDevice, skyShader, nullptr);
-
-        inDeletionQueue.PushFunction(
-                [=]()
-                {
-                    vkDestroyPipelineLayout(inDevice, m_GradientPipelineLayout, nullptr);
-                    vkDestroyPipeline(inDevice, m_Effect.Pipeline, nullptr);
-                });
     }
 
     void SkyPipeline::Draw(VkCommandBuffer inCmd, const VkDescriptorSet *inDescriptorSet)
@@ -95,5 +89,6 @@ namespace MamontEngine
     void SkyPipeline::Destroy(VkDevice inDevice)
     {
         vkDestroyPipelineLayout(inDevice, m_GradientPipelineLayout, nullptr);
+        vkDestroyPipeline(inDevice, m_Effect.Pipeline, nullptr);
     }
 }

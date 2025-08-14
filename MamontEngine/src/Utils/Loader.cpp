@@ -246,13 +246,12 @@ namespace MamontEngine
 
     static void LoadSamples(VkDevice inDevice, Mesh &inFile, std::vector<fastgltf::Sampler> &samplers)
     {
+        VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr};
+        sampl.maxLod              = VK_LOD_CLAMP_NONE;
+        sampl.minLod              = 0;
+
         for (fastgltf::Sampler &sampler : samplers)
         {
-
-            VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr};
-            sampl.maxLod              = VK_LOD_CLAMP_NONE;
-            sampl.minLod              = 0;
-
             sampl.magFilter = extract_filter(sampler.magFilter.value_or(fastgltf::Filter::Nearest));
             sampl.minFilter = extract_filter(sampler.minFilter.value_or(fastgltf::Filter::Nearest));
 
@@ -454,7 +453,12 @@ namespace MamontEngine
 
         LoadSamples(inDeviece.Device, file, gltf.samplers);
 
-        const std::vector<AllocatedImage>                 images    = LoadTexture(inDeviece, file, gltf);
+        std::vector<AllocatedImage>                 images    = LoadTexture(inDeviece, file, gltf);
+        /*for (size_t i = 0; i < images.size(); i++)
+        {
+            images[i].ImTextID = ImGui_ImplVulkan_AddTexture(file.Samplers[i], images[i].ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }*/
+
         const std::vector<std::shared_ptr<GLTFMaterial>> materials = LoadMaterials(inDeviece, file, gltf, images);
         const std::vector<std::shared_ptr<Mesh::Primitive>> meshes    = LoadMeshes(inDeviece, gltf, file, materials);
         

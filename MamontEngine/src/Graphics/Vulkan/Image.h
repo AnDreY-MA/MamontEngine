@@ -12,7 +12,7 @@ namespace MamontEngine
         VkExtent3D    ImageExtent;
         VkFormat      ImageFormat;
 
-        ImTextureRef ImTextID;
+        VkDescriptorSet ImTextID;
     };
 
     struct Image

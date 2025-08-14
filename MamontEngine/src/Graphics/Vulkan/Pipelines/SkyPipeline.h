@@ -25,7 +25,10 @@ namespace MamontEngine
 	class SkyPipeline
 	{
     public:
-        void Init(VkDevice inDevice, const VkDescriptorSetLayout *inDrawImageDescriptorLayout, DeletionQueue &inDeletionQueue);
+        
+        SkyPipeline(VkDevice inDevice, const VkDescriptorSetLayout *inDrawImageDescriptorLayout);
+
+        ~SkyPipeline() = default;
 
         void Draw(VkCommandBuffer inCmd, const VkDescriptorSet *inDescriptorSet);
 
