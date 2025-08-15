@@ -34,17 +34,15 @@ namespace MamontEngine
 
     void Scene::Update()
     {
-        const auto meshes = m_Registry.view<MeshComponent, TransformComponent, TagComponent>();
-        for (const auto &&[entity, meshComponent, transform, tag] : meshes.each())
+        const auto meshes = m_Registry.view<MeshComponent, TransformComponent>();
+        for (const auto &&[entity, meshComponent, transform] : meshes.each())
         {
+            if (meshComponent.Mesh && !meshComponent.Mesh->Nodes.empty())
             {
-                if (meshComponent.Mesh && !meshComponent.Mesh->Nodes.empty())
+                for (auto &n : meshComponent.Mesh->Nodes)
                 {
-                    for (auto &n : meshComponent.Mesh->Nodes)
-                    {
-                        n->LocalTransform = transform.GetTransform();
-                        n->RefreshTransform({1.f});
-                    }
+                    n->LocalTransform = transform.GetTransform();
+                    n->RefreshTransform({1.f});
                 }
             }
 
@@ -58,8 +56,23 @@ namespace MamontEngine
 
     void Scene::DestroyEntity(Entity inEntity)
     {
+        if (!m_Registry.valid(inEntity))
+        {
+            fmt::println("Entity is not valid");
+            return;
+        }
+
+        if (!m_Registry.storage<entt::entity>().contains(inEntity))
+        {
+            fmt::println("Entity {} not in registry storage", inEntity.GetComponent<TagComponent>().Tag);
+            return;
+        }
+
+        RemoveComponent<MeshComponent>(inEntity);
+
         m_Entities.erase(inEntity.GetID());
         m_Registry.destroy(inEntity);
+
     }
 
     Entity Scene::CreateEntity(std::string_view inName)
@@ -71,8 +84,7 @@ namespace MamontEngine
     {
         Entity entity = {m_Registry.create(), this};
         entity.AddComponent<IDComponent>().ID = inId;
-        auto &tag = entity.AddComponent<TagComponent>();
-        tag.Tag   = inName.empty() ? "Enity" : inName;
+        entity.AddComponent<TagComponent>(inName.empty() ? "Enity" : inName);
         entity.AddComponent<TransformComponent>();
 
         m_Entities.emplace(inId, entity);

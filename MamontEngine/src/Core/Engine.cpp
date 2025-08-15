@@ -90,6 +90,8 @@ namespace MamontEngine
 
                 m_MainCamera->ProccessEvent(event);
 
+                m_InputEvent = &event;
+
                 ImGui_ImplSDL3_ProcessEvent(&event);
             }
 

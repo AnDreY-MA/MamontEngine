@@ -13,6 +13,9 @@ namespace MamontEngine
         Entity(const Entity &other) = default;
         Entity(entt::entity inHandle, Scene *scene);
 
+        static Entity NullEntity;
+
+
         template <typename T, typename... Args>
         T& AddComponent(Args&&... args)
         {

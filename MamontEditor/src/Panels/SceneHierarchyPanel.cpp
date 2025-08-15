@@ -1,9 +1,9 @@
 #include "SceneHierarchyPanel.h"
 #include "Core/Engine.h"
 
+#include <ECS/Components/TagComponent.h>
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
-#include <ECS/Components/TagComponent.h>
 
 #include "UI/UI.h"
 
@@ -21,9 +21,9 @@ namespace MamontEditor
 
     void SceneHierarchyPanel::Init()
     {
-        //m_Scene = MamontEngine::MEngine::Get().GetScene();
+        // m_Scene = MamontEngine::MEngine::Get().GetScene();
 
-        //fmt::println("SceneHierarchy inintialized, scene = {}", m_Scene != nullptr ? m_Scene.use_count() : 0);
+        // fmt::println("SceneHierarchy inintialized, scene = {}", m_Scene != nullptr ? m_Scene.use_count() : 0);
     }
 
     void SceneHierarchyPanel::GuiRender()
@@ -33,7 +33,6 @@ namespace MamontEditor
             m_Scene = MamontEngine::MEngine::Get().GetScene();
             if (m_Scene == nullptr)
                 nullptr;
-
         }
 
         if (OnBegin(ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar))
@@ -46,26 +45,48 @@ namespace MamontEditor
                 ImGui::OpenPopup("ContextWindow");
             }
 
-            if (ImGui::BeginPopupContextWindow("ContextWindow", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
+            if (ImGui::BeginPopup("ContextWindow"))
             {
                 DrawContextMenu();
                 ImGui::EndPopup();
             }
-            
+
+            /*if (ImGui::BeginPopupContextWindow("ContextWindow", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
+            {
+                DrawContextMenu();
+                ImGui::EndPopup();
+            }*/
+
 
             ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
-            auto view = m_Scene->GetRegistry().view<entt::entity>();
+            const auto &view = m_Scene->GetRegistry().view<entt::entity>();
             view.each(
                     [&](auto ID)
                     {
-                        MamontEngine::Entity entity{ID, m_Scene.get()};
-                        DrawEntityNode(entity);
+                        const MamontEngine::Entity entity{ID, m_Scene.get()};
+                        if (entity)
+                        {
+                            DrawEntityNode(entity);
+                        }
                     });
             ImGui::PopStyleVar();
 
+            if (ImGui::BeginPopup("Properties"))
+            {
+                if (ImGui::ButtonEx("Remove"))
+                {
+                    m_Scene->DestroyEntity(m_SeletctedEntity);
+
+                    m_SeletctedEntity = {};
+
+                    ImGui::CloseCurrentPopup();
+                }
+
+                ImGui::EndPopup();
+            }
+
             OnEnd();
         }
-        
     }
 
     void SceneHierarchyPanel::DrawEntityNode(MamontEngine::Entity inEntity)
@@ -85,6 +106,11 @@ namespace MamontEditor
         {
             m_SeletctedEntity = inEntity;
         }
+        if (ImGui::IsItemClicked(1))
+        {
+            ImGui::OpenPopup("Properties", ImGuiPopupFlags_AnyPopupLevel);
+            m_SeletctedEntity = inEntity;
+        }
 
         ImGui::TableNextColumn();
 
@@ -92,14 +118,14 @@ namespace MamontEditor
         {
             ImGui::TreePop();
         }
-
     }
+
     void SceneHierarchyPanel::DrawContextMenu()
     {
         using namespace MamontEngine;
         if (!ImGui::BeginMenu("Create"))
             return;
-        
+
         if (ImGui::MenuItem("Empty Entity"))
         {
             m_Scene->CreateEntity("New Entity");
@@ -119,4 +145,4 @@ namespace MamontEditor
 
         ImGui::EndMenu();
     }
-}
+} // namespace MamontEditor
