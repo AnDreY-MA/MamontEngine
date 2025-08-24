@@ -1,4 +1,5 @@
 #include "Graphics/Vulkan/Swapchain.h"
+
 #include "Graphics/Vulkan/Image.h"
 #include <VkBootstrap.h>
 #include "Core/ContextDevice.h"
@@ -22,9 +23,10 @@ namespace MamontEngine
 
         const VkImageCreateInfo rImageInfo = vkinit::image_create_info(inImage.DrawImage.ImageFormat, drawImageUsages, drawImageExtent);
 
-        VmaAllocationCreateInfo rImageAllocInfo = {};
-        rImageAllocInfo.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
-        rImageAllocInfo.requiredFlags           = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        constexpr VmaAllocationCreateInfo rImageAllocInfo = {
+            .usage                   = VMA_MEMORY_USAGE_GPU_ONLY,
+            .requiredFlags           = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+        };
 
         vmaCreateImage(inDevice.Allocator, &rImageInfo, &rImageAllocInfo, &inImage.DrawImage.Image, &inImage.DrawImage.Allocation, nullptr);
 
@@ -50,7 +52,7 @@ namespace MamontEngine
 
     void MSwapchain::Create(const VkContextDevice &inDevice, const VkExtent2D &inExtent)
     {
-        vkb::SwapchainBuilder swapchainBuilder{inDevice.ChosenGPU, inDevice.Device, inDevice.Surface};
+        vkb::SwapchainBuilder swapchainBuilder{inDevice.GetPhysicalDevice(), inDevice.Device, inDevice.Surface};
         m_SwapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
 
         const auto resultSwapchain =
@@ -81,16 +83,9 @@ namespace MamontEngine
         return {result, swapchainImageIndex};
     }
 
-    VkResult MSwapchain::Present(VkQueue inQueue, const VkSemaphore *inRenderSemaphore, const uint32_t inImageIndex)
+    VkResult MSwapchain::Present(VkQueue inQueue, const VkSemaphore *inRenderSemaphore, const uint32_t inImageIndex) const
     {
-        VkPresentInfoKHR presentInfo = vkinit::present_info();
-        presentInfo.pSwapchains      = &m_Swapchain;
-        presentInfo.swapchainCount   = 1;
-
-        presentInfo.pWaitSemaphores    = inRenderSemaphore;
-        presentInfo.waitSemaphoreCount = 1;
-
-        presentInfo.pImageIndices = &inImageIndex;
+        const VkPresentInfoKHR presentInfo = vkinit::present_info(&m_Swapchain, 1, inRenderSemaphore, 1, &inImageIndex);
 
         const VkResult presentResult = vkQueuePresentKHR(inQueue, &presentInfo);
 
@@ -100,11 +95,6 @@ namespace MamontEngine
     void MSwapchain::Destroy(VkDevice inDevice)
     {
         vkDestroySwapchainKHR(inDevice, m_Swapchain, nullptr);
-
-        /*for (size_t i = 0; i < m_Framebuffers.size(); i++)
-        {
-            vkDestroyFramebuffer(inDevice, m_Framebuffers[i], nullptr);
-        }*/
 
         for (size_t i{0}; i < m_SwapchainImageViews.size(); ++i)
         {

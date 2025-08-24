@@ -17,7 +17,7 @@ namespace MamontEngine
 
         // Check for WSI support
         VkBool32 res;
-        vkGetPhysicalDeviceSurfaceSupportKHR(inContextDevice.ChosenGPU, inContextDevice.GraphicsQueueFamily, m_VulkanWindow->Surface, &res);
+        vkGetPhysicalDeviceSurfaceSupportKHR(inContextDevice.GetPhysicalDevice(), inContextDevice.GraphicsQueueFamily, m_VulkanWindow->Surface, &res);
         if (res != VK_TRUE)
         {
             fprintf(stderr, "Error no WSI support on physical device 0\n");
@@ -27,7 +27,7 @@ namespace MamontEngine
         // Select Surface Format
         constexpr VkFormat requestSurfaceImageFormat[] = {VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM};
         constexpr VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-        m_VulkanWindow->SurfaceFormat                      = ImGui_ImplVulkanH_SelectSurfaceFormat(inContextDevice.ChosenGPU,
+        m_VulkanWindow->SurfaceFormat                      = ImGui_ImplVulkanH_SelectSurfaceFormat(inContextDevice.GetPhysicalDevice(),
                                                                               m_VulkanWindow->Surface,
                                                                               requestSurfaceImageFormat,
                                                                               IM_ARRAYSIZE(requestSurfaceImageFormat),
@@ -39,13 +39,13 @@ namespace MamontEngine
 #else
         constexpr VkPresentModeKHR present_modes[] = {VK_PRESENT_MODE_FIFO_KHR};
 #endif
-        m_VulkanWindow->PresentMode =
-                ImGui_ImplVulkanH_SelectPresentMode(inContextDevice.ChosenGPU, m_VulkanWindow->Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
+        m_VulkanWindow->PresentMode = ImGui_ImplVulkanH_SelectPresentMode(
+                inContextDevice.GetPhysicalDevice(), m_VulkanWindow->Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
 
         // Create SwapChain, RenderPass, Framebuffer, etc.
         //IM_ASSERT(g_MinImageCount >= 2);
         ImGui_ImplVulkanH_CreateOrResizeWindow(inContextDevice.Instance,
-                                               inContextDevice.ChosenGPU,
+                                               inContextDevice.GetPhysicalDevice(),
                                                inContextDevice.Device,
                                                m_VulkanWindow,
                                                inContextDevice.GraphicsQueueFamily,

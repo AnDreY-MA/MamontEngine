@@ -1,7 +1,7 @@
 #pragma once 
 
 #include "Graphics/Vulkan/GPUBuffer.h"
-#include "Graphics/Vulkan/VkMaterial.h"
+#include "Graphics/Vulkan/Materials/Material.h"
 
 #include "Graphics/Vulkan/Image.h"
 
@@ -35,13 +35,6 @@ namespace MamontEngine
         std::shared_ptr<GLTFMaterial> Material;
     };
 
-	struct MeshTest
-	{
-        std::string             Name;
-        std::vector<GeoSurface> Surfaces;
-        GPUMeshBuffers          MeshBuffers;
-	};
-
     struct VkContextDevice;
 
 	struct Mesh
@@ -54,7 +47,7 @@ namespace MamontEngine
         struct Primitive
         {
             std::vector<GeoSurface> Surfaces;
-            GPUMeshBuffers          Buffers;
+            MeshBuffer          Buffers;
         };
 
         struct Node

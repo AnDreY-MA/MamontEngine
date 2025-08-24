@@ -14,36 +14,33 @@
 
 namespace MamontEngine
 {
-    void ImGuiRenderer::Init(
-            VkContextDevice &inContextDevice, SDL_Window *inWindow, VkFormat inColorFormat, VkDescriptorPool &outPoolResult)
+    ImGuiRenderer::ImGuiRenderer(VkContextDevice &inContextDevice, SDL_Window *inWindow, VkFormat inColorFormat, VkDescriptorPool &outPoolResult)
     {
         constexpr VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-                                                  {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-                                                  {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-                                                  {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-                                                  {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-                                                  {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-                                                  {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-                                                  {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-                                                  {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-                                                  {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-                                                  {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
+                                                      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+                                                      {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
+                                                      {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
+                                                      {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
+                                                      {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
+                                                      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+                                                      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
+                                                      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+                                                      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+                                                      {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
 
-        const VkDescriptorPoolCreateInfo poolInfo = {
-            .sType                      = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            .pNext                      = nullptr,
-            .flags                      = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-            .maxSets                    = 1000,
-            .poolSizeCount              = (uint32_t)std::size(poolSizes),
-            .pPoolSizes                 = poolSizes
-        };
-        VkDescriptorPool imguiPool;
+        const VkDescriptorPoolCreateInfo poolInfo = {.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+                                                     .pNext         = nullptr,
+                                                     .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+                                                     .maxSets       = 1000,
+                                                     .poolSizeCount = (uint32_t)std::size(poolSizes),
+                                                     .pPoolSizes    = poolSizes};
+        VkDescriptorPool                 imguiPool;
         VK_CHECK_MESSAGE(vkCreateDescriptorPool(inContextDevice.Device, &poolInfo, nullptr, &imguiPool), "CreateDescPool");
         outPoolResult = imguiPool;
 
         ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance                  = inContextDevice.Instance;
-        initInfo.PhysicalDevice            = inContextDevice.ChosenGPU;
+        initInfo.PhysicalDevice            = inContextDevice.GetPhysicalDevice();
         initInfo.Device                    = inContextDevice.Device;
         initInfo.QueueFamily               = inContextDevice.GraphicsQueueFamily;
         initInfo.Queue                     = inContextDevice.GraphicsQueue;
@@ -55,13 +52,11 @@ namespace MamontEngine
 
         initInfo.PipelineRenderingCreateInfo                         = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
         initInfo.PipelineRenderingCreateInfo.colorAttachmentCount    = 1;
-        const auto ColorFormat                                             = inColorFormat;
-        initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &ColorFormat;
+        initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &inColorFormat;
 
         ImGui_ImplSDL3_InitForVulkan(inWindow);
         ImGui_ImplVulkan_Init(&initInfo);
     }
-
 
     void ImGuiRenderer::Draw(VkCommandBuffer inCmd, VkImageView inTargetImageView, VkExtent2D inRenderExtent)
     {

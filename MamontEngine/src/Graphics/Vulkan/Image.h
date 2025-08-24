@@ -6,9 +6,9 @@ namespace MamontEngine
 {
     struct AllocatedImage
     {
-        VkImage       Image;
-        VkImageView   ImageView;
-        VmaAllocation Allocation;
+        VkImage       Image{VK_NULL_HANDLE};
+        VkImageView   ImageView{VK_NULL_HANDLE};
+        VmaAllocation Allocation{VK_NULL_HANDLE};
         VkExtent3D    ImageExtent;
         VkFormat      ImageFormat;
 

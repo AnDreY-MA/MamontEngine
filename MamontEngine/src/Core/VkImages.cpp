@@ -34,7 +34,7 @@ namespace MamontEngine::VkUtil
     }
     //< transition
     //> copyimg
-    void copy_image_to_image(VkCommandBuffer cmd, VkImage source, VkImage destination, VkExtent2D srcSize, VkExtent2D dstSize)
+    void copy_image_to_image(VkCommandBuffer cmd, VkImage source, VkImage destination, const VkExtent2D &srcSize, const VkExtent2D &dstSize)
     {
         VkImageBlit2 blitRegion{.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2, .pNext = nullptr};
 
@@ -71,14 +71,12 @@ namespace MamontEngine::VkUtil
     //> mipgen
     void generate_mipmaps(VkCommandBuffer cmd, VkImage image, VkExtent2D imageSize)
     {
-        int mipLevels = int(std::floor(std::log2(std::max(imageSize.width, imageSize.height)))) + 1;
+        const int mipLevels = int(std::floor(std::log2(std::max(imageSize.width, imageSize.height)))) + 1;
+        const VkExtent2D         halfSize   = {.width = imageSize.width / 2, .height = imageSize.height / 2};
+        constexpr VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
         for (int mip = 0; mip < mipLevels; mip++)
         {
-
-            VkExtent2D halfSize = imageSize;
-            halfSize.width /= 2;
-            halfSize.height /= 2;
-
             VkImageMemoryBarrier2 imageBarrier{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2, .pNext = nullptr};
 
             imageBarrier.srcStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
@@ -89,7 +87,6 @@ namespace MamontEngine::VkUtil
             imageBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             imageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
-            VkImageAspectFlags aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
             imageBarrier.subresourceRange              = vkinit::image_subresource_range(aspectMask);
             imageBarrier.subresourceRange.levelCount   = 1;
             imageBarrier.subresourceRange.baseMipLevel = mip;

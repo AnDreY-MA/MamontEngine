@@ -1,5 +1,6 @@
 #pragma once 
 
+
 namespace MamontEngine
 {
     struct VkContextDevice;
@@ -14,7 +15,7 @@ namespace MamontEngine
 
         std::pair<VkResult, uint32_t> AcquireImage(VkDevice inDevice, VkSemaphore &inSemaphore) const;
 
-        VkResult Present(VkQueue inQueue, const VkSemaphore *inRenderSemaphore, const uint32_t inImageIndex);
+        VkResult Present(VkQueue inQueue, const VkSemaphore *inRenderSemaphore, const uint32_t inImageIndex) const;
 
         void Destroy(VkDevice inDevice);
 
@@ -31,7 +32,6 @@ namespace MamontEngine
         {
             return m_SwapchainImageViews;
         }
-
 
         const VkExtent2D& GetExtent() const
         {

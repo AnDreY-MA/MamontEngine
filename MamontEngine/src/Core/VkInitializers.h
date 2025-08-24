@@ -19,7 +19,11 @@ namespace MamontEngine::vkinit
 
     VkSubmitInfo2
     submit_info(const VkCommandBufferSubmitInfo *cmd, const VkSemaphoreSubmitInfo *signalSemaphoreInfo, const VkSemaphoreSubmitInfo *waitSemaphoreInfo);
-    VkPresentInfoKHR present_info();
+    VkPresentInfoKHR present_info(const VkSwapchainKHR *swapchains,
+                                  const uint32_t        swapchainCount,
+                                  const VkSemaphore    *waitSemaphores,
+                                  const uint32_t        waitSemaphoreCount,
+                                  const uint32_t       *pImageIndices);
 
     VkRenderingAttachmentInfo attachment_info(VkImageView view, VkClearValue *clear, VkImageLayout layout /*= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL*/);
 
@@ -37,7 +41,7 @@ namespace MamontEngine::vkinit
     VkDescriptorBufferInfo buffer_info(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range);
 
     VkImageCreateInfo               image_create_info(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent);
-    VkImageViewCreateInfo           imageview_create_info(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags);
+    VkImageViewCreateInfo           imageview_create_info(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, const uint32_t inLayerCount = 1);
     VkImageView                     create_imageview(VkDevice inDevice, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
     VkPipelineLayoutCreateInfo      pipeline_layout_create_info();
     VkPipelineShaderStageCreateInfo pipeline_shader_stage_create_info(VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char *entry = "main");

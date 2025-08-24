@@ -82,7 +82,7 @@ namespace MamontEngine
 
     ///// DescriptorAllocatorGrowable
 
-    void DescriptorAllocatorGrowable::Init(VkDevice inDevice, const uint32_t inInitialSets, std::span<PoolSizeRatio> inPoolRatios)
+    void DescriptorAllocatorGrowable::Init(VkDevice inDevice, const uint32_t inInitialSets, const std::span<PoolSizeRatio> inPoolRatios)
     {
         m_Ratios.assign(inPoolRatios.begin(), inPoolRatios.end());
 
@@ -134,12 +134,11 @@ namespace MamontEngine
         allocInfo.pSetLayouts                 = &inLayout;
 
         VkDescriptorSet newDescriptors;
-        VkResult        result = vkAllocateDescriptorSets(inDevice, &allocInfo, &newDescriptors);
+        const VkResult        result = vkAllocateDescriptorSets(inDevice, &allocInfo, &newDescriptors);
 
         // allocation failed. Try again
         if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL)
         {
-
             m_FullPools.push_back(poolToUse);
 
             poolToUse                = GetPool(inDevice);
@@ -177,7 +176,7 @@ namespace MamontEngine
     VkDescriptorPool DescriptorAllocatorGrowable::CreatePool(VkDevice inDevice, const uint32_t inSetCount, std::span<PoolSizeRatio> inPoolRatios)
     {
         std::vector<VkDescriptorPoolSize> poolSizes;
-        for (auto ratio : inPoolRatios)
+        for (const auto &ratio : inPoolRatios)
         {
             poolSizes.push_back(VkDescriptorPoolSize{.type = ratio.type, .descriptorCount = uint32_t(ratio.Ratio * inSetCount)});
         }

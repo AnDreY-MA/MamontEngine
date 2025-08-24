@@ -11,10 +11,9 @@ namespace MamontEngine
     class ImGuiRenderer final
     {
     public:
-        void Init(VkContextDevice &inContextDevice,
-                  SDL_Window      *inWindow,
-                  VkFormat         inColorFormat,
-                  VkDescriptorPool &outPoolResult);
+        ImGuiRenderer(VkContextDevice &inContextDevice, SDL_Window *inWindow, VkFormat inColorFormat, VkDescriptorPool &outPoolResult);
+
+        ~ImGuiRenderer() = default;
 
         void Draw(VkCommandBuffer inCmd, VkImageView inTargetImageView, VkExtent2D inRenderExtent);
 

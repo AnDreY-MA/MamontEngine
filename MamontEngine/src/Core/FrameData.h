@@ -27,16 +27,6 @@ namespace MamontEngine
         std::deque<std::function<void()>> deletors;
     };
 
-    struct ViewportData
-    {
-        VkRenderPass                 ViewportRenderPass;
-        VkPipeline                   ViewportPipeline;
-        VkCommandPool                ViewportCommandPool;
-        std::vector<VkFramebuffer>   ViewportFramebuffers;
-        VkCommandBuffer              ViewportCommandBuffer;
-
-        VkDescriptorSet              ViewportDescriptor;
-    };
 
     struct FrameData
     {
@@ -47,8 +37,6 @@ namespace MamontEngine
 
         VkCommandPool   CommandPool;
         VkCommandBuffer MainCommandBuffer;
-
-        ViewportData Viewport;
 
         DeletionQueue               Deleteions;
         DescriptorAllocatorGrowable FrameDescriptors;

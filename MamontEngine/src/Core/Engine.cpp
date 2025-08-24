@@ -210,7 +210,7 @@ namespace MamontEngine
         for (const VkFormat format : candidates)
         {
             VkFormatProperties props;
-            vkGetPhysicalDeviceFormatProperties(m_ContextDevice->ChosenGPU, format, &props);
+            vkGetPhysicalDeviceFormatProperties(m_ContextDevice->GetPhysicalDevice(), format, &props);
 
             if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
             {

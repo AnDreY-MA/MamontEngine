@@ -2,13 +2,14 @@
 
 #include "Graphics/Vulkan/GPUBuffer.h"
 #include "Graphics/Vulkan/Image.h"
-#include "Graphics/Vulkan/VkMaterial.h"
+#include "Graphics/Vulkan/Materials/Material.h"
 #include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
 #include "Core/RenderData.h"
 
 #include "Graphics/Mesh.h"
 #include "FrameData.h"
 #include "Graphics/Vulkan/Swapchain.h"
+#include "Graphics/Devices/PhysicalDevice.h"
 
 
 namespace MamontEngine
@@ -29,10 +30,10 @@ namespace MamontEngine
         AllocatedBuffer CreateBuffer(const size_t inAllocSize, const VkBufferUsageFlags inUsage, const VmaMemoryUsage inMemoryUsage) const;
         void            DestroyBuffer(const AllocatedBuffer &inBuffer) const;
 
-        GPUMeshBuffers CreateGPUMeshBuffer(std::span<uint32_t> inIndices, std::span<Vertex> inVertices);
+        MeshBuffer CreateGPUMeshBuffer(std::span<uint32_t> inIndices, std::span<Vertex> inVertices);
 
-        AllocatedImage  CreateImage(const VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const;
-        AllocatedImage  CreateImage(void *inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped);
+        AllocatedImage  CreateImage(const VkExtent3D& inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const;
+        AllocatedImage CreateImage(void *inData, const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped);
 
         void InitDefaultImages();
 
@@ -47,8 +48,6 @@ namespace MamontEngine
 
         void InitDescriptors();
         void DestroyDescriptors();
-
-        void CreateRenderPass();
 
         void InitSamples();
 
@@ -76,9 +75,10 @@ namespace MamontEngine
             return m_FrameNumber;
         }
 
+        VkPhysicalDevice GetPhysicalDevice() const;
+
         VkInstance               Instance;
         VkDebugUtilsMessengerEXT DebugMessenger;
-        VkPhysicalDevice         ChosenGPU;
         VkDevice                 Device;
         VkSurfaceKHR             Surface;
 
@@ -115,5 +115,7 @@ namespace MamontEngine
     private:
         std::array<FrameData, FRAME_OVERLAP> m_Frames{};
         size_t                                  m_FrameNumber{0};
+
+        std::unique_ptr<PhysicalDevice> m_PhysicalDevice;
 	};
 }

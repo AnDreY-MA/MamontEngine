@@ -58,23 +58,36 @@ namespace MamontEngine
                 .samplerAnisotropy = VK_TRUE,
         };
 
-        VkPhysicalDeviceVulkan13Features features{
-            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
-        features.dynamicRendering = VK_TRUE;
-        features.synchronization2 = VK_TRUE;
+        constexpr VkPhysicalDeviceVulkan14Features features14 = {
+            .maintenance5 = VK_TRUE,
+            .pushDescriptor = VK_TRUE
+        };
 
-        VkPhysicalDeviceVulkan12Features features12{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
-        features12.bufferDeviceAddress               = VK_TRUE;
-        features12.descriptorIndexing                = VK_TRUE;
-        features12.shaderInt8                        = VK_TRUE;
-        features12.uniformAndStorageBuffer8BitAccess = VK_TRUE;
-        features12.runtimeDescriptorArray            = VK_TRUE;
+        constexpr VkPhysicalDeviceVulkan13Features features = {
+            .synchronization2 = VK_TRUE,
+            .dynamicRendering = VK_TRUE
+        };
+
+        constexpr VkPhysicalDeviceVulkan12Features features12 = {
+            .uniformAndStorageBuffer8BitAccess = VK_TRUE,
+            .shaderInt8 = VK_TRUE,
+            .descriptorIndexing = VK_TRUE,
+            .shaderSampledImageArrayNonUniformIndexing = VK_TRUE,
+            .descriptorBindingSampledImageUpdateAfterBind = VK_TRUE,
+            .descriptorBindingUpdateUnusedWhilePending    = VK_TRUE,
+            .descriptorBindingPartiallyBound              = VK_TRUE,
+            .descriptorBindingVariableDescriptorCount     = VK_TRUE,
+            .runtimeDescriptorArray                       = VK_TRUE,
+            .timelineSemaphore                            = VK_TRUE,
+            .bufferDeviceAddress = VK_TRUE
+        };
 
 
         vkb::PhysicalDeviceSelector selector{vkbInstance};
 
-        const vkb::PhysicalDevice physicalDevice = selector.set_minimum_version(1, 3)
+        const vkb::PhysicalDevice physicalDevice = selector.set_minimum_version(1, 4)
                                                            .set_required_features(deviceFeatures)
+                                                           .set_required_features_14(features14)
                                                            .set_required_features_13(features)
                                                            .set_required_features_12(features12)
                                                            .set_surface(Surface)
@@ -86,20 +99,18 @@ namespace MamontEngine
         const vkb::Device vkbDevice = deviceBuilder.build().value();
 
         Device    = vkbDevice.device;
-        ChosenGPU = physicalDevice.physical_device;
+        m_PhysicalDevice = std::make_unique<PhysicalDevice>(physicalDevice.physical_device);
         fmt::print("Name {}", physicalDevice.name);
 
         GraphicsQueue       = vkbDevice.get_queue(vkb::QueueType::graphics).value();
         GraphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
 
         VmaAllocatorCreateInfo allocatorInfo = {};
-        allocatorInfo.physicalDevice         = ChosenGPU;
+        allocatorInfo.physicalDevice         = m_PhysicalDevice->GetDevice();
         allocatorInfo.device                 = Device;
         allocatorInfo.instance               = Instance;
         allocatorInfo.flags                  = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
         vmaCreateAllocator(&allocatorInfo, &Allocator);
-
-
 
     }
 
@@ -120,12 +131,12 @@ namespace MamontEngine
         return newBuffer;
     }
 
-    GPUMeshBuffers VkContextDevice::CreateGPUMeshBuffer(std::span<uint32_t> inIndices, std::span<Vertex> inVertices)
+    MeshBuffer VkContextDevice::CreateGPUMeshBuffer(std::span<uint32_t> inIndices, std::span<Vertex> inVertices)
     {
         const size_t vertexBufferSize{inVertices.size() * sizeof(Vertex)};
         const size_t indexBufferSize{inIndices.size() * sizeof(uint32_t)};
 
-        GPUMeshBuffers newSurface{};
+        MeshBuffer newSurface{};
 
         newSurface.VertexBuffer =
                 CreateBuffer(vertexBufferSize,
@@ -137,7 +148,7 @@ namespace MamontEngine
 
         newSurface.IndexBuffer = CreateBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
-        AllocatedBuffer staging = CreateBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+        const AllocatedBuffer staging = CreateBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
         VmaAllocationInfo allocInfo;
         vmaGetAllocationInfo(Allocator, staging.Allocation, &allocInfo);
@@ -150,17 +161,19 @@ namespace MamontEngine
         ImmediateSubmit(
                 [&](VkCommandBuffer cmd)
                 {
-                    VkBufferCopy vertexCopy{0};
-                    vertexCopy.dstOffset = 0;
-                    vertexCopy.srcOffset = 0;
-                    vertexCopy.size      = vertexBufferSize;
+                    const VkBufferCopy vertexCopy = {
+                        .srcOffset = 0, 
+                        .dstOffset = 0, 
+                        .size = vertexBufferSize
+                    };
 
                     vkCmdCopyBuffer(cmd, staging.Buffer, newSurface.VertexBuffer.Buffer, 1, &vertexCopy);
 
-                    VkBufferCopy indexCopy{0};
-                    indexCopy.dstOffset = 0;
-                    indexCopy.srcOffset = vertexBufferSize;
-                    indexCopy.size      = indexBufferSize;
+                    const VkBufferCopy indexCopy = {
+                        .srcOffset = vertexBufferSize, 
+                        .dstOffset = 0, 
+                        .size = indexBufferSize
+                    };
 
                     vkCmdCopyBuffer(cmd, staging.Buffer, newSurface.IndexBuffer.Buffer, 1, &indexCopy);
                 });
@@ -176,9 +189,9 @@ namespace MamontEngine
 
     }
 
-    AllocatedImage VkContextDevice::CreateImage(const VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const
+    AllocatedImage VkContextDevice::CreateImage(const VkExtent3D& inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const
     {
-        AllocatedImage newImage;
+        AllocatedImage newImage {};
         newImage.ImageFormat = inFormat;
         newImage.ImageExtent = inSize;
 
@@ -189,31 +202,23 @@ namespace MamontEngine
         }
 
         // always allocate images on dedicated GPU memory
-        VmaAllocationCreateInfo allocinfo = {};
-        allocinfo.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
-        allocinfo.requiredFlags           = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        constexpr auto allocinfo = VmaAllocationCreateInfo {
+            .usage                   = VMA_MEMORY_USAGE_GPU_ONLY,
+            .requiredFlags           = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+        };
 
         VK_CHECK(vmaCreateImage(Allocator, &img_info, &allocinfo, &newImage.Image, &newImage.Allocation, nullptr));
 
+        const VkImageAspectFlags aspectFlag = inFormat == VK_FORMAT_D32_SFLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT  : VK_IMAGE_ASPECT_COLOR_BIT;
 
-        VkImageAspectFlags aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
-        if (inFormat == VK_FORMAT_D32_SFLOAT)
-        {
-            aspectFlag = VK_IMAGE_ASPECT_DEPTH_BIT;
-        }
-
-        VkImageViewCreateInfo view_info       = vkinit::imageview_create_info(inFormat, newImage.Image, aspectFlag);
-        view_info.subresourceRange.levelCount = img_info.mipLevels;
+        const VkImageViewCreateInfo view_info       = vkinit::imageview_create_info(inFormat, newImage.Image, aspectFlag, img_info.mipLevels);
 
         VK_CHECK(vkCreateImageView(Device, &view_info, nullptr, &newImage.ImageView));
-
-        fmt::println("Create Image 1");
-        //newImage.ImTextID = ImGui_ImplVulkan_AddTexture(DefaultSamplerLinear, newImage.ImageView, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         return newImage;
     }
 
-    AllocatedImage VkContextDevice::CreateImage(void *inData, VkExtent3D inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped)
+    AllocatedImage VkContextDevice::CreateImage(void *inData, const VkExtent3D& inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped)
     {
         const size_t          data_size    = inSize.depth * inSize.width * inSize.height * 4;
         const AllocatedBuffer uploadbuffer = CreateBuffer(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
@@ -319,17 +324,6 @@ namespace MamontEngine
 
             inDeletionQueue.PushFunction([=]() { 
                 vkDestroyCommandPool(Device, GetFrameAt(i).CommandPool, nullptr); });
-
-
-            // Create Viewport Command Buffers
-            VK_CHECK(vkCreateCommandPool(Device, &commandPoolInfo, nullptr, &GetFrameAt(i).Viewport.ViewportCommandPool));
-
-            const VkCommandBufferAllocateInfo cmdViewportAllocInfo = vkinit::command_buffer_allocate_info(GetFrameAt(i).Viewport.ViewportCommandPool, 1);
-            VK_CHECK(vkAllocateCommandBuffers(Device, &cmdViewportAllocInfo, &GetFrameAt(i).Viewport.ViewportCommandBuffer));
-
-            inDeletionQueue.PushFunction([=]() { 
-                vkDestroyCommandPool(Device, GetFrameAt(i).Viewport.ViewportCommandPool, nullptr); 
-                });
         }
 
         VK_CHECK(vkCreateCommandPool(Device, &commandPoolInfo, nullptr, &ImmCommandPool));
@@ -365,7 +359,7 @@ namespace MamontEngine
     {
         vkDestroyFence(Device, ImmFence, nullptr);
 
-        for (size_t i = 0; i < FRAME_OVERLAP; i++)
+        for (size_t i = 0; i < FRAME_OVERLAP; ++i)
         {
             vkDestroyFence(Device, GetFrameAt(i).RenderFence, nullptr);
             vkDestroySemaphore(Device, GetFrameAt(i).SwapchainSemaphore, nullptr);
@@ -418,7 +412,7 @@ namespace MamontEngine
         vkDestroyDescriptorSetLayout(Device, DrawImageDescriptorLayout, nullptr);
         vkDestroyDescriptorSetLayout(Device, GPUSceneDataDescriptorLayout, nullptr);
 
-        for (size_t i = 0; i < FRAME_OVERLAP; i++)
+        for (size_t i = 0; i < FRAME_OVERLAP; ++i)
         {
             GetFrameAt(i).FrameDescriptors.DestroyPools(Device);
         }
@@ -500,5 +494,10 @@ namespace MamontEngine
     FrameData &VkContextDevice::GetCurrentFrame()
     {
         return m_Frames.at(m_FrameNumber % FRAME_OVERLAP);
+    }
+
+    VkPhysicalDevice VkContextDevice::GetPhysicalDevice() const
+    {
+        return m_PhysicalDevice->GetDevice();
     }
 }

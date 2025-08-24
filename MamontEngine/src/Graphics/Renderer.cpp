@@ -34,8 +34,8 @@ namespace MamontEngine
     
     void Renderer::InitImGuiRenderer(VkDescriptorPool &outDescPool)
     {
-        m_ImGuiRenderer = std::make_unique<ImGuiRenderer>();
-        m_ImGuiRenderer->Init(m_DeviceContext, m_Window->GetWindow(), m_DeviceContext.Swapchain.GetImageFormat(), outDescPool);
+        m_ImGuiRenderer = std::make_unique<ImGuiRenderer>(
+            m_DeviceContext, m_Window->GetWindow(), m_DeviceContext.Swapchain.GetImageFormat(), outDescPool);
     }
 
     void Renderer::InitPipelines()
@@ -203,7 +203,9 @@ namespace MamontEngine
         const AllocatedBuffer gpuSceneDataBuffer =
                 m_DeviceContext.CreateBuffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-        m_DeviceContext.GetCurrentFrame().Deleteions.PushFunction([=, this]() { m_DeviceContext.DestroyBuffer(gpuSceneDataBuffer); });
+        m_DeviceContext.GetCurrentFrame().Deleteions.PushFunction([=, this]() { 
+            m_DeviceContext.DestroyBuffer(gpuSceneDataBuffer); 
+            });
 
         // write the buffer
         GPUSceneData *sceneUniformData = (GPUSceneData *)gpuSceneDataBuffer.Allocation->GetMappedData();

@@ -4,12 +4,12 @@ namespace MamontEngine
 {
     struct AllocatedBuffer
     {
-        VkBuffer          Buffer;
-        VmaAllocation     Allocation;
+        VkBuffer          Buffer{VK_NULL_HANDLE};
+        VmaAllocation     Allocation{VK_NULL_HANDLE};
         VmaAllocationInfo Info;
     };
 
-    struct GPUMeshBuffers
+    struct MeshBuffer
     {
         AllocatedBuffer IndexBuffer;
         AllocatedBuffer VertexBuffer;

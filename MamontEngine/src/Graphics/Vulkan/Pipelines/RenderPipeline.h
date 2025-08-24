@@ -1,5 +1,6 @@
 #pragma once 
-#include <Graphics/Vulkan/VkMaterial.h>
+
+#include "Graphics/Vulkan/Materials/Material.h"
 #include "Core/RenderData.h"
 
 namespace MamontEngine
@@ -19,7 +20,7 @@ namespace MamontEngine
         MaterialPipeline OpaquePipeline;
         MaterialPipeline TransparentPipeline;
 
-        VkDescriptorSetLayout Layout;
+        VkDescriptorSetLayout Layout{VK_NULL_HANDLE};
 
         DrawContext MainDrawContext;
 

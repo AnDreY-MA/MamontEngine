@@ -37,10 +37,10 @@ namespace MamontEngine
         struct PoolSizeRatio
         {
             VkDescriptorType type;
-            float            Ratio;
+            float Ratio{0.0f};
         };
 
-        void Init(VkDevice inDevice, const uint32_t inInitialSets, std::span<PoolSizeRatio> inPoolRatios);
+        void Init(VkDevice inDevice, const uint32_t inInitialSets, const std::span<PoolSizeRatio> inPoolRatios);
         void ClearPools(VkDevice inDevice);
         void DestroyPools(VkDevice inDevice);
 
@@ -53,7 +53,7 @@ namespace MamontEngine
         std::vector<PoolSizeRatio>    m_Ratios;
         std::vector<VkDescriptorPool> m_FullPools;
         std::vector<VkDescriptorPool> m_ReadyPools;
-        uint32_t                      m_SetsPerPool;
+        uint32_t                      m_SetsPerPool{0};
     };
 
     struct DescriptorWriter

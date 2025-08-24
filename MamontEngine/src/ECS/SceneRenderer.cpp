@@ -13,6 +13,7 @@ namespace MamontEngine
     }
     SceneRenderer::~SceneRenderer() 
     {
+        Clear();
     }
 
     void SceneRenderer::Clear()

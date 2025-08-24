@@ -21,9 +21,7 @@ struct MPipeline
 namespace MamontEngine
 {
     class Scene;
-
     
-
 	class MEngine
 	{
     public:
@@ -93,7 +91,6 @@ namespace MamontEngine
         std::shared_ptr<Scene> m_Scene;
 
         SDL_Event* m_InputEvent;
-
 
         std::shared_ptr<Camera> m_MainCamera;
 	

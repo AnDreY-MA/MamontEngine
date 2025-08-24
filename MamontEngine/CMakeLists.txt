@@ -7,10 +7,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 file(GLOB src "src/*.h" "src/*.cpp" "src/*.hpp")
 file(GLOB_RECURSE Core "src/Core/*.h" "src/Core/*.hpp" "src/Core/*.cpp")
 file(GLOB_RECURSE Renderer "src/Graphics/*.h" "src/Graphics/*.hpp" "src/Graphics/*.cpp")
+file(GLOB_RECURSE Devices "src/Graphics/Devices/*.h" "src/Graphics/Devices/*.hpp" "src/Graphics/Devices/*.cpp")
+file(GLOB_RECURSE Materials "src/Graphics/Materials/*.h" "src/Graphics/Materials/*.hpp" "src/Graphics/Materials/*.cpp")
 file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.hpp" "src/Utils/*.cpp")
 file(GLOB_RECURSE ECS "src/ECS/*.h" "src/ECS/*.hpp" "src/ECS/*.cpp")
 file(GLOB_RECURSE UI "src/UI/*.h" "src/UI/*.hpp" "src/UI/*.cpp")
-set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Utils} ${ECS} ${UI})
+set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Devices} ${Materials} ${Utils} ${ECS} ${UI})
 
 # Add library
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})

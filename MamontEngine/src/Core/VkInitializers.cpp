@@ -106,17 +106,22 @@ VkSubmitInfo2 MamontEngine::vkinit::submit_info(const VkCommandBufferSubmitInfo 
 }
 //< init_submit
 
-VkPresentInfoKHR MamontEngine::vkinit::present_info()
+VkPresentInfoKHR MamontEngine::vkinit::present_info(const VkSwapchainKHR *swapchains,
+                                                    const uint32_t        swapchainCount,
+                                                    const VkSemaphore    *waitSemaphores,
+                                                    const uint32_t        waitSemaphoreCount,
+                                                    const uint32_t       *pImageIndices)
 {
-    VkPresentInfoKHR info = {};
-    info.sType            = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    info.pNext            = 0;
-
-    info.swapchainCount     = 0;
-    info.pSwapchains        = nullptr;
-    info.pWaitSemaphores    = nullptr;
-    info.waitSemaphoreCount = 0;
-    info.pImageIndices      = nullptr;
+    const auto info = VkPresentInfoKHR {
+        .sType            = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .pNext            = 0,
+        .waitSemaphoreCount = waitSemaphoreCount,
+        .pWaitSemaphores    = waitSemaphores,
+        .swapchainCount     = swapchainCount,
+        .pSwapchains        = swapchains,
+        .pImageIndices      = pImageIndices,
+        .pResults = nullptr
+    };
 
     return info;
 }
@@ -282,7 +287,7 @@ VkImageCreateInfo MamontEngine::vkinit::image_create_info(VkFormat format, VkIma
     return info;
 }
 
-VkImageViewCreateInfo MamontEngine::vkinit::imageview_create_info(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags)
+VkImageViewCreateInfo MamontEngine::vkinit::imageview_create_info(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, const uint32_t inLayerCount)
 {
     // build a image-view for the depth image to use for rendering
     VkImageViewCreateInfo info = {};
@@ -295,7 +300,7 @@ VkImageViewCreateInfo MamontEngine::vkinit::imageview_create_info(VkFormat forma
     info.subresourceRange.baseMipLevel   = 0;
     info.subresourceRange.levelCount     = 1;
     info.subresourceRange.baseArrayLayer = 0;
-    info.subresourceRange.layerCount     = 1;
+    info.subresourceRange.layerCount     = inLayerCount;
     info.subresourceRange.aspectMask     = aspectFlags;
 
     return info;
