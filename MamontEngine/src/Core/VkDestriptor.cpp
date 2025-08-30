@@ -4,10 +4,11 @@ namespace MamontEngine
 {
     void DescriptorLayoutBuilder::AddBinding(const uint32_t inBinding, VkDescriptorType inType)
     {
-        VkDescriptorSetLayoutBinding newBind{};
-        newBind.binding         = inBinding;
-        newBind.descriptorCount = 1;
-        newBind.descriptorType  = inType;
+        const VkDescriptorSetLayoutBinding newBind = {
+            .binding         = inBinding,
+            .descriptorType = inType,
+            .descriptorCount = 1,
+        };
 
         m_Bindings.push_back(newBind);
     }
@@ -41,7 +42,7 @@ namespace MamontEngine
     void DescriptorAllocator::init_pool(VkDevice inDevice, const uint32_t inMaxSets, std::span<PoolSizeRatio> inPoolRatios)
     {
         std::vector<VkDescriptorPoolSize> poolSizes;
-        for (auto ratio : inPoolRatios)
+        for (const auto &ratio : inPoolRatios)
         {
             poolSizes.push_back(VkDescriptorPoolSize{.type = ratio.Type, .descriptorCount = uint32_t(ratio.Ratio * inMaxSets)});
         }
@@ -109,13 +110,13 @@ namespace MamontEngine
 
     void DescriptorAllocatorGrowable::DestroyPools(VkDevice inDevice)
     {
-        for (auto p : m_ReadyPools)
+        for (const auto& p : m_ReadyPools)
         {
             vkDestroyDescriptorPool(inDevice, p, nullptr);
         }
         m_ReadyPools.clear();
 
-        for (auto p : m_FullPools)
+        for (const auto &p : m_FullPools)
         {
             vkDestroyDescriptorPool(inDevice, p, nullptr);
         }
@@ -197,7 +198,7 @@ namespace MamontEngine
 
     void DescriptorWriter::WriteImage(const int inBinding, VkImageView inImage, VkSampler inSampler, VkImageLayout inLayout, VkDescriptorType inType)
     {
-        VkDescriptorImageInfo &info = ImageInfos.emplace_back(VkDescriptorImageInfo{.sampler = inSampler, .imageView = inImage, .imageLayout = inLayout});
+        const VkDescriptorImageInfo &info = ImageInfos.emplace_back(VkDescriptorImageInfo{.sampler = inSampler, .imageView = inImage, .imageLayout = inLayout});
 
         VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 
@@ -211,7 +212,7 @@ namespace MamontEngine
     }
     void DescriptorWriter::WriteBuffer(const int inBinding, VkBuffer inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType)
     {
-        VkDescriptorBufferInfo &info = BufferInfos.emplace_back(VkDescriptorBufferInfo{.buffer = inBuffer, .offset = inOffset, .range = inSize});
+        const VkDescriptorBufferInfo &info = BufferInfos.emplace_back(VkDescriptorBufferInfo{.buffer = inBuffer, .offset = inOffset, .range = inSize});
 
         VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 
@@ -230,7 +231,7 @@ namespace MamontEngine
         Writes.clear();
         BufferInfos.clear();
     }
-    void DescriptorWriter::UpdateSet(VkDevice inDevice, VkDescriptorSet inSet)
+    void DescriptorWriter::UpdateSet(const VkDevice inDevice, VkDescriptorSet inSet)
     {
         for (VkWriteDescriptorSet &write : Writes)
         {

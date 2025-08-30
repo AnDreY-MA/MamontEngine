@@ -6,7 +6,7 @@
 
 namespace MamontEngine
 {
-    Mesh::Mesh(VkContextDevice &inDevice) : Device(inDevice)
+    Mesh::Mesh(const VkContextDevice &inDevice) : Device(inDevice)
     {
 
     }
@@ -17,20 +17,19 @@ namespace MamontEngine
 
     void Mesh::Draw(const glm::mat4& inTopMatrix, DrawContext& inContext)   
     {
-        for (auto& node : Nodes)
+        for (const auto& node : Nodes)
         {
             if (!node)
                 continue;
-            auto &primitive = node->Primitive;
+            const auto &primitive = node->Primitive;
             if (!primitive)
                 continue;
 
             const glm::mat4 nodeMatrix = inTopMatrix * node->WorldTransform;
-            
 
-            for (auto &surface : primitive->Surfaces)
+            for (const auto &surface : primitive->Surfaces)
             {
-                RenderObject def(surface.Count,
+                const RenderObject def(surface.Count,
                                  surface.StartIndex,
                                  primitive->Buffers.IndexBuffer.Buffer,
                                  &surface.Material->Data,
@@ -52,13 +51,13 @@ namespace MamontEngine
 
     void Mesh::ClearAll()
     {
-        for (auto &[k, v] : Primitives)
+        for (const auto &[k, v] : Primitives)
         {
             Device.DestroyBuffer(v->Buffers.IndexBuffer);
             Device.DestroyBuffer(v->Buffers.VertexBuffer);
         }
 
-        for (auto &[k, v] : Images)
+        for (const auto &[k, v] : Images)
         {
             if (v.Image == Device.ErrorCheckerboardImage.Image)
             {
@@ -67,8 +66,8 @@ namespace MamontEngine
             Device.DestroyImage(v);
         }
 
-        VkDevice dv = Device.Device;
-        for (auto &sampler : Samplers)
+        const VkDevice dv = Device.Device;
+        for (const auto &sampler : Samplers)
         {
             vkDestroySampler(dv, sampler, nullptr);
         }

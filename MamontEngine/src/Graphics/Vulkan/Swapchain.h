@@ -28,7 +28,11 @@ namespace MamontEngine
         {
             return m_SwapchainImageViews.at(inIndex);
         }
-        std::vector<VkImageView> GetImageViews()
+        const VkImageView &GetImageView(const size_t inIndex) const
+        {
+            return m_SwapchainImageViews.at(inIndex);
+        }
+        std::vector<VkImageView> GetImageViews() const
         {
             return m_SwapchainImageViews;
         }
@@ -38,7 +42,7 @@ namespace MamontEngine
             return m_SwapchainExtent;
         }
 
-        VkFormat GetImageFormat()
+        VkFormat GetImageFormat() const
         {
             return m_SwapchainImageFormat;
         }

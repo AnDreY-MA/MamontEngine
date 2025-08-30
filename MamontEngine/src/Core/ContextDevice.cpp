@@ -4,7 +4,7 @@
 #include "Window.h"
 #include "VkInitializers.h"
 #include "VkImages.h"
-#include "Graphics/Vulkan/GPUBuffer.h"
+#include "Graphics/Vulkan/MeshBuffer.h"
 #include <glm/gtx/transform.hpp>
 
 #include <vk_mem_alloc.h>
@@ -143,7 +143,10 @@ namespace MamontEngine
                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                              VMA_MEMORY_USAGE_GPU_ONLY);
 
-        VkBufferDeviceAddressInfo deviceAddressInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = newSurface.VertexBuffer.Buffer};
+        const VkBufferDeviceAddressInfo deviceAddressInfo = {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, 
+            .buffer = newSurface.VertexBuffer.Buffer
+        };
         newSurface.VertexBufferAddress              = vkGetBufferDeviceAddress(Device, &deviceAddressInfo);
 
         newSurface.IndexBuffer = CreateBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
@@ -304,7 +307,7 @@ namespace MamontEngine
         VK_CHECK(vkWaitForFences(Device, 1, &ImmFence, true, 9999999999));
     }
 
-    void VkContextDevice::DestroyImage(const AllocatedImage &inImage)
+    void VkContextDevice::DestroyImage(const AllocatedImage &inImage) const
     {
         vkDestroyImageView(Device, inImage.ImageView, nullptr);
         vmaDestroyImage(Allocator, inImage.Image, inImage.Allocation);

@@ -1,6 +1,6 @@
 #pragma once 
 
-#include "Graphics/Vulkan/GPUBuffer.h"
+#include "Graphics/Vulkan/MeshBuffer.h"
 #include "Graphics/Vulkan/Materials/Material.h"
 
 #include "Graphics/Vulkan/Image.h"
@@ -40,7 +40,7 @@ namespace MamontEngine
 	struct Mesh
     {
     public:
-        explicit Mesh(VkContextDevice &inDevice);
+        explicit Mesh(const VkContextDevice &inDevice);
 
         ~Mesh();
 
@@ -79,7 +79,7 @@ namespace MamontEngine
 
     private:
         void ClearAll();
-        VkContextDevice &Device;
+        const VkContextDevice &Device;
         //std::vector<Vertex> Vertices;
     };
 }

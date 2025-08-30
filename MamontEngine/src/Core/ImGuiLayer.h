@@ -2,7 +2,7 @@
 
 namespace MamontEngine
 {
-    class ImGuiLayer
+    class ImGuiLayer : NonMovable
     {
     public:
         virtual ~ImGuiLayer() = default;

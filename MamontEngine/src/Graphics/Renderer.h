@@ -22,7 +22,7 @@ namespace MamontEngine
         int   DrawCallCount{0};
     };
 
-    class Renderer 
+    class Renderer : public NonMovable
 	{
     public:
         Renderer(VkContextDevice &inDeviceContext, const std::shared_ptr<WindowCore>& inWindow);

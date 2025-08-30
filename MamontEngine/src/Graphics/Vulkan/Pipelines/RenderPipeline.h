@@ -15,7 +15,7 @@ namespace MamontEngine
         ~RenderPipeline() = default;
 
         void Draw(VkCommandBuffer inCmd, const VkDescriptorSet& globalDescriptor, 
-             GPUSceneData &inSceneData, const VkExtent2D& inDrawExtent);
+             const GPUSceneData &inSceneData, const VkExtent2D& inDrawExtent);
 
         MaterialPipeline OpaquePipeline;
         MaterialPipeline TransparentPipeline;

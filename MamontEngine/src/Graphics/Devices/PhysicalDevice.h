@@ -2,7 +2,7 @@
 
 namespace MamontEngine
 {
-	class PhysicalDevice
+    class PhysicalDevice : public NonMovable
 	{
     public:
         explicit PhysicalDevice(VkPhysicalDevice inDevice);

@@ -66,7 +66,7 @@ namespace MamontEngine
         void WriteBuffer(const int inBinding, VkBuffer inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType);
 
         void Clear();
-        void UpdateSet(VkDevice inDevice, VkDescriptorSet inSet);
+        void UpdateSet(const VkDevice inDevice, VkDescriptorSet inSet);
     };
 }
     

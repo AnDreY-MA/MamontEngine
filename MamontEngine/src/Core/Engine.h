@@ -6,7 +6,7 @@
 #include "FrameData.h"
 #include "Window.h"
 #include "ContextDevice.h"
-#include "Graphics/Vulkan/GPUBuffer.h"
+#include "Graphics/Vulkan/MeshBuffer.h"
 #include "Graphics/Renderer.h"
 #include "ImGuiRenderer.h"
 #include <ECS/SceneRenderer.h>

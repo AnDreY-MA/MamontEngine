@@ -86,7 +86,7 @@ namespace MamontEngine
 
     static bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
     {
-        const std::array<glm::vec3, 8> corners{
+        constexpr std::array<glm::vec3, 8> corners{
                 glm::vec3{1, 1, 1},
                 glm::vec3{1, 1, -1},
                 glm::vec3{1, -1, 1},
@@ -122,14 +122,13 @@ namespace MamontEngine
         return true;
     }
 
-    void RenderPipeline::Draw(VkCommandBuffer inCmd, const VkDescriptorSet& globalDescriptor,
-                              GPUSceneData& inSceneData,
+    void RenderPipeline::Draw(VkCommandBuffer inCmd, const VkDescriptorSet& globalDescriptor, const GPUSceneData &inSceneData,
                               const VkExtent2D &inDrawExtent)
     {
         std::vector<uint32_t> opaque_draws;
         opaque_draws.reserve(MainDrawContext.OpaqueSurfaces.size());
 
-        for (int i = 0; i < MainDrawContext.OpaqueSurfaces.size(); i++)
+        for (size_t i = 0; i < MainDrawContext.OpaqueSurfaces.size(); i++)
         {
             if (is_visible(MainDrawContext.OpaqueSurfaces[i], inSceneData.Viewproj))
             {
@@ -140,7 +139,7 @@ namespace MamontEngine
         std::vector<uint32_t> transp_draws;
         transp_draws.reserve(MainDrawContext.TransparentSurfaces.size());
 
-        for (int i = 0; i < MainDrawContext.TransparentSurfaces.size(); i++)
+        for (size_t i = 0; i < MainDrawContext.TransparentSurfaces.size(); i++)
         {
             if (is_visible(MainDrawContext.TransparentSurfaces[i], inSceneData.Viewproj))
             {

@@ -44,12 +44,23 @@ namespace MamontEngine
         }
     }
 
-
-    static std::optional<AllocatedImage> load_image(VkContextDevice &inDeviece, fastgltf::Asset &asset, fastgltf::Image &image)
+    static std::optional<AllocatedImage> load_image(VkContextDevice &inDevice, fastgltf::Asset &asset, fastgltf::Image &image)
     {
         AllocatedImage newImage{};
 
         int width, height, nrChannels;
+
+        auto process_pixels = [&](unsigned char *data) -> bool
+        {
+            if (!data)
+                return false;
+            const VkExtent3D imagesize{(uint32_t)width, (uint32_t)height, 1u};
+            newImage = inDevice.CreateImage(
+                    data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, /*mip=*/false);
+            stbi_image_free(data);
+
+            return newImage.Image != VK_NULL_HANDLE;
+        };
 
         std::visit(
                 fastgltf::visitor{
@@ -58,44 +69,22 @@ namespace MamontEngine
                         {
                             assert(filePath.fileByteOffset == 0);
 
-                            const std::string path(filePath.uri.path().begin(),
-                                                   filePath.uri.path().end());
+                            const std::string path(filePath.uri.path().begin(), filePath.uri.path().end());
                             unsigned char    *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
-                            if (data)
-                            {
-                                VkExtent3D imagesize;
-                                imagesize.width  = width;
-                                imagesize.height = height;
-                                imagesize.depth  = 1;
-
-                                newImage = inDeviece.CreateImage(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
-
-                                stbi_image_free(data);
-                            }
+                            process_pixels(data);
                         },
                         [&](fastgltf::sources::Vector &vector)
                         {
                             unsigned char *data =
                                     stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
-                            if (data)
-                            {
-                                VkExtent3D imagesize;
-                                imagesize.width  = width;
-                                imagesize.height = height;
-                                imagesize.depth  = 1;
-
-                                newImage = inDeviece.CreateImage(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
-
-                                stbi_image_free(data);
-                            }
+                            process_pixels(data);
                         },
                         [&](fastgltf::sources::BufferView &view)
                         {
                             auto &bufferView = asset.bufferViews[view.bufferViewIndex];
                             auto &buffer     = asset.buffers[bufferView.bufferIndex];
 
-                            std::visit(fastgltf::visitor{
-                                                         [](auto &arg) {},
+                            std::visit(fastgltf::visitor{[](auto &arg) {},
                                                          [&](fastgltf::sources::Vector &vector)
                                                          {
                                                              unsigned char *data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
@@ -104,34 +93,21 @@ namespace MamontEngine
                                                                                                          &height,
                                                                                                          &nrChannels,
                                                                                                          4);
-                                                             if (data)
-                                                             {
-                                                                 VkExtent3D imagesize;
-                                                                 imagesize.width  = width;
-                                                                 imagesize.height = height;
-                                                                 imagesize.depth  = 1;
-
-                                                                 newImage = inDeviece.CreateImage(
-                                                                         data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
-
-                                                                 stbi_image_free(data);
-                                                             }
+                                                             process_pixels(data);
                                                          }},
                                        buffer.data);
                         },
                 },
                 image.data);
 
-        
+
         if (newImage.Image == VK_NULL_HANDLE)
         {
             fmt::println("Load Image(): image = NULL");
             return {};
         }
-        else
-        {
-            return newImage;
-        }
+
+        return newImage;
     }
 
     static std::vector<AllocatedImage> LoadTexture(VkContextDevice &inDeviece, Mesh &inFile, fastgltf::Asset &gltf)
@@ -469,7 +445,7 @@ namespace MamontEngine
             fastgltf::Node        &node      = gltf.nodes[i];
             std::shared_ptr<Mesh::Node> &sceneNode = nodes[i];
 
-            for (auto &c : node.children)
+            for (const auto &c : node.children)
             {
                 sceneNode->Children.push_back(nodes[c]);
                 nodes[c]->Parent = sceneNode;
@@ -477,7 +453,7 @@ namespace MamontEngine
 
          }
 
-        for (auto &node : nodes)
+        for (const auto &node : nodes)
         {
             if (node->Parent.lock() == nullptr)
             {

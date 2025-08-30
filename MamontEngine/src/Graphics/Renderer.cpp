@@ -208,8 +208,20 @@ namespace MamontEngine
             });
 
         // write the buffer
-        GPUSceneData *sceneUniformData = (GPUSceneData *)gpuSceneDataBuffer.Allocation->GetMappedData();
-        *sceneUniformData              = m_SceneRenderer->GetGPUSceneData();
+        void *mappedPtr                = gpuSceneDataBuffer.Allocation->GetMappedData();
+        if (!mappedPtr)
+        {
+            // Логируем ошибку и безопасно выходим (или альтернативно бросаем исключение)
+            fmt::println("GPUSceneData buffer mapping returned nullptr");
+            return;
+        }
+
+        // Проверка, что структура POD/тривиальна (рекомендуется)
+        static_assert(std::is_standard_layout<GPUSceneData>::value, "GPUSceneData must be standard layout");
+        static_assert(std::is_trivially_copyable<GPUSceneData>::value, "GPUSceneData must be trivially copyable");
+
+        const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
+        std::memcpy(mappedPtr, &sceneData, sizeof(GPUSceneData));
 
         const VkDescriptorSet &globalDescriptor = m_DeviceContext.GetCurrentFrame().FrameDescriptors.Allocate(
                 m_DeviceContext.Device, m_DeviceContext.GPUSceneDataDescriptorLayout /*, &allocArrayInfo*/);
@@ -218,7 +230,7 @@ namespace MamontEngine
         writer.WriteBuffer(0, gpuSceneDataBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         writer.UpdateSet(m_DeviceContext.Device, globalDescriptor);
 
-        m_RenderPipeline->Draw(inCmd, globalDescriptor, m_SceneRenderer->GetGPUSceneData(), m_DrawExtent);
+        m_RenderPipeline->Draw(inCmd, globalDescriptor, sceneData, m_DrawExtent);
 
         /*stats.DrawCallCount = 0;
         stats.TriangleCount = 0;*/

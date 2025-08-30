@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphics/Vulkan/GPUBuffer.h"
+#include "Graphics/Vulkan/MeshBuffer.h"
 #include "Graphics/Vulkan/Image.h"
 #include "Graphics/Vulkan/Materials/Material.h"
 #include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
@@ -37,7 +37,7 @@ namespace MamontEngine
 
         void InitDefaultImages();
 
-        void DestroyImage(const AllocatedImage &inImage);
+        void DestroyImage(const AllocatedImage &inImage) const;
 
         void            ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction) const;
 
@@ -109,8 +109,6 @@ namespace MamontEngine
         VkRenderPass RenderPass;
 
         RenderPipeline* RenderPipeline;
-
-        VkDescriptorSet ViewportDescriptor;
 
     private:
         std::array<FrameData, FRAME_OVERLAP> m_Frames{};

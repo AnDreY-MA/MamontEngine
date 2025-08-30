@@ -30,6 +30,25 @@ struct GPUDrawPushConstants
     VkDeviceAddress VertexBuffer;
 };
 
+struct NonCopyable
+{
+    inline constexpr NonCopyable() {}
+
+    NonCopyable(const NonCopyable &) = delete;
+    NonCopyable &operator=(const NonCopyable &) = delete;
+
+    NonCopyable(NonCopyable &&) = default;
+    NonCopyable &operator=(NonCopyable &&) = default;
+};
+
+struct NonMovable : public NonCopyable
+{
+    inline constexpr NonMovable() {}
+
+    NonMovable(NonMovable &&)            = delete;
+    NonMovable &operator=(NonMovable &&) = delete;
+};
+
 #define VK_CHECK(x)                                                                                                                                            \
     do                                                                                                                                                         \
     {                                                                                                                                                          \
