@@ -5,7 +5,6 @@
 #include "Core/Camera.h"
 #include "ECS/SceneRenderer.h"
 
-
 namespace MamontEngine
 {
     class Entity;

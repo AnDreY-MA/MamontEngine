@@ -25,7 +25,9 @@ namespace MamontEngine
         float     SpherRadius{0.0f};
     };
 
-    struct GeoSurface
+    struct VkContextDevice;
+
+    struct Primitive
     {
         uint32_t StartIndex{0};
         uint32_t Count{0};
@@ -35,51 +37,33 @@ namespace MamontEngine
         std::shared_ptr<GLTFMaterial> Material;
     };
 
-    struct VkContextDevice;
-
-	struct Mesh
+    struct NewMesh
     {
-    public:
-        explicit Mesh(const VkContextDevice &inDevice);
+        std::vector<std::unique_ptr<Primitive>> Primitives;
 
-        ~Mesh();
+        MeshBuffer Buffer;
 
-        struct Primitive
+    };
+
+    struct Node
+    {
+        Node *Parent{nullptr};
+        std::vector<Node *> Children;
+        NewMesh            *Mesh;
+
+        glm::mat4 Matrix;
+        /*glm::vec3 Translation{};
+        glm::vec3 Scale{1.f};*/
+
+        std::string Name;
+
+        ~Node()
         {
-            std::vector<GeoSurface> Surfaces;
-            MeshBuffer          Buffers;
-        };
-
-        struct Node
-        {
-            std::weak_ptr<Node>                 Parent;
-            std::vector<std::shared_ptr<Node>>  Children;
-            glm::mat4                           LocalTransform;
-            glm::mat4                           WorldTransform{1.f};
-
-            std::shared_ptr<Primitive> Primitive;
-
-            inline void RefreshTransform(const glm::mat4& inParentMatrix)
+            for (auto& child : Children)
             {
-                WorldTransform = inParentMatrix * LocalTransform;
+                delete child;
             }
-        };
+        }
 
-        std::vector<std::shared_ptr<Node>> Nodes;
-        std::unordered_map<std::string, std::shared_ptr<Primitive>>    Primitives; 
-        std::unordered_map<std::string, AllocatedImage>                Images;
-        std::unordered_map<std::string, std::shared_ptr<GLTFMaterial>> Materials;
-        std::vector<VkSampler>                                         Samplers;
-
-        DescriptorAllocatorGrowable DescriptorPool;
-
-        AllocatedBuffer MaterialDataBuffer; 
-
-        void Draw(const glm::mat4 &inTopMatrix, struct DrawContext &inContext);
-
-    private:
-        void ClearAll();
-        const VkContextDevice &Device;
-        //std::vector<Vertex> Vertices;
     };
 }

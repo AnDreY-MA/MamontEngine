@@ -35,6 +35,11 @@ namespace MamontEngine::VkPipelines
         return true;
     }
     
+    void PipelineBuilder::SetLayout(VkPipelineLayout inLayout)
+    {
+        m_PipelineLayout = inLayout;
+    }
+
     void PipelineBuilder::SetShaders(VkShaderModule inVertexShader, VkShaderModule inFragmentShader)
     {
         m_ShaderStages.clear();

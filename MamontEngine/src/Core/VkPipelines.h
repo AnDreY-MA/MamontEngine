@@ -13,6 +13,8 @@ namespace MamontEngine::VkPipelines
             Clear();
         }
 
+        void SetLayout(VkPipelineLayout inLayout);
+
         void SetShaders(VkShaderModule inVertexShader, VkShaderModule inFragmentShader);
         void SetInputTopology(VkPrimitiveTopology inTopology);
         void SetPolygonMode(VkPolygonMode inMode);
@@ -30,8 +32,6 @@ namespace MamontEngine::VkPipelines
 
         VkPipeline BuildPipline(VkDevice inDevice);
 
-        
-        VkPipelineLayout m_PipelineLayout;
 
     private:
         std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStages;
@@ -43,5 +43,7 @@ namespace MamontEngine::VkPipelines
         VkPipelineDepthStencilStateCreateInfo  m_DepthStencil;
         VkPipelineRenderingCreateInfo          m_RenderInfo;
         VkFormat                               m_ColorAttachmentformat;
+        VkPipelineLayout                       m_PipelineLayout;
+
     };
 }

@@ -4,6 +4,7 @@
 #include <ECS/Components/TagComponent.h>
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
+#include "Graphics/Mesh.h"
 
 #include "UI/UI.h"
 
@@ -136,8 +137,11 @@ namespace MamontEditor
             if (ImGui::MenuItem("Cube"))
             {
                 auto cube = m_Scene->CreateEntity("Cube");
-                auto file = loadGltf("D:/Repos/MamontEngine/MamontEngine/assets/cube.glb");
-                cube.AddComponent<MeshComponent>(*file);
+                const std::string cubeFile = "D:/Repos/MamontEngine/MamontEngine/assets/cube.glb";
+                const auto                      &contextDevice = MEngine::Get().GetContextDevice();
+                auto cubeModel     = std::make_shared<MeshModel>(contextDevice);
+                cubeModel->Load(cubeFile);
+                cube.AddComponent<MeshComponent>(cubeModel);
             }
 
             ImGui::EndMenu();

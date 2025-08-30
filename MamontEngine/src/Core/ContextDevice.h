@@ -30,10 +30,10 @@ namespace MamontEngine
         AllocatedBuffer CreateBuffer(const size_t inAllocSize, const VkBufferUsageFlags inUsage, const VmaMemoryUsage inMemoryUsage) const;
         void            DestroyBuffer(const AllocatedBuffer &inBuffer) const;
 
-        MeshBuffer CreateGPUMeshBuffer(std::span<uint32_t> inIndices, std::span<Vertex> inVertices);
+        MeshBuffer CreateGPUMeshBuffer(std::span<uint32_t> inIndices, std::span<Vertex> inVertices) const;
 
         AllocatedImage  CreateImage(const VkExtent3D& inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const;
-        AllocatedImage CreateImage(void *inData, const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped);
+        AllocatedImage CreateImage(void *inData, const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const;
 
         void InitDefaultImages();
 

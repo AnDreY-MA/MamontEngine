@@ -11,9 +11,9 @@ namespace MamontEngine
         glm::mat4 View{glm::mat4(0.f)};
         glm::mat4 Proj{glm::mat4(0.f)};
         glm::mat4 Viewproj{glm::mat4(0.f)};
-        glm::vec4 AmbientColor{glm::vec4(0.f)};
-        glm::vec4 SunlightDirection{glm::vec4(0.f)};
-        glm::vec4 SunlightColor{glm::vec4(0.f)};
+        //glm::vec4 AmbientColor{glm::vec4(0.f)};
+        /*glm::vec4 SunlightDirection{glm::vec4(0.f)};
+        glm::vec4 SunlightColor{glm::vec4(0.f)};*/
     };
 
 	class SceneRenderer

@@ -157,8 +157,9 @@ namespace MamontEditor
                                          // MUI::BeginProperties();
                                          if (component.Mesh)
                                          {
-                                             ImGui::Text("Primitives count: %i", component.Mesh->Primitives.size());
-                                             ImGui::Text("Materials count: %i", component.Mesh->Materials.size());
+                                             //ImGui::Text("Nodes count: %i", component.Mesh->GetSizeNodes());
+                                             ImGui::Text("Meshes count: %i", component.Mesh->GetSizeMeshes());
+                                             ImGui::Text("Materials count: %i", component.Mesh->GetSizeMaterials());
                                          }
                                          
                                          

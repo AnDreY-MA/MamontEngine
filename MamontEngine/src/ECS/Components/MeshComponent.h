@@ -2,18 +2,19 @@
 
 namespace MamontEngine
 {
-    struct Mesh;
+    struct MeshModel;
+
 	struct MeshComponent
 	{
         MeshComponent() = default;
         MeshComponent(const MeshComponent &) = default;
 
-        explicit MeshComponent(const std::shared_ptr<Mesh> &inMesh) : Mesh(inMesh)
+        explicit MeshComponent(const std::shared_ptr<MeshModel> &inMesh) : Mesh(inMesh)
         {
             Dirty = true;
         }
 
-        std::shared_ptr<Mesh> Mesh;
+        std::shared_ptr<MeshModel> Mesh;
 
         bool Dirty{false};
 	};

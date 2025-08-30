@@ -5,6 +5,8 @@
 #include "ECS/Components/MeshComponent.h"
 #include "Graphics/Mesh.h"
 #include <Utils/Loader.h>
+#include "Graphics/Model.h"
+#include "Core/ContextDevice.h"
 
 namespace MamontEngine
 {
@@ -25,11 +27,14 @@ namespace MamontEngine
     void Scene::Init(VkContextDevice &inContextDevice)
     {
         const std::string structurePath = {RootDirectories + "/MamontEngine/assets/house2.glb"};
-        auto              structureFile = loadGltf(inContextDevice, structurePath);
-        assert(structureFile.has_value());
+        /*auto              structureFile = loadGltf(inContextDevice, structurePath);*/
+        std::shared_ptr<MeshModel> startModel = std::make_shared<MeshModel>(inContextDevice);
+        //MeshModel *startModel = new MeshModel(inContextDevice);
+        startModel->Load(structurePath);
+        assert(startModel);
 
         auto entity = CreateEntity("House");
-        entity.AddComponent<MeshComponent>(*structureFile);
+        entity.AddComponent<MeshComponent>(startModel);
     }
 
     void Scene::Update()
@@ -37,13 +42,9 @@ namespace MamontEngine
         const auto meshes = m_Registry.view<MeshComponent, TransformComponent>();
         for (const auto &&[entity, meshComponent, transform] : meshes.each())
         {
-            if (meshComponent.Mesh && !meshComponent.Mesh->Nodes.empty())
+            if (meshComponent.Mesh)
             {
-                for (auto &n : meshComponent.Mesh->Nodes)
-                {
-                    n->LocalTransform = transform.GetTransform();
-                    n->RefreshTransform({1.f});
-                }
+                meshComponent.Mesh->UpdateTransform(transform.GetTransform());
             }
 
             if (meshComponent.Dirty == true)

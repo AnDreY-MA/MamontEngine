@@ -4,6 +4,8 @@
 
 namespace MamontEngine
 {
+    struct PipelineData;
+
     enum class EMaterialPass : uint8_t
     {
         MAIN_COLOR = 0,
@@ -11,15 +13,9 @@ namespace MamontEngine
         OTHER
     };
 
-    struct MaterialPipeline
-    {
-        VkPipeline       Pipeline{VK_NULL_HANDLE};
-        VkPipelineLayout Layout{VK_NULL_HANDLE};
-    };
-
     struct MaterialInstance
     {
-        MaterialPipeline *Pipeline{nullptr};
+        std::shared_ptr<PipelineData> Pipeline;
         VkDescriptorSet   MaterialSet{VK_NULL_HANDLE};
         EMaterialPass     PassType;
     };
@@ -33,9 +29,17 @@ namespace MamontEngine
     {
         struct MaterialConstants
         {
-            glm::vec4 ColorFactors;
-            glm::vec4 Metal_rough_factors;
-            glm::vec4 Extra[14];
+            MaterialConstants() = default;
+
+            MaterialConstants(const glm::vec4& inColorFactor, const float inMetalicFactor, const float inRoughFactor)
+                : ColorFactors(inColorFactor), MetalicFactor(inMetalicFactor), RoughFactor(inRoughFactor)
+            {
+
+            }
+            glm::vec4 ColorFactors = glm::vec4(1.0f);
+
+            float MetalicFactor{1.f};
+            float RoughFactor{1.f};
         };
 
         struct MaterialResources

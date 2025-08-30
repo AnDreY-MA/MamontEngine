@@ -55,9 +55,6 @@ namespace MamontEngine
         VkPipelineLayout newLayout;
         VK_CHECK(vkCreatePipelineLayout(inDevice, &mesh_layout_info, nullptr, &newLayout));
 
-        OpaquePipeline.Layout      = newLayout;
-        TransparentPipeline.Layout = newLayout;
-
         VkPipelines::PipelineBuilder pipelineBuilder;
         pipelineBuilder.SetShaders(meshVertexShader, meshFragShader);
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
@@ -70,20 +67,35 @@ namespace MamontEngine
         pipelineBuilder.SetColorAttachmentFormat(inImageFormats.first);
         pipelineBuilder.SetDepthFormat(inImageFormats.second);
 
-        pipelineBuilder.m_PipelineLayout = newLayout;
+        pipelineBuilder.SetLayout(newLayout);
 
-        OpaquePipeline.Pipeline = pipelineBuilder.BuildPipline(inDevice);
+        OpaquePipeline          = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), newLayout);
 
+        //Transparent
         pipelineBuilder.EnableBlendingAdditive();
-
         pipelineBuilder.EnableDepthTest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
-        TransparentPipeline.Pipeline = pipelineBuilder.BuildPipline(inDevice);
+        TransparentPipeline          = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), newLayout);
 
         vkDestroyShaderModule(inDevice, meshFragShader, nullptr);
         vkDestroyShaderModule(inDevice, meshVertexShader, nullptr);
     }
 
+    void RenderPipeline::Destroy(VkDevice inDevice)
+    {
+        /*if (OpaquePipeline == nullptr)
+        {
+            fmt::println("OpaquePipeline == nullptr");
+        }
+        vkDestroyPipelineLayout(inDevice, OpaquePipeline->Layout, nullptr);
+        vkDestroyPipeline(inDevice, OpaquePipeline->Pipeline, nullptr);
+        if (TransparentPipeline == nullptr)
+        {
+            fmt::println("TransparentPipeline == nullptr");
+        }
+        vkDestroyPipelineLayout(inDevice, TransparentPipeline->Layout, nullptr);
+        vkDestroyPipeline(inDevice, TransparentPipeline->Pipeline, nullptr);*/
+    }
     static bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
     {
         constexpr std::array<glm::vec3, 8> corners{
@@ -147,11 +159,11 @@ namespace MamontEngine
             }
         }
 
-        MaterialPipeline *lastPipeline    = nullptr;
+        std::shared_ptr<PipelineData> lastPipeline    = nullptr;
         MaterialInstance *lastMaterial    = nullptr;
         VkBuffer          lastIndexBuffer = VK_NULL_HANDLE;
 
-        auto draw = [&](const RenderObject &r)
+        const auto draw = [&](const RenderObject &r)
         {
             if (r.Material != lastMaterial)
             {
@@ -187,12 +199,12 @@ namespace MamontEngine
         };
 
 
-        for (auto &r : opaque_draws)
+        for (const auto &r : opaque_draws)
         {
             draw(MainDrawContext.OpaqueSurfaces[r]);
         }
 
-        for (auto &r : transp_draws)
+        for (const auto &r : transp_draws)
         {
             draw(MainDrawContext.TransparentSurfaces[r]);
         }

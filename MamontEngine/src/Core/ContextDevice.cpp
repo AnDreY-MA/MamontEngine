@@ -116,14 +116,17 @@ namespace MamontEngine
 
     AllocatedBuffer VkContextDevice::CreateBuffer(const size_t inAllocSize, const VkBufferUsageFlags inUsage, const VmaMemoryUsage inMemoryUsage) const
     {
-        VkBufferCreateInfo bufferInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-        bufferInfo.pNext              = nullptr;
-        bufferInfo.size               = inAllocSize;
-        bufferInfo.usage              = inUsage;
+        const VkBufferCreateInfo bufferInfo = {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .pNext              = nullptr,
+            .size               = inAllocSize,
+            .usage = inUsage
+        };
 
-        VmaAllocationCreateInfo vmaAllocInfo = {};
-        vmaAllocInfo.usage                   = inMemoryUsage;
-        vmaAllocInfo.flags                   = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+        const VmaAllocationCreateInfo vmaAllocInfo = {
+            .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
+            .usage                   = inMemoryUsage,
+        };
         
         AllocatedBuffer newBuffer{};
         VK_CHECK(vmaCreateBuffer(Allocator, &bufferInfo, &vmaAllocInfo, &newBuffer.Buffer, &newBuffer.Allocation, &newBuffer.Info));
@@ -131,7 +134,7 @@ namespace MamontEngine
         return newBuffer;
     }
 
-    MeshBuffer VkContextDevice::CreateGPUMeshBuffer(std::span<uint32_t> inIndices, std::span<Vertex> inVertices)
+    MeshBuffer VkContextDevice::CreateGPUMeshBuffer(std::span<uint32_t> inIndices, std::span<Vertex> inVertices) const
     {
         const size_t vertexBufferSize{inVertices.size() * sizeof(Vertex)};
         const size_t indexBufferSize{inIndices.size() * sizeof(uint32_t)};
@@ -221,7 +224,7 @@ namespace MamontEngine
         return newImage;
     }
 
-    AllocatedImage VkContextDevice::CreateImage(void *inData, const VkExtent3D& inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped)
+    AllocatedImage VkContextDevice::CreateImage(void *inData, const VkExtent3D& inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const
     {
         const size_t          data_size    = inSize.depth * inSize.width * inSize.height * 4;
         const AllocatedBuffer uploadbuffer = CreateBuffer(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
@@ -299,8 +302,8 @@ namespace MamontEngine
 
         VK_CHECK(vkEndCommandBuffer(cmd));
 
-        VkCommandBufferSubmitInfo cmdInfo = vkinit::command_buffer_submit_info(cmd);
-        VkSubmitInfo2             submit  = vkinit::submit_info(&cmdInfo, nullptr, nullptr);
+        const VkCommandBufferSubmitInfo cmdInfo = vkinit::command_buffer_submit_info(cmd);
+        const VkSubmitInfo2             submit  = vkinit::submit_info(&cmdInfo, nullptr, nullptr);
 
         VK_CHECK(vkQueueSubmit2(GraphicsQueue, 1, &submit, ImmFence));
 
@@ -464,7 +467,7 @@ namespace MamontEngine
                     });
 
 
-        inFrame.OffscreenImage.ImTextID = ImGui_ImplVulkan_AddTexture(DefaultSamplerLinear, inImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        //inFrame.OffscreenImage.ImTextID = ImGui_ImplVulkan_AddTexture(DefaultSamplerLinear, inImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         //Image.DrawImage.ImTextID = ImGui_ImplVulkan_AddTexture(DefaultSamplerLinear, Image.DrawImage.ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 

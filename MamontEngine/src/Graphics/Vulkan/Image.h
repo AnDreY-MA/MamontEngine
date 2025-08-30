@@ -11,8 +11,6 @@ namespace MamontEngine
         VmaAllocation Allocation{VK_NULL_HANDLE};
         VkExtent3D    ImageExtent;
         VkFormat      ImageFormat;
-
-        VkDescriptorSet ImTextID;
     };
 
     struct Image
