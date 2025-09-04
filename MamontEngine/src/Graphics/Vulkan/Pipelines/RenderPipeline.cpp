@@ -160,8 +160,13 @@ namespace MamontEngine
         }
 
         std::shared_ptr<PipelineData> lastPipeline    = nullptr;
-        MaterialInstance *lastMaterial    = nullptr;
+        const MaterialInstance *lastMaterial    = nullptr;
         VkBuffer          lastIndexBuffer = VK_NULL_HANDLE;
+        VkBuffer          lastVertexBuffer = VK_NULL_HANDLE;
+
+        const VkViewport viewport = {0, 0, (float)inDrawExtent.width, (float)inDrawExtent.height, 0.f, 1.f};
+
+        const VkRect2D scissor = {0, 0, inDrawExtent};
 
         const auto draw = [&](const RenderObject &r)
         {
@@ -175,21 +180,26 @@ namespace MamontEngine
 
                     vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
 
-                    const VkViewport viewport = {0, 0, (float)inDrawExtent.width, (float)inDrawExtent.height, 0.f, 1.f};
-
                     vkCmdSetViewport(inCmd, 0, 1, &viewport);
 
-                    const VkRect2D scissor = {0, 0, inDrawExtent.width, inDrawExtent.height};
                     vkCmdSetScissor(inCmd, 0, 1, &scissor);
                 }
 
                 vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
             }
+            if (r.VertexBuffer != lastVertexBuffer)
+            {
+                constexpr VkDeviceSize offsets[1] = {0};
+                lastVertexBuffer                  = r.VertexBuffer;
+                vkCmdBindVertexBuffers(inCmd, 0, 1, &r.VertexBuffer, offsets);
+            }
+
             if (r.IndexBuffer != lastIndexBuffer)
             {
                 lastIndexBuffer = r.IndexBuffer;
                 vkCmdBindIndexBuffer(inCmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
             }
+            
 
             const GPUDrawPushConstants push_constants{r.Transform, r.VertexBufferAddress};
 

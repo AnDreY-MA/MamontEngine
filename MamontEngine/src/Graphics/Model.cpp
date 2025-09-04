@@ -123,7 +123,7 @@ namespace MamontEngine
         //}
 
         const VkDevice dv = m_ContextDevice.Device;
-        for (const auto &sampler : Samplers)
+        for (const auto &sampler : m_Samplers)
         {
             vkDestroySampler(dv, sampler, nullptr);
         }
@@ -157,6 +157,7 @@ namespace MamontEngine
                 const RenderObject def(primitive->Count,
                                        primitive->StartIndex,
                                        node->Mesh->Buffer.IndexBuffer.Buffer,
+                                       node->Mesh->Buffer.VertexBuffer.Buffer,
                                        &material->Data,
                                        primitive->Bound,
                                        nodeMatrix,
@@ -222,7 +223,7 @@ namespace MamontEngine
         LoadMaterials(gltf);
         
 
-        m_Meshes = LoadMesh(gltf);
+        LoadMesh(gltf);
         LoadNodes(gltf);
     
     }
@@ -243,11 +244,11 @@ namespace MamontEngine
             VkSampler newSampler;
             vkCreateSampler(inDevice, &sampl, nullptr, &newSampler);
 
-            Samplers.push_back(newSampler);
+            m_Samplers.push_back(newSampler);
         }
     }
 
-    void MeshModel::LoadMaterials(fastgltf::Asset& inFileAsset)
+    void MeshModel::LoadMaterials(const fastgltf::Asset &inFileAsset)
     {
         std::vector<std::shared_ptr<GLTFMaterial>> materials;
         materials.reserve(inFileAsset.materials.size());
@@ -260,7 +261,7 @@ namespace MamontEngine
                 (GLTFMetallic_Roughness::MaterialConstants *)MaterialDataBuffer.Info.pMappedData;
         DescriptorWriter Writer;
 
-        auto writerMaterial =
+        const auto writerMaterial =
                 [&](const EMaterialPass pass, GLTFMetallic_Roughness::MaterialResources materialResources, DescriptorAllocatorGrowable
                 &descriptorAllocator)
                 {
@@ -291,7 +292,7 @@ namespace MamontEngine
                     return matData;
                 };
 
-        for (fastgltf::Material &mat : inFileAsset.materials)
+        for (const fastgltf::Material &mat : inFileAsset.materials)
         {
             std::shared_ptr<GLTFMaterial> newMat = std::make_shared<GLTFMaterial>();
             materials.push_back(newMat);
@@ -326,7 +327,7 @@ namespace MamontEngine
                 const size_t sampler = inFileAsset.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
 
                 materialResources.ColorImage   = m_Images[img];
-                materialResources.ColorSampler = Samplers[sampler];
+                materialResources.ColorSampler = m_Samplers[sampler];
             }
 
             newMat->Data = writerMaterial(passType, materialResources, DescriptorPool);
@@ -334,10 +335,10 @@ namespace MamontEngine
             data_index++;
         }
 
-        Materials = materials;
+        m_Materials = materials;
     }
     
-    void MeshModel::LoadImages(fastgltf::Asset& inFileAsset)
+    void MeshModel::LoadImages(const fastgltf::Asset &inFileAsset)
     {
         for (const fastgltf::Image &image : inFileAsset.images)
         {
@@ -355,12 +356,12 @@ namespace MamontEngine
         }
     }
     
-    void MeshModel::LoadNodes(fastgltf::Asset &inFileAsset)
+    void MeshModel::LoadNodes(const fastgltf::Asset &inFileAsset)
     {
         std::vector<std::unique_ptr<Node>> nodes;
         nodes.reserve(inFileAsset.nodes.size());
 
-        for (fastgltf::Node &node : inFileAsset.nodes)
+        for (const fastgltf::Node &node : inFileAsset.nodes)
         {
             auto newNode = std::make_unique<Node>();
 
@@ -389,7 +390,7 @@ namespace MamontEngine
 
         for (size_t i = 0; i < inFileAsset.nodes.size(); i++)
         {
-            fastgltf::Node &node = inFileAsset.nodes[i];
+            const fastgltf::Node &node = inFileAsset.nodes[i];
 
             for (const auto &c : node.children)
             {
@@ -408,15 +409,14 @@ namespace MamontEngine
 
     }
 
-    std::vector<std::shared_ptr<NewMesh>> MeshModel::LoadMesh(fastgltf::Asset &inFileAsset)
+    void MeshModel::LoadMesh(const fastgltf::Asset &inFileAsset)
     {
-        std::vector<std::shared_ptr<NewMesh>> meshes;
+        
         std::vector<uint32_t>              indices;
         std::vector<Vertex>                vertices;
-        for (fastgltf::Mesh &mesh : inFileAsset.meshes)
+        for (const fastgltf::Mesh &mesh : inFileAsset.meshes)
         {
             std::shared_ptr<NewMesh> newmesh = std::make_shared<NewMesh>();
-            meshes.push_back(newmesh);
             //inFile.Primitives[mesh.name.c_str()] = newmesh;
             //newmesh->Name                  = mesh.name;
 
@@ -449,10 +449,6 @@ namespace MamontEngine
                                                                     {
                                                                         Vertex newvtx;
                                                                         newvtx.Position               = v;
-                                                                        newvtx.Normal                 = {1, 1, 1};
-                                                                        newvtx.Color                  = glm::vec4{1.f};
-                                                                        newvtx.UV_X                   = 0;
-                                                                        newvtx.UV_Y                   = 0;
                                                                         vertices[initial_vtx + index] = newvtx;
                                                                     });
                 }
@@ -463,7 +459,7 @@ namespace MamontEngine
 
                     fastgltf::iterateAccessorWithIndex<glm::vec3>(inFileAsset,
                                                                   inFileAsset.accessors[(*normals).second],
-                                                                  [&](glm::vec3 v, size_t index) { vertices[initial_vtx + index].Normal = v; });
+                                                                  [&](const glm::vec3& v, size_t index) { vertices[initial_vtx + index].Normal = v; });
                 }
 
                 const auto uv = p.findAttribute("TEXCOORD_0");
@@ -472,10 +468,9 @@ namespace MamontEngine
 
                     fastgltf::iterateAccessorWithIndex<glm::vec2>(inFileAsset,
                                                                   inFileAsset.accessors[(*uv).second],
-                                                                    [&](glm::vec2 v, size_t index)
+                                                                    [&](const glm::vec2& v, size_t index)
                                                                     {
-                                                                        vertices[initial_vtx + index].UV_X = v.x;
-                                                                        vertices[initial_vtx + index].UV_Y = v.y;
+                                                                        vertices[initial_vtx + index].UV = v;
                                                                     });
                 }
 
@@ -483,17 +478,19 @@ namespace MamontEngine
                 if (colors != p.attributes.end())
                 {
 
-                    fastgltf::iterateAccessorWithIndex<glm::vec4>(
-                            inFileAsset, inFileAsset.accessors[(*colors).second], [&](glm::vec4 v, size_t index) { vertices[initial_vtx + index].Color = v; });
+                    fastgltf::iterateAccessorWithIndex<glm::vec4>(inFileAsset,
+                                                                  inFileAsset.accessors[(*colors).second],
+                                                                  [&](const glm::vec4 &v, size_t index) { 
+                            vertices[initial_vtx + index].Color = v; });
                 }
 
                 if (p.materialIndex.has_value())
                 {
-                    newPrimitive->Material = Materials[p.materialIndex.value()];
+                    newPrimitive->Material = m_Materials[p.materialIndex.value()];
                 }
                 else
                 {
-                    newPrimitive->Material = Materials[0];
+                    newPrimitive->Material = m_Materials[0];
                 }
 
                 glm::vec3 minpos = vertices[initial_vtx].Position;
@@ -512,9 +509,8 @@ namespace MamontEngine
             }
 
             newmesh->Buffer = m_ContextDevice.CreateGPUMeshBuffer(indices, vertices);
+
+            m_Meshes.push_back(newmesh);
         }
-
-        return meshes;
     }
-
 }

@@ -48,4 +48,11 @@ namespace MamontEngine::vkinit
 
     VkRenderPassBeginInfo create_render_pass_info(VkRenderPass inRenderPass, VkFramebuffer inFrameBuffer, const VkExtent2D& inSwachainExtent);
 
+    VkVertexInputAttributeDescription
+    vertex_input_attribute_description(const uint32_t binding, const uint32_t location, const VkFormat format, const uint32_t offset);
+
+    VkVertexInputBindingDescription vertex_input_binding_description(const uint32_t binding, const uint32_t stride, const VkVertexInputRate inputRate);
+
+    VkPipelineVertexInputStateCreateInfo pipeline_vertex_input_state_create_info(const std::vector<VkVertexInputBindingDescription>   &vertexBindingDescriptions,
+                                                                            const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions);
 } // namespace vkinit

@@ -1,6 +1,7 @@
 #include "VkPipelines.h"
 #include <fstream>
 #include "VkInitializers.h"
+#include <Graphics/Mesh.h>
 
 namespace MamontEngine::VkPipelines
 {
@@ -165,28 +166,41 @@ namespace MamontEngine::VkPipelines
     }
     VkPipeline PipelineBuilder::BuildPipline(VkDevice inDevice)
     {
-        VkPipelineViewportStateCreateInfo viewportState = {};
-        viewportState.sType                             = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportState.pNext                             = nullptr;
+        constexpr VkPipelineViewportStateCreateInfo viewportState = {
+            .sType                             = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+            .pNext                             = nullptr,
 
-        viewportState.viewportCount = 1;
-        viewportState.scissorCount  = 1;
+            .viewportCount = 1,
+            .scissorCount  = 1
+        };
 
-        VkPipelineColorBlendStateCreateInfo colorBlending = {};
-        colorBlending.sType                               = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ADVANCED_STATE_CREATE_INFO_EXT;
-        colorBlending.pNext                               = nullptr;
-        colorBlending.logicOpEnable                       = VK_FALSE;
-        colorBlending.logicOp                             = VK_LOGIC_OP_COPY;
-        colorBlending.attachmentCount                     = 1;
-        colorBlending.pAttachments                        = &m_ColorBlendAttachment;
+        const VkPipelineColorBlendStateCreateInfo colorBlending = {
+            .sType                               = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ADVANCED_STATE_CREATE_INFO_EXT,
+            .pNext                               = nullptr,
+            .logicOpEnable                       = VK_FALSE,
+            .logicOp                             = VK_LOGIC_OP_COPY,
+            .attachmentCount                     = 1,
+            .pAttachments                        = &m_ColorBlendAttachment
+        };
 
-        VkPipelineVertexInputStateCreateInfo m_VertexInputInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+        const std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
+                vkinit::vertex_input_binding_description(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX),
+        };
+        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
+                vkinit::vertex_input_attribute_description(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Position)),
+                vkinit::vertex_input_attribute_description(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Normal)),
+                vkinit::vertex_input_attribute_description(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, UV)),
+                vkinit::vertex_input_attribute_description(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Color)),
+                //vkinit::vertex_input_attribute_description(0, 4, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFScene::Vertex, tangent)),
+        };
+
+        const VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkinit::pipeline_vertex_input_state_create_info(vertexInputBindings, vertexInputAttributes);
 
         VkGraphicsPipelineCreateInfo pipelineInfo = {.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
         pipelineInfo.pNext                        = &m_RenderInfo;
         pipelineInfo.stageCount                   = (uint32_t)m_ShaderStages.size();
         pipelineInfo.pStages                      = m_ShaderStages.data();
-        pipelineInfo.pVertexInputState            = &m_VertexInputInfo;
+        pipelineInfo.pVertexInputState            = &vertexInputInfo;
         pipelineInfo.pInputAssemblyState          = &m_InputAssembly;
         pipelineInfo.pViewportState               = &viewportState;
         pipelineInfo.pRasterizationState          = &m_Rasterizer;  
@@ -202,8 +216,8 @@ namespace MamontEngine::VkPipelines
             .pNext = nullptr,
             .flags = 0,
             .dynamicStateCount = 2,
-            .pDynamicStates                   = &state[0]
-            };
+            .pDynamicStates                   = state
+        };
         
         pipelineInfo.pDynamicState = &dynamicInfo;
 

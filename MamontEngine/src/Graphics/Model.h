@@ -25,7 +25,7 @@ namespace MamontEngine
 
         const size_t GetSizeMaterials() const
         {
-            return Materials.size();
+            return m_Materials.size();
         }
         const size_t GetSizeMeshes() const
         {
@@ -38,18 +38,18 @@ namespace MamontEngine
 
     private:
         void                                  LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers);
-        void                                  LoadMaterials(fastgltf::Asset &inFileAsset);
-        void                                  LoadImages(fastgltf::Asset &inFileAsset);
-        void                                  LoadNodes(fastgltf::Asset &inFileAsset);
-        std::vector<std::shared_ptr<NewMesh>> LoadMesh(fastgltf::Asset &inFileAsset);
+        void                                  LoadMaterials(const fastgltf::Asset &inFileAsset);
+        void                                  LoadImages(const fastgltf::Asset &inFileAsset);
+        void                                  LoadNodes(const fastgltf::Asset &inFileAsset);
+        void                                  LoadMesh(const fastgltf::Asset &inFileAsset);
 
     private:
         const VkContextDevice &m_ContextDevice;
 
         std::vector<std::unique_ptr<Node>>         m_Nodes;
         std::vector<AllocatedImage>                m_Images;
-        std::vector<std::shared_ptr<GLTFMaterial>> Materials;
-        std::vector<VkSampler>                     Samplers;
+        std::vector<std::shared_ptr<GLTFMaterial>> m_Materials;
+        std::vector<VkSampler>                     m_Samplers;
         std::vector<std::shared_ptr<NewMesh>>      m_Meshes;
 
         DescriptorAllocatorGrowable DescriptorPool;

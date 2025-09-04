@@ -13,15 +13,17 @@ namespace MamontEngine
 
         RenderObject(uint32_t InIndexCount,
                      uint32_t InFirstIndex,
-                     VkBuffer InIndexBuffer,
+                     const VkBuffer InIndexBuffer,
+                     const VkBuffer  inVertexBuffer,
 
-                     MaterialInstance* InMaterial,
+                     const MaterialInstance* InMaterial,
                      Bounds inBound,
                      glm::mat4       InTransform,
                      VkDeviceAddress InVertexBufferAdders)
             : IndexCount(InIndexCount)
             , FirstIndex(InFirstIndex)
             , IndexBuffer(InIndexBuffer)
+            , VertexBuffer(inVertexBuffer)
             , Material(InMaterial)
             , Bound(inBound)
             , Transform(InTransform)
@@ -31,9 +33,10 @@ namespace MamontEngine
 
         uint32_t IndexCount;
         uint32_t FirstIndex;
-        VkBuffer IndexBuffer;
+        const VkBuffer IndexBuffer;
+        const VkBuffer VertexBuffer;
 
-		MaterialInstance *Material;
+		const MaterialInstance *Material;
         Bounds            Bound;
 
 		glm::mat4 Transform;

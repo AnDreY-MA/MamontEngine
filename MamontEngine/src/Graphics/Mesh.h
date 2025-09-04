@@ -11,11 +11,10 @@ namespace MamontEngine
 {
     struct Vertex
     {
-        glm::vec3 Position = {0.f, 0.f, 0.f};
-        float     UV_X{0.f};
-        glm::vec3 Normal = {0.f, 0.f, 0.f};
-        float     UV_Y{0.f};
-        glm::vec4 Color;
+        alignas(16) glm::vec3 Position = {0.f, 0.f, 0.f};
+        alignas(16) glm::vec3 Normal   = glm::vec3(0.0f);
+        alignas(8) glm::vec2 UV = glm::vec2{0.f};
+        alignas(16) glm::vec4 Color = glm::vec4(1.f);
     };
 
     struct Bounds

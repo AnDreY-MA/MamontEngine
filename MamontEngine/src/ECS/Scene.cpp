@@ -35,6 +35,18 @@ namespace MamontEngine
 
         auto entity = CreateEntity("House");
         entity.AddComponent<MeshComponent>(startModel);
+
+        {
+            const std::string cubePath = {RootDirectories + "/MamontEngine/assets/cube.glb"};
+            /*auto              structureFile = loadGltf(inContextDevice, structurePath);*/
+            std::shared_ptr<MeshModel> cubeModel = std::make_shared<MeshModel>(inContextDevice);
+            // MeshModel *startModel = new MeshModel(inContextDevice);
+            cubeModel->Load(cubePath);
+            assert(cubeModel);
+
+            auto cubeEntity = CreateEntity("Cube");
+            cubeEntity.AddComponent<MeshComponent>(cubeModel);
+        }
     }
 
     void Scene::Update()

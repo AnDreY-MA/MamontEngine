@@ -366,3 +366,39 @@ VkRenderPassBeginInfo MamontEngine::vkinit::create_render_pass_info(VkRenderPass
 
     return renderPassInfo;
 }
+
+VkVertexInputAttributeDescription
+MamontEngine::vkinit::vertex_input_attribute_description(const uint32_t binding, const uint32_t location, const VkFormat format, const uint32_t offset)
+{
+    const VkVertexInputAttributeDescription vInputAttribDescription{
+        .location = location,
+        .binding  = binding,
+        .format   = format,
+        .offset   = offset
+    };
+    return vInputAttribDescription;
+}
+
+VkVertexInputBindingDescription
+MamontEngine::vkinit::vertex_input_binding_description(const uint32_t binding, const uint32_t stride, const VkVertexInputRate inputRate)
+{
+    const VkVertexInputBindingDescription vertexInputBindDescription{
+        .binding   = binding,
+        .stride    = stride,
+        .inputRate = inputRate
+    };
+    return vertexInputBindDescription;
+}
+
+VkPipelineVertexInputStateCreateInfo
+MamontEngine::vkinit::pipeline_vertex_input_state_create_info(const std::vector<VkVertexInputBindingDescription>   &vertexBindingDescriptions,
+                                                              const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions)
+{
+    VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo{};
+    pipelineVertexInputStateCreateInfo.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount   = static_cast<uint32_t>(vertexBindingDescriptions.size());
+    pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions      = vertexBindingDescriptions.data();
+    pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttributeDescriptions.size());
+    pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions    = vertexAttributeDescriptions.data();
+    return pipelineVertexInputStateCreateInfo;
+}
