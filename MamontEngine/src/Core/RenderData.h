@@ -16,7 +16,7 @@ namespace MamontEngine
                      const VkBuffer InIndexBuffer,
                      const VkBuffer  inVertexBuffer,
 
-                     const MaterialInstance* InMaterial,
+                     const GLTFMaterial *InMaterial,
                      Bounds inBound,
                      glm::mat4       InTransform,
                      VkDeviceAddress InVertexBufferAdders)
@@ -36,7 +36,7 @@ namespace MamontEngine
         const VkBuffer IndexBuffer;
         const VkBuffer VertexBuffer;
 
-		const MaterialInstance *Material;
+		const GLTFMaterial *Material;
         Bounds            Bound;
 
 		glm::mat4 Transform;

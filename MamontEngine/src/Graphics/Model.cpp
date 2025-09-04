@@ -105,6 +105,12 @@ namespace MamontEngine
         return newImage;
     }
 
+    MeshModel::MeshModel(const VkContextDevice &inDevice)
+        : m_ContextDevice(inDevice)
+    {
+
+    }
+
     MeshModel::~MeshModel()
     {
         for (const auto &mesh : m_Meshes)
@@ -133,14 +139,15 @@ namespace MamontEngine
         m_ContextDevice.DestroyBuffer(MaterialDataBuffer);
     }
 
-    void MeshModel::Draw(const glm::mat4 &inTopMatrix, DrawContext &inContext)
+    void MeshModel::Draw(const glm::mat4 &inTopMatrix, DrawContext &inContext) const
     {
+
         for (const auto &node : m_Nodes)
         {
             if (!node || !node->Mesh)
                 continue;
 
-            const glm::mat4 nodeMatrix = inTopMatrix * node->Matrix;
+            const glm::mat4& nodeMatrix = inTopMatrix * node->Matrix;
 
             if (node->Mesh->Primitives.empty())
             {
@@ -158,12 +165,12 @@ namespace MamontEngine
                                        primitive->StartIndex,
                                        node->Mesh->Buffer.IndexBuffer.Buffer,
                                        node->Mesh->Buffer.VertexBuffer.Buffer,
-                                       &material->Data,
+                                       material.get(),
                                        primitive->Bound,
                                        nodeMatrix,
                                        node->Mesh->Buffer.VertexBufferAddress);
 
-                if (material->Data.PassType == EMaterialPass::TRANSPARENT)
+                if (material->PassType == EMaterialPass::TRANSPARENT)
                     inContext.TransparentSurfaces.push_back(def);
                 else
                     inContext.OpaqueSurfaces.push_back(def);
@@ -171,14 +178,14 @@ namespace MamontEngine
         }
     }
 
-    void MeshModel::UpdateTransform(const glm::mat4 &inTransform)
+    void MeshModel::UpdateTransform(const glm::mat4 &inTransform, const glm::vec3 &inLocation, const glm::vec3 &inRotation, const glm::vec3 &inScale)
     {
-        if (!m_Nodes.empty())
+        for (auto &n : m_Nodes)
         {
-            for (auto &n : m_Nodes)
-            {
-                n->Matrix = inTransform;
-            }
+            n->Matrix      = inTransform;
+            n->Translation = inLocation;
+            n->Rotation    = inRotation;
+            n->Scale       = inScale;
         }
     }
 
@@ -211,10 +218,11 @@ namespace MamontEngine
 
         gltf = std::move(loadResult.get());
 
-        std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
+        const std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
                         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3},
                         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
-                        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}};
+                        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}
+        };
 
         DescriptorPool.Init(m_ContextDevice.Device, gltf.materials.size(), sizes);
 
@@ -225,6 +233,8 @@ namespace MamontEngine
 
         LoadMesh(gltf);
         LoadNodes(gltf);
+
+        pathFile = filePath.data();
     
     }
 
@@ -254,27 +264,29 @@ namespace MamontEngine
         materials.reserve(inFileAsset.materials.size());
 
         MaterialDataBuffer = m_ContextDevice.CreateBuffer(
-                sizeof(GLTFMetallic_Roughness::MaterialConstants) * inFileAsset.materials.size(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                sizeof(GLTFMaterial::MaterialConstants) * inFileAsset.materials.size(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VMA_MEMORY_USAGE_CPU_TO_GPU);
         int                                        data_index = 0;
-        GLTFMetallic_Roughness::MaterialConstants *sceneMaterialConstants =
-                (GLTFMetallic_Roughness::MaterialConstants *)MaterialDataBuffer.Info.pMappedData;
+        //GLTFMaterial::MaterialConstants *sceneMaterialConstants = (GLTFMaterial::MaterialConstants *)MaterialDataBuffer.Info.pMappedData;
         DescriptorWriter Writer;
 
         const auto writerMaterial =
-                [&](const EMaterialPass pass, GLTFMetallic_Roughness::MaterialResources materialResources, DescriptorAllocatorGrowable
-                &descriptorAllocator)
+                [&](const EMaterialPass pass, GLTFMetallic_Roughness::MaterialResources materialResources, DescriptorAllocatorGrowable &descriptorAllocator,
+                                        const GLTFMaterial::MaterialConstants& constants)
                 {
-                    MaterialInstance matData{};
-                    matData.PassType    = pass;
-                    matData.Pipeline =
+                    auto matData = std::make_shared<GLTFMaterial>();
+                    matData->PassType    = pass;
+                    matData->Pipeline =
                             pass == EMaterialPass::TRANSPARENT ? m_ContextDevice.RenderPipeline->TransparentPipeline :
                             m_ContextDevice.RenderPipeline->OpaquePipeline;
-                    matData.MaterialSet = descriptorAllocator.Allocate(m_ContextDevice.Device, m_ContextDevice.RenderPipeline->Layout);
+                    matData->MaterialSet = descriptorAllocator.Allocate(m_ContextDevice.Device, m_ContextDevice.RenderPipeline->Layout);
+                    matData->Constants   = constants;
 
                     Writer.Clear();
-                    Writer.WriteBuffer(
-                            0, materialResources.DataBuffer, sizeof(GLTFMetallic_Roughness::MaterialConstants), materialResources.DataBufferOffset,
+                    Writer.WriteBuffer(0,
+                                       materialResources.DataBuffer,
+                                       sizeof(GLTFMaterial::MaterialConstants),
+                                       materialResources.DataBufferOffset,
                             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                     Writer.WriteImage(1,
                                         materialResources.ColorImage.ImageView,
@@ -287,27 +299,22 @@ namespace MamontEngine
                                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-                    Writer.UpdateSet(m_ContextDevice.Device, matData.MaterialSet);
+                    Writer.UpdateSet(m_ContextDevice.Device, matData->MaterialSet);
 
                     return matData;
                 };
 
         for (const fastgltf::Material &mat : inFileAsset.materials)
         {
-            std::shared_ptr<GLTFMaterial> newMat = std::make_shared<GLTFMaterial>();
-            materials.push_back(newMat);
             //Materials.push_back(newMat);
-
-            GLTFMetallic_Roughness::MaterialConstants constants{};
-            constants.ColorFactors.x = mat.pbrData.baseColorFactor[0];
-            constants.ColorFactors.y = mat.pbrData.baseColorFactor[1];
-            constants.ColorFactors.z = mat.pbrData.baseColorFactor[2];
-            constants.ColorFactors.w = mat.pbrData.baseColorFactor[3];
-
-            constants.MetalicFactor = mat.pbrData.metallicFactor;
-            constants.RoughFactor = mat.pbrData.roughnessFactor;
+            const GLTFMaterial::MaterialConstants constants = { 
+                glm::vec4(mat.pbrData.baseColorFactor[0], mat.pbrData.baseColorFactor[1], 
+                    mat.pbrData.baseColorFactor[2], mat.pbrData.baseColorFactor[3]),
+                mat.pbrData.metallicFactor,
+                mat.pbrData.roughnessFactor
+            };
             //write material parameters to buffer
-            sceneMaterialConstants[data_index] = constants;
+            //sceneMaterialConstants[data_index] = constants;
 
             const EMaterialPass passType = mat.alphaMode == fastgltf::AlphaMode::Blend ? EMaterialPass::TRANSPARENT : EMaterialPass::MAIN_COLOR;
 
@@ -318,7 +325,7 @@ namespace MamontEngine
             materialResources.MetalRoughSampler = m_ContextDevice.DefaultSamplerLinear;
 
             materialResources.DataBuffer       = MaterialDataBuffer.Buffer;
-            materialResources.DataBufferOffset = data_index * sizeof(GLTFMetallic_Roughness::MaterialConstants);
+            materialResources.DataBufferOffset = data_index * sizeof(GLTFMaterial::MaterialConstants);
 
             //grab textures from inFileAsset file
             if (mat.pbrData.baseColorTexture.has_value())
@@ -330,7 +337,8 @@ namespace MamontEngine
                 materialResources.ColorSampler = m_Samplers[sampler];
             }
 
-            newMat->Data = writerMaterial(passType, materialResources, DescriptorPool);
+            auto newMat = writerMaterial(passType, materialResources, DescriptorPool, constants);
+            materials.push_back(std::move(newMat));
 
             data_index++;
         }

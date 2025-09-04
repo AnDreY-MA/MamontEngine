@@ -13,35 +13,29 @@ namespace MamontEngine
         OTHER
     };
 
-    struct MaterialInstance
-    {
-        std::shared_ptr<PipelineData> Pipeline;
-        VkDescriptorSet   MaterialSet{VK_NULL_HANDLE};
-        EMaterialPass     PassType;
-    };
-
     struct GLTFMaterial
     {
-        MaterialInstance Data;
-    };
+        std::shared_ptr<PipelineData> Pipeline;
+        VkDescriptorSet               MaterialSet{VK_NULL_HANDLE};
+        EMaterialPass                 PassType;
 
-    struct GLTFMetallic_Roughness
-    {
         struct MaterialConstants
         {
             MaterialConstants() = default;
 
-            MaterialConstants(const glm::vec4& inColorFactor, const float inMetalicFactor, const float inRoughFactor)
+            MaterialConstants(const glm::vec4 &inColorFactor, const float inMetalicFactor, const float inRoughFactor)
                 : ColorFactors(inColorFactor), MetalicFactor(inMetalicFactor), RoughFactor(inRoughFactor)
             {
-
             }
             glm::vec4 ColorFactors = glm::vec4(1.0f);
 
-            float MetalicFactor{1.f};
-            float RoughFactor{1.f};
-        };
+            float MetalicFactor{0.f};
+            float RoughFactor{0.f};
+        } Constants;
+    };
 
+    struct GLTFMetallic_Roughness
+    {
         struct MaterialResources
         {
             AllocatedImage ColorImage;

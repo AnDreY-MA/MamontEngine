@@ -13,7 +13,7 @@ namespace MamontEngine::VkPipelines
 
         const size_t fileSize = (size_t)file.tellg();
         
-        std::vector<uint32_t> buffer(fileSize / sizeof(uint32_t));
+        const std::vector<uint32_t> buffer(fileSize / sizeof(uint32_t));
 
         file.seekg(0);
         file.read((char *)buffer.data(), fileSize);

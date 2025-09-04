@@ -21,7 +21,7 @@ namespace MamontEngine
             float            Ratio;
         };
 
-        void init_pool(VkDevice inDevice, const uint32_t inMaxSets, std::span<PoolSizeRatio> inPoolRatios);
+        void init_pool(VkDevice inDevice, const uint32_t inMaxSets, const std::vector<PoolSizeRatio> &inPoolRatios);
         void clear_descriptors(VkDevice inDevice);
         void destroy_pool(VkDevice inDevice);
 
@@ -40,7 +40,7 @@ namespace MamontEngine
             float Ratio{0.0f};
         };
 
-        void Init(VkDevice inDevice, const uint32_t inInitialSets, const std::span<PoolSizeRatio> inPoolRatios);
+        void Init(VkDevice inDevice, const uint32_t inInitialSets, const std::vector<PoolSizeRatio> &inPoolRatios);
         void ClearPools(VkDevice inDevice);
         void DestroyPools(VkDevice inDevice);
 
@@ -48,7 +48,7 @@ namespace MamontEngine
 
     private:
         VkDescriptorPool GetPool(VkDevice inDevice);
-        VkDescriptorPool CreatePool(VkDevice inDevice, const uint32_t inSetCount, std::span<PoolSizeRatio> inPoolRatios);
+        VkDescriptorPool CreatePool(VkDevice inDevice, const uint32_t inSetCount, const std::vector<PoolSizeRatio> &inPoolRatios);
 
         std::vector<PoolSizeRatio>    m_Ratios;
         std::vector<VkDescriptorPool> m_FullPools;
@@ -66,7 +66,7 @@ namespace MamontEngine
         void WriteBuffer(const int inBinding, VkBuffer inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType);
 
         void Clear();
-        void UpdateSet(const VkDevice inDevice, VkDescriptorSet inSet);
+        void UpdateSet(const VkDevice inDevice, VkDescriptorSet& inSet);
     };
 }
     

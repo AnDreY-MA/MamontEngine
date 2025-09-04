@@ -39,7 +39,7 @@ namespace MamontEngine
         return set;
     }
 
-    void DescriptorAllocator::init_pool(VkDevice inDevice, const uint32_t inMaxSets, std::span<PoolSizeRatio> inPoolRatios)
+    void DescriptorAllocator::init_pool(VkDevice inDevice, const uint32_t inMaxSets, const std::vector<PoolSizeRatio> &inPoolRatios)
     {
         std::vector<VkDescriptorPoolSize> poolSizes;
         for (const auto &ratio : inPoolRatios)
@@ -83,7 +83,7 @@ namespace MamontEngine
 
     ///// DescriptorAllocatorGrowable
 
-    void DescriptorAllocatorGrowable::Init(VkDevice inDevice, const uint32_t inInitialSets, const std::span<PoolSizeRatio> inPoolRatios)
+    void DescriptorAllocatorGrowable::Init(VkDevice inDevice, const uint32_t inInitialSets, const std::vector<PoolSizeRatio>& inPoolRatios)
     {
         m_Ratios.assign(inPoolRatios.begin(), inPoolRatios.end());
 
@@ -174,7 +174,7 @@ namespace MamontEngine
         return newPool;
     }
 
-    VkDescriptorPool DescriptorAllocatorGrowable::CreatePool(VkDevice inDevice, const uint32_t inSetCount, std::span<PoolSizeRatio> inPoolRatios)
+    VkDescriptorPool DescriptorAllocatorGrowable::CreatePool(VkDevice inDevice, const uint32_t inSetCount, const std::vector<PoolSizeRatio> &inPoolRatios)
     {
         std::vector<VkDescriptorPoolSize> poolSizes;
         for (const auto &ratio : inPoolRatios)
@@ -231,7 +231,7 @@ namespace MamontEngine
         Writes.clear();
         BufferInfos.clear();
     }
-    void DescriptorWriter::UpdateSet(const VkDevice inDevice, VkDescriptorSet inSet)
+    void DescriptorWriter::UpdateSet(const VkDevice inDevice, VkDescriptorSet& inSet)
     {
         for (VkWriteDescriptorSet &write : Writes)
         {

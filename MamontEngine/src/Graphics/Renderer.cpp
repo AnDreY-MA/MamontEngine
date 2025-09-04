@@ -29,7 +29,7 @@ namespace MamontEngine
 
     void Renderer::InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera)
     {
-        m_SceneRenderer = std::make_shared<SceneRenderer>(inMainCamera, GetDrawContext());
+        m_SceneRenderer = std::make_shared<SceneRenderer>(inMainCamera);
     }
     
     void Renderer::InitImGuiRenderer(VkDescriptorPool &outDescPool)
@@ -212,26 +212,25 @@ namespace MamontEngine
         void *mappedPtr                = gpuSceneDataBuffer.Allocation->GetMappedData();
         if (!mappedPtr)
         {
-            // Логируем ошибку и безопасно выходим (или альтернативно бросаем исключение)
             fmt::println("GPUSceneData buffer mapping returned nullptr");
             return;
         }
 
-        // Проверка, что структура POD/тривиальна (рекомендуется)
         static_assert(std::is_standard_layout<GPUSceneData>::value, "GPUSceneData must be standard layout");
         static_assert(std::is_trivially_copyable<GPUSceneData>::value, "GPUSceneData must be trivially copyable");
 
         const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
         std::memcpy(mappedPtr, &sceneData, sizeof(GPUSceneData));
 
-        const VkDescriptorSet &globalDescriptor = m_DeviceContext.GetCurrentFrame().FrameDescriptors.Allocate(
+        VkDescriptorSet globalDescriptor = m_DeviceContext.GetCurrentFrame().FrameDescriptors.Allocate(
                 m_DeviceContext.Device, m_DeviceContext.GPUSceneDataDescriptorLayout /*, &allocArrayInfo*/);
 
         DescriptorWriter writer;
         writer.WriteBuffer(0, gpuSceneDataBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         writer.UpdateSet(m_DeviceContext.Device, globalDescriptor);
 
-        m_RenderPipeline->Draw(inCmd, globalDescriptor, sceneData, m_DrawExtent);
+        //m_RenderPipeline->Draw(inCmd, globalDescriptor, sceneData, m_DrawExtent);
+        m_SceneRenderer->Render(inCmd, globalDescriptor, sceneData, m_DrawExtent);
 
         /*stats.DrawCallCount = 0;
         stats.TriangleCount = 0;*/
@@ -249,11 +248,6 @@ namespace MamontEngine
         m_DeviceContext.ResizeSwapchain(m_Window->Resize());
 
         m_IsResizeRequested = false;
-    }
-
-    DrawContext& Renderer::GetDrawContext()
-    {
-        return m_RenderPipeline->MainDrawContext;
     }
 
 } // namespace MamontEngine

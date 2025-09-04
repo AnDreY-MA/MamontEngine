@@ -12,16 +12,14 @@ namespace MamontEngine
 	class MeshModel
 	{
     public:
-        MeshModel(const VkContextDevice &inDevice) : m_ContextDevice(inDevice)
-        {
-        }
+        explicit MeshModel(const VkContextDevice &inDevice);
         ~MeshModel();
 
         void Load(std::string_view filePath);
         
-        void Draw(const glm::mat4 &inTopMatrix, DrawContext &inContext);
+        void Draw(const glm::mat4 &inTopMatrix, DrawContext &inContext) const;
 
-        void UpdateTransform(const glm::mat4 &inTransform);
+        void UpdateTransform(const glm::mat4 &inTransform, const glm::vec3 &inLocation, const glm::vec3 &inRotation, const glm::vec3 &inScale);
 
         const size_t GetSizeMaterials() const
         {
@@ -54,5 +52,7 @@ namespace MamontEngine
 
         DescriptorAllocatorGrowable DescriptorPool;
         AllocatedBuffer             MaterialDataBuffer;
+
+        std::string pathFile;
 	};
 }

@@ -56,7 +56,7 @@ namespace MamontEngine
         {
             if (meshComponent.Mesh)
             {
-                meshComponent.Mesh->UpdateTransform(transform.GetTransform());
+                meshComponent.Mesh->UpdateTransform(transform.GetTransform(), transform.Translation, transform.Rotation, transform.Scale);
             }
 
             if (meshComponent.Dirty == true)

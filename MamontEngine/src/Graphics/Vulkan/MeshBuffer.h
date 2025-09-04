@@ -13,6 +13,6 @@ namespace MamontEngine
     {
         AllocatedBuffer IndexBuffer;
         AllocatedBuffer VertexBuffer;
-        VkDeviceAddress VertexBufferAddress;
+        VkDeviceAddress VertexBufferAddress{0};
     };
 }

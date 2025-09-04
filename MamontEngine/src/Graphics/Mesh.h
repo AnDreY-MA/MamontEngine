@@ -41,7 +41,6 @@ namespace MamontEngine
         std::vector<std::unique_ptr<Primitive>> Primitives;
 
         MeshBuffer Buffer;
-
     };
 
     struct Node
@@ -51,8 +50,9 @@ namespace MamontEngine
         NewMesh            *Mesh;
 
         glm::mat4 Matrix;
-        /*glm::vec3 Translation{};
-        glm::vec3 Scale{1.f};*/
+        glm::vec3 Translation{0.f};
+        glm::vec3 Rotation{0.f};
+        glm::vec3 Scale{1.f};
 
         std::string Name;
 
