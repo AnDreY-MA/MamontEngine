@@ -43,17 +43,23 @@ namespace MamontEngine
 
         m_Window = std::make_shared<WindowCore>();
 
-        m_ContextDevice = std::make_unique<VkContextDevice>();
+        m_ContextDevice = std::make_unique<VkContextDevice>(m_Window.get());
 
         m_Renderer = std::make_unique<Renderer>(*m_ContextDevice.get(), m_Window);
 
-        InitSwapchain();
+        m_ContextDevice->InitSwapchain(m_Window->GetExtent());
 
-        InitCommands();
+        m_ContextDevice->InitCommands();
 
-        InitSyncStructeres();
+        m_ContextDevice->InitSyncStructeres();
         
-        InitDescriptors();
+        m_ContextDevice->InitDescriptors();
+
+        m_ContextDevice->InitSceneBuffers();
+
+        m_MainDeletionQueue.PushFunction([&]() { 
+            m_ContextDevice->DestroyFrameData(); 
+        });
 
         InitPipelines();    
 
@@ -62,10 +68,6 @@ namespace MamontEngine
         InitDefaultData();
 
         InitScene();
-
-        //m_Window->SetupVulkanWindow(*m_ContextDevice, m_ContextDevice->Surface, 1, 1);
-
-        m_ContextDevice->CreateAllFrameOffscreans(m_ContextDevice->Swapchain.GetExtent(), m_ContextDevice->Swapchain.GetImageFormat(), m_ContextDevice->Swapchain.GetImageViews());
 
         m_MainCamera->SetVelocity(glm::vec3(0.f));
         m_MainCamera->SetPosition(glm::vec3(1, 1, 0));
@@ -181,21 +183,6 @@ namespace MamontEngine
 
     }
     
-    void MEngine::InitVulkan()
-    {
-        m_ContextDevice->Init(m_Window.get());
-    }
-    
-    void MEngine::InitSwapchain()
-    {
-        m_ContextDevice->InitSwapchain(m_Window->GetExtent());
-
-        m_MainDeletionQueue.PushFunction([=]() { 
-                m_ContextDevice->DestroyImage();   
-        });
-
-    }
-
     void MEngine::ResizeSwapchain()
     {
         fmt::println("Resize Swapchain");
@@ -232,27 +219,6 @@ namespace MamontEngine
                                    VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
 
-    void MEngine::InitCommands()
-    {
-        m_ContextDevice->InitCommands(m_MainDeletionQueue);
-
-        // Viewport Command Pool
-        /*m_ImGuiRenderer.CreateViewportCommandPool(m_ContextDevice->Device, m_ContextDevice->GraphicsQueueFamily);
-        m_MainDeletionQueue.PushFunction([=]() { 
-            vkDestroyCommandPool(m_ContextDevice->Device, m_ImGuiRenderer.GetViewportCommandPool(), nullptr); 
-            });*/
-
-    }
-    
-    void MEngine::InitSyncStructeres()
-    {
-        m_ContextDevice->InitSyncStructeres();
-
-        m_MainDeletionQueue.PushFunction([=]() {
-                m_ContextDevice->DestroySyncStructeres();
-            });
-    }
-
     void MEngine::InitPipelines()
     {
         m_Renderer->InitPipelines();
@@ -282,15 +248,5 @@ namespace MamontEngine
         m_GuiLayer->Init();
         
     }
-    
-    void MEngine::InitDescriptors()
-    {
-        m_ContextDevice->InitDescriptors();
-
-        m_MainDeletionQueue.PushFunction([&]() { 
-                    m_ContextDevice->DestroyDescriptors();
-                });
-    }
-
     
 }

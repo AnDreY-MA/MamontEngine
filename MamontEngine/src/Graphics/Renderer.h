@@ -91,6 +91,5 @@ namespace MamontEngine
         float      m_RenderScale{1.f};
 
         RenderStats m_Stats;
-	
 	};
 }

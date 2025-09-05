@@ -2,6 +2,7 @@
 
 #include "Core/VkDestriptor.h"
 #include "Graphics/Vulkan/Image.h"
+#include "Graphics/Vulkan/MeshBuffer.h"
 
 namespace MamontEngine
 {
@@ -41,7 +42,6 @@ namespace MamontEngine
         DeletionQueue               Deleteions;
         DescriptorAllocatorGrowable FrameDescriptors;
 
-        AllocatedImage OffscreenImage;
-        AllocatedImage OffscreenDepth;
+        AllocatedBuffer SceneDataBuffer;
     };
 }

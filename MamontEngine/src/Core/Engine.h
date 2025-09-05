@@ -54,13 +54,8 @@ namespace MamontEngine
         }
 
     private:
-        void InitVulkan();
-        void InitSwapchain();
-        void InitCommands();
-        void InitSyncStructeres();
         void InitDefaultData();
 
-        void InitDescriptors();
         void InitPipelines();
 
         void InitImgui();

@@ -210,7 +210,7 @@ namespace MamontEngine
 
         Writes.push_back(write);
     }
-    void DescriptorWriter::WriteBuffer(const int inBinding, VkBuffer inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType)
+    void DescriptorWriter::WriteBuffer(const int inBinding, VkBuffer& inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType)
     {
         const VkDescriptorBufferInfo &info = BufferInfos.emplace_back(VkDescriptorBufferInfo{.buffer = inBuffer, .offset = inOffset, .range = inSize});
 

@@ -21,11 +21,11 @@ namespace MamontEngine
 
 	struct VkContextDevice
 	{
-        VkContextDevice() = default;
+        explicit VkContextDevice(WindowCore *inWindow);
 
         ~VkContextDevice();
 
-        void Init(WindowCore* inWindow);
+        void DestroyFrameData();
 
         AllocatedBuffer CreateBuffer(const size_t inAllocSize, const VkBufferUsageFlags inUsage, const VmaMemoryUsage inMemoryUsage) const;
         void            DestroyBuffer(const AllocatedBuffer &inBuffer) const;
@@ -41,23 +41,18 @@ namespace MamontEngine
 
         void            ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction) const;
 
-        void InitCommands(DeletionQueue& inDeletionQueue);
+        void InitCommands();
 
         void InitSyncStructeres();
-        void DestroySyncStructeres();
 
         void InitDescriptors();
-        void DestroyDescriptors();
 
         void InitSamples();
 
-        void CreateAllFrameOffscreans(const VkExtent2D &inExtent, const VkFormat inFormat, std::vector<VkImageView> inImageView);
-        void CreateFrameOffscreen(FrameData &inFrame, const VkExtent2D &inExtent, const VkFormat inFormat, VkImageView inImageView);
+        void InitSceneBuffers();
 
         void InitSwapchain(const VkExtent2D &inWindowExtent);
         void ResizeSwapchain(const VkExtent2D &inWindowExtent);
-
-        void DestroyImage();
 
         FrameData &GetCurrentFrame();
         inline FrameData& GetFrameAt(const size_t inIndex)
@@ -109,6 +104,17 @@ namespace MamontEngine
         VkRenderPass RenderPass;
 
         RenderPipeline* RenderPipeline;
+
+    private:
+        void DestroyImage();
+       
+        void DestroyCommands();
+       
+        void DestroySyncStructeres();
+
+        void DestroyDescriptors();
+        
+        void DestroySceneBuffers();
 
     private:
         std::array<FrameData, FRAME_OVERLAP> m_Frames{};

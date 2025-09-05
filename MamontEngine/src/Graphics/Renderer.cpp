@@ -10,7 +10,7 @@
 #include <chrono>
 #include <thread>
 
-#define VMA_IMPLEMENTATION
+//#define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
 namespace MamontEngine
@@ -18,7 +18,6 @@ namespace MamontEngine
     Renderer::Renderer(VkContextDevice &inDeviceContext, const std::shared_ptr<WindowCore>& inWindow) 
         : m_DeviceContext(inDeviceContext), m_Window(inWindow)
     {
-        m_DeviceContext.Init(m_Window.get());
 
     }
 
@@ -201,16 +200,8 @@ namespace MamontEngine
 
     void Renderer::DrawGeometry(VkCommandBuffer inCmd)
     {
-        const AllocatedBuffer gpuSceneDataBuffer =
-                m_DeviceContext.CreateBuffer(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-        m_DeviceContext.GetCurrentFrame().Deleteions.PushFunction([=, this]() { 
-            m_DeviceContext.DestroyBuffer(std::move(gpuSceneDataBuffer)); 
-            });
-
-        // write the buffer
-        void *mappedPtr                = gpuSceneDataBuffer.Allocation->GetMappedData();
-        if (!mappedPtr)
+        auto &SceneBuffer = m_DeviceContext.GetCurrentFrame().SceneDataBuffer;
+        if (SceneBuffer.MappedData == nullptr)
         {
             fmt::println("GPUSceneData buffer mapping returned nullptr");
             return;
@@ -220,17 +211,26 @@ namespace MamontEngine
         static_assert(std::is_trivially_copyable<GPUSceneData>::value, "GPUSceneData must be trivially copyable");
 
         const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
-        std::memcpy(mappedPtr, &sceneData, sizeof(GPUSceneData));
+        std::memcpy(SceneBuffer.MappedData, &sceneData, sizeof(GPUSceneData));
 
         VkDescriptorSet globalDescriptor = m_DeviceContext.GetCurrentFrame().FrameDescriptors.Allocate(
                 m_DeviceContext.Device, m_DeviceContext.GPUSceneDataDescriptorLayout /*, &allocArrayInfo*/);
 
-        DescriptorWriter writer;
-        writer.WriteBuffer(0, gpuSceneDataBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-        writer.UpdateSet(m_DeviceContext.Device, globalDescriptor);
+        {
+            DescriptorWriter writer;
+            writer.WriteBuffer(0, SceneBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            writer.UpdateSet(m_DeviceContext.Device, globalDescriptor);
+        }
 
-        //m_RenderPipeline->Draw(inCmd, globalDescriptor, sceneData, m_DrawExtent);
-        m_SceneRenderer->Render(inCmd, globalDescriptor, sceneData, m_DrawExtent);
+        {
+            const VkViewport viewport = {0, 0, (float)m_DrawExtent.width, (float)m_DrawExtent.height, 0.f, 1.f};
+            const VkRect2D   scissor  = {0, 0, m_DrawExtent};
+
+            vkCmdSetViewport(inCmd, 0, 1, &viewport);
+            vkCmdSetScissor(inCmd, 0, 1, &scissor);
+        }
+
+        m_SceneRenderer->Render(inCmd, globalDescriptor, sceneData);
 
         /*stats.DrawCallCount = 0;
         stats.TriangleCount = 0;*/

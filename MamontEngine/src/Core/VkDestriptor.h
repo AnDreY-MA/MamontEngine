@@ -63,7 +63,7 @@ namespace MamontEngine
         std::vector<VkWriteDescriptorSet>  Writes;
 
         void WriteImage(const int inBinding, VkImageView inImage, VkSampler inSampler, VkImageLayout inLayout, VkDescriptorType inType);
-        void WriteBuffer(const int inBinding, VkBuffer inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType);
+        void WriteBuffer(const int inBinding, VkBuffer& inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType);
 
         void Clear();
         void UpdateSet(const VkDevice inDevice, VkDescriptorSet& inSet);

@@ -141,19 +141,13 @@ namespace MamontEngine
 
     void MeshModel::Draw(const glm::mat4 &inTopMatrix, DrawContext &inContext) const
     {
-
-        for (const auto &node : m_Nodes)
+        std::function<void(Node*, const glm::mat4&, DrawContext&)> collect = 
+            ([&collect, this](Node* node, const glm::mat4 &inTopMatrix, DrawContext &inContext)
         {
             if (!node || !node->Mesh)
-                continue;
+                    return;
 
-            const glm::mat4& nodeMatrix = inTopMatrix * node->Matrix;
-
-            if (node->Mesh->Primitives.empty())
-            {
-                fmt::println("Primitives is empty");
-                return;
-            }
+            const glm::mat4 nodeMatrix = inTopMatrix * node->Matrix;
 
             for (const auto &primitive : node->Mesh->Primitives)
             {
@@ -162,19 +156,28 @@ namespace MamontEngine
 
                 const auto        &material = primitive->Material;
                 const RenderObject def(primitive->Count,
-                                       primitive->StartIndex,
-                                       node->Mesh->Buffer.IndexBuffer.Buffer,
-                                       node->Mesh->Buffer.VertexBuffer.Buffer,
-                                       material.get(),
-                                       primitive->Bound,
-                                       nodeMatrix,
-                                       node->Mesh->Buffer.VertexBufferAddress);
+                                        primitive->StartIndex,
+                                        node->Mesh->Buffer.IndexBuffer.Buffer,
+                                        node->Mesh->Buffer.VertexBuffer.Buffer,
+                                        material.get(),
+                                        primitive->Bound,
+                                        nodeMatrix,
+                                        node->Mesh->Buffer.VertexBufferAddress);
 
                 if (material->PassType == EMaterialPass::TRANSPARENT)
                     inContext.TransparentSurfaces.push_back(def);
                 else
                     inContext.OpaqueSurfaces.push_back(def);
             }
+
+            for (const auto& childNode : node->Children)
+            {
+                collect(childNode, inTopMatrix, inContext);
+            }
+        });
+        for (const auto& node : m_Nodes)
+        {
+            collect(node.get(), inTopMatrix, inContext);
         }
     }
 

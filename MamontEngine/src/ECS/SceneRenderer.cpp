@@ -60,9 +60,8 @@ namespace MamontEngine
         m_MeshComponents.clear();
     }
 
-    void SceneRenderer::Render(VkCommandBuffer inCmd, const VkDescriptorSet &globalDescriptor, const GPUSceneData &inSceneData, const VkExtent2D &inDrawExtent)
+    void SceneRenderer::Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const GPUSceneData &inSceneData)
     {
-        
         std::vector<uint32_t> opaque_draws;
         opaque_draws.reserve(m_DrawContext.OpaqueSurfaces.size());
 
@@ -90,10 +89,6 @@ namespace MamontEngine
         VkBuffer                      lastIndexBuffer  = VK_NULL_HANDLE;
         VkBuffer                      lastVertexBuffer = VK_NULL_HANDLE;
 
-        const VkViewport viewport = {0, 0, (float)inDrawExtent.width, (float)inDrawExtent.height, 0.f, 1.f};
-
-        const VkRect2D scissor = {0, 0, inDrawExtent};
-
         const auto draw = [&](const RenderObject &r)
         {
             if (r.Material != lastMaterial)
@@ -105,10 +100,6 @@ namespace MamontEngine
                     vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Pipeline);
 
                     vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
-
-                    vkCmdSetViewport(inCmd, 0, 1, &viewport);
-
-                    vkCmdSetScissor(inCmd, 0, 1, &scissor);
                 }
 
                 vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);

@@ -26,15 +26,17 @@ namespace MamontEngine
 
     void Scene::Init(VkContextDevice &inContextDevice)
     {
-        const std::string structurePath = {RootDirectories + "/MamontEngine/assets/house2.glb"};
-        /*auto              structureFile = loadGltf(inContextDevice, structurePath);*/
-        std::shared_ptr<MeshModel> startModel = std::make_shared<MeshModel>(inContextDevice);
-        //MeshModel *startModel = new MeshModel(inContextDevice);
-        startModel->Load(structurePath);
-        assert(startModel);
+        {
+            const std::string structurePath = {RootDirectories + "/MamontEngine/assets/house2.glb"};
+            /*auto              structureFile = loadGltf(inContextDevice, structurePath);*/
+            std::shared_ptr<MeshModel> startModel = std::make_shared<MeshModel>(inContextDevice);
+            // MeshModel *startModel = new MeshModel(inContextDevice);
+            startModel->Load(structurePath);
+            assert(startModel);
 
-        auto entity = CreateEntity("House");
-        entity.AddComponent<MeshComponent>(startModel);
+            auto entity = CreateEntity("House");
+            entity.AddComponent<MeshComponent>(startModel);
+        }
 
         {
             const std::string cubePath = {RootDirectories + "/MamontEngine/assets/cube.glb"};

@@ -23,7 +23,7 @@ namespace MamontEngine
 
         ~SceneRenderer();
 
-        void Render(VkCommandBuffer inCmd, const VkDescriptorSet &globalDescriptor, const GPUSceneData &inSceneData, const VkExtent2D &inDrawExtent);
+        void Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const GPUSceneData &inSceneData);
 
         void Update(const VkExtent2D& inWindowExtent);
 
