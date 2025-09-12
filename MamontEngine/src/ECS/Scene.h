@@ -4,6 +4,7 @@
 #include "Core/UID.h"
 #include "Core/Camera.h"
 #include "ECS/SceneRenderer.h"
+#include "Utils/Serializer.h"
 
 namespace MamontEngine
 {
@@ -15,9 +16,13 @@ namespace MamontEngine
     public:
         Scene() = default;
         explicit Scene(const std::shared_ptr<SceneRenderer> &inSceneRenderer);
+
         ~Scene();
 
         void Init(VkContextDevice& inContextDevice);
+
+		void Save();
+        void Load();
 
 		Entity CreateEntity(std::string_view inName = std::string_view());
 
@@ -46,6 +51,8 @@ namespace MamontEngine
 	private:
 		Entity CreateEntity(UID inId, std::string_view inName);
 
+		void Clear();
+
 	private:
         entt::registry m_Registry;
 
@@ -55,6 +62,7 @@ namespace MamontEngine
 
 		friend class Entity;
         friend class SceneHierarchyPanel;
+        friend class Serializer;
 	};
 
 } // namespace MamontEngine

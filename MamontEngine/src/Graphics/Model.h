@@ -13,6 +13,8 @@ namespace MamontEngine
 	{
     public:
         explicit MeshModel(const VkContextDevice &inDevice);
+        explicit MeshModel(const VkContextDevice &inDevice, std::string_view filePath);
+        
         ~MeshModel();
 
         void Load(std::string_view filePath);
@@ -34,6 +36,11 @@ namespace MamontEngine
             return m_Nodes.size();
         }
 
+        const std::string GetPathFile() const
+        {
+            return pathFile.string();
+        }
+
     private:
         void                                  LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers);
         void                                  LoadMaterials(const fastgltf::Asset &inFileAsset);
@@ -53,6 +60,6 @@ namespace MamontEngine
         DescriptorAllocatorGrowable DescriptorPool;
         AllocatedBuffer             MaterialDataBuffer;
 
-        std::string pathFile;
+        std::filesystem::path pathFile;
 	};
 }

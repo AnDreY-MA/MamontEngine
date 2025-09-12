@@ -77,8 +77,9 @@ add_subdirectory("vendor/sdl" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/fmt" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/vma" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/entt" EXCLUDE_FROM_ALL)
+add_subdirectory("vendor/nlohmann_json" EXCLUDE_FROM_ALL)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GPUOpen::VulkanMemoryAllocator EnTT::EnTT)
+target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GPUOpen::VulkanMemoryAllocator EnTT::EnTT glm::glm nlohmann_json::nlohmann_json)
 
 # imgui
 add_library(imgui STATIC 

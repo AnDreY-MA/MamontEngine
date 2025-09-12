@@ -106,11 +106,13 @@ namespace MamontEditor
     void InspectorPanel::DrawComponents(MamontEngine::Entity inEntity)
     {
         using namespace MamontEngine;
-        TagComponent *tagComponent = m_SceneContext->GetRegistry().try_get<TagComponent>(inEntity);
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 1.75f);
-        if (tagComponent)
+     
+        if (inEntity.HasComponent<TagComponent>())
         {
-            MUI::InputText("##Tag", &tagComponent->Tag, 100, ImGuiInputTextFlags_EnterReturnsTrue);
+            auto &tagComponent = inEntity.GetComponent<TagComponent>();
+            MUI::InputText("##Tag", &tagComponent.Tag, 100, ImGuiInputTextFlags_EnterReturnsTrue);
+
         }
 
         ImGui::PopItemWidth();

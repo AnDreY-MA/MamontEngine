@@ -111,6 +111,11 @@ namespace MamontEngine
 
     }
 
+    MeshModel::MeshModel(const VkContextDevice &inDevice, std::string_view filePath) : m_ContextDevice(inDevice)
+    {
+        Load(filePath);
+    }
+
     MeshModel::~MeshModel()
     {
         for (const auto &mesh : m_Meshes)
@@ -194,7 +199,7 @@ namespace MamontEngine
 
     void MeshModel::Load(std::string_view filePath)
     {
-        fmt::print("Loading GLTF: {}", filePath);
+        fmt::println("Loading GLTF: {}", filePath);
 
         fastgltf::Parser parser{};
 
@@ -215,7 +220,7 @@ namespace MamontEngine
 
         if (!loadResult)
         {
-            fmt::print(stderr, "Failed to load glTF: {}\n", fastgltf::to_underlying(loadResult.error()));
+            fmt::println(stderr, "Failed to load glTF: {}\n", fastgltf::to_underlying(loadResult.error()));
             return;
         }
 
@@ -237,7 +242,7 @@ namespace MamontEngine
         LoadMesh(gltf);
         LoadNodes(gltf);
 
-        pathFile = filePath.data();
+        pathFile = filePath;
     
     }
 

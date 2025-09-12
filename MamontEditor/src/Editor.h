@@ -13,7 +13,7 @@ namespace MamontEditor
     public:
         explicit Editor();
 
-		~Editor() = default;
+		~Editor();
 
 		static Editor *Get();
 
@@ -50,6 +50,8 @@ namespace MamontEditor
             const size_t hashCode = typeid(T).hash_code();
             return (T *)(m_Panels[hashCode].get());
 		}
+
+		void DrawMainPanel();
 
 	private:
         std::unordered_map<size_t, std::unique_ptr<EditorPanel>> m_Panels;

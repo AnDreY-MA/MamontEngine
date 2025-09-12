@@ -139,9 +139,8 @@ namespace MamontEditor
                 auto cube = m_Scene->CreateEntity("Cube");
                 const std::string cubeFile = "D:/Repos/MamontEngine/MamontEngine/assets/cube.glb";
                 const auto                      &contextDevice = MEngine::Get().GetContextDevice();
-                auto cubeModel     = std::make_shared<MeshModel>(contextDevice);
-                cubeModel->Load(cubeFile);
-                cube.AddComponent<MeshComponent>(cubeModel);
+                auto              cubeModel     = std::make_shared<MeshModel>(contextDevice, cubeFile);
+                cube.AddComponent<MeshComponent>(std::move(cubeModel));
             }
 
             ImGui::EndMenu();

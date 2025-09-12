@@ -31,3 +31,6 @@
 [submodule "MamontEngine/vendor/ImGuizmo"]
 	path = MamontEngine/vendor/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "MamontEngine/vendor/nlohmann_json"]
+	path = MamontEngine/vendor/nlohmann_json
+	url = https://github.com/nlohmann/json.git

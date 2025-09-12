@@ -64,7 +64,7 @@ namespace MamontEngine
 
         vkb::PhysicalDeviceSelector selector{vkbInstance};
 
-        const vkb::PhysicalDevice physicalDevice = selector.set_minimum_version(1, 4)
+        const vkb::PhysicalDevice physicalDevice = selector.set_minimum_version(1, 3)
                                                            .set_required_features(deviceFeatures)
                                                            .set_required_features_14(features14)
                                                            .set_required_features_13(features)
@@ -72,6 +72,7 @@ namespace MamontEngine
                                                            .set_surface(Surface)
                                                            .select()
                                                            .value();
+        fmt::print("Name {}", physicalDevice.name);
 
         const vkb::DeviceBuilder deviceBuilder{physicalDevice};
 
@@ -79,7 +80,6 @@ namespace MamontEngine
 
         Device           = vkbDevice.device;
         m_PhysicalDevice = std::make_unique<PhysicalDevice>(physicalDevice.physical_device);
-        fmt::print("Name {}", physicalDevice.name);
 
         GraphicsQueue       = vkbDevice.get_queue(vkb::QueueType::graphics).value();
         GraphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();

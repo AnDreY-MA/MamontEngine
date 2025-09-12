@@ -8,6 +8,7 @@
 #include "Graphics/Model.h"
 #include "Core/ContextDevice.h"
 
+
 namespace MamontEngine
 {
     const std::string RootDirectories = PROJECT_ROOT_DIR;
@@ -20,35 +21,47 @@ namespace MamontEngine
 
     Scene::~Scene()
     {
-        m_Registry.clear();
-        m_Entities.clear();
+        Clear();
     }
 
     void Scene::Init(VkContextDevice &inContextDevice)
     {
         {
             const std::string structurePath = {RootDirectories + "/MamontEngine/assets/house2.glb"};
-            /*auto              structureFile = loadGltf(inContextDevice, structurePath);*/
-            std::shared_ptr<MeshModel> startModel = std::make_shared<MeshModel>(inContextDevice);
-            // MeshModel *startModel = new MeshModel(inContextDevice);
-            startModel->Load(structurePath);
+            std::shared_ptr<MeshModel> startModel = std::make_shared<MeshModel>(inContextDevice, structurePath);
             assert(startModel);
 
             auto entity = CreateEntity("House");
-            entity.AddComponent<MeshComponent>(startModel);
+            entity.AddComponent<MeshComponent>(std::move(startModel));
         }
 
         {
             const std::string cubePath = {RootDirectories + "/MamontEngine/assets/cube.glb"};
-            /*auto              structureFile = loadGltf(inContextDevice, structurePath);*/
-            std::shared_ptr<MeshModel> cubeModel = std::make_shared<MeshModel>(inContextDevice);
-            // MeshModel *startModel = new MeshModel(inContextDevice);
-            cubeModel->Load(cubePath);
+            std::shared_ptr<MeshModel> cubeModel = std::make_shared<MeshModel>(inContextDevice, cubePath);
             assert(cubeModel);
 
             auto cubeEntity = CreateEntity("Cube");
-            cubeEntity.AddComponent<MeshComponent>(cubeModel);
+            cubeEntity.AddComponent<MeshComponent>(std::move(cubeModel));
         }
+    }
+
+    void Scene::Clear()
+    {
+        m_Registry.clear();
+        m_Entities.clear();
+    }
+
+    void Scene::Save()
+    {
+        const std::string fileScene = RootDirectories + "/Scene.json";
+        Serializer::SaveToFile(m_Registry, fileScene);
+    }
+
+    void Scene::Load()
+    {
+        Clear();
+        const std::string fileScene = RootDirectories + "/Scene.json";
+        Serializer::LoadFromFile(this, fileScene);
     }
 
     void Scene::Update()
