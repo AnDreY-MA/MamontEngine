@@ -96,6 +96,9 @@ namespace MamontEditor
 
     void Editor::ImGuiRender()
     {
+        ImGui::ShowDebugLogWindow();
+        //IMGUI_DEBUG_LOG();
+        ImGui::ShowMetricsWindow();
         DrawMainPanel();
 
         for (auto &[hash, panel] : m_Panels)

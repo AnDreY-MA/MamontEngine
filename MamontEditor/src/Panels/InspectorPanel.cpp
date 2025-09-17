@@ -1,4 +1,4 @@
-#include "Panels/InspectorPanel.h"
+﻿#include "Panels/InspectorPanel.h"
 #include "Editor.h"
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
@@ -6,11 +6,16 @@
 #include <ECS/Components/TransformComponent.h>
 #include <ECS/Entity.h>
 #include "UI/UI.h"
-
+#include "Graphics/Model.h"
+#include "Core/Engine.h"
 #include "Utils/Loader.h"
+#include "EditorUtils/EditorUtils.h"
 
 namespace MamontEditor
 {
+    const std::string RootDirectories = PROJECT_ROOT_DIR;
+    const std::string AssetsPath      = RootDirectories + "/MamontEngine/assets";
+
     InspectorPanel::InspectorPanel() : 
         EditorPanel("Inspector")
     {
@@ -154,7 +159,7 @@ namespace MamontEditor
                                      m_SceneContext,
                                      m_SceneContext->GetRegistry(),
                                      inEntity,
-                                     [](MeshComponent &component, entt::entity entity)
+                                     [&](MeshComponent &component, entt::entity entity)
                                      {
                                          // MUI::BeginProperties();
                                          if (component.Mesh)
@@ -163,7 +168,37 @@ namespace MamontEditor
                                              ImGui::Text("Meshes count: %i", component.Mesh->GetSizeMeshes());
                                              ImGui::Text("Materials count: %i", component.Mesh->GetSizeMaterials());
                                          }
-                                         
+                                         const std::string selectedString = component.Mesh != nullptr ? component.Mesh->GetPathFile() : "";
+                                         if (ImGui::BeginCombo("##Extensions", selectedString.c_str()))
+                                         {
+                                             constexpr auto                     extensionFile = ".glb";
+                                             const std::vector<std::string> files         = ScanFolder(AssetsPath, extensionFile);
+                                             for (size_t index = 0; index < files.size(); ++index)
+                                             {
+                                                 const auto &file       = files[index];
+                                                 const std::string fullPath   = AssetsPath + "/" + file;
+                                                 const bool  isSelected = (component.Mesh != nullptr && component.Mesh->GetPathFile() == fullPath);
+
+                                                 if (ImGui::Selectable(file.c_str(), isSelected))
+                                                 {
+                                                     auto newModel = std::make_shared<MeshModel>(MEngine::Get().GetContextDevice(), fullPath);
+                                                     m_SceneContext->RemoveComponent<MeshComponent>(inEntity);
+                                                     inEntity.AddComponent<MeshComponent>(newModel);
+                                                     //component.Mesh.swap(newModel);
+                                                 }
+
+                                                 if (isSelected)
+                                                 {
+                                                     ImGui::SetItemDefaultFocus();
+                                                 }
+
+                                                 if (ImGui::IsItemHovered())
+                                                 {
+                                                     ImGui::SetTooltip("%s", fullPath.c_str());
+                                                 }
+                                             }
+                                             ImGui::EndCombo();
+                                         }
                                          
                                          // MUI::EndProperties();
                                           });

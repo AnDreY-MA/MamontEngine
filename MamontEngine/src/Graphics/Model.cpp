@@ -199,6 +199,8 @@ namespace MamontEngine
 
     void MeshModel::Load(std::string_view filePath)
     {
+        Clear();
+
         fmt::println("Loading GLTF: {}", filePath);
 
         fastgltf::Parser parser{};
@@ -238,7 +240,6 @@ namespace MamontEngine
         LoadImages(gltf);
         LoadMaterials(gltf);
         
-
         LoadMesh(gltf);
         LoadNodes(gltf);
 
@@ -248,9 +249,14 @@ namespace MamontEngine
 
     void MeshModel::LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers)
     {
-        VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr};
-        sampl.maxLod              = VK_LOD_CLAMP_NONE;
-        sampl.minLod              = 0;
+        VkSamplerCreateInfo sampl = {
+            .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, 
+            .pNext = nullptr,
+            .minLod = 0,
+            .maxLod              = VK_LOD_CLAMP_NONE
+        };
+
+        std::vector<VkSampler> modelSamplers;
 
         for (const fastgltf::Sampler &sampler : samplers)
         {
@@ -262,8 +268,10 @@ namespace MamontEngine
             VkSampler newSampler;
             vkCreateSampler(inDevice, &sampl, nullptr, &newSampler);
 
-            m_Samplers.push_back(newSampler);
+            modelSamplers.push_back(newSampler);
         }
+
+        m_Samplers = modelSamplers;
     }
 
     void MeshModel::LoadMaterials(const fastgltf::Asset &inFileAsset)
@@ -356,20 +364,23 @@ namespace MamontEngine
     
     void MeshModel::LoadImages(const fastgltf::Asset &inFileAsset)
     {
+        std::vector<AllocatedImage> newImages; 
         for (const fastgltf::Image &image : inFileAsset.images)
         {
             std::optional<AllocatedImage> img = load_image(m_ContextDevice, inFileAsset, image);
 
             if (img.has_value())
             {
-                m_Images.push_back(*img);
+                newImages.push_back(*img);
             }
             else
             {
-                m_Images.push_back(m_ContextDevice.ErrorCheckerboardImage);
+                newImages.push_back(m_ContextDevice.ErrorCheckerboardImage);
                 std::cout << "gltf failed to load texture " << image.name << std::endl;
             }
         }
+
+        m_Images = newImages;
     }
     
     void MeshModel::LoadNodes(const fastgltf::Asset &inFileAsset)
@@ -427,7 +438,6 @@ namespace MamontEngine
 
     void MeshModel::LoadMesh(const fastgltf::Asset &inFileAsset)
     {
-        
         std::vector<uint32_t>              indices;
         std::vector<Vertex>                vertices;
         for (const fastgltf::Mesh &mesh : inFileAsset.meshes)

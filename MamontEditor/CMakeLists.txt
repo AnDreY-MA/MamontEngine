@@ -4,9 +4,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 file(GLOB src "src/*.h" "src/*.cpp" "src/*.hpp")
 file(GLOB panels "src/Panels/*.h" "src/Panels/*.cpp" "src/Panels/*.hpp")
-source_group("src" FILES ${src} ${panels})
+file(GLOB EditorUtils "src/EditorUtils/*.h" "src/EditorUtils/*.cpp" "src/EditorUtils/*.hpp")
+source_group("src" FILES ${src} ${panels} ${EditorUtils})
 
-set (EDITOR_SOURCE_FILES ${src} ${panels})
+set (EDITOR_SOURCE_FILES ${src} ${panels} ${EditorUtils})
 
 add_executable(${PROJECT_NAME} ${EDITOR_SOURCE_FILES} )
 
@@ -55,3 +56,4 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE
     MamontEngine
 )
+add_definitions(-DPROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}")

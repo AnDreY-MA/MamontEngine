@@ -58,7 +58,7 @@ namespace MamontEngine
 
 		std::shared_ptr<SceneRenderer> m_SceneRenderer;
 
-		std::unordered_map<UID, entt::entity> m_Entities;
+		std::unordered_map<UID, Entity> m_Entities;
 
 		friend class Entity;
         friend class SceneHierarchyPanel;

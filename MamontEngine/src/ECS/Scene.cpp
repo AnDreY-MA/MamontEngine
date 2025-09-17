@@ -47,6 +47,10 @@ namespace MamontEngine
 
     void Scene::Clear()
     {
+        for (auto& [id, entity] : m_Entities)
+        {
+            RemoveComponent<MeshComponent>(entity);
+        }
         m_Registry.clear();
         m_Entities.clear();
     }

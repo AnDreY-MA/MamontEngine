@@ -48,6 +48,15 @@ namespace MamontEngine
         void                                  LoadNodes(const fastgltf::Asset &inFileAsset);
         void                                  LoadMesh(const fastgltf::Asset &inFileAsset);
 
+        void Clear()
+        {
+            m_Samplers.clear();
+            m_Images.clear();
+            m_Nodes.clear();
+            m_Materials.clear();
+            m_Meshes.clear();
+        }
+
     private:
         const VkContextDevice &m_ContextDevice;
 

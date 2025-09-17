@@ -10,7 +10,8 @@
 
 namespace MamontEditor
 {
-    SceneHierarchyPanel::SceneHierarchyPanel(const std::string &inName) : EditorPanel(inName)
+    SceneHierarchyPanel::SceneHierarchyPanel(const std::string &inName) 
+        : EditorPanel(inName)
     {
         Init();
     }
