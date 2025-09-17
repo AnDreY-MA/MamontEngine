@@ -9,6 +9,7 @@
 
 #include <chrono>
 #include <thread>
+#include "Utils/Profile.h"
 
 //#define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
@@ -49,6 +50,8 @@ namespace MamontEngine
 
     void Renderer::Render()
     {
+        PROFILE_ZONE("Renderer::Render");
+
         if (vkGetFenceStatus(m_DeviceContext.Device, m_DeviceContext.GetCurrentFrame().RenderFence) != VK_SUCCESS)
         {
             VK_CHECK_MESSAGE(vkWaitForFences(m_DeviceContext.Device, 1, &m_DeviceContext.GetCurrentFrame().RenderFence, VK_TRUE, 1000000000), "Wait FENCE");
@@ -78,11 +81,6 @@ namespace MamontEngine
         const VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
-
-        // const VkRenderPassBeginInfo renderPassInfo = vkinit::create_render_pass_info(
-        //  m_RenderPass, m_DeviceContext.Swapchain.GetFrameBuffer(swapchainImageIndex), m_DeviceContext.Swapchain.GetExtent());
-
-        // vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         VkUtil::transition_image(cmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
         VkUtil::transition_image(cmd, m_DeviceContext.Image.DepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
@@ -127,10 +125,11 @@ namespace MamontEngine
 
         const VkSubmitInfo2 submit = vkinit::submit_info(&cmdInfo, &signalInfo, &waitInfo);
 
-        VK_CHECK(vkQueueSubmit2(m_DeviceContext.GraphicsQueue, 1, &submit, m_DeviceContext.GetCurrentFrame().RenderFence));
+        VK_CHECK(vkQueueSubmit2(m_DeviceContext.GetGraphicsQueue(), 1, &submit, m_DeviceContext.GetCurrentFrame().RenderFence));
+
 
         const VkResult presentResult =
-                m_DeviceContext.Swapchain.Present(m_DeviceContext.GraphicsQueue, &m_DeviceContext.GetCurrentFrame().RenderSemaphore, swapchainImageIndex);
+                m_DeviceContext.Swapchain.Present(m_DeviceContext.GetGraphicsQueue(), &m_DeviceContext.GetCurrentFrame().RenderSemaphore, swapchainImageIndex);
         if (presentResult == VK_ERROR_OUT_OF_DATE_KHR)
         {
             m_IsResizeRequested = true;
@@ -170,7 +169,12 @@ namespace MamontEngine
 
     void Renderer::DrawMain(VkCommandBuffer inCmd)
     {
-        m_SkyPipeline->Draw(inCmd, &m_DeviceContext.DrawImageDescriptors);
+        PROFILE_VK_ZONE(m_DeviceContext.GetCurrentFrame().TracyContext, inCmd, "DrawMain");
+
+        {
+            PROFILE_VK_ZONE(m_DeviceContext.GetCurrentFrame().TracyContext, inCmd, "Draw SkyPipeline");
+            m_SkyPipeline->Draw(inCmd, &m_DeviceContext.DrawImageDescriptors);
+        }
 
         const VkExtent2D extent = m_Window->GetExtent();
         vkCmdDispatch(inCmd, std::ceil(extent.width / 16.0), std::ceil(extent.height / 16.0), 1);
@@ -200,6 +204,9 @@ namespace MamontEngine
 
     void Renderer::DrawGeometry(VkCommandBuffer inCmd)
     {
+        //PROFILE_ZONE("Renderer::DrawGeometry");
+        PROFILE_VK_ZONE(m_DeviceContext.GetCurrentFrame().TracyContext, inCmd, "Draw Geometry");
+
         auto &SceneBuffer = m_DeviceContext.GetCurrentFrame().SceneDataBuffer;
         if (SceneBuffer.MappedData == nullptr)
         {
@@ -230,7 +237,10 @@ namespace MamontEngine
             vkCmdSetScissor(inCmd, 0, 1, &scissor);
         }
 
-        m_SceneRenderer->Render(inCmd, globalDescriptor, sceneData);
+        {
+            PROFILE_VK_ZONE(m_DeviceContext.GetCurrentFrame().TracyContext, inCmd, "Scene Render");
+            m_SceneRenderer->Render(inCmd, globalDescriptor, sceneData);
+        }
 
         /*stats.DrawCallCount = 0;
         stats.TriangleCount = 0;*/
@@ -243,6 +253,10 @@ namespace MamontEngine
 
     void Renderer::ResizeSwapchain()
     {
+        m_IsResizeRequested = true;
+        if (!m_IsResizeRequested)
+            return;
+
         fmt::println("Resize Swapchain");
 
         m_DeviceContext.ResizeSwapchain(m_Window->Resize());

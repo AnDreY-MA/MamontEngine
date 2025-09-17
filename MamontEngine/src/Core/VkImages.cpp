@@ -23,12 +23,12 @@ namespace MamontEngine::VkUtil
         imageBarrier.subresourceRange = vkinit::image_subresource_range(aspectMask);
         imageBarrier.image            = image;
 
-        VkDependencyInfo depInfo{};
-        depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-        depInfo.pNext = nullptr;
-
-        depInfo.imageMemoryBarrierCount = 1;
-        depInfo.pImageMemoryBarriers    = &imageBarrier;
+        const VkDependencyInfo depInfo = {
+            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .pNext = nullptr,
+            .imageMemoryBarrierCount = 1,
+            .pImageMemoryBarriers    = &imageBarrier
+        };
 
         vkCmdPipelineBarrier2(cmd, &depInfo);
     }

@@ -1,6 +1,7 @@
 #include "SceneRenderer.h"
 #include <glm/gtx/transform.hpp>
 #include "Graphics/Model.h"
+#include "Utils/Profile.h"
 
 namespace MamontEngine
 {
@@ -62,6 +63,7 @@ namespace MamontEngine
 
     void SceneRenderer::Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const GPUSceneData &inSceneData)
     {
+        PROFILE_ZONE("SceneRenderer::Render");
         std::vector<uint32_t> opaque_draws;
         opaque_draws.reserve(m_DrawContext.OpaqueSurfaces.size());
 

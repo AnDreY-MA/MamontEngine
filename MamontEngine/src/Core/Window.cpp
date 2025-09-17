@@ -17,7 +17,7 @@ namespace MamontEngine
 
         // Check for WSI support
         VkBool32 res;
-        vkGetPhysicalDeviceSurfaceSupportKHR(inContextDevice.GetPhysicalDevice(), inContextDevice.GraphicsQueueFamily, m_VulkanWindow->Surface, &res);
+        vkGetPhysicalDeviceSurfaceSupportKHR(inContextDevice.GetPhysicalDevice(), inContextDevice.GetGraphicsQueueFamily(), m_VulkanWindow->Surface, &res);
         if (res != VK_TRUE)
         {
             fprintf(stderr, "Error no WSI support on physical device 0\n");
@@ -48,7 +48,7 @@ namespace MamontEngine
                                                inContextDevice.GetPhysicalDevice(),
                                                inContextDevice.Device,
                                                m_VulkanWindow,
-                                               inContextDevice.GraphicsQueueFamily,
+                                               inContextDevice.GetGraphicsQueueFamily(),
                                                nullptr,
                                                w,
                                                h,

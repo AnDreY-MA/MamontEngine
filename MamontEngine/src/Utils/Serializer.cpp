@@ -12,6 +12,7 @@
 
 namespace MamontEngine
 {
+#if defined(MM_RELEASE)
     constexpr std::string JSON_ENTITIES = "Entities";
     constexpr std::string JSON_COMPONENTS = "Components";
     constexpr std::string JSON_MESH = "Mesh";
@@ -20,7 +21,17 @@ namespace MamontEngine
     constexpr std::string JSON_TRANSFORM_ROTATION = "rotation";
     constexpr std::string JSON_TRANSFORM_SCALE = "scale";
     constexpr std::string JSON_TAG = "Tag";
-
+#else
+    const std::string     JSON_ENTITIES              = "Entities";
+    const std::string     JSON_COMPONENTS            = "Components";
+    const std::string     JSON_MESH                  = "Mesh";
+    const std::string     JSON_TRANSFORM             = "Transform";
+    const std::string     JSON_TRANSFORM_TRANSLATION = "position";
+    const std::string     JSON_TRANSFORM_ROTATION    = "rotation";
+    const std::string     JSON_TRANSFORM_SCALE       = "scale";
+    const std::string     JSON_TAG                   = "Tag";
+#endif
+    
     bool Serializer::SaveToFile(const entt::registry &registry, const std::string &filename)
     {
         try

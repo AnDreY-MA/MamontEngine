@@ -10,7 +10,7 @@
 #include "FrameData.h"
 #include "Graphics/Vulkan/Swapchain.h"
 #include "Graphics/Devices/PhysicalDevice.h"
-
+#include "Utils/Profile.h"
 
 namespace MamontEngine
 {
@@ -54,6 +54,8 @@ namespace MamontEngine
         void InitSwapchain(const VkExtent2D &inWindowExtent);
         void ResizeSwapchain(const VkExtent2D &inWindowExtent);
 
+        void InitTracyContext();
+
         FrameData &GetCurrentFrame();
         inline FrameData& GetFrameAt(const size_t inIndex)
         {
@@ -70,17 +72,24 @@ namespace MamontEngine
             return m_FrameNumber;
         }
 
+        VkQueue GetGraphicsQueue() const
+        {
+            return m_GraphicsQueue;
+        }
+
+        uint32_t GetGraphicsQueueFamily() const
+        {
+            return m_GraphicsQueueFamily;
+        }
+
         VkPhysicalDevice GetPhysicalDevice() const;
 
-        VkInstance               Instance;
-        VkDebugUtilsMessengerEXT DebugMessenger;
-        VkDevice                 Device;
-        VkSurfaceKHR             Surface;
+        VkInstance               Instance{VK_NULL_HANDLE};
+        VkDebugUtilsMessengerEXT DebugMessenger{VK_NULL_HANDLE};
+        VkDevice                 Device{VK_NULL_HANDLE};
+        VkSurfaceKHR             Surface{VK_NULL_HANDLE};
 
         VmaAllocator Allocator;
-
-        VkQueue  GraphicsQueue;
-        uint32_t GraphicsQueueFamily;
 
         AllocatedImage WhiteImage;
         AllocatedImage ErrorCheckerboardImage;
@@ -89,17 +98,13 @@ namespace MamontEngine
 
         MSwapchain Swapchain;
 
-        VkFence         ImmFence;
-        VkCommandBuffer ImmCommandBuffer;
-        VkCommandPool   ImmCommandPool;
-
-        VkSampler DefaultSamplerLinear;
-        VkSampler DefaultSamplerNearest;
+        VkSampler DefaultSamplerLinear{VK_NULL_HANDLE};
+        VkSampler DefaultSamplerNearest{VK_NULL_HANDLE};
 
         DescriptorAllocator   GlobalDescriptorAllocator;
-        VkDescriptorSet       DrawImageDescriptors;
-        VkDescriptorSetLayout DrawImageDescriptorLayout;
-        VkDescriptorSetLayout GPUSceneDataDescriptorLayout;
+        VkDescriptorSet       DrawImageDescriptors{VK_NULL_HANDLE};
+        VkDescriptorSetLayout DrawImageDescriptorLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
 
         VkRenderPass RenderPass;
 
@@ -121,5 +126,21 @@ namespace MamontEngine
         size_t                                  m_FrameNumber{0};
 
         std::unique_ptr<PhysicalDevice> m_PhysicalDevice;
+
+        VkFence         m_ImmFence{VK_NULL_HANDLE};
+        VkCommandBuffer m_ImmCommandBuffer{VK_NULL_HANDLE};
+        VkCommandPool   m_ImmCommandPool{VK_NULL_HANDLE};
+
+        VkQueue  m_GraphicsQueue{VK_NULL_HANDLE};
+        uint32_t m_GraphicsQueueFamily{0};
+
+        struct TracyInfo
+        {
+            VkCommandPool                                      CommandPool{VK_NULL_HANDLE};
+            VkCommandBuffer                                    CommandBuffer{VK_NULL_HANDLE};
+            PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT GetPhysicalDeviceCalibrateableTimeDomainsEXT = nullptr;
+            PFN_vkGetCalibratedTimestampsEXT                   GetCalibratedTimestampsEXT = nullptr;
+        } m_TracyInfo;
+
 	};
 }

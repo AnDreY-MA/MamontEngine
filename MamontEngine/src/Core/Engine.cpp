@@ -23,7 +23,8 @@
 #include "ECS/Entity.h"
 #include <ECS/Components/MeshComponent.h>
 
-#include "ImGuizmo/ImGuizmo.h"
+#include "Utils/Profile.h"
+#include "tracy/public/TracyClient.cpp"
 
 namespace MamontEngine
 {
@@ -56,6 +57,8 @@ namespace MamontEngine
         m_ContextDevice->InitDescriptors();
 
         m_ContextDevice->InitSceneBuffers();
+        
+        m_ContextDevice->InitTracyContext();
 
         m_MainDeletionQueue.PushFunction([&]() { 
             m_ContextDevice->DestroyFrameData(); 
@@ -78,6 +81,10 @@ namespace MamontEngine
     {
         SDL_Event event;
         bool      bQuit{false};
+
+
+        tracy::SetThreadName("Main Thread");
+        //FrameMarkStart("MainLoop");
 
         while (!bQuit)
         {
@@ -110,11 +117,15 @@ namespace MamontEngine
 
             if (!m_Renderer->IsResizeRequested())
             {
-                m_GuiLayer->Begin();
+                {
+                    PROFILE_ZONE("Editor render");
 
-                m_GuiLayer->ImGuiRender();
+                    m_GuiLayer->Begin();
 
-                m_GuiLayer->End();
+                    m_GuiLayer->ImGuiRender();
+
+                    m_GuiLayer->End();
+                }
 
                 UpdateScene();
                 m_Renderer->Render();
@@ -125,7 +136,10 @@ namespace MamontEngine
             const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
             stats.FrameTime = elapsed.count() / 1000.f;*/
+
         }
+        //FrameMarkEnd("MainLoop");
+
     }
 
     void MEngine::Cleanup()
@@ -185,11 +199,12 @@ namespace MamontEngine
     
     void MEngine::ResizeSwapchain()
     {
-        fmt::println("Resize Swapchain");
+        m_Renderer->ResizeSwapchain();
+        /*fmt::println("Resize Swapchain");
 
         m_ContextDevice->ResizeSwapchain(m_Window->Resize());
 
-        m_IsResizeRequested = false;
+        m_IsResizeRequested = false;*/
     }
 
     VkFormat MEngine::FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const

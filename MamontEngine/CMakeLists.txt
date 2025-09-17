@@ -32,6 +32,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
   "_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS"
   "GLM_FORCE_DEPTH_ZERO_TO_ONE"
   "GLM_ENABLE_EXPERIMENTAL"
+  "$<$<CONFIG:Debug>:TRACY_ENABLE>"
 )
 
 # Compiler-specific flags
@@ -70,6 +71,8 @@ foreach(GLSL ${GLSL_SOURCE_FILES})
 endforeach()
 add_custom_target(Shaders DEPENDS ${SPIRV_BINARY_FILES})
 
+#option(TRACY_ENABLE "" ON)
+
 # Vendor dependencies
 add_subdirectory("vendor/glm")
 add_subdirectory("vendor/vkbootstrap")
@@ -78,8 +81,16 @@ add_subdirectory("vendor/fmt" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/vma" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/entt" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/nlohmann_json" EXCLUDE_FROM_ALL)
+add_subdirectory("vendor/tracy" EXCLUDE_FROM_ALL)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GPUOpen::VulkanMemoryAllocator EnTT::EnTT glm::glm nlohmann_json::nlohmann_json)
+include_directories(${PROJECT_NAME} tracy/public)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GPUOpen::VulkanMemoryAllocator EnTT::EnTT glm::glm nlohmann_json::nlohmann_json Tracy::TracyClient)
+
+#target_compile_definitions(${PROJECT_NAME} PRIVATE TRACY_PROTOCOL=74)
+#if(TRACY_ENABLE_VULKAN)
+ #   target_link_libraries(${PROJECT_NAME} PUBLIC Tracy::TracyVulkan)
+#endif()
 
 # imgui
 add_library(imgui STATIC 

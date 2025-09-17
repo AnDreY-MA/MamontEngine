@@ -3,6 +3,7 @@
 #include "Core/VkDestriptor.h"
 #include "Graphics/Vulkan/Image.h"
 #include "Graphics/Vulkan/MeshBuffer.h"
+#include "tracy/TracyVulkan.hpp"
 
 namespace MamontEngine
 {
@@ -31,17 +32,19 @@ namespace MamontEngine
 
     struct FrameData
     {
-        VkSemaphore SwapchainSemaphore;
-        VkSemaphore RenderSemaphore;
+        VkSemaphore SwapchainSemaphore{VK_NULL_HANDLE};
+        VkSemaphore RenderSemaphore{VK_NULL_HANDLE};
 
-        VkFence RenderFence;
+        VkFence RenderFence{VK_NULL_HANDLE};
 
-        VkCommandPool   CommandPool;
-        VkCommandBuffer MainCommandBuffer;
+        VkCommandPool   CommandPool{VK_NULL_HANDLE};
+        VkCommandBuffer MainCommandBuffer{VK_NULL_HANDLE};
 
         DeletionQueue               Deleteions;
         DescriptorAllocatorGrowable FrameDescriptors;
 
+        
         AllocatedBuffer SceneDataBuffer;
+        TracyVkCtx TracyContext = nullptr;
     };
 }
