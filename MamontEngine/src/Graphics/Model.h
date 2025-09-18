@@ -19,7 +19,7 @@ namespace MamontEngine
 
         void Load(std::string_view filePath);
         
-        void Draw(const glm::mat4 &inTopMatrix, DrawContext &inContext) const;
+        void Draw(DrawContext &inContext) const;
 
         void UpdateTransform(const glm::mat4 &inTransform, const glm::vec3 &inLocation, const glm::vec3 &inRotation, const glm::vec3 &inScale);
 
@@ -48,19 +48,12 @@ namespace MamontEngine
         void                                  LoadNodes(const fastgltf::Asset &inFileAsset);
         void                                  LoadMesh(const fastgltf::Asset &inFileAsset);
 
-        void Clear()
-        {
-            m_Samplers.clear();
-            m_Images.clear();
-            m_Nodes.clear();
-            m_Materials.clear();
-            m_Meshes.clear();
-        }
+        void Clear();
 
     private:
         const VkContextDevice &m_ContextDevice;
 
-        std::vector<std::unique_ptr<Node>>         m_Nodes;
+        std::vector<std::shared_ptr<Node>>         m_Nodes;
         std::vector<AllocatedImage>                m_Images;
         std::vector<std::shared_ptr<GLTFMaterial>> m_Materials;
         std::vector<VkSampler>                     m_Samplers;
@@ -68,6 +61,8 @@ namespace MamontEngine
 
         DescriptorAllocatorGrowable DescriptorPool;
         AllocatedBuffer             MaterialDataBuffer;
+
+        MeshBuffer Buffer;
 
         std::filesystem::path pathFile;
 	};

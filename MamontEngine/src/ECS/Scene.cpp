@@ -27,7 +27,7 @@ namespace MamontEngine
     void Scene::Init(VkContextDevice &inContextDevice)
     {
         {
-            const std::string structurePath = {RootDirectories + "/MamontEngine/assets/house2.glb"};
+            const std::string structurePath = {RootDirectories + "/MamontEngine/assets/monkey.glb"};
             std::shared_ptr<MeshModel> startModel = std::make_shared<MeshModel>(inContextDevice, structurePath);
             assert(startModel);
 
@@ -36,7 +36,7 @@ namespace MamontEngine
         }
 
         {
-            const std::string cubePath = {RootDirectories + "/MamontEngine/assets/cube.glb"};
+            const std::string cubePath = {RootDirectories + "/MamontEngine/assets/monkeyHD.glb"};
             std::shared_ptr<MeshModel> cubeModel = std::make_shared<MeshModel>(inContextDevice, cubePath);
             assert(cubeModel);
 

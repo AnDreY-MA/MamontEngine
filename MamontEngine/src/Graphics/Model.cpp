@@ -1,4 +1,4 @@
-#include "Model.h"
+﻿#include "Model.h"
 #include <stb/include/stb_image.h>
 #include <expected>
 #include <glm/gtx/quaternion.hpp>
@@ -60,7 +60,7 @@ namespace MamontEngine
         std::visit(
                 fastgltf::visitor{
                         [](auto &arg) {},
-                        [&](fastgltf::sources::URI &filePath)
+                        [&](const fastgltf::sources::URI &filePath)
                         {
                             assert(filePath.fileByteOffset == 0);
 
@@ -118,41 +118,55 @@ namespace MamontEngine
 
     MeshModel::~MeshModel()
     {
-        for (const auto &mesh : m_Meshes)
+        /*for (const auto &mesh : m_Meshes)
         {
             m_ContextDevice.DestroyBuffer(mesh->Buffer.IndexBuffer);
             m_ContextDevice.DestroyBuffer(mesh->Buffer.VertexBuffer);
-        }
+        }*/
+        m_ContextDevice.DestroyBuffer(Buffer.IndexBuffer);
+        m_ContextDevice.DestroyBuffer(Buffer.VertexBuffer);
+
 
         //for (auto &image : m_Images)
         //{
         //    if (image.Image != VK_NULL_HANDLE && image.Allocation != VK_NULL_HANDLE)
         //    {
         //        m_ContextDevice.DestroyImage(image);
-        //        image = {}; // ��������
+        //        image = {}; // îáíóëÿåì
         //    }
         //}
 
+        const VkDevice dv = m_ContextDevice.Device;
+        Clear();
+
+    }
+
+    void MeshModel::Clear()
+    {
         const VkDevice dv = m_ContextDevice.Device;
         for (const auto &sampler : m_Samplers)
         {
             vkDestroySampler(dv, sampler, nullptr);
         }
-
         DescriptorPool.DestroyPools(dv);
 
-        m_ContextDevice.DestroyBuffer(MaterialDataBuffer);
+        m_Samplers.clear();
+
+        m_Images.clear();
+        m_Nodes.clear();
+        m_Materials.clear();
+        m_Meshes.clear();
     }
 
-    void MeshModel::Draw(const glm::mat4 &inTopMatrix, DrawContext &inContext) const
+    void MeshModel::Draw( DrawContext &inContext) const
     {
-        std::function<void(Node*, const glm::mat4&, DrawContext&)> collect = 
-            ([&collect, this](Node* node, const glm::mat4 &inTopMatrix, DrawContext &inContext)
+        std::function<void(Node*, DrawContext&)> collect = 
+            ([&collect, this](Node* node, DrawContext &inContext)
         {
             if (!node || !node->Mesh)
                     return;
 
-            const glm::mat4 nodeMatrix = inTopMatrix * node->Matrix;
+            const glm::mat4 nodeMatrix = node->CurrentMatrix;
 
             for (const auto &primitive : node->Mesh->Primitives)
             {
@@ -162,12 +176,12 @@ namespace MamontEngine
                 const auto        &material = primitive->Material;
                 const RenderObject def(primitive->Count,
                                         primitive->StartIndex,
-                                        node->Mesh->Buffer.IndexBuffer.Buffer,
-                                        node->Mesh->Buffer.VertexBuffer.Buffer,
+                                        Buffer.IndexBuffer.Buffer,
+                                        Buffer.VertexBuffer.Buffer,
                                         material.get(),
                                         primitive->Bound,
                                         nodeMatrix,
-                                        node->Mesh->Buffer.VertexBufferAddress);
+                                        Buffer.VertexBufferAddress);
 
                 if (material->PassType == EMaterialPass::TRANSPARENT)
                     inContext.TransparentSurfaces.push_back(def);
@@ -177,23 +191,49 @@ namespace MamontEngine
 
             for (const auto& childNode : node->Children)
             {
-                collect(childNode, inTopMatrix, inContext);
+                if (childNode)
+                {
+                    collect(childNode.get(), inContext);
+                }
             }
         });
         for (const auto& node : m_Nodes)
         {
-            collect(node.get(), inTopMatrix, inContext);
+            collect(node.get(), inContext);
         }
     }
 
     void MeshModel::UpdateTransform(const glm::mat4 &inTransform, const glm::vec3 &inLocation, const glm::vec3 &inRotation, const glm::vec3 &inScale)
     {
-        for (auto &n : m_Nodes)
+        /*for (auto &n : m_Nodes)
         {
             n->Matrix      = inTransform;
-            n->Translation = inLocation;
-            n->Rotation    = inRotation;
-            n->Scale       = inScale;
+        }*/
+
+        glm::mat4 newTransform = glm::mat4(1.0f);
+        newTransform           = glm::translate(newTransform, inLocation);
+        newTransform           = glm::rotate(newTransform, glm::radians(inRotation.x), glm::vec3(1, 0, 0));
+        newTransform           = glm::rotate(newTransform, glm::radians(inRotation.y), glm::vec3(0, 1, 0));
+        newTransform           = glm::rotate(newTransform, glm::radians(inRotation.z), glm::vec3(0, 0, 1));
+        newTransform           = glm::scale(newTransform, inScale);
+        newTransform           = inTransform * newTransform;
+
+        std::function<void(Node *, const glm::mat4 &)> updateNode = [&](Node *node, const glm::mat4 &parentMatrix)
+        {
+            if (!node)
+                return;
+
+            node->CurrentMatrix = parentMatrix * node->Matrix;
+
+            for (auto &child : node->Children)
+            {
+                updateNode(child.get(), node->CurrentMatrix);
+            }
+        };
+
+        for (auto &rootNode : m_Nodes)
+        {
+            updateNode(rootNode.get(), newTransform);
         }
     }
 
@@ -244,6 +284,7 @@ namespace MamontEngine
         LoadNodes(gltf);
 
         pathFile = filePath;
+        m_ContextDevice.DestroyBuffer(MaterialDataBuffer);
     
     }
 
@@ -279,8 +320,18 @@ namespace MamontEngine
         std::vector<std::shared_ptr<GLTFMaterial>> materials;
         materials.reserve(inFileAsset.materials.size());
 
-        MaterialDataBuffer = m_ContextDevice.CreateBuffer(
-                sizeof(GLTFMaterial::MaterialConstants) * inFileAsset.materials.size(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        if (inFileAsset.materials.size() == 0)
+        {
+            fmt::println("Materials is empty");
+            auto material = std::make_shared<GLTFMaterial>();
+            material->Pipeline = m_ContextDevice.RenderPipeline->OpaquePipeline;
+            m_Materials.push_back(std::move(material));
+            return;
+        }
+
+        const size_t bufferSize = sizeof(GLTFMaterial::MaterialConstants) * inFileAsset.materials.size();
+
+        MaterialDataBuffer = m_ContextDevice.CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VMA_MEMORY_USAGE_CPU_TO_GPU);
         int                                        data_index = 0;
         //GLTFMaterial::MaterialConstants *sceneMaterialConstants = (GLTFMaterial::MaterialConstants *)MaterialDataBuffer.Info.pMappedData;
@@ -385,19 +436,20 @@ namespace MamontEngine
     
     void MeshModel::LoadNodes(const fastgltf::Asset &inFileAsset)
     {
-        std::vector<std::unique_ptr<Node>> nodes;
-        nodes.reserve(inFileAsset.nodes.size());
+        const size_t                       sizeNodes{inFileAsset.nodes.size()};
+        std::vector<std::shared_ptr<Node>> nodes;
+        nodes.reserve(sizeNodes);
 
         for (const fastgltf::Node &node : inFileAsset.nodes)
         {
-            auto newNode = std::make_unique<Node>();
+            auto newNode = std::make_shared<Node>();
 
             if (node.meshIndex.has_value())
             {
-                newNode->Mesh = m_Meshes[*node.meshIndex].get();
+                newNode->Mesh = m_Meshes[*node.meshIndex];
             }
 
-            std::visit(fastgltf::visitor{[&](const fastgltf::Node::TransformMatrix &matrix) { memcpy(&newNode->Matrix, matrix.data(), sizeof(matrix)); },
+            /*std::visit(fastgltf::visitor{[&](const fastgltf::Node::TransformMatrix &matrix) { memcpy(&newNode->Matrix, matrix.data(), sizeof(matrix)); },
                                          [&](const fastgltf::Node::TRS &transform)
                                          {
                                              const glm::vec3 tl(transform.translation[0], transform.translation[1], transform.translation[2]);
@@ -410,27 +462,45 @@ namespace MamontEngine
 
                                              newNode->Matrix = tm * rm * sm;
                                          }},
+                       node.transform);*/
+            std::visit(fastgltf::visitor{[&](const fastgltf::Node::TransformMatrix &matrix) { memcpy(&newNode->Matrix, matrix.data(), sizeof(matrix)); },
+                                         [&](const fastgltf::Node::TRS &transform)
+                                         {
+                                             // Сохраняем оригинальные значения из файла
+                                             newNode->Translation = glm::vec3(transform.translation[0], transform.translation[1], transform.translation[2]);
+                                             newNode->Rotation    = glm::vec3(0); // Будешь вычислять из кватерниона
+                                             newNode->Scale       = glm::vec3(transform.scale[0], transform.scale[1], transform.scale[2]);
+
+                                             // Создаем матрицу из TRS
+                                             glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), newNode->Translation);
+                                             glm::quat rotation(transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]);
+                                             glm::mat4 rotationMat = glm::toMat4(rotation);
+                                             glm::mat4 scaleMat    = glm::scale(glm::mat4(1.0f), newNode->Scale);
+
+                                             newNode->Matrix = translationMat * rotationMat * scaleMat;
+                                         }},
                        node.transform);
 
             nodes.push_back(std::move(newNode));
         }
 
-        for (size_t i = 0; i < inFileAsset.nodes.size(); i++)
+        for (size_t i = 0; i < sizeNodes; ++i)
         {
-            const fastgltf::Node &node = inFileAsset.nodes[i];
+            const fastgltf::Node &gltfNode = inFileAsset.nodes[i];
+            auto                 &currentNode = nodes[i];
 
-            for (const auto &c : node.children)
+            for (const auto &child : gltfNode.children)
             {
-                nodes[i]->Children.push_back(nodes[c].get()); 
-                nodes[c]->Parent = nodes[i].get();
+                nodes[i]->Children.push_back(nodes[child]); 
+                nodes[child]->Parent = currentNode;
             }
         }
 
-        for (auto &node : nodes)
+        for (const auto &node : nodes)
         {
-            if (node->Parent == nullptr)
+            if (node->Parent.expired())
             {
-                m_Nodes.push_back(std::move(node));
+                m_Nodes.push_back(node);
             }
         }
 
@@ -446,8 +516,8 @@ namespace MamontEngine
             //inFile.Primitives[mesh.name.c_str()] = newmesh;
             //newmesh->Name                  = mesh.name;
 
-            indices.clear();
-            vertices.clear();
+            /*indices.clear();
+            vertices.clear();*/
 
             for (auto &&p : mesh.primitives)
             {
@@ -521,7 +591,7 @@ namespace MamontEngine
 
                 glm::vec3 minpos = vertices[initial_vtx].Position;
                 glm::vec3 maxpos = vertices[initial_vtx].Position;
-                for (size_t i = initial_vtx; i < vertices.size(); i++)
+                for (size_t i = initial_vtx; i < vertices.size(); ++i)
                 {
                     minpos = glm::min(minpos, vertices[i].Position);
                     maxpos = glm::max(maxpos, vertices[i].Position);
@@ -534,9 +604,9 @@ namespace MamontEngine
                 newmesh->Primitives.push_back(std::move(newPrimitive));
             }
 
-            newmesh->Buffer = m_ContextDevice.CreateGPUMeshBuffer(indices, vertices);
-
             m_Meshes.push_back(newmesh);
         }
+        Buffer = m_ContextDevice.CreateGPUMeshBuffer(indices, vertices);
+
     }
 }

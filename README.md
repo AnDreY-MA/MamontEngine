@@ -4,7 +4,9 @@
 <img alt="Preview" src="Engine.PNG" />
 
 ## Features
-- gltf scene loading
+- GLTF model loading
+- ECS Integration
+- Save/Load scene
 
 ## Dependencies
 - Vulkan SDK (1.3)

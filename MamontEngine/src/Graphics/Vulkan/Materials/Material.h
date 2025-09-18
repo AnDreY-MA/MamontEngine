@@ -17,7 +17,7 @@ namespace MamontEngine
     {
         std::shared_ptr<PipelineData> Pipeline;
         VkDescriptorSet               MaterialSet{VK_NULL_HANDLE};
-        EMaterialPass                 PassType;
+        EMaterialPass PassType{EMaterialPass::MAIN_COLOR};
 
         struct MaterialConstants
         {

@@ -139,7 +139,7 @@ namespace MamontEngine
         const VkBufferCreateInfo bufferInfo = {
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .pNext              = nullptr,
-            .size               = inAllocSize,
+            .size               = inAllocSize != 0 ? inAllocSize : 1,
             .usage = inUsage
         };
 
@@ -147,7 +147,7 @@ namespace MamontEngine
             .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
             .usage                   = inMemoryUsage,
         };
-        
+
         AllocatedBuffer newBuffer{};
         VK_CHECK(vmaCreateBuffer(Allocator, &bufferInfo, &vmaAllocInfo, &newBuffer.Buffer, &newBuffer.Allocation, &newBuffer.Info));
         newBuffer.Size = static_cast<uint64_t>(inAllocSize);

@@ -155,7 +155,7 @@ namespace MamontEngine
         {
             if (mesh.Mesh != nullptr)
             {
-                mesh.Mesh->Draw(glm::mat4{1.f}, m_DrawContext);
+                mesh.Mesh->Draw(m_DrawContext);
             }
         }
     }

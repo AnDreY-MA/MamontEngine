@@ -11,16 +11,17 @@ namespace MamontEngine
 {
     struct Vertex
     {
-        alignas(16) glm::vec3 Position = {0.f, 0.f, 0.f};
+        alignas(16) glm::vec3 Position = glm::vec3(0.0f);
         alignas(16) glm::vec3 Normal   = glm::vec3(0.0f);
         alignas(8) glm::vec2 UV = glm::vec2{0.f};
         alignas(16) glm::vec4 Color = glm::vec4(1.f);
+        //alignas(16) glm::vec4 Tangent = glm::vec4(1.f);
     };
 
     struct Bounds
     {
-        glm::vec3 Origin  = {0.0f, 0.0f, 0.0f};
-        glm::vec3 Extents = {0.0f, 0.0f, 0.0f};
+        glm::vec3 Origin  = glm::vec3(0.0f);
+        glm::vec3 Extents = glm::vec3(0.0f);
         float     SpherRadius{0.0f};
     };
 
@@ -39,30 +40,29 @@ namespace MamontEngine
     struct NewMesh
     {
         std::vector<std::unique_ptr<Primitive>> Primitives;
-
-        MeshBuffer Buffer;
     };
 
     struct Node
     {
-        Node *Parent{nullptr};
-        std::vector<Node *> Children;
-        NewMesh            *Mesh;
+        std::weak_ptr<Node> Parent;
+        std::vector<std::shared_ptr<Node>> Children;
+        std::shared_ptr<NewMesh> Mesh;
 
         glm::mat4 Matrix;
+        glm::mat4 CurrentMatrix{glm::mat4(1.f)};
         glm::vec3 Translation{0.f};
         glm::vec3 Rotation{0.f};
         glm::vec3 Scale{1.f};
 
         std::string Name;
 
-        ~Node()
+        /*~Node()
         {
             for (auto& child : Children)
             {
                 delete child;
             }
-        }
+        }*/
 
     };
 }
