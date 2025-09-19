@@ -2,6 +2,7 @@
 #include <stb/include/stb_image.h>
 #include <expected>
 #include <glm/gtx/quaternion.hpp>
+#include "Core/Log.h"
 
 namespace MamontEngine
 {
@@ -98,7 +99,7 @@ namespace MamontEngine
 
         if (newImage.Image == VK_NULL_HANDLE)
         {
-            fmt::println("Load Image(): image = NULL");
+            Log::Warn("Load Image(): image = NULL");
             return {};
         }
 
@@ -285,6 +286,8 @@ namespace MamontEngine
 
         pathFile = filePath;
         m_ContextDevice.DestroyBuffer(MaterialDataBuffer);
+
+        Log::Info("Loaded model: {}", pathFile.string());
     
     }
 
@@ -578,6 +581,14 @@ namespace MamontEngine
                                                                   inFileAsset.accessors[(*colors).second],
                                                                   [&](const glm::vec4 &v, size_t index) { 
                             vertices[initial_vtx + index].Color = v; });
+                }
+                const auto tangents = p.findAttribute("TANGENT");
+                if (tangents != p.attributes.end())
+                {
+
+                    fastgltf::iterateAccessorWithIndex<glm::vec4>(inFileAsset,
+                                                                  inFileAsset.accessors[(*tangents).second],
+                                                                  [&](const glm::vec4 &v, size_t index) { vertices[initial_vtx + index].Tangent = v; });
                 }
 
                 if (p.materialIndex.has_value())

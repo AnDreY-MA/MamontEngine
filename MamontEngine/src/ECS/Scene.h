@@ -48,6 +48,9 @@ namespace MamontEngine
             return m_Registry;
         }
 
+		Entity GetEntity(UID Id);
+        const Entity& GetEntity(UID Id) const;
+
 	private:
 		Entity CreateEntity(UID inId, std::string_view inName);
 

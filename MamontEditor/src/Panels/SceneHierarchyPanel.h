@@ -32,7 +32,7 @@ namespace MamontEditor
         }
 
     private:
-        void DrawEntityNode(MamontEngine::Entity inEntity);
+        void DrawEntityNode(const MamontEngine::Entity& inEntity);
 
         void DrawContextMenu();
 

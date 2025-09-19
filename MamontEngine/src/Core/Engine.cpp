@@ -42,6 +42,8 @@ namespace MamontEngine
         assert(loadedEngine == nullptr);
         loadedEngine = this;
 
+        m_Log = std::make_unique<Log>();
+
         m_Window = std::make_shared<WindowCore>();
 
         m_ContextDevice = std::make_unique<VkContextDevice>(m_Window.get());
@@ -146,6 +148,7 @@ namespace MamontEngine
     {
         if (m_IsInitialized)
         {
+            m_Log.release();
             vkDeviceWaitIdle(m_ContextDevice->Device);
             
             m_GuiLayer->Deactivate();

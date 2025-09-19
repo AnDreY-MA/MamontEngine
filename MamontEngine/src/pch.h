@@ -4,6 +4,7 @@
 #include <ostream>
 #include <memory>
 #include <string>
+#include <format>
 #include <sstream>
 #include <string_view>
 #include <vector>
@@ -20,6 +21,7 @@
 #include <vulkan/vk_enum_string_helper.h>
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
+#include "imgui/imgui.h"
 
 #include <fmt/core.h>
 #include <vk_mem_alloc.h>
@@ -29,12 +31,6 @@
 
 #define CREATE_NAME_WITH_PREFIX(prefix) CREATE_NAME_HELPER(prefix, __LINE__)
 #define CREATE_NAME CREATE_NAME_WITH_PREFIX()
-
-struct GPUDrawPushConstants
-{
-    glm::mat4       WorldMatrix;
-    VkDeviceAddress VertexBuffer;
-};
 
 struct NonCopyable
 {

@@ -11,7 +11,7 @@
 #include "ImGuiRenderer.h"
 #include <ECS/SceneRenderer.h>
 #include "ImGuiLayer.h"
-
+#include "Core/Log.h"
 
 struct MPipeline
 {
@@ -78,6 +78,7 @@ namespace MamontEngine
 
         std::unique_ptr<Renderer>      m_Renderer;
         std::unique_ptr<ImGuiLayer>    m_GuiLayer;
+        std::unique_ptr<Log>           m_Log;
 
         std::unique_ptr<VkContextDevice> m_ContextDevice;
 

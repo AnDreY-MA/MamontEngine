@@ -8,6 +8,7 @@
 layout (location = 0) out vec3 outNormal;
 layout (location = 1) out vec4 outColor;
 layout (location = 2) out vec2 outUV;
+layout (location = 3) out vec4 outTangent;
 
 struct Vertex {
 
@@ -15,6 +16,7 @@ struct Vertex {
 	vec3 normal;
 	vec2 uv;
 	vec4 color;
+	vec4 tangent;
 }; 
 
 layout(buffer_reference, std430) readonly buffer VertexBuffer{ 
@@ -40,5 +42,6 @@ void main()
     outNormal = v.normal;
 	outColor = v.color;    
     outUV = v.uv;
+	outTangent = v.tangent;
 }
 

@@ -7,7 +7,7 @@
 #include <Utils/Loader.h>
 #include "Graphics/Model.h"
 #include "Core/ContextDevice.h"
-
+#include "Core/Log.h"
 
 namespace MamontEngine
 {
@@ -27,7 +27,7 @@ namespace MamontEngine
     void Scene::Init(VkContextDevice &inContextDevice)
     {
         {
-            const std::string structurePath = {RootDirectories + "/MamontEngine/assets/monkey.glb"};
+            const std::string structurePath = {RootDirectories + "/MamontEngine/assets/house2.glb"};
             std::shared_ptr<MeshModel> startModel = std::make_shared<MeshModel>(inContextDevice, structurePath);
             assert(startModel);
 
@@ -121,8 +121,24 @@ namespace MamontEngine
 
         m_Entities.emplace(inId, entity);
 
+        Log::Info("Created entity {}", inName);
+
         return entity;
     }
+    
+    Entity Scene::GetEntity(UID Id)
+    {
+        if (auto it = m_Entities.find(Id); it != m_Entities.end())
+            return it->second;
+        return {};
+    }
+    const Entity& Scene::GetEntity(UID Id) const
+    {
+        if (auto it = m_Entities.find(Id); it != m_Entities.end())
+            return it->second;
+        return {};
+    }
+
 
     template<>
     void Scene::RemoveComponent<MeshComponent>(Entity inEntity)

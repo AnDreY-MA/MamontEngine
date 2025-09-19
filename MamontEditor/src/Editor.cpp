@@ -14,7 +14,7 @@
 
 #include "Core/ContextDevice.h"
 
-#include <Panels/ViewportPanel.h>
+#include <Panels/LogPanel.h>
 
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -55,7 +55,7 @@ namespace MamontEditor
         AddPanel<SceneHierarchyPanel>();
         AddPanel<InspectorPanel>();
         AddPanel<StatisticsPanel>();
-        //AddPanel<ViewportPanel>();
+        AddPanel<LogPanel>();
 
         //ImGui_ImplVulkanH_CreateOrResizeWindow
 
@@ -79,6 +79,7 @@ namespace MamontEditor
         ImGui::NewFrame();
         ImGui::DockSpaceOverViewport(ImGui::GetID("MyDockSpace"), ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
         ImGuizmo::BeginFrame();
+
     }
 
     void Editor::End()

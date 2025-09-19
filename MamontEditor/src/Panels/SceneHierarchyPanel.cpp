@@ -42,7 +42,7 @@ namespace MamontEditor
             constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_BordersInner | ImGuiTableFlags_ScrollY;
             const float               lineHeight = ImGui::GetTextLineHeight();
 
-            if (ImGui::Button("ContextWindow"))
+            /*if (ImGui::Button("ContextWindow"))
             {
                 ImGui::OpenPopup("ContextWindow");
             }
@@ -51,21 +51,22 @@ namespace MamontEditor
             {
                 DrawContextMenu();
                 ImGui::EndPopup();
-            }
+            }*/
 
-            /*if (ImGui::BeginPopupContextWindow("ContextWindow", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
+            if (ImGui::BeginPopupContextWindow("ContextWindow",
+                                               ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_NoOpenOverExistingPopup))
             {
                 DrawContextMenu();
                 ImGui::EndPopup();
-            }*/
+            }
 
 
             ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
-            const auto &view = m_Scene->GetRegistry().view<entt::entity>();
+            const auto &view = m_Scene->GetRegistry().view<MamontEngine::IDComponent>();
             view.each(
-                    [&](auto ID)
+                    [&](entt::entity handle, const MamontEngine::IDComponent &idComponent)
                     {
-                        const MamontEngine::Entity entity{ID, m_Scene.get()};
+                        const MamontEngine::Entity &entity = m_Scene->GetEntity(idComponent.ID);
                         if (entity)
                         {
                             DrawEntityNode(entity);
@@ -73,7 +74,7 @@ namespace MamontEditor
                     });
             ImGui::PopStyleVar();
 
-            if (ImGui::BeginPopup("Properties"))
+            if (ImGui::BeginPopup("Properties", ImGuiPopupFlags_MouseButtonRight))
             {
                 if (ImGui::ButtonEx("Remove"))
                 {
@@ -91,9 +92,9 @@ namespace MamontEditor
         }
     }
 
-    void SceneHierarchyPanel::DrawEntityNode(MamontEngine::Entity inEntity)
+    void SceneHierarchyPanel::DrawEntityNode(const MamontEngine::Entity& inEntity)
     {
-        auto &tag = inEntity.GetComponent<MamontEngine::TagComponent>().Tag;
+        const auto &tag = inEntity.GetComponent<MamontEngine::TagComponent>().Tag;
 
         ImGuiTreeNodeFlags flags = (m_SeletctedEntity == inEntity) ? ImGuiTreeNodeFlags_Selected : 0;
         flags |= ImGuiTreeNodeFlags_OpenOnArrow;

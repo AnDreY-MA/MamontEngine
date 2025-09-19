@@ -15,7 +15,7 @@ namespace MamontEngine
         alignas(16) glm::vec3 Normal   = glm::vec3(0.0f);
         alignas(8) glm::vec2 UV = glm::vec2{0.f};
         alignas(16) glm::vec4 Color = glm::vec4(1.f);
-        //alignas(16) glm::vec4 Tangent = glm::vec4(1.f);
+        alignas(16) glm::vec4 Tangent = glm::vec4(0.f);
     };
 
     struct Bounds
@@ -25,7 +25,11 @@ namespace MamontEngine
         float     SpherRadius{0.0f};
     };
 
-    struct VkContextDevice;
+    struct GPUDrawPushConstants
+    {
+        glm::mat4       WorldMatrix;
+        VkDeviceAddress VertexBuffer;
+    };
 
     struct Primitive
     {

@@ -2,6 +2,7 @@
 #include <glm/gtx/transform.hpp>
 #include "Graphics/Model.h"
 #include "Utils/Profile.h"
+#include "Core/Log.h"
 
 namespace MamontEngine
 {
