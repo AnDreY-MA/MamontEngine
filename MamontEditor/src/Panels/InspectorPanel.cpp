@@ -8,7 +8,6 @@
 #include "UI/UI.h"
 #include "Graphics/Model.h"
 #include "Core/Engine.h"
-#include "Utils/Loader.h"
 #include "EditorUtils/EditorUtils.h"
 
 namespace MamontEditor

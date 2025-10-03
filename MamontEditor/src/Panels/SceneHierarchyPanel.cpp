@@ -136,18 +136,34 @@ namespace MamontEditor
 
         if (ImGui::BeginMenu("Primitives"))
         {
-            if (ImGui::MenuItem("Cube"))
+            const auto &contextDevice = MEngine::Get().GetContextDevice();
+
+            DrawItemAddPrimitives("Cube", "D:/Repos/MamontEngine/MamontEngine/assets/cube.glb", contextDevice);
+            DrawItemAddPrimitives("Cone", "D:/Repos/MamontEngine/MamontEngine/assets/cone.glb", contextDevice);
+            DrawItemAddPrimitives("Cylinder", "D:/Repos/MamontEngine/MamontEngine/assets/cylinder.glb", contextDevice);
+
+            /*if (ImGui::MenuItem("Cube"))
             {
                 auto cube = m_Scene->CreateEntity("Cube");
                 const std::string cubeFile = "D:/Repos/MamontEngine/MamontEngine/assets/cube.glb";
                 const auto                      &contextDevice = MEngine::Get().GetContextDevice();
                 auto              cubeModel     = std::make_shared<MeshModel>(contextDevice, cubeFile);
                 cube.AddComponent<MeshComponent>(std::move(cubeModel));
-            }
+            }*/
 
             ImGui::EndMenu();
         }
 
         ImGui::EndMenu();
+    }
+
+    void SceneHierarchyPanel::DrawItemAddPrimitives(std::string_view inNameItem, std::string_view inPath, const MamontEngine::VkContextDevice &inContexDevice)
+    {
+        if (ImGui::MenuItem(inNameItem.data()))
+        {
+            auto              newEntity          = m_Scene->CreateEntity(inNameItem);
+            auto              newModel     = std::make_shared<MamontEngine::MeshModel>(inContexDevice, inPath);
+            newEntity.AddComponent<MamontEngine::MeshComponent>(std::move(newModel));
+        }
     }
 } // namespace MamontEditor

@@ -1,5 +1,5 @@
 set(PROJECT_NAME MamontEditor)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 file(GLOB src "src/*.h" "src/*.cpp" "src/*.hpp")

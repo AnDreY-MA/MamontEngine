@@ -1,4 +1,4 @@
-# Define project name
+п»ї# Define project name
 set(PROJECT_NAME MamontEngine)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -44,7 +44,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     target_compile_definitions(${PROJECT_NAME} PRIVATE "MM_COMPILER_INTEL")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_definitions(${PROJECT_NAME} PRIVATE "MM_COMPILER_MSVC")
-    target_compile_options(${PROJECT_NAME} PRIVATE /std:c++20 /permissive- /W4 /EHsc /MP /bigobj)
+    target_compile_options(${PROJECT_NAME} PRIVATE /std:c++23 /permissive- /W4 /EHsc /MP /bigobj)
 endif()
 
 # CPM setup
@@ -133,7 +133,7 @@ target_compile_definitions(ImGuizmo PRIVATE
 
 target_link_libraries(ImGuizmo PUBLIC imgui)
 
-# Связываем с основным проектом
+# Г‘ГўГїГ§Г»ГўГ ГҐГ¬ Г± Г®Г±Г­Г®ГўГ­Г»Г¬ ГЇГ°Г®ГҐГЄГІГ®Г¬
 target_link_libraries(${PROJECT_NAME} PUBLIC ImGuizmo)
 
 # PCH

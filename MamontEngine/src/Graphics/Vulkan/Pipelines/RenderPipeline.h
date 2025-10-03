@@ -1,7 +1,7 @@
 #pragma once 
 
 #include "Graphics/Vulkan/Materials/Material.h"
-#include "Core/RenderData.h"
+#include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/Pipelines/PipelineData.h"
 
 namespace MamontEngine

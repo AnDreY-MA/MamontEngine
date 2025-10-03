@@ -12,13 +12,9 @@ namespace MamontEngine
         explicit WindowCore();
         ~WindowCore();
 
-        void Init();
-
-        void Close();
+        
 
 		void CreateSurface(VkInstance instance, VkSurfaceKHR *surface);
-
-		void SetupVulkanWindow(VkContextDevice &inContextDevice, VkSurfaceKHR surface, int width, int height);
 
 		SDL_Window *GetWindow()
         {
@@ -30,6 +26,11 @@ namespace MamontEngine
             return m_WindowExtent;
 		}
 
+		float GetAscpectRatio() const
+		{
+            return static_cast<float>(m_WindowExtent.width) / static_cast<float>(m_WindowExtent.height);
+		}
+
 		void UpdateExtent(const int width, const int height)
 		{
             m_WindowExtent.width = width;
@@ -37,6 +38,10 @@ namespace MamontEngine
 		}
 
 		VkExtent2D Resize();
+	private:
+		void Init();
+
+        void Close();
 	private:
 
         SDL_Window* m_Window;

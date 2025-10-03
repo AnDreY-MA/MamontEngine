@@ -263,7 +263,7 @@ VkDescriptorBufferInfo MamontEngine::vkinit::buffer_info(VkBuffer buffer, VkDevi
 }
 
 //> image_set
-VkImageCreateInfo MamontEngine::vkinit::image_create_info(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent)
+VkImageCreateInfo MamontEngine::vkinit::image_create_info(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent, uint32_t arrayLayers)
 {
     VkImageCreateInfo info = {};
     info.sType             = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -275,7 +275,7 @@ VkImageCreateInfo MamontEngine::vkinit::image_create_info(VkFormat format, VkIma
     info.extent = extent;
 
     info.mipLevels   = 1;
-    info.arrayLayers = 1;
+    info.arrayLayers = arrayLayers;
 
     // for MSAA. we will not be using it by default, so default it to 1 sample per pixel.
     info.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -287,14 +287,15 @@ VkImageCreateInfo MamontEngine::vkinit::image_create_info(VkFormat format, VkIma
     return info;
 }
 
-VkImageViewCreateInfo MamontEngine::vkinit::imageview_create_info(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, const uint32_t inLayerCount)
+VkImageViewCreateInfo
+MamontEngine::vkinit::imageview_create_info(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, const uint32_t inLayerCount, VkImageViewType type)
 {
     // build a image-view for the depth image to use for rendering
     VkImageViewCreateInfo info = {};
     info.sType                 = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     info.pNext                 = nullptr;
 
-    info.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+    info.viewType                        = type;
     info.image                           = image;
     info.format                          = format;
     info.subresourceRange.baseMipLevel   = 0;

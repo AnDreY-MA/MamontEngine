@@ -1,7 +1,7 @@
 #include "Graphics/Vulkan/Swapchain.h"
 
 #include "Graphics/Vulkan/Image.h"
-#include <VkBootstrap.h>
+#include "Graphics/Vulkan/Allocator.h"
 #include "Core/ContextDevice.h"
 #include "Core/VkInitializers.h"
 
@@ -28,7 +28,7 @@ namespace MamontEngine
             .requiredFlags           = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
         };
 
-        vmaCreateImage(inDevice.Allocator, &rImageInfo, &rImageAllocInfo, &inImage.DrawImage.Image, &inImage.DrawImage.Allocation, nullptr);
+        vmaCreateImage(Allocator::GetAllocator(), &rImageInfo, &rImageAllocInfo, &inImage.DrawImage.Image, &inImage.DrawImage.Allocation, nullptr);
 
         const VkImageViewCreateInfo rViewInfo =
                 vkinit::imageview_create_info(inImage.DrawImage.ImageFormat, inImage.DrawImage.Image, VK_IMAGE_ASPECT_COLOR_BIT);
@@ -42,7 +42,7 @@ namespace MamontEngine
         depthImageUsages |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
         const VkImageCreateInfo dimgInfo = vkinit::image_create_info(inImage.DepthImage.ImageFormat, depthImageUsages, drawImageExtent);
-        vmaCreateImage(inDevice.Allocator, &dimgInfo, &rImageAllocInfo, &inImage.DepthImage.Image, &inImage.DepthImage.Allocation, nullptr);
+        vmaCreateImage(Allocator::GetAllocator(), &dimgInfo, &rImageAllocInfo, &inImage.DepthImage.Image, &inImage.DepthImage.Allocation, nullptr);
 
         const VkImageViewCreateInfo dViewInfo =
                 vkinit::imageview_create_info(inImage.DepthImage.ImageFormat, inImage.DepthImage.Image, VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -68,7 +68,6 @@ namespace MamontEngine
         }
 
         vkb::Swapchain vkbSwapchain = resultSwapchain.value();
-
         m_SwapchainExtent     = vkbSwapchain.extent;
         m_Swapchain           = vkbSwapchain.swapchain;
         m_SwapchainImages     = vkbSwapchain.get_images().value();
@@ -79,7 +78,7 @@ namespace MamontEngine
     std::pair<VkResult, uint32_t> MSwapchain::AcquireImage(VkDevice inDevice, VkSemaphore &inSemaphore) const
     {
         uint32_t swapchainImageIndex;
-        const VkResult result = vkAcquireNextImageKHR(inDevice, m_Swapchain, 1000000000, inSemaphore, nullptr, &swapchainImageIndex);
+        const VkResult result = vkAcquireNextImageKHR(inDevice, m_Swapchain, UINT64_MAX, inSemaphore, VK_NULL_HANDLE, &swapchainImageIndex);
         return {result, swapchainImageIndex};
     }
 
@@ -94,12 +93,15 @@ namespace MamontEngine
 
     void MSwapchain::Destroy(VkDevice inDevice)
     {
-        vkDestroySwapchainKHR(inDevice, m_Swapchain, nullptr);
-
-        for (size_t i{0}; i < m_SwapchainImageViews.size(); ++i)
+        for (auto& view : m_SwapchainImageViews)
         {
-            vkDestroyImageView(inDevice, m_SwapchainImageViews[i], nullptr);
+            vkDestroyImageView(inDevice, view, nullptr);
         }
+        m_SwapchainImageViews.clear();
+
+        if (m_Swapchain != VK_NULL_HANDLE)
+            vkDestroySwapchainKHR(inDevice, m_Swapchain, nullptr);
+
     }
 
 }

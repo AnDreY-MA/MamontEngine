@@ -8,6 +8,8 @@
 
 namespace MamontEditor
 {
+    struct MamontEngine::VkContextDevice;
+
     class SceneHierarchyPanel final : public EditorPanel
     {
     public:
@@ -35,6 +37,8 @@ namespace MamontEditor
         void DrawEntityNode(const MamontEngine::Entity& inEntity);
 
         void DrawContextMenu();
+
+        void DrawItemAddPrimitives(std::string_view inNameItem, std::string_view inPath, const MamontEngine::VkContextDevice &inContexDevice);
 
     private:
         std::shared_ptr<MamontEngine::Scene> m_Scene;

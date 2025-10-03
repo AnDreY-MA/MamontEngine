@@ -35,7 +35,8 @@ namespace MamontEngine
         constexpr VkPushConstantRange matrixRange {
             .stageFlags = VK_SHADER_STAGE_VERTEX_BIT, 
             .offset = 0, 
-            .size = sizeof(GPUDrawPushConstants)};
+            .size = sizeof(GPUDrawPushConstants)
+        };
 
         DescriptorLayoutBuilder layoutBuilder{};
         layoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -55,8 +56,23 @@ namespace MamontEngine
         VkPipelineLayout newLayout;
         VK_CHECK(vkCreatePipelineLayout(inDevice, &mesh_layout_info, nullptr, &newLayout));
 
+        const std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
+                vkinit::vertex_input_binding_description(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX),
+        };
+        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
+                vkinit::vertex_input_attribute_description(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Position)),
+                vkinit::vertex_input_attribute_description(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Normal)),
+                vkinit::vertex_input_attribute_description(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, UV)),
+                vkinit::vertex_input_attribute_description(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Color)),
+                vkinit::vertex_input_attribute_description(0, 4, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Tangent)),
+        };
+
+        const VkPipelineVertexInputStateCreateInfo vertexInputInfo =
+                vkinit::pipeline_vertex_input_state_create_info(vertexInputBindings, vertexInputAttributes);
+
         VkPipelines::PipelineBuilder pipelineBuilder;
         pipelineBuilder.SetShaders(meshVertexShader, meshFragShader);
+//        pipelineBuilder.SetVertexInput(vertexInputInfo);
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
         pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
         pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);

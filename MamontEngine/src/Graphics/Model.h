@@ -5,7 +5,7 @@
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/parser.hpp>
 #include "Core/ContextDevice.h"
-#include "Core/RenderData.h"
+#include "Graphics/RenderData.h"
 
 namespace MamontEngine
 {

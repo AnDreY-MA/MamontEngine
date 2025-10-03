@@ -1,6 +1,5 @@
 #pragma once
 
-#include <SDL3/SDL_events.h>
 #include "Graphics/Vulkan/Pipelines/SkyPipeline.h"
 #include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
 #include "ECS/SceneRenderer.h"
@@ -71,6 +70,11 @@ namespace MamontEngine
         void DrawGeometry(VkCommandBuffer inCmd);
         void DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView);
 
+        void CreateShadowPipeline();
+
+        void SetViewportScissor(VkCommandBuffer cmd, const VkExtent2D &inExtent) const;
+
+
 	private:
         VkContextDevice &m_DeviceContext;
 
@@ -83,6 +87,23 @@ namespace MamontEngine
         std::unique_ptr<ImGuiRenderer> m_ImGuiRenderer;
 
         std::shared_ptr<WindowCore> m_Window;
+
+        std::unique_ptr<PipelineData> m_CascadePipeline;
+
+        struct Settings
+        {
+            float Z_Near{0.1f};
+            float Z_Far{100.f};
+            
+            struct
+            {
+                float DepthBiasConstantFactor{1.25f};
+                float DetphBiasSlopeFactor{1.75f};
+                float CascadeSplitLambda{0.95f};
+                float ZMult{2.2f};
+            } Shadow;
+
+        } m_Settings;
 
         bool m_StopRendering{false};
         bool m_IsResizeRequested{false};

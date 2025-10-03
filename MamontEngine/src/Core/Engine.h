@@ -1,7 +1,6 @@
 #pragma once
 
 #include "VkDestriptor.h"
-#include "Utils/Loader.h"
 #include "Camera.h"
 #include "FrameData.h"
 #include "Window.h"
@@ -31,6 +30,11 @@ namespace MamontEngine
 
         static MEngine& Get();
 
+        const TracyVkCtx& GetTracyContext() const
+        {
+            return m_ContextDevice->GetCurrentFrame().TracyContext;
+        }
+
         VkContextDevice& GetContextDevice()
         {
             return *m_ContextDevice;
@@ -59,8 +63,6 @@ namespace MamontEngine
         void InitPipelines();
 
         void InitImgui();
-
-        void ResizeSwapchain();
 
         void InitScene();
         void UpdateScene();

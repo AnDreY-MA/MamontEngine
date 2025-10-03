@@ -7,55 +7,6 @@
 
 namespace MamontEngine
 {
-    void WindowCore::SetupVulkanWindow(VkContextDevice &inContextDevice, VkSurfaceKHR surface, int width, int height)
-    {
-        m_VulkanWindow          = new ImGui_ImplVulkanH_Window();
-        m_VulkanWindow->Surface = surface;
-        int w                   = 0;
-        int h                   = 0;
-        SDL_GetWindowSize(m_Window, &w, &h);
-
-        // Check for WSI support
-        VkBool32 res;
-        vkGetPhysicalDeviceSurfaceSupportKHR(inContextDevice.GetPhysicalDevice(), inContextDevice.GetGraphicsQueueFamily(), m_VulkanWindow->Surface, &res);
-        if (res != VK_TRUE)
-        {
-            fprintf(stderr, "Error no WSI support on physical device 0\n");
-            exit(-1);
-        }
-
-        // Select Surface Format
-        constexpr VkFormat requestSurfaceImageFormat[] = {VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM};
-        constexpr VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-        m_VulkanWindow->SurfaceFormat                      = ImGui_ImplVulkanH_SelectSurfaceFormat(inContextDevice.GetPhysicalDevice(),
-                                                                              m_VulkanWindow->Surface,
-                                                                              requestSurfaceImageFormat,
-                                                                              IM_ARRAYSIZE(requestSurfaceImageFormat),
-                                                                              requestSurfaceColorSpace);
-
-        // Select Present Mode
-#ifdef IMGUI_UNLIMITED_FRAME_RATE
-        constexpr VkPresentModeKHR present_modes[] = {VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR};
-#else
-        constexpr VkPresentModeKHR present_modes[] = {VK_PRESENT_MODE_FIFO_KHR};
-#endif
-        m_VulkanWindow->PresentMode = ImGui_ImplVulkanH_SelectPresentMode(
-                inContextDevice.GetPhysicalDevice(), m_VulkanWindow->Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
-
-        // Create SwapChain, RenderPass, Framebuffer, etc.
-        //IM_ASSERT(g_MinImageCount >= 2);
-        ImGui_ImplVulkanH_CreateOrResizeWindow(inContextDevice.Instance,
-                                               inContextDevice.GetPhysicalDevice(),
-                                               inContextDevice.Device,
-                                               m_VulkanWindow,
-                                               inContextDevice.GetGraphicsQueueFamily(),
-                                               nullptr,
-                                               w,
-                                               h,
-                                               1);
-
-    }
-
     WindowCore::WindowCore()
     {
         Init();

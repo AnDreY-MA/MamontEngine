@@ -4,10 +4,10 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MeshComponent.h"
 #include "Graphics/Mesh.h"
-#include <Utils/Loader.h>
 #include "Graphics/Model.h"
 #include "Core/ContextDevice.h"
 #include "Core/Log.h"
+#include "Graphics/Model.h"
 
 namespace MamontEngine
 {
@@ -26,23 +26,7 @@ namespace MamontEngine
 
     void Scene::Init(VkContextDevice &inContextDevice)
     {
-        {
-            const std::string structurePath = {RootDirectories + "/MamontEngine/assets/house2.glb"};
-            std::shared_ptr<MeshModel> startModel = std::make_shared<MeshModel>(inContextDevice, structurePath);
-            assert(startModel);
-
-            auto entity = CreateEntity("House");
-            entity.AddComponent<MeshComponent>(std::move(startModel));
-        }
-
-        {
-            const std::string cubePath = {RootDirectories + "/MamontEngine/assets/monkeyHD.glb"};
-            std::shared_ptr<MeshModel> cubeModel = std::make_shared<MeshModel>(inContextDevice, cubePath);
-            assert(cubeModel);
-
-            auto cubeEntity = CreateEntity("Cube");
-            cubeEntity.AddComponent<MeshComponent>(std::move(cubeModel));
-        }
+        Load();
     }
 
     void Scene::Clear()

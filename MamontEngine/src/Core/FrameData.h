@@ -42,9 +42,12 @@ namespace MamontEngine
 
         DeletionQueue               Deleteions;
         DescriptorAllocatorGrowable FrameDescriptors;
-
+        VkDescriptorSet             GlobalDescriptor;
         
         AllocatedBuffer SceneDataBuffer;
+        AllocatedBuffer CascadeViewProjMatrices;
+        AllocatedBuffer FragmentBuffer;
         TracyVkCtx TracyContext = nullptr;
+
     };
 }

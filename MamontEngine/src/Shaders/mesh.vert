@@ -28,6 +28,7 @@ layout( push_constant ) uniform constants
 {
 	mat4 render_matrix;
 	VertexBuffer vertexBuffer;
+	uint cascadeIndex;
 } PushConstants;
 
 void main() 

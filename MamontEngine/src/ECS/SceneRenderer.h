@@ -1,4 +1,5 @@
 #pragma once 
+
 #include "ECS/Components/MeshComponent.h"
 #include <Core/Camera.h>
 
@@ -11,10 +12,18 @@ namespace MamontEngine
         glm::mat4 View{glm::mat4(0.f)};
         glm::mat4 Proj{glm::mat4(0.f)};
         glm::mat4 Viewproj{glm::mat4(0.f)};
-        //glm::vec4 AmbientColor{glm::vec4(0.f)};
-        /*glm::vec4 SunlightDirection{glm::vec4(0.f)};
-        glm::vec4 SunlightColor{glm::vec4(0.f)};*/
+        glm::vec3 LightDirection{glm::vec3(0.4f)};
     };
+
+    struct SceneDataFragment
+    {
+        float CascadePlits[4];
+        glm::mat4 InverseViewMat;
+        glm::vec3 LightDirection;
+        float     Pad;
+        int32_t   ColorCascades;
+    };
+
 
 	class SceneRenderer
 	{
@@ -23,9 +32,11 @@ namespace MamontEngine
 
         ~SceneRenderer();
 
-        void Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const GPUSceneData &inSceneData);
+        void Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const glm::mat4 &inViewProjection, VkPipelineLayout inGlobalLayout = VK_NULL_HANDLE);
 
-        void Update(const VkExtent2D& inWindowExtent);
+        void Update(const VkExtent2D &inWindowExtent, const std::span<float> inSplitDepths);
+
+        void UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades);
 
         void Clear();
 
@@ -57,12 +68,20 @@ namespace MamontEngine
             return m_Camera.get();
         }
 
+        const glm::vec3& GetLightPos() const
+        {
+            return m_LightPosition;
+        }
+
 	private:
         std::vector<MeshComponent>  m_MeshComponents;
         std::shared_ptr<Camera>     m_Camera;
         DrawContext                m_DrawContext;
 
         GPUSceneData m_SceneData;
+        SceneDataFragment m_FragmentData;
+
+        glm::vec3 m_LightPosition{0.f};
 
 	};
 

@@ -1,7 +1,5 @@
 #pragma once 
 
-#include "imgui/imgui.h"
-
 namespace MamontEngine
 {
     struct AllocatedImage
@@ -9,6 +7,7 @@ namespace MamontEngine
         VkImage       Image{VK_NULL_HANDLE};
         VkImageView   ImageView{VK_NULL_HANDLE};
         VmaAllocation Allocation{VK_NULL_HANDLE};
+        VmaAllocationInfo Info;
         VkExtent3D    ImageExtent;
         VkFormat      ImageFormat;
     };

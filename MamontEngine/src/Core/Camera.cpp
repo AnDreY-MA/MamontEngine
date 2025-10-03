@@ -1,11 +1,7 @@
 #include "Camera.h"
 
-#include "SDL3/SDL_events.h"
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <SDL3/SDL_oldnames.h>
-#include <SDL3/SDL_keycode.h>
-#include <SDL3/SDL_mouse.h>
 
 namespace MamontEngine
 {

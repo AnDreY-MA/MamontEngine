@@ -1,12 +1,14 @@
 #pragma once
 
-#include "VkDestriptor.h"
-#include "pch.h"
 #include "Graphics/Vulkan/Materials/Material.h"
 #include "Graphics/Mesh.h"
+#include <bitset>
 
 namespace MamontEngine
 {
+    constexpr const size_t   CASCADECOUNT = 5;
+    constexpr const uint32_t SHADOWMAP_DIMENSION{4096};
+
 	struct RenderObject
 	{
         RenderObject() = default;
@@ -53,6 +55,13 @@ namespace MamontEngine
 
         std::vector<RenderObject> OpaqueSurfaces;
         std::vector<RenderObject> TransparentSurfaces;
+    };
+
+    struct Cascade
+    {
+        VkImageView View;
+        float       SplitDepth{0.f};
+        glm::mat4   ViewProjectMatrix{glm::mat4(0.f)};
     };
 
 }

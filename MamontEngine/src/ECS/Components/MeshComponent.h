@@ -1,9 +1,9 @@
 #pragma once
 
+#include "Graphics/Model.h"
+
 namespace MamontEngine
 {
-    struct MeshModel;
-
 	struct MeshComponent
 	{
         MeshComponent() = default;

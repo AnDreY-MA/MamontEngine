@@ -4,18 +4,6 @@
 #include "VkImages.h"
 #include "VkPipelines.h"
 
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_vulkan.h>
-#include <SDL3/SDL_events.h>
-
-#include <chrono>
-#include <thread>
-#include <VkBootstrap.h>
-#include "imgui/imgui.h"
-#include "imgui/imgui_internal.h"
-#include "imgui/backends/imgui_impl_sdl3.h"
-#include "imgui/backends/imgui_impl_vulkan.h"
-#include <glm/gtx/transform.hpp>
 #include "Graphics/Vulkan/Swapchain.h"
 #include "ImGuiRenderer.h"
 
@@ -56,9 +44,9 @@ namespace MamontEngine
 
         m_ContextDevice->InitSyncStructeres();
         
-        m_ContextDevice->InitDescriptors();
-
         m_ContextDevice->InitSceneBuffers();
+
+        m_ContextDevice->InitDescriptors();
         
         m_ContextDevice->InitTracyContext();
 
@@ -114,7 +102,7 @@ namespace MamontEngine
 
             if (m_Renderer->IsResizeRequested())
             {
-                ResizeSwapchain();
+                m_Renderer->ResizeSwapchain();
             }
 
             if (!m_Renderer->IsResizeRequested())
@@ -200,16 +188,6 @@ namespace MamontEngine
 
     }
     
-    void MEngine::ResizeSwapchain()
-    {
-        m_Renderer->ResizeSwapchain();
-        /*fmt::println("Resize Swapchain");
-
-        m_ContextDevice->ResizeSwapchain(m_Window->Resize());
-
-        m_IsResizeRequested = false;*/
-    }
-
     VkFormat MEngine::FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const
     {
         for (const VkFormat format : candidates)

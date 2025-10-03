@@ -1,20 +1,12 @@
 #include "Editor.h"
 
-#include "imgui/imgui.h"
-#include "imgui/imgui_internal.h"
-
 #include "Core/Engine.h"
 #include "ECS/Entity.h"
 #include <ECS/Components/TransformComponent.h>
-#include <glm/gtc/type_ptr.hpp>
-
-#include <imgui/backends/imgui_impl_vulkan.h>
-#include <imgui/backends/imgui_impl_sdl3.h>
 #include "ImGuizmo/ImGuizmo.h"
-
 #include "Core/ContextDevice.h"
-
 #include <Panels/LogPanel.h>
+#include "imgui.h"
 
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -100,6 +92,7 @@ namespace MamontEditor
         //ImGui::ShowDebugLogWindow();
         //IMGUI_DEBUG_LOG();
         //ImGui::ShowMetricsWindow();
+
         DrawMainPanel();
 
         for (auto &[hash, panel] : m_Panels)

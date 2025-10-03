@@ -1,7 +1,5 @@
 #pragma once
 
-#include "SDL3/SDL_events.h"
-
 namespace MamontEngine
 {
 	class Camera
@@ -31,6 +29,15 @@ namespace MamontEngine
             m_Position = inPosition;
         }
 
+        float GetNearClip() const noexcept
+        {
+            return m_NearClip;
+        }
+        float GetFarClip() const noexcept
+        {
+            return m_FarClip;
+        }
+
     private:
         void Rotate(const SDL_MouseMotionEvent& inMotion);
 
@@ -45,6 +52,9 @@ namespace MamontEngine
 
         bool      m_IsRotating       = false;
         float     m_MouseSensitivity = 0.001f;
+
+        float m_NearClip{0.1f};
+        float m_FarClip{1000.f};
 
         float m_FOV{70.f};
 	};

@@ -2,9 +2,7 @@
 
 #include "Graphics/Vulkan/MeshBuffer.h"
 #include "Graphics/Vulkan/Materials/Material.h"
-
 #include "Graphics/Vulkan/Image.h"
-
 #include "Core/VkDestriptor.h"
 
 namespace MamontEngine
@@ -27,8 +25,9 @@ namespace MamontEngine
 
     struct GPUDrawPushConstants
     {
-        glm::mat4       WorldMatrix;
-        VkDeviceAddress VertexBuffer;
+        glm::mat4       WorldMatrix{glm::mat4(0.f)};
+        VkDeviceAddress VertexBuffer{0};
+        uint32_t        CascadeIndex{0};
     };
 
     struct Primitive

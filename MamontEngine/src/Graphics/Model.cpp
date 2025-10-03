@@ -52,7 +52,7 @@ namespace MamontEngine
                 return false;
             const VkExtent3D imagesize{(uint32_t)width, (uint32_t)height, 1u};
             newImage = inDevice.CreateImage(
-                    data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, /*mip=*/false);
+                    data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, /*mip=*/true);
             stbi_image_free(data);
 
             return newImage.Image != VK_NULL_HANDLE;
@@ -124,8 +124,8 @@ namespace MamontEngine
             m_ContextDevice.DestroyBuffer(mesh->Buffer.IndexBuffer);
             m_ContextDevice.DestroyBuffer(mesh->Buffer.VertexBuffer);
         }*/
-        m_ContextDevice.DestroyBuffer(Buffer.IndexBuffer);
-        m_ContextDevice.DestroyBuffer(Buffer.VertexBuffer);
+        Buffer.IndexBuffer.Destroy();
+        Buffer.VertexBuffer.Destroy();
 
 
         //for (auto &image : m_Images)
@@ -252,7 +252,7 @@ namespace MamontEngine
         fastgltf::GltfDataBuffer data;
         data.loadFromFile(filePath);
 
-        fastgltf::Asset gltf;
+        
 
         const std::filesystem::path path = filePath;
 
@@ -267,12 +267,12 @@ namespace MamontEngine
             return;
         }
 
-        gltf = std::move(loadResult.get());
+        const fastgltf::Asset gltf = std::move(loadResult.get());
 
-        const std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
-                        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3},
-                        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
-                        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}
+        std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3},
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}
         };
 
         DescriptorPool.Init(m_ContextDevice.Device, gltf.materials.size(), sizes);
@@ -285,7 +285,7 @@ namespace MamontEngine
         LoadNodes(gltf);
 
         pathFile = filePath;
-        m_ContextDevice.DestroyBuffer(MaterialDataBuffer);
+        MaterialDataBuffer.Destroy();
 
         Log::Info("Loaded model: {}", pathFile.string());
     
@@ -334,7 +334,7 @@ namespace MamontEngine
 
         const size_t bufferSize = sizeof(GLTFMaterial::MaterialConstants) * inFileAsset.materials.size();
 
-        MaterialDataBuffer = m_ContextDevice.CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        MaterialDataBuffer.Create(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VMA_MEMORY_USAGE_CPU_TO_GPU);
         int                                        data_index = 0;
         //GLTFMaterial::MaterialConstants *sceneMaterialConstants = (GLTFMaterial::MaterialConstants *)MaterialDataBuffer.Info.pMappedData;
@@ -610,7 +610,7 @@ namespace MamontEngine
 
                 newPrimitive->Bound.Origin     = (maxpos + minpos) / 2.f;
                 newPrimitive->Bound.Extents    = (maxpos - minpos) / 2.f;
-                newPrimitive->Bound.SpherRadius = glm::length(newPrimitive->Bound.Extents);
+                newPrimitive->Bound.SpherRadius = glm::length(maxpos - newPrimitive->Bound.Extents);
 
                 newmesh->Primitives.push_back(std::move(newPrimitive));
             }
