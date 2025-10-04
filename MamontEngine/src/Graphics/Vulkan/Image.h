@@ -8,7 +8,7 @@ namespace MamontEngine
         VkImageView   ImageView{VK_NULL_HANDLE};
         VmaAllocation Allocation{VK_NULL_HANDLE};
         VmaAllocationInfo Info;
-        VkExtent3D    ImageExtent;
+        VkExtent3D        ImageExtent{0, 0, 0};
         VkFormat      ImageFormat;
     };
 

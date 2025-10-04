@@ -30,7 +30,7 @@ namespace MamontEngine::VkPipelines
         void DisableDepthtest();
         void Clear();
 
-        VkPipeline BuildPipline(VkDevice inDevice);
+        VkPipeline BuildPipline(VkDevice inDevice, uint32_t attachmentCount = 1);
 
 
     private:

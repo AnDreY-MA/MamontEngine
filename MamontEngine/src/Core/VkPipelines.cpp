@@ -164,12 +164,11 @@ namespace MamontEngine::VkPipelines
 
         m_ShaderStages.clear();
     }
-    VkPipeline PipelineBuilder::BuildPipline(VkDevice inDevice)
+    VkPipeline PipelineBuilder::BuildPipline(VkDevice inDevice, uint32_t attachmentCount)
     {
         constexpr VkPipelineViewportStateCreateInfo viewportState = {
             .sType                             = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
             .pNext                             = nullptr,
-
             .viewportCount = 1,
             .scissorCount  = 1
         };
@@ -179,7 +178,7 @@ namespace MamontEngine::VkPipelines
             .pNext                               = nullptr,
             .logicOpEnable                       = VK_FALSE,
             .logicOp                             = VK_LOGIC_OP_COPY,
-            .attachmentCount                     = 1,
+            .attachmentCount                     = attachmentCount,
             .pAttachments                        = &m_ColorBlendAttachment
         };
 

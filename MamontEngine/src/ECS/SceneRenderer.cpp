@@ -100,9 +100,10 @@ namespace MamontEngine
                 if (r.Material->Pipeline != lastPipeline)
                 {
                     lastPipeline = r.Material->Pipeline;
-                    vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Pipeline);
+                    //vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Pipeline);
 
-                    vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inGlobalLayout != VK_NULL_HANDLE ? inGlobalLayout : r.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
+                    vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inGlobalLayout != VK_NULL_HANDLE ? 
+                        inGlobalLayout : r.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
                 }
 
                 vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);

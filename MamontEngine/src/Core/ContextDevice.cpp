@@ -1,4 +1,4 @@
-#include "ContextDevice.h"
+﻿#include "ContextDevice.h"
 
 #include "Window.h"
 #include "VkInitializers.h"
@@ -535,35 +535,49 @@ namespace MamontEngine
 
         constexpr auto allocinfo = VmaAllocationCreateInfo{
             .usage = VMA_MEMORY_USAGE_GPU_ONLY, 
-            .requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)};
+            .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        };
 
         VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &imageInfo, &allocinfo, &CascadeDepthImage.Image.Image, &CascadeDepthImage.Image.Allocation, &CascadeDepthImage.Image.Info));
-
+        CascadeDepthImage.Image.ImageExtent = shadowImageExtent;
+        CascadeDepthImage.Image.ImageFormat = VK_FORMAT_D32_SFLOAT;
         {
             auto imageViewInfo = vkinit::imageview_create_info(
                     VK_FORMAT_D32_SFLOAT, CascadeDepthImage.Image.Image, VK_IMAGE_ASPECT_DEPTH_BIT, CASCADECOUNT, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
-            //imageViewInfo.subresourceRange.layerCount = CASCADECOUNT;
+
+            imageViewInfo.subresourceRange.baseArrayLayer = 0;
+            imageViewInfo.subresourceRange.layerCount     = CASCADECOUNT;
+
             VK_CHECK(vkCreateImageView(Device, &imageViewInfo, nullptr, &CascadeDepthImage.Image.ImageView));
         }
 
         for (size_t i{ 0 }; i < CASCADECOUNT; i++)
         {
-            auto imageViewInfo = vkinit::imageview_create_info(
-                    VK_FORMAT_D32_SFLOAT, CascadeDepthImage.Image.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
-            imageViewInfo.subresourceRange.baseArrayLayer = static_cast<uint32_t>(i);
+            /*auto imageViewInfo = vkinit::imageview_create_info(
+                    VK_FORMAT_D32_SFLOAT, CascadeDepthImage.Image.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, VK_IMAGE_VIEW_TYPE_2D_ARRAY);*/
+            auto layerViewInfo = vkinit::imageview_create_info(VK_FORMAT_D32_SFLOAT,
+                                                               CascadeDepthImage.Image.Image,
+                                                               VK_IMAGE_ASPECT_DEPTH_BIT,
+                                                               1,
+                                                               VK_IMAGE_VIEW_TYPE_2D_ARRAY); 
 
-            VK_CHECK(vkCreateImageView(Device, &imageViewInfo, nullptr, &Cascades[i].View));
+            layerViewInfo.subresourceRange.baseArrayLayer = static_cast<uint32_t>(i);
+            //layerViewInfo.subresourceRange.layerCount     = 1;
+
+            VK_CHECK(vkCreateImageView(Device, &layerViewInfo, nullptr, &Cascades[i].View));
+
+            fmt::println("Cascade[{}].View = {}", i, (uint64_t)Cascades[i].View);
         }
 
         VkSamplerCreateInfo samplerInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .maxAnisotropy = 1.f};
-        samplerInfo.magFilter = VK_FILTER_LINEAR;
-        samplerInfo.minFilter = VK_FILTER_LINEAR;
-        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.magFilter     = VK_FILTER_LINEAR;
+        samplerInfo.minFilter     = VK_FILTER_LINEAR;
+        samplerInfo.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerInfo.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerInfo.addressModeU  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         samplerInfo.addressModeV  = samplerInfo.addressModeU;
         samplerInfo.addressModeW  = samplerInfo.addressModeU;
-        samplerInfo.mipLodBias   = 0.0f;
+        samplerInfo.mipLodBias    = 0.0f;
         samplerInfo.maxAnisotropy = 1.0f;
         samplerInfo.minLod        = 0.0f;
         samplerInfo.maxLod        = 1.0f;

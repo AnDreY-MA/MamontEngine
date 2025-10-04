@@ -134,7 +134,7 @@ namespace MamontEngine
 
         m_DeviceContext.RenderPipeline = m_RenderPipeline.get();
 
-        //CreateShadowPipeline();
+        CreateShadowPipeline();
     }
 
     void Renderer::Render()
@@ -261,8 +261,52 @@ namespace MamontEngine
             return;
         }
 
+        std::array<glm::mat4, CASCADECOUNT> cascadeViewProjMatrices{};
+        for (size_t i = 0; i < CASCADECOUNT; i++)
+        {
+            cascadeViewProjMatrices[i] = m_DeviceContext.Cascades[i].ViewProjectMatrix;
+        }
+        std::memcpy(currentFrame.CascadeViewProjMatrices.GetMappedData(), cascadeViewProjMatrices.data(), sizeof(glm::mat4) * CASCADECOUNT);
+
         const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
         std::memcpy(sceneBufferData, &sceneData, sizeof(GPUSceneData));
+        
+        void       *cascadeBufferData = currentFrame.FragmentBuffer.GetMappedData();
+        const auto &sceneFragmentData = m_SceneRenderer->GetSceneFragment();
+        std::memcpy(cascadeBufferData, &sceneFragmentData, sizeof(SceneDataFragment));
+
+        {
+            VkUtil::transition_image(inCmd, m_DeviceContext.CascadeDepthImage.Image.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+            const VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION, .height = SHADOWMAP_DIMENSION};
+
+            for (size_t i = 0; i < CASCADECOUNT; i++)
+            {
+                VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(m_DeviceContext.Cascades[i].View);
+                //depthAttachment.clearValue.depthStencil.depth = 1.0;
+
+                const VkRenderingInfo renderCascadeInfo = vkinit::rendering_info(cascadeExtent, nullptr, &depthAttachment);
+
+                vkCmdBeginRendering(inCmd, &renderCascadeInfo);
+                /*SetViewportScissor(inCmd, cascadeExtent);
+                vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Pipeline);
+
+                vkCmdBindDescriptorSets(inCmd,
+                                        VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Layout,
+                                        0,
+                                        1,
+                                        &currentFrame.GlobalDescriptor,
+                                        0,
+                                        nullptr);
+                m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, sceneData.Viewproj, m_CascadePipeline->Layout);*/
+                
+                vkCmdEndRendering(inCmd);
+            }
+
+            VkUtil::transition_image(
+                    inCmd, m_DeviceContext.CascadeDepthImage.Image.Image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        }
 
         const VkExtent2D extent = m_Window->GetExtent();
 
@@ -285,13 +329,13 @@ namespace MamontEngine
             PROFILE_VK_ZONE(currentFrame.TracyContext, inCmd, "Scene Render");
             vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DeviceContext.RenderPipeline->OpaquePipeline->Pipeline);
 
-            vkCmdBindDescriptorSets(inCmd,
+            /* vkCmdBindDescriptorSets(inCmd,
                                     VK_PIPELINE_BIND_POINT_GRAPHICS, m_DeviceContext.RenderPipeline->OpaquePipeline->Layout,
                                     0,
                                     1,
                                     &currentFrame.GlobalDescriptor,
                                     0,
-                                    nullptr);
+                                    nullptr);*/
             m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, sceneData.Viewproj);
         }
         vkCmdEndRendering(inCmd);
@@ -344,6 +388,8 @@ namespace MamontEngine
 
     void Renderer::UpdateSceneRenderer()
     {
+        m_SceneRenderer->UpdateCascades(m_DeviceContext.Cascades);
+
         std::array<float, CASCADECOUNT> splitDepths{};
         for (size_t i = 0; i < m_DeviceContext.Cascades.size(); i++)
         {
@@ -417,7 +463,7 @@ namespace MamontEngine
         pipelineBuilder.SetLayout(layout);
         pipelineBuilder.SetShaders(cascadeShadowShader, cascadeFragmentShadowShader);
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-        pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_LESS);
+        pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
 //        pipelineBuilder.SetDepthFormat(m_DeviceContext.ShadowDepthImage.ImageFormat);
         //pipelineBuilder.SetColorAttachmentFormat(VK_FORMAT_UNDEFINED);
         pipelineBuilder.SetMultisamplingNone();
@@ -436,6 +482,8 @@ namespace MamontEngine
 
         vkDestroyShaderModule(m_DeviceContext.Device, cascadeShadowShader, nullptr);
         vkDestroyShaderModule(m_DeviceContext.Device, cascadeFragmentShadowShader, nullptr);
+
+        pipelineBuilder.Clear();
     }
 
 

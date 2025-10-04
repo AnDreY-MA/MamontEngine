@@ -62,6 +62,11 @@ namespace MamontEngine
             return m_SceneData;
         }
 
+        const SceneDataFragment& GetSceneFragment() const
+        {
+            return m_FragmentData;
+        }
+
 
         const Camera* GetCamera() const
         {

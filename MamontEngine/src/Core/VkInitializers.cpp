@@ -173,7 +173,7 @@ VkRenderingInfo MamontEngine::vkinit::rendering_info(VkExtent2D                 
 
     renderInfo.renderArea           = VkRect2D{VkOffset2D{0, 0}, renderExtent};
     renderInfo.layerCount           = 1;
-    renderInfo.colorAttachmentCount = 1;
+    renderInfo.colorAttachmentCount = colorAttachment != nullptr? 1 : 0;
     renderInfo.pColorAttachments    = colorAttachment;
     renderInfo.pDepthAttachment     = depthAttachment;
     renderInfo.pStencilAttachment   = nullptr;
