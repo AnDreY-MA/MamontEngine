@@ -1,5 +1,6 @@
 #include "Graphics/Vulkan/Buffers/Buffer.h"
 #include "Graphics/Vulkan/Allocator.h"
+#include "Graphics/Devices/LogicalDevice.h"
 #include "Core/Engine.h"
 
 #define VMA_IMPLEMENTATION
@@ -35,8 +36,9 @@ namespace MamontEngine
 
     VkResult AllocatedBuffer::Map(VkDeviceSize inSize, VkDeviceSize inOffset)
     {
-        const auto &ContexDevice = MEngine::Get().GetContextDevice();
-        return vkMapMemory(ContexDevice.Device, Info.deviceMemory, inOffset, inSize, 0, &Info.pMappedData);
+        const VkDevice device = LogicalDevice::GetDevice();
+
+        return vkMapMemory(device, Info.deviceMemory, inOffset, inSize, 0, &Info.pMappedData);
     }
 
     void *AllocatedBuffer::GetMappedData() const

@@ -3,6 +3,8 @@
 #include <expected>
 #include <glm/gtx/quaternion.hpp>
 #include "Core/Log.h"
+#include "Graphics/Devices/LogicalDevice.h"
+#include "Utils/Utilities.h"
 
 namespace MamontEngine
 {
@@ -51,8 +53,11 @@ namespace MamontEngine
             if (!data)
                 return false;
             const VkExtent3D imagesize{(uint32_t)width, (uint32_t)height, 1u};
+            fmt::println("load_image: begin");
             newImage = inDevice.CreateImage(
-                    data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, /*mip=*/true);
+                    data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, /*mip=*/false);
+            fmt::println("load_image: end");
+            
             stbi_image_free(data);
 
             return newImage.Image != VK_NULL_HANDLE;
@@ -137,19 +142,18 @@ namespace MamontEngine
         //    }
         //}
 
-        const VkDevice dv = m_ContextDevice.Device;
         Clear();
 
     }
 
     void MeshModel::Clear()
     {
-        const VkDevice dv = m_ContextDevice.Device;
+        const VkDevice device = LogicalDevice::GetDevice();
         for (const auto &sampler : m_Samplers)
         {
-            vkDestroySampler(dv, sampler, nullptr);
+            vkDestroySampler(device, sampler, nullptr);
         }
-        DescriptorPool.DestroyPools(dv);
+        DescriptorPool.DestroyPools(device);
 
         m_Samplers.clear();
 
@@ -274,10 +278,10 @@ namespace MamontEngine
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}
         };
+        const VkDevice device = LogicalDevice::GetDevice();
+        DescriptorPool.Init(device, gltf.materials.size(), sizes);
 
-        DescriptorPool.Init(m_ContextDevice.Device, gltf.materials.size(), sizes);
-
-        LoadSamplers(m_ContextDevice.Device, gltf.samplers);
+        LoadSamplers(device, gltf.samplers);
         LoadImages(gltf);
         LoadMaterials(gltf);
         
@@ -323,20 +327,20 @@ namespace MamontEngine
         std::vector<std::shared_ptr<GLTFMaterial>> materials;
         materials.reserve(inFileAsset.materials.size());
 
-        if (inFileAsset.materials.size() == 0)
-        {
-            fmt::println("Materials is empty");
-            auto material = std::make_shared<GLTFMaterial>();
-            material->Pipeline = m_ContextDevice.RenderPipeline->OpaquePipeline;
-            m_Materials.push_back(std::move(material));
-            return;
-        }
+        const VkDevice device = LogicalDevice::GetDevice();
+        
+        VkPhysicalDeviceProperties properties{};
+        vkGetPhysicalDeviceProperties(m_ContextDevice.GetPhysicalDevice(), &properties);
+        const uint32_t minAlignment = properties.limits.minUniformBufferOffsetAlignment;
+        constexpr size_t   materialConstSize   = sizeof(GLTFMaterial::MaterialConstants);
+        const size_t   alignedMaterialSize = Utils::AlignUp(materialConstSize, minAlignment);
 
-        const size_t bufferSize = sizeof(GLTFMaterial::MaterialConstants) * inFileAsset.materials.size();
+        const size_t bufferSize = alignedMaterialSize * inFileAsset.materials.size();
+        //const size_t bufferSize = sizeof(GLTFMaterial::MaterialConstants) * inFileAsset.materials.size();
 
-        MaterialDataBuffer.Create(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        MaterialDataBuffer.Create(bufferSize == 0 ? 64 : bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VMA_MEMORY_USAGE_CPU_TO_GPU);
-        int                                        data_index = 0;
+        int data_index = 0;
         //GLTFMaterial::MaterialConstants *sceneMaterialConstants = (GLTFMaterial::MaterialConstants *)MaterialDataBuffer.Info.pMappedData;
         DescriptorWriter Writer;
 
@@ -349,13 +353,11 @@ namespace MamontEngine
                     matData->Pipeline =
                             pass == EMaterialPass::TRANSPARENT ? m_ContextDevice.RenderPipeline->TransparentPipeline :
                             m_ContextDevice.RenderPipeline->OpaquePipeline;
-                    matData->MaterialSet = descriptorAllocator.Allocate(m_ContextDevice.Device, m_ContextDevice.RenderPipeline->Layout);
+                    matData->MaterialSet = descriptorAllocator.Allocate(device, m_ContextDevice.RenderPipeline->Layout);
                     matData->Constants   = constants;
 
                     Writer.Clear();
-                    Writer.WriteBuffer(0,
-                                       materialResources.DataBuffer,
-                                       sizeof(GLTFMaterial::MaterialConstants),
+                    Writer.WriteBuffer(0, materialResources.DataBuffer, materialConstSize,
                                        materialResources.DataBufferOffset,
                             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                     Writer.WriteImage(1,
@@ -369,10 +371,37 @@ namespace MamontEngine
                                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-                    Writer.UpdateSet(m_ContextDevice.Device, matData->MaterialSet);
+                    Writer.UpdateSet(device, matData->MaterialSet);
 
                     return matData;
                 };
+
+        const auto getMaterialResources = [&]()
+            {
+                GLTFMetallic_Roughness::MaterialResources materialResources{};
+                materialResources.ColorImage        = m_ContextDevice.WhiteImage;
+                materialResources.ColorSampler      = m_ContextDevice.DefaultSamplerLinear;
+                materialResources.MetalRoughImage   = m_ContextDevice.WhiteImage;
+                materialResources.MetalRoughSampler = m_ContextDevice.DefaultSamplerLinear;
+                materialResources.DataBuffer        = MaterialDataBuffer.Buffer;
+                materialResources.DataBufferOffset  = data_index * alignedMaterialSize;
+
+                return materialResources;
+            };
+
+        if (inFileAsset.materials.size() == 0)
+        {
+            // Create Empty Material
+            fmt::println("Materials is empty");
+            GLTFMaterial::MaterialConstants constants{};
+            constants.ColorFactors  = glm::vec4(1.0f);
+            constants.MetalicFactor = 0.0f;
+            constants.RoughFactor   = 1.0f;
+            GLTFMetallic_Roughness::MaterialResources materialResources = getMaterialResources();
+            auto material                      = writerMaterial(EMaterialPass::MAIN_COLOR, materialResources, DescriptorPool, constants);
+            m_Materials.push_back(std::move(material));
+            return;
+        }
 
         for (const fastgltf::Material &mat : inFileAsset.materials)
         {
@@ -380,22 +409,13 @@ namespace MamontEngine
             const GLTFMaterial::MaterialConstants constants = { 
                 glm::vec4(mat.pbrData.baseColorFactor[0], mat.pbrData.baseColorFactor[1], 
                     mat.pbrData.baseColorFactor[2], mat.pbrData.baseColorFactor[3]),
-                mat.pbrData.metallicFactor,
-                mat.pbrData.roughnessFactor
+                    mat.pbrData.metallicFactor,
+                    mat.pbrData.roughnessFactor
             };
-            //write material parameters to buffer
-            //sceneMaterialConstants[data_index] = constants;
 
             const EMaterialPass passType = mat.alphaMode == fastgltf::AlphaMode::Blend ? EMaterialPass::TRANSPARENT : EMaterialPass::MAIN_COLOR;
 
-            GLTFMetallic_Roughness::MaterialResources materialResources{};
-            materialResources.ColorImage        = m_ContextDevice.WhiteImage;
-            materialResources.ColorSampler      = m_ContextDevice.DefaultSamplerLinear;
-            materialResources.MetalRoughImage   = m_ContextDevice.WhiteImage;
-            materialResources.MetalRoughSampler = m_ContextDevice.DefaultSamplerLinear;
-
-            materialResources.DataBuffer       = MaterialDataBuffer.Buffer;
-            materialResources.DataBufferOffset = data_index * sizeof(GLTFMaterial::MaterialConstants);
+            GLTFMetallic_Roughness::MaterialResources materialResources = getMaterialResources();
 
             //grab textures from inFileAsset file
             if (mat.pbrData.baseColorTexture.has_value())

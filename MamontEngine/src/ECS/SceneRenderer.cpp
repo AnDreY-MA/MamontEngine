@@ -1,4 +1,4 @@
-#include "SceneRenderer.h"
+﻿#include "SceneRenderer.h"
 #include <glm/gtx/transform.hpp>
 #include "Graphics/Model.h"
 #include "Utils/Profile.h"
@@ -51,7 +51,8 @@ namespace MamontEngine
     {
         constexpr float angle  = glm::radians(360.0f);
         constexpr float  radius = 20.0f;
-        m_LightPosition     = glm::vec3(cos(angle) * radius, -radius, sin(angle) * radius);
+        //m_LightPosition     = glm::vec3(cos(angle) * radius, -radius, sin(angle) * radius);
+        m_LightPosition = glm::vec3(0.8f, 5.f, 34.f);
     }
     
     SceneRenderer::~SceneRenderer() 
@@ -64,7 +65,7 @@ namespace MamontEngine
         m_MeshComponents.clear();
     }
 
-    void SceneRenderer::Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const glm::mat4 &inViewProjection, VkPipelineLayout inGlobalLayout)
+    void SceneRenderer::Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const glm::mat4 &inViewProjection, VkPipelineLayout inGlobalLayout, uint32_t cascadeIndex)
     {
         PROFILE_ZONE("SceneRenderer::Render");
         std::vector<uint32_t> opaque_draws;
@@ -100,13 +101,15 @@ namespace MamontEngine
                 if (r.Material->Pipeline != lastPipeline)
                 {
                     lastPipeline = r.Material->Pipeline;
-                    //vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Pipeline);
+                    vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Pipeline);
 
-                    vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inGlobalLayout != VK_NULL_HANDLE ? 
-                        inGlobalLayout : r.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
+                    vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
                 }
 
-                vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
+                if (r.Material->MaterialSet != VK_NULL_HANDLE && r.Material->Pipeline->Layout != VK_NULL_HANDLE)
+                {
+                    vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
+                }
             }
 
             constexpr VkDeviceSize offsets[1] = {0};
@@ -114,11 +117,15 @@ namespace MamontEngine
 
             vkCmdBindIndexBuffer(inCmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-            const GPUDrawPushConstants push_constants{r.Transform, r.VertexBufferAddress};
-
-            vkCmdPushConstants(inCmd, r.Material->Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
+            const GPUDrawPushConstants push_constants{
+                .WorldMatrix = r.Transform, .VertexBuffer = r.VertexBufferAddress, .CascadeIndex = cascadeIndex
+            };
+            constexpr uint32_t         constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
+            vkCmdPushConstants(
+                    inCmd, r.Material->Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
 
             vkCmdDrawIndexed(inCmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
+
         };
 
 
@@ -135,7 +142,72 @@ namespace MamontEngine
         m_DrawContext.Clear();
     }
 
-    void SceneRenderer::Update(const VkExtent2D &inWindowExtent, const std::span<float> inSplitDepths)
+    void SceneRenderer::RenderShadow(
+            VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const glm::mat4 &inViewProjection, VkPipelineLayout inGlobalLayout, uint32_t cascadeIndex)
+    {
+        PROFILE_ZONE("SceneRenderer::RenderShadow");
+        std::vector<uint32_t> opaque_draws;
+        opaque_draws.reserve(m_DrawContext.OpaqueSurfaces.size());
+
+        for (size_t i = 0; i < m_DrawContext.OpaqueSurfaces.size(); i++)
+        {
+            /*f (is_visible(m_DrawContext.OpaqueSurfaces[i], inViewProjection))
+            {
+                
+            }*/
+            opaque_draws.push_back(i);
+        }
+
+        if (globalDescriptor == VK_NULL_HANDLE)
+        {
+            Log::Warn("globalDescriptor is NULL");
+        }
+        if (inGlobalLayout == VK_NULL_HANDLE)
+        {
+            Log::Warn("inGlobalLayout is NULL");
+        }
+
+        const auto draw = [&](const RenderObject &r)
+        {
+            vkCmdBindDescriptorSets(inCmd,
+                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                    inGlobalLayout,
+                                    0,
+                                    1,
+                                    &globalDescriptor,
+                                    0,
+                                    nullptr);
+            //vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
+
+            constexpr VkDeviceSize offsets[1] = {0};
+            vkCmdBindVertexBuffers(inCmd, 0, 1, &r.VertexBuffer, offsets);
+
+            vkCmdBindIndexBuffer(inCmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+            const GPUDrawPushConstants push_constants {
+                .WorldMatrix = r.Transform, 
+                .VertexBuffer = r.VertexBufferAddress, 
+                .CascadeIndex = cascadeIndex
+            };
+
+            vkCmdPushConstants(inCmd,
+                               inGlobalLayout,
+                               VK_SHADER_STAGE_VERTEX_BIT,
+                               0,
+                               sizeof(GPUDrawPushConstants),
+                               &push_constants);
+
+            vkCmdDrawIndexed(inCmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
+
+        };
+
+        for (const auto &r : opaque_draws)
+        {
+            draw(m_DrawContext.OpaqueSurfaces[r]);
+        }
+    }
+
+    void SceneRenderer::Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades)
     {
         const glm::mat4& view       = m_Camera->GetViewMatrix();
         const glm::mat4& projection = m_Camera->GetProjection();
@@ -147,14 +219,14 @@ namespace MamontEngine
         m_SceneData.Viewproj = projection * view;
         m_SceneData.LightDirection = lightDirection;
 
-        for (size_t i = 0; i < CASCADECOUNT; i++)
+        /*for (size_t i = 0; i < CASCADECOUNT; i++)
         {
-            m_FragmentData.CascadePlits[i] = inSplitDepths[i];
+            m_FragmentData.CascadePlits[i] = inCascades[i].SplitDepth;
         }
 
         m_FragmentData.InverseViewMat = glm::inverse(view);
         m_FragmentData.LightDirection = lightDirection;
-        m_FragmentData.ColorCascades  = false;
+        m_FragmentData.ColorCascades  = 0;*/
 
 
         for (const auto &mesh : m_MeshComponents)
@@ -168,7 +240,7 @@ namespace MamontEngine
 
     void SceneRenderer::UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades)
     {
-        float cascadeSplits[CASCADECOUNT];
+        float cascadeSplits[CASCADECOUNT]{};
 
         const float nearClip{m_Camera->GetNearClip()};
         const float farClip{m_Camera->GetFarClip()};
@@ -190,8 +262,6 @@ namespace MamontEngine
             const float d       = cascadeSplitLambda * (log - uniform) + uniform;
             cascadeSplits[i]    = (d - nearClip) / clipRange;
         }
-
-        
 
         float lastSplitDist = 0;
         for (size_t i = 0; i < CASCADECOUNT; i++)

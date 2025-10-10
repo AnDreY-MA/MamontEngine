@@ -33,7 +33,7 @@ namespace MamontEngine
     struct FrameData
     {
         VkSemaphore SwapchainSemaphore{VK_NULL_HANDLE};
-        VkSemaphore RenderSemaphore{VK_NULL_HANDLE};
+        //VkSemaphore RenderSemaphore{VK_NULL_HANDLE};
 
         VkFence RenderFence{VK_NULL_HANDLE};
 
@@ -45,8 +45,8 @@ namespace MamontEngine
         VkDescriptorSet             GlobalDescriptor;
         
         AllocatedBuffer SceneDataBuffer;
-        AllocatedBuffer CascadeViewProjMatrices;
-        AllocatedBuffer FragmentBuffer;
+        AllocatedBuffer ShadowmMatrixBuffer;
+        AllocatedBuffer ShadowUBOBuffer;
         TracyVkCtx TracyContext = nullptr;
 
     };

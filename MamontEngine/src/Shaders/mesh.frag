@@ -1,11 +1,18 @@
 #version 450
 
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_buffer_reference : require
+
 #include "input_structures.glsl"
 
-layout (location = 0) in vec3 inNormal;
-layout (location = 1) in vec3 inColor;
+#define SHADOW_MAP_CASCADE_COUNT 4
+#define ambient 0.3
+
+layout (location = 0) in vec3 inPos;
+layout (location = 1) in vec3 inNormal;
 layout (location = 2) in vec2 inUV;
+layout (location = 3) in vec4 inColor;
+layout (location = 4) in vec4 inTangent;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -48,13 +55,13 @@ vec3 calcIrradiance(vec3 nor) {
 
 void main() 
 {
-	float lightValue = max(dot(inNormal, vec3(0.3f,1.f,0.3f)), 0.1f);
+    float lightValue = max(dot(inNormal, vec3(0.3f,1.f,0.3f)), 0.1f);
 
 	vec3 irradiance = calcIrradiance(inNormal); 
 
+    vec4 textureColor = texture(colorTex, inUV);
+	vec4 color = inColor * textureColor;
 
-	vec3 color = inColor * texture(colorTex,inUV).xyz;
-
-	outFragColor = vec4(color * lightValue + color * irradiance.x * vec3(0.2f) ,1.0f);
+	outFragColor = vec4(color.rgb * lightValue + color.rgb * irradiance.x * vec3(0.2f), 1.f);
 }
 

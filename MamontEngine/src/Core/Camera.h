@@ -38,6 +38,16 @@ namespace MamontEngine
             return m_FarClip;
         }
 
+        float GetFOV() const
+        {
+            return m_FOV;
+        }
+
+        float GetAspectRatio() const
+        {
+            return m_AspectRatio;
+        }
+
     private:
         void Rotate(const SDL_MouseMotionEvent& inMotion);
 
@@ -45,7 +55,7 @@ namespace MamontEngine
         glm::mat4 m_Projection;
 
         glm::vec3 m_Velocity;
-        glm::vec3 m_Position;
+        glm::vec3 m_Position{0.8f, 5.f, 34.f};
         
         float     m_Pitch{0.f};
         float     m_Yaw{0.f};
@@ -54,7 +64,9 @@ namespace MamontEngine
         float     m_MouseSensitivity = 0.001f;
 
         float m_NearClip{0.1f};
-        float m_FarClip{1000.f};
+        float m_FarClip{100.f};
+
+        float m_AspectRatio{0.f};
 
         float m_FOV{70.f};
 	};

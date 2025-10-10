@@ -13,6 +13,7 @@
 
 #include "Utils/Profile.h"
 #include "tracy/public/TracyClient.cpp"
+#include "Graphics/Devices/LogicalDevice.h"
 
 namespace MamontEngine
 {
@@ -63,7 +64,7 @@ namespace MamontEngine
         InitScene();
 
         m_MainCamera->SetVelocity(glm::vec3(0.f));
-        m_MainCamera->SetPosition(glm::vec3(1, 1, 0));
+        //m_MainCamera->SetPosition(glm::vec3(1, 1, 0));
         m_IsInitialized = true;
     }
 
@@ -137,7 +138,8 @@ namespace MamontEngine
         if (m_IsInitialized)
         {
             m_Log.release();
-            vkDeviceWaitIdle(m_ContextDevice->Device);
+            const VkDevice device = LogicalDevice::GetDevice();
+            vkDeviceWaitIdle(device);
             
             m_GuiLayer->Deactivate();
             
@@ -145,8 +147,9 @@ namespace MamontEngine
             
             m_MainDeletionQueue.Flush();
 
-            m_ContextDevice->Swapchain.Destroy(m_ContextDevice->Device);
+            m_ContextDevice->Swapchain.Destroy(device);
 
+            m_ContextDevice.release();
             //~ContextDevice
 
             //m_Window->Close();
@@ -164,8 +167,9 @@ namespace MamontEngine
         m_MainDeletionQueue.PushFunction(
                 [&]()
                 {
-                    vkDestroySampler(m_ContextDevice->Device, m_ContextDevice->DefaultSamplerNearest, nullptr);
-                    vkDestroySampler(m_ContextDevice->Device, m_ContextDevice->DefaultSamplerLinear, nullptr);
+                    const VkDevice device = LogicalDevice::GetDevice();
+                    vkDestroySampler(device, m_ContextDevice->DefaultSamplerNearest, nullptr);
+                    vkDestroySampler(device, m_ContextDevice->DefaultSamplerLinear, nullptr);
 
                     m_ContextDevice->DestroyImage(m_ContextDevice->WhiteImage);
                     m_ContextDevice->DestroyImage(m_ContextDevice->ErrorCheckerboardImage);
@@ -232,8 +236,9 @@ namespace MamontEngine
         m_MainDeletionQueue.PushFunction(
                 [=]()
                 {
+
                     ImGui_ImplVulkan_Shutdown();
-                    vkDestroyDescriptorPool(m_ContextDevice->Device, outImguiPool, nullptr);
+                    vkDestroyDescriptorPool(LogicalDevice::GetDevice(), outImguiPool, nullptr);
                 });
 
     }

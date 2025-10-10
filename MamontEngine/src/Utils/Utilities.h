@@ -2,6 +2,11 @@
 
 namespace MamontEngine::Utils
 {
+    uint32_t AlignUp(uint32_t value, uint32_t alignment)
+    {
+        return (value + alignment - 1) & ~(alignment - 1);
+    }
+
     //uint32 FindMemoryType(const VkPhysicalDevice inPhysicalDevice, const uint32 inFilter, const VkMemoryPropertyFlags inProps)
     //{
     //    // #TODO Move this to the Physical device abstraction once we create it

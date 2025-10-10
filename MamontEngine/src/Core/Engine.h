@@ -35,6 +35,11 @@ namespace MamontEngine
             return m_ContextDevice->GetCurrentFrame().TracyContext;
         }
 
+        void EnableCascade(bool inValue)
+        {
+            m_Renderer->EnableCascade(inValue);
+        }
+
         VkContextDevice& GetContextDevice()
         {
             return *m_ContextDevice;

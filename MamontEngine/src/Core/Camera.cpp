@@ -111,8 +111,8 @@ namespace MamontEngine
 
     void Camera::UpdateProjection(const VkExtent2D &inWindowExtent)
     {
-        const auto AspectRaio{(float)inWindowExtent.width / (float)inWindowExtent.height};
-        m_Projection = glm::perspective(glm::radians(m_FOV), AspectRaio, 10000.f, 0.1f);
+        m_AspectRatio = (float)inWindowExtent.width / (float)inWindowExtent.height;
+        m_Projection   = glm::perspective(glm::radians(m_FOV), m_AspectRatio, 10000.f, 0.1f);
         m_Projection[1][1] *= -1;
     }
 } // namespace MamontEngine

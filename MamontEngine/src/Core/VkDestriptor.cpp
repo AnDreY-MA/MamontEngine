@@ -85,10 +85,11 @@ namespace MamontEngine
 
     void DescriptorAllocatorGrowable::Init(VkDevice inDevice, const uint32_t inInitialSets, const std::vector<PoolSizeRatio>& inPoolRatios)
     {
+        const uint32_t initSize = inInitialSets != 0 ? inInitialSets : 1;
         m_Ratios.assign(inPoolRatios.begin(), inPoolRatios.end());
 
-        VkDescriptorPool newPool = CreatePool(inDevice, inInitialSets, inPoolRatios);
-        m_SetsPerPool            = inInitialSets * 1.5;
+        VkDescriptorPool newPool = CreatePool(inDevice, initSize, inPoolRatios);
+        m_SetsPerPool            = initSize * 1.5;
         m_ReadyPools.push_back(newPool);
     }
 

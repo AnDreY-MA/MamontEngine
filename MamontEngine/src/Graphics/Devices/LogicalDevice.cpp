@@ -8,17 +8,20 @@ namespace LogicalDevice
 
     VkDevice GetDevice()
     {
-    return g_Device;
+        return g_Device;
     }
   
     void InitDevice(VkDevice inDevice)
     {
-    g_Device = inDevice;
+        g_Device = inDevice;
     }
 
     void DestroyDevice()
     {
-    vkDestroyDevice(g_Device, nullptr);
+        if (g_Device != VK_NULL_HANDLE)
+        {
+            vkDestroyDevice(g_Device, nullptr);
+        }
     }
 
 }

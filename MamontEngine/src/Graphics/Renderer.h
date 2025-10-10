@@ -65,6 +65,11 @@ namespace MamontEngine
             return m_SceneRenderer;
         }
 
+        void EnableCascade(bool inValue)
+        {
+            IsActiveCascade = inValue;
+        }
+
     private:
         void DrawMain(VkCommandBuffer inCmd);
         void DrawGeometry(VkCommandBuffer inCmd);
@@ -74,6 +79,11 @@ namespace MamontEngine
 
         void SetViewportScissor(VkCommandBuffer cmd, const VkExtent2D &inExtent) const;
 
+        void UpdateUniformBuffers();
+
+        void CalculateShadowData(const glm::mat4& inCameraView, const glm::vec4 inLightDirection);
+
+        void CalculateLightSpaceMatrices(std::span<float> inCascadeLevels, const glm::vec4 inLightDirection, float zMult);
 
 	private:
         VkContextDevice &m_DeviceContext;
@@ -90,6 +100,8 @@ namespace MamontEngine
 
         std::unique_ptr<PipelineData> m_CascadePipeline;
 
+        bool IsActiveCascade{false};
+
         struct Settings
         {
             float Z_Near{0.1f};
@@ -104,6 +116,9 @@ namespace MamontEngine
             } Shadow;
 
         } m_Settings;
+
+        ShadowCascadeUBO m_ShadowCascadeUBOData;
+        ShadowCascadeMatrices m_ShadowMatrices;
 
         bool m_StopRendering{false};
         bool m_IsResizeRequested{false};

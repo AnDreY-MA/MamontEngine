@@ -298,6 +298,7 @@ MamontEngine::vkinit::imageview_create_info(VkFormat format, VkImage image, VkIm
     info.viewType                        = type;
     info.image                           = image;
     info.format                          = format;
+    info.subresourceRange                = {},
     info.subresourceRange.baseMipLevel   = 0;
     info.subresourceRange.levelCount     = 1;
     info.subresourceRange.baseArrayLayer = 0;

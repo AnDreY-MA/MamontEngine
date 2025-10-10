@@ -33,7 +33,7 @@ namespace MamontEngine
         }
 
         constexpr VkPushConstantRange matrixRange {
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT, 
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
             .offset = 0, 
             .size = sizeof(GPUDrawPushConstants)
         };
@@ -42,6 +42,7 @@ namespace MamontEngine
         layoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
         layoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         layoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        layoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
         Layout = layoutBuilder.Build(inDevice, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
@@ -56,7 +57,7 @@ namespace MamontEngine
         VkPipelineLayout newLayout;
         VK_CHECK(vkCreatePipelineLayout(inDevice, &mesh_layout_info, nullptr, &newLayout));
 
-        const std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
+        /*const std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
                 vkinit::vertex_input_binding_description(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX),
         };
         const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
@@ -65,14 +66,15 @@ namespace MamontEngine
                 vkinit::vertex_input_attribute_description(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, UV)),
                 vkinit::vertex_input_attribute_description(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Color)),
                 vkinit::vertex_input_attribute_description(0, 4, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Tangent)),
-        };
-
+        };*/
+        const std::vector<VkVertexInputBindingDescription>  vertexInputBindings{};
+        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes{};
         const VkPipelineVertexInputStateCreateInfo vertexInputInfo =
                 vkinit::pipeline_vertex_input_state_create_info(vertexInputBindings, vertexInputAttributes);
 
         VkPipelines::PipelineBuilder pipelineBuilder;
         pipelineBuilder.SetShaders(meshVertexShader, meshFragShader);
-//        pipelineBuilder.SetVertexInput(vertexInputInfo);
+        pipelineBuilder.SetVertexInput(vertexInputInfo);
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
         pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
         pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);

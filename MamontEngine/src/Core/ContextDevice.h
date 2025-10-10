@@ -18,13 +18,14 @@ namespace MamontEngine
     struct AllocatedImage;
     
     constexpr size_t FRAME_OVERLAP = 3;
-    
 
 	struct VkContextDevice
 	{
         explicit VkContextDevice(WindowCore *inWindow);
 
         ~VkContextDevice();
+
+        //void PrepareFrame(); 
 
         void DestroyFrameData();
 
@@ -87,8 +88,11 @@ namespace MamontEngine
 
         VkInstance               Instance{VK_NULL_HANDLE};
         VkDebugUtilsMessengerEXT DebugMessenger{VK_NULL_HANDLE};
-        VkDevice                 Device{VK_NULL_HANDLE};
         VkSurfaceKHR             Surface{VK_NULL_HANDLE};
+
+        VkFence TransferFence{VK_NULL_HANDLE};
+
+        std::vector<VkSemaphore> RenderCopleteSemaphores{};
 
         AllocatedImage WhiteImage;
         AllocatedImage ErrorCheckerboardImage;
@@ -112,10 +116,9 @@ namespace MamontEngine
         VkDescriptorSet       DrawImageDescriptors{VK_NULL_HANDLE};
         VkDescriptorSetLayout DrawImageDescriptorLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
-
+        VkDescriptorSetLayout MaterialDescriptorLayout{VK_NULL_HANDLE};
+        
         RenderPipeline* RenderPipeline;
-
-
 
     private:
         void DestroyImages() const;
@@ -127,6 +130,8 @@ namespace MamontEngine
         void DestroyDescriptors();
         
         void DestroySceneBuffers();
+
+        VkFormat GetSupportedDepthFormat(bool checkSamplingSupport);
 
     private:
         std::array<FrameData, FRAME_OVERLAP> m_Frames{};
@@ -140,8 +145,6 @@ namespace MamontEngine
 
         VkQueue  m_GraphicsQueue{VK_NULL_HANDLE};
         uint32_t m_GraphicsQueueFamily{0};
-
-        
    
         struct TracyInfo
         {

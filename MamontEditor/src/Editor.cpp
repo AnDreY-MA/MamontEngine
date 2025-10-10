@@ -101,7 +101,7 @@ namespace MamontEditor
         }
         
     }
-
+    static bool EnableCascade = true;
     void Editor::DrawMainPanel()
     {
       if(ImGui::BeginMainMenuBar())
@@ -118,8 +118,16 @@ namespace MamontEditor
                   GetSceneContext()->Load();
               }
 
+              if (ImGui::MenuItem("Cascade"))
+              {
+                  MamontEngine::MEngine::Get().EnableCascade(EnableCascade);
+                  EnableCascade = !EnableCascade;
+              }
+
               ImGui::EndMenu();
           }
+
+
           ImGui::EndMainMenuBar();
       }
     }

@@ -15,16 +15,6 @@ namespace MamontEngine
         glm::vec3 LightDirection{glm::vec3(0.4f)};
     };
 
-    struct SceneDataFragment
-    {
-        float CascadePlits[4];
-        glm::mat4 InverseViewMat;
-        glm::vec3 LightDirection;
-        float     Pad;
-        int32_t   ColorCascades;
-    };
-
-
 	class SceneRenderer
 	{
     public:
@@ -32,9 +22,17 @@ namespace MamontEngine
 
         ~SceneRenderer();
 
-        void Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const glm::mat4 &inViewProjection, VkPipelineLayout inGlobalLayout = VK_NULL_HANDLE);
-
-        void Update(const VkExtent2D &inWindowExtent, const std::span<float> inSplitDepths);
+        void Render(VkCommandBuffer  inCmd,
+                    VkDescriptorSet  globalDescriptor,
+                    const glm::mat4 &inViewProjection,
+                    VkPipelineLayout inGlobalLayout = VK_NULL_HANDLE,
+                    uint32_t cascadeIndex = 0);
+        void RenderShadow(VkCommandBuffer  inCmd,
+                          VkDescriptorSet  globalDescriptor,
+                          const glm::mat4 &inViewProjection,
+                          VkPipelineLayout inGlobalLayout,
+                          uint32_t         cascadeIndex);
+        void Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades);
 
         void UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades);
 
@@ -62,12 +60,6 @@ namespace MamontEngine
             return m_SceneData;
         }
 
-        const SceneDataFragment& GetSceneFragment() const
-        {
-            return m_FragmentData;
-        }
-
-
         const Camera* GetCamera() const
         {
             return m_Camera.get();
@@ -84,7 +76,6 @@ namespace MamontEngine
         DrawContext                m_DrawContext;
 
         GPUSceneData m_SceneData;
-        SceneDataFragment m_FragmentData;
 
         glm::vec3 m_LightPosition{0.f};
 

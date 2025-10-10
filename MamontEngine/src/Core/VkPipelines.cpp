@@ -55,6 +55,11 @@ namespace MamontEngine::VkPipelines
         m_InputAssembly.primitiveRestartEnable = VK_FALSE;
     }
 
+    void PipelineBuilder::SetVertexInput(VkPipelineVertexInputStateCreateInfo inInfo)
+    {
+        m_VertexInput = inInfo;
+    }
+
     void PipelineBuilder::SetPolygonMode(VkPolygonMode inMode)
     {
         m_Rasterizer.polygonMode = inMode;
@@ -132,6 +137,10 @@ namespace MamontEngine::VkPipelines
         m_DepthStencil.minDepthBounds        = 0.f;
         m_DepthStencil.maxDepthBounds        = 1.f;
     }
+    void PipelineBuilder::EnableDepthClamp(VkBool32 inValue)
+    {
+        m_Rasterizer.depthClampEnable = inValue;
+    }
 
     void PipelineBuilder::DisableDepthtest()
     {
@@ -182,25 +191,11 @@ namespace MamontEngine::VkPipelines
             .pAttachments                        = &m_ColorBlendAttachment
         };
 
-        const std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
-                vkinit::vertex_input_binding_description(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX),
-        };
-        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
-                vkinit::vertex_input_attribute_description(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Position)),
-                vkinit::vertex_input_attribute_description(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Normal)),
-                vkinit::vertex_input_attribute_description(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, UV)),
-                vkinit::vertex_input_attribute_description(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Color)),
-                vkinit::vertex_input_attribute_description(0, 4, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Tangent)),
-                //vkinit::vertex_input_attribute_description(0, 4, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VulkanglTFScene::Vertex, tangent)),
-        };
-
-        const VkPipelineVertexInputStateCreateInfo vertexInputInfo = vkinit::pipeline_vertex_input_state_create_info(vertexInputBindings, vertexInputAttributes);
-
         VkGraphicsPipelineCreateInfo pipelineInfo = {.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
         pipelineInfo.pNext                        = &m_RenderInfo;
         pipelineInfo.stageCount                   = (uint32_t)m_ShaderStages.size();
         pipelineInfo.pStages                      = m_ShaderStages.data();
-        pipelineInfo.pVertexInputState            = &vertexInputInfo;
+        pipelineInfo.pVertexInputState            = &m_VertexInput;
         pipelineInfo.pInputAssemblyState          = &m_InputAssembly;
         pipelineInfo.pViewportState               = &viewportState;
         pipelineInfo.pRasterizationState          = &m_Rasterizer;  

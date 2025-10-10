@@ -13,11 +13,16 @@ namespace MamontEngine
 
         void Create(const VkContextDevice &inDevice, const VkExtent2D &inExtent);
 
-        std::pair<VkResult, uint32_t> AcquireImage(VkDevice inDevice, VkSemaphore &inSemaphore) const;
+        std::pair<VkResult, uint32_t> AcquireImage(VkDevice inDevice, VkSemaphore inSemaphore) const;
 
         VkResult Present(VkQueue inQueue, const VkSemaphore *inRenderSemaphore, const uint32_t inImageIndex) const;
 
         void Destroy(VkDevice inDevice);
+
+        inline VkImage GetImageAt(const size_t inIndex) const
+        {
+            return m_SwapchainImages.at(inIndex);
+        }
 
         const std::vector<VkImage>& GetImages()
         {

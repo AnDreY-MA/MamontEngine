@@ -4,6 +4,7 @@
 #include "Graphics/Vulkan/Allocator.h"
 #include "Core/ContextDevice.h"
 #include "Core/VkInitializers.h"
+#include "Graphics/Devices/LogicalDevice.h"
 
 namespace MamontEngine
 {
@@ -11,9 +12,10 @@ namespace MamontEngine
     {
         Create(inDevice, inExtent);
 
+        VkDevice         device          = LogicalDevice::GetDevice();
         const VkExtent3D drawImageExtent = {inExtent.width, inExtent.height, 1};
 
-        inImage.DrawImage.ImageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+        inImage.DrawImage.ImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
         inImage.DrawImage.ImageExtent = drawImageExtent;
 
         VkImageUsageFlags drawImageUsages{};
@@ -33,7 +35,7 @@ namespace MamontEngine
         const VkImageViewCreateInfo rViewInfo =
                 vkinit::imageview_create_info(inImage.DrawImage.ImageFormat, inImage.DrawImage.Image, VK_IMAGE_ASPECT_COLOR_BIT);
 
-        VK_CHECK(vkCreateImageView(inDevice.Device, &rViewInfo, nullptr, &inImage.DrawImage.ImageView));
+        VK_CHECK(vkCreateImageView(device, &rViewInfo, nullptr, &inImage.DrawImage.ImageView));
 
         //> depthimg
         inImage.DepthImage.ImageFormat = VK_FORMAT_D32_SFLOAT;
@@ -47,12 +49,14 @@ namespace MamontEngine
         const VkImageViewCreateInfo dViewInfo =
                 vkinit::imageview_create_info(inImage.DepthImage.ImageFormat, inImage.DepthImage.Image, VK_IMAGE_ASPECT_DEPTH_BIT);
 
-        VK_CHECK(vkCreateImageView(inDevice.Device, &dViewInfo, nullptr, &inImage.DepthImage.ImageView));
+        VK_CHECK(vkCreateImageView(device, &dViewInfo, nullptr, &inImage.DepthImage.ImageView));
+
+        std::cerr << "inImage.DepthImage.ImageView: " << inImage.DepthImage.ImageView << std::endl;
     }
 
     void MSwapchain::Create(const VkContextDevice &inDevice, const VkExtent2D &inExtent)
     {
-        vkb::SwapchainBuilder swapchainBuilder{inDevice.GetPhysicalDevice(), inDevice.Device, inDevice.Surface};
+        vkb::SwapchainBuilder swapchainBuilder{inDevice.GetPhysicalDevice(), LogicalDevice::GetDevice(), inDevice.Surface};
         m_SwapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
 
         const auto resultSwapchain =
@@ -75,7 +79,7 @@ namespace MamontEngine
 
     }
 
-    std::pair<VkResult, uint32_t> MSwapchain::AcquireImage(VkDevice inDevice, VkSemaphore &inSemaphore) const
+    std::pair<VkResult, uint32_t> MSwapchain::AcquireImage(VkDevice inDevice, VkSemaphore inSemaphore) const
     {
         uint32_t swapchainImageIndex;
         const VkResult result = vkAcquireNextImageKHR(inDevice, m_Swapchain, UINT64_MAX, inSemaphore, VK_NULL_HANDLE, &swapchainImageIndex);

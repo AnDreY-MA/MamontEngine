@@ -1,4 +1,4 @@
-#include "Renderer.h"
+﻿#include "Renderer.h"
 #include "Core/ContextDevice.h"
 
 #include "Core/VkInitializers.h"
@@ -10,6 +10,7 @@
 #include "Utils/Profile.h"
 #include "Graphics/Vulkan/Allocator.h"
 
+#include "Graphics/Devices/LogicalDevice.h"
 //#define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
@@ -119,6 +120,7 @@ namespace MamontEngine
     void Renderer::InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera)
     {
         m_SceneRenderer = std::make_shared<SceneRenderer>(inMainCamera);
+        m_SceneRenderer->UpdateCascades(m_DeviceContext.Cascades);
     }
 
     void Renderer::InitImGuiRenderer(VkDescriptorPool &outDescPool)
@@ -128,33 +130,33 @@ namespace MamontEngine
 
     void Renderer::InitPipelines()
     {
+        const VkDevice device = LogicalDevice::GetDevice();
+
         const std::pair<VkFormat, VkFormat> inImageFormats{m_DeviceContext.Image.DrawImage.ImageFormat, m_DeviceContext.Image.DepthImage.ImageFormat};
-        m_RenderPipeline = std::make_unique<RenderPipeline>(m_DeviceContext.Device, m_DeviceContext.GPUSceneDataDescriptorLayout, inImageFormats);
-        m_SkyPipeline    = std::make_unique<SkyPipeline>(m_DeviceContext.Device, &m_DeviceContext.DrawImageDescriptorLayout);
+        m_RenderPipeline = std::make_unique<RenderPipeline>(device, m_DeviceContext.GPUSceneDataDescriptorLayout, inImageFormats);
+        m_SkyPipeline    = std::make_unique<SkyPipeline>(device, &m_DeviceContext.DrawImageDescriptorLayout);
 
         m_DeviceContext.RenderPipeline = m_RenderPipeline.get();
 
-        CreateShadowPipeline();
+        //CreateShadowPipeline();
     }
 
     void Renderer::Render()
     {
         PROFILE_ZONE("Renderer::Render");
 
-        if (vkGetFenceStatus(m_DeviceContext.Device, m_DeviceContext.GetCurrentFrame().RenderFence) != VK_SUCCESS)
+        auto    &currentFrame = m_DeviceContext.GetCurrentFrame();
+        VkDevice device       = LogicalDevice::GetDevice();
+
+        if (vkGetFenceStatus(device, currentFrame.RenderFence) != VK_SUCCESS)
         {
-            VK_CHECK_MESSAGE(vkWaitForFences(m_DeviceContext.Device, 1, &m_DeviceContext.GetCurrentFrame().RenderFence, VK_TRUE, 1000000000), "Wait FENCE");
+            VK_CHECK_MESSAGE(vkWaitForFences(device, 1, &currentFrame.RenderFence, VK_TRUE, UINT64_MAX), "Wait FENCE");
         }
 
-        m_DeviceContext.GetCurrentFrame().Deleteions.Flush();
-        m_DeviceContext.GetCurrentFrame().FrameDescriptors.ClearPools(m_DeviceContext.Device);
-
-        const auto [e, swapchainImageIndex] =
-                m_DeviceContext.Swapchain.AcquireImage(m_DeviceContext.Device, m_DeviceContext.GetCurrentFrame().SwapchainSemaphore);
-        if (e == VK_ERROR_OUT_OF_DATE_KHR)
+        const auto [resultAcquire, swapchainImageIndex] = m_DeviceContext.Swapchain.AcquireImage(device, currentFrame.SwapchainSemaphore);
+        if (resultAcquire == VK_ERROR_OUT_OF_DATE_KHR || resultAcquire == VK_SUBOPTIMAL_KHR)
         {
             m_IsResizeRequested = true;
-            // ResizeSwapchain();
             return;
         }
 
@@ -162,66 +164,52 @@ namespace MamontEngine
         m_DrawExtent.height              = std::min(swapchainExtent.height, m_DeviceContext.Image.DrawImage.ImageExtent.height) * m_RenderScale;
         m_DrawExtent.width               = std::min(swapchainExtent.width, m_DeviceContext.Image.DrawImage.ImageExtent.width) * m_RenderScale;
 
-        VK_CHECK(vkResetFences(m_DeviceContext.Device, 1, &m_DeviceContext.GetCurrentFrame().RenderFence));
-        VK_CHECK(vkResetCommandBuffer(m_DeviceContext.GetCurrentFrame().MainCommandBuffer, 0));
+        VkCommandBuffer cmd = currentFrame.MainCommandBuffer;
 
-        const VkCommandBuffer cmd = m_DeviceContext.GetCurrentFrame().MainCommandBuffer;
+        VK_CHECK(vkResetFences(device, 1, &currentFrame.RenderFence));
+        VK_CHECK(vkResetCommandBuffer(cmd, 0));
 
         const VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
-        VkUtil::transition_image(cmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-        VkUtil::transition_image(cmd, m_DeviceContext.Image.DepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        VkUtil::transition_image(cmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VkUtil::transition_image(
+                cmd, m_DeviceContext.Image.DepthImage.Image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
         DrawMain(cmd);
 
         VkUtil::transition_image(cmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-        VkUtil::transition_image(
-                cmd, m_DeviceContext.Swapchain.GetImages()[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-        //< draw_first
+        VkImage currentSwapchainImage = m_DeviceContext.Swapchain.GetImageAt(swapchainImageIndex);
+        VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-        //> imgui_draw
+        VkUtil::copy_image_to_image(cmd, m_DeviceContext.Image.DrawImage.Image, currentSwapchainImage, m_DrawExtent, m_DeviceContext.Swapchain.GetExtent());
 
-        VkUtil::copy_image_to_image(cmd,
-                                    m_DeviceContext.Image.DrawImage.Image,
-                                    m_DeviceContext.Swapchain.GetImages()[swapchainImageIndex],
-                                    m_DrawExtent,
-                                    m_DeviceContext.Swapchain.GetExtent());
+        VkUtil::transition_image(cmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED);
 
-        VkUtil::transition_image(cmd,
-                                 m_DeviceContext.Swapchain.GetImages()[swapchainImageIndex],
-                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         DrawImGui(cmd, m_DeviceContext.Swapchain.GetImageView(swapchainImageIndex));
 
-
-        VkUtil::transition_image(
-                cmd, m_DeviceContext.Swapchain.GetImages()[swapchainImageIndex], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-        // vkCmdEndRenderPass(cmd);
+        VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        //std::cerr << "Renderer, m_DeviceContext.Image.DrawImage.Image: " << m_DeviceContext.Image.DrawImage.Image << std::endl;
 
         VK_CHECK(vkEndCommandBuffer(cmd));
-        //< imgui_draw
 
-        const VkCommandBufferSubmitInfo cmdInfo = vkinit::command_buffer_submit_info(cmd);
-        const VkSemaphoreSubmitInfo     waitInfo =
-                vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, m_DeviceContext.GetCurrentFrame().SwapchainSemaphore);
-        const VkSemaphoreSubmitInfo signalInfo =
-                vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, m_DeviceContext.GetCurrentFrame().RenderSemaphore);
+        const VkCommandBufferSubmitInfo cmdInfo  = vkinit::command_buffer_submit_info(cmd);
+        const VkSemaphoreSubmitInfo     waitInfo = vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,
+                                                                             m_DeviceContext.GetFrameAt(swapchainImageIndex).SwapchainSemaphore);
+        const VkSemaphoreSubmitInfo     signalInfo =
+                vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, m_DeviceContext.RenderCopleteSemaphores[swapchainImageIndex]);
 
         const VkSubmitInfo2 submit = vkinit::submit_info(&cmdInfo, &signalInfo, &waitInfo);
+        VK_CHECK(vkQueueSubmit2(m_DeviceContext.GetGraphicsQueue(), 1, &submit, currentFrame.RenderFence));
 
-        VK_CHECK(vkQueueSubmit2(m_DeviceContext.GetGraphicsQueue(), 1, &submit, m_DeviceContext.GetCurrentFrame().RenderFence));
-
-        const VkResult presentResult =
-                m_DeviceContext.Swapchain.Present(m_DeviceContext.GetGraphicsQueue(), &m_DeviceContext.GetCurrentFrame().RenderSemaphore, swapchainImageIndex);
-        if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || e == VK_SUBOPTIMAL_KHR)
+        const VkResult presentResult = m_DeviceContext.Swapchain.Present(
+                m_DeviceContext.GetGraphicsQueue(), &m_DeviceContext.RenderCopleteSemaphores[swapchainImageIndex], swapchainImageIndex);
+        if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR)
         {
             m_IsResizeRequested = true;
-            // ResizeSwapchain();
             return;
         }
 
@@ -236,7 +224,6 @@ namespace MamontEngine
             PROFILE_VK_ZONE(m_DeviceContext.GetCurrentFrame().TracyContext, inCmd, "Draw SkyPipeline");
             m_SkyPipeline->Draw(inCmd, &m_DeviceContext.DrawImageDescriptors);
         }
-
 
         const auto start = std::chrono::high_resolution_clock::now();
 
@@ -253,52 +240,46 @@ namespace MamontEngine
         auto &currentFrame = m_DeviceContext.GetCurrentFrame();
         PROFILE_VK_ZONE(currentFrame.TracyContext, inCmd, "Draw Geometry");
 
-        auto &SceneBuffer     = currentFrame.SceneDataBuffer;
-        void *sceneBufferData = SceneBuffer.GetMappedData();
-        if (sceneBufferData == nullptr)
-        {
-            fmt::println("GPUSceneData buffer mapping returned nullptr");
-            return;
-        }
-
-        std::array<glm::mat4, CASCADECOUNT> cascadeViewProjMatrices{};
-        for (size_t i = 0; i < CASCADECOUNT; i++)
-        {
-            cascadeViewProjMatrices[i] = m_DeviceContext.Cascades[i].ViewProjectMatrix;
-        }
-        std::memcpy(currentFrame.CascadeViewProjMatrices.GetMappedData(), cascadeViewProjMatrices.data(), sizeof(glm::mat4) * CASCADECOUNT);
+        UpdateUniformBuffers();
 
         const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
-        std::memcpy(sceneBufferData, &sceneData, sizeof(GPUSceneData));
-        
-        void       *cascadeBufferData = currentFrame.FragmentBuffer.GetMappedData();
-        const auto &sceneFragmentData = m_SceneRenderer->GetSceneFragment();
-        std::memcpy(cascadeBufferData, &sceneFragmentData, sizeof(SceneDataFragment));
 
+        if (IsActiveCascade)
         {
-            VkUtil::transition_image(inCmd, m_DeviceContext.CascadeDepthImage.Image.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+            VkUtil::transition_image(
+                    inCmd, m_DeviceContext.CascadeDepthImage.Image.Image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
             const VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION, .height = SHADOWMAP_DIMENSION};
 
             for (size_t i = 0; i < CASCADECOUNT; i++)
             {
-                VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(m_DeviceContext.Cascades[i].View);
-                //depthAttachment.clearValue.depthStencil.depth = 1.0;
+                VkImageView cascadeDepth = m_DeviceContext.Cascades[i].View;
+                if (cascadeDepth == VK_NULL_HANDLE)
+                {
+                    fmt::println("cascadeDepth is Null");
+                    continue;
+                }
+                VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(cascadeDepth, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+                depthAttachment.clearValue.depthStencil.depth = 1.0;
+                depthAttachment.loadOp                        = VK_ATTACHMENT_LOAD_OP_CLEAR;
+                depthAttachment.storeOp                       = VK_ATTACHMENT_STORE_OP_STORE;
 
                 const VkRenderingInfo renderCascadeInfo = vkinit::rendering_info(cascadeExtent, nullptr, &depthAttachment);
 
                 vkCmdBeginRendering(inCmd, &renderCascadeInfo);
-                /*SetViewportScissor(inCmd, cascadeExtent);
+                vkCmdSetDepthBias(inCmd, 1.25f, 0.f, 1.75f);
+                SetViewportScissor(inCmd, cascadeExtent);
                 vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Pipeline);
 
-                vkCmdBindDescriptorSets(inCmd,
+                /*vkCmdBindDescriptorSets(inCmd,
                                         VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Layout,
                                         0,
-                                        1,
+                                       1,
                                         &currentFrame.GlobalDescriptor,
                                         0,
-                                        nullptr);
-                m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, sceneData.Viewproj, m_CascadePipeline->Layout);*/
+                                        nullptr);*/
+                m_SceneRenderer->RenderShadow(
+                        inCmd, currentFrame.GlobalDescriptor, m_DeviceContext.Cascades[i].ViewProjectMatrix, m_CascadePipeline->Layout, static_cast<uint32_t>(i));
                 
                 vkCmdEndRendering(inCmd);
             }
@@ -310,33 +291,33 @@ namespace MamontEngine
 
         const VkExtent2D extent = m_Window->GetExtent();
 
-        vkCmdDispatch(inCmd, std::ceil(extent.width / 16.0), std::ceil(extent.height / 16.0), 1);
 
-        VkUtil::transition_image(inCmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        /*VkUtil::transition_image(
+                inCmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);*/
 
         const VkRenderingAttachmentInfo colorAttachment =
                 vkinit::attachment_info(m_DeviceContext.Image.DrawImage.ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         const VkRenderingAttachmentInfo depthAttachment =
                 vkinit::depth_attachment_info(m_DeviceContext.Image.DepthImage.ImageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        //std::cerr << "m_DeviceContext.Image.DepthImage.ImageView: " << m_DeviceContext.Image.DepthImage.ImageView << std::endl;
 
         const VkRenderingInfo renderInfo = vkinit::rendering_info(extent, &colorAttachment, &depthAttachment);
+        vkCmdDispatch(inCmd, std::ceil(extent.width / 16.0), std::ceil(extent.height / 16.0), 1);
 
         vkCmdBeginRendering(inCmd, &renderInfo);
 
         SetViewportScissor(inCmd, m_DrawExtent);
-
+        vkCmdSetDepthBias(inCmd, 0, 0, 0);
         {
             PROFILE_VK_ZONE(currentFrame.TracyContext, inCmd, "Scene Render");
-            vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DeviceContext.RenderPipeline->OpaquePipeline->Pipeline);
-
-            /* vkCmdBindDescriptorSets(inCmd,
+            /*vkCmdBindDescriptorSets(inCmd,
                                     VK_PIPELINE_BIND_POINT_GRAPHICS, m_DeviceContext.RenderPipeline->OpaquePipeline->Layout,
                                     0,
                                     1,
                                     &currentFrame.GlobalDescriptor,
                                     0,
                                     nullptr);*/
-            m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, sceneData.Viewproj);
+            m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, sceneData.Viewproj, m_DeviceContext.RenderPipeline->OpaquePipeline->Layout);
         }
         vkCmdEndRendering(inCmd);
 
@@ -356,6 +337,29 @@ namespace MamontEngine
     void Renderer::DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView)
     {
         m_ImGuiRenderer->Draw(inCmd, inTargetImageView, m_DeviceContext.Swapchain.GetExtent());
+    }
+
+    void Renderer::UpdateUniformBuffers()
+    {
+        const auto&  currentFrame    = m_DeviceContext.GetCurrentFrame();
+        void        *sceneBufferData = currentFrame.SceneDataBuffer.GetMappedData();
+
+        const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
+        std::memcpy(sceneBufferData, &sceneData, sizeof(GPUSceneData));
+
+        /*std::array<glm::mat4, CASCADECOUNT> cascadeViewProjMatrices{};
+        for (size_t i = 0; i < CASCADECOUNT; i++)
+        {
+            cascadeViewProjMatrices[i] = m_DeviceContext.Cascades[i].ViewProjectMatrix;
+        }
+        void *cascadeViewData = currentFrame.CascadeViewProjMatrices.GetMappedData();
+        std::memcpy(cascadeViewData, cascadeViewProjMatrices.data(), sizeof(glm::mat4) * CASCADECOUNT);
+
+        
+
+        void       *cascadeBufferData = currentFrame.FragmentBuffer.GetMappedData();
+        const auto &sceneFragmentData = m_SceneRenderer->GetSceneFragment();
+        std::memcpy(cascadeBufferData, &sceneFragmentData, sizeof(SceneDataFragment));*/
     }
 
     void Renderer::ResizeSwapchain()
@@ -390,23 +394,23 @@ namespace MamontEngine
     {
         m_SceneRenderer->UpdateCascades(m_DeviceContext.Cascades);
 
-        std::array<float, CASCADECOUNT> splitDepths{};
-        for (size_t i = 0; i < m_DeviceContext.Cascades.size(); i++)
-        {
-            splitDepths[i] = m_DeviceContext.Cascades.at(i).SplitDepth;
-        }
-        m_SceneRenderer->Update(m_Window->GetExtent(), splitDepths);
+        m_SceneRenderer->Update(m_Window->GetExtent(), m_DeviceContext.Cascades);
 
         //m_SceneRenderer->UpdateCascades(m_DeviceContext.Cascades);
     }
 
     void Renderer::DestroyPipelines()
     {
-        m_RenderPipeline->Destroy(m_DeviceContext.Device);
-        m_SkyPipeline->Destroy(m_DeviceContext.Device);
+        const VkDevice device = LogicalDevice::GetDevice();
+
+        m_RenderPipeline->Destroy(device);
+        m_SkyPipeline->Destroy(device);
+        //vkDestroyPipelineLayout(device, m_CascadePipeline->Layout, nullptr);
+        //vkDestroyPipeline(device, m_CascadePipeline->Pipeline, nullptr);
     }
 
 /// Shadows
+
 
     void Renderer::CreateShadowPipeline()
     {
@@ -415,6 +419,7 @@ namespace MamontEngine
             .offset = 0, 
             .size = sizeof(GPUDrawPushConstants)
         };
+        const VkDevice device = LogicalDevice::GetDevice();
 
         const std::array<VkDescriptorSetLayout, 2> layouts = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderPipeline->Layout};
 
@@ -425,36 +430,22 @@ namespace MamontEngine
         layoutInfo.pushConstantRangeCount           = 1;
 
         VkPipelineLayout layout;
-        VK_CHECK(vkCreatePipelineLayout(m_DeviceContext.Device, &layoutInfo, nullptr, &layout));
+        VK_CHECK(vkCreatePipelineLayout(device, &layoutInfo, nullptr, &layout));
 
         const std::string cascadeShadowPath = RootDirectories + "/MamontEngine/src/Shaders/cascade_shadow.vert.spv";
 
         VkShaderModule cascadeShadowShader;
-        if (!VkPipelines::LoadShaderModule(cascadeShadowPath.c_str(), m_DeviceContext.Device, &cascadeShadowShader))
+        if (!VkPipelines::LoadShaderModule(cascadeShadowPath.c_str(), device, &cascadeShadowShader))
         {
             fmt::println("Error when building the triangle fragment shader module");
         }
         const std::string cascadeFragmentShadowPath = RootDirectories + "/MamontEngine/src/Shaders/cascade_shadow.frag.spv";
 
         VkShaderModule cascadeFragmentShadowShader;
-        if (!VkPipelines::LoadShaderModule(cascadeFragmentShadowPath.c_str(), m_DeviceContext.Device, &cascadeFragmentShadowShader))
+        if (!VkPipelines::LoadShaderModule(cascadeFragmentShadowPath.c_str(), device, &cascadeFragmentShadowShader))
         {
             fmt::println("Error when building the triangle fragment shader module");
         }
-
-        const std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
-                vkinit::vertex_input_binding_description(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX),
-        };
-        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
-                vkinit::vertex_input_attribute_description(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Position)),
-                vkinit::vertex_input_attribute_description(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Normal)),
-                vkinit::vertex_input_attribute_description(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, UV)),
-                vkinit::vertex_input_attribute_description(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Color)),
-                vkinit::vertex_input_attribute_description(0, 4, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Tangent)),
-        };
-
-        const VkPipelineVertexInputStateCreateInfo vertexInputInfo =
-                vkinit::pipeline_vertex_input_state_create_info(vertexInputBindings, vertexInputAttributes);
 
         VkPipelines::PipelineBuilder pipelineBuilder;
         pipelineBuilder.Clear();
@@ -464,26 +455,62 @@ namespace MamontEngine
         pipelineBuilder.SetShaders(cascadeShadowShader, cascadeFragmentShadowShader);
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
         pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
-//        pipelineBuilder.SetDepthFormat(m_DeviceContext.ShadowDepthImage.ImageFormat);
+        pipelineBuilder.SetDepthFormat(m_DeviceContext.CascadeDepthImage.Image.ImageFormat);
         //pipelineBuilder.SetColorAttachmentFormat(VK_FORMAT_UNDEFINED);
         pipelineBuilder.SetMultisamplingNone();
         pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
         pipelineBuilder.DisableBlending();
   //      pipelineBuilder.SetDepthBiasEnable(VK_TRUE);
-    //    pipelineBuilder.SetDepthClampEnable(VK_TRUE);
+        pipelineBuilder.EnableDepthClamp(VK_TRUE);
       //  pipelineBuilder.AddDynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS);
 
-        VkPipeline shadowPipeline = pipelineBuilder.BuildPipline(m_DeviceContext.Device/*, 0*/);
+        VkPipeline shadowPipeline = pipelineBuilder.BuildPipline(device/*, 0*/);
         if (shadowPipeline == VK_NULL_HANDLE)
         {
             fmt::println("shadowPipeline == VK_NULL_HANDLE");
         }
         m_CascadePipeline       = std::make_unique<PipelineData>(shadowPipeline, layout);
 
-        vkDestroyShaderModule(m_DeviceContext.Device, cascadeShadowShader, nullptr);
-        vkDestroyShaderModule(m_DeviceContext.Device, cascadeFragmentShadowShader, nullptr);
+        vkDestroyShaderModule(device, cascadeShadowShader, nullptr);
+        vkDestroyShaderModule(device, cascadeFragmentShadowShader, nullptr);
 
         pipelineBuilder.Clear();
+    }
+
+    void Renderer::CalculateShadowData(const glm::mat4& inCameraView, const glm::vec4 inLightDirection)
+    {
+        m_ShadowCascadeUBOData.PlaneDistances[0] = m_Settings.Z_Far / 50.0f;
+        m_ShadowCascadeUBOData.PlaneDistances[1]    = m_Settings.Z_Far / 25.0f;
+        m_ShadowCascadeUBOData.PlaneDistances[2] = m_Settings.Z_Far / 10.0f;
+        m_ShadowCascadeUBOData.PlaneDistances[3]    = m_Settings.Z_Far / 2.0f;
+        std::array<float, CASCADECOUNT - 1> levels{};
+        for (size_t i = 0; i < 4; i++)
+        {
+            levels[i] = m_ShadowCascadeUBOData.PlaneDistances[i];
+        }
+
+        CalculateLightSpaceMatrices(levels, inLightDirection, m_Settings.Shadow.ZMult);
+    }
+
+    void Renderer::CalculateLightSpaceMatrices(std::span<float> inCascadeLevels, const glm::vec4 inLightDirection, float zMult)
+    {
+        const glm::vec3 direction = glm::normalize(inLightDirection);
+        const auto      camera                 = m_SceneRenderer->GetCamera();
+        const auto      cameraView             = camera->GetViewMatrix();
+        const auto      aspectRatio            = camera->GetAspectRatio();
+        const auto      fov                    = camera->GetFOV();
+        m_ShadowMatrices.LightSpaceMatrices[0] = GetLightMatrix(camera->GetNearClip(), inCascadeLevels[0], 
+            camera->GetFOV(), camera->GetAspectRatio(), camera->GetViewMatrix(), inLightDirection, zMult);
+
+        const size_t levelsSize = inCascadeLevels.size();
+        for (size_t i = 1; i < levelsSize; i++)
+        {
+            m_ShadowMatrices.LightSpaceMatrices[i] =
+                    GetLightMatrix(inCascadeLevels[i - 1], inCascadeLevels[i], fov, aspectRatio, cameraView, inLightDirection, zMult);
+        }
+
+        m_ShadowMatrices.LightSpaceMatrices[levelsSize] =
+                GetLightMatrix(inCascadeLevels.back(), camera->GetFarClip(), fov, aspectRatio, cameraView, inLightDirection, zMult);
     }
 
 

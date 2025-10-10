@@ -32,6 +32,7 @@ namespace MamontEngine
             float MetalicFactor{0.f};
             float RoughFactor{0.f};
         } Constants;
+
     };
 
     struct GLTFMetallic_Roughness

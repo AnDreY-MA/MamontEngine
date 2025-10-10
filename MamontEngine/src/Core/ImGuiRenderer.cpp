@@ -6,7 +6,7 @@
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_vulkan.h>
 #include "FrameData.h"
-
+#include "Graphics/Devices/LogicalDevice.h"
 #include "VkInitializers.h"
 
 #include "Engine.h"
@@ -34,14 +34,15 @@ namespace MamontEngine
                                                      .maxSets       = 1000,
                                                      .poolSizeCount = (uint32_t)std::size(poolSizes),
                                                      .pPoolSizes    = poolSizes};
+        VkDevice device = LogicalDevice::GetDevice();
         VkDescriptorPool                 imguiPool;
-        VK_CHECK_MESSAGE(vkCreateDescriptorPool(inContextDevice.Device, &poolInfo, nullptr, &imguiPool), "CreateDescPool");
+        VK_CHECK_MESSAGE(vkCreateDescriptorPool(device, &poolInfo, nullptr, &imguiPool), "CreateDescPool");
         outPoolResult = imguiPool;
 
         ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance                  = inContextDevice.Instance;
         initInfo.PhysicalDevice            = inContextDevice.GetPhysicalDevice();
-        initInfo.Device                    = inContextDevice.Device;
+        initInfo.Device                    = device;
         initInfo.QueueFamily               = inContextDevice.GetGraphicsQueueFamily();
         initInfo.Queue                     = inContextDevice.GetGraphicsQueue();
         initInfo.DescriptorPool            = imguiPool;
