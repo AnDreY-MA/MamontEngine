@@ -1,4 +1,4 @@
-#include "Graphics/Vulkan/Swapchain.h"
+﻿#include "Graphics/Vulkan/Swapchain.h"
 
 #include "Graphics/Vulkan/Image.h"
 #include "Graphics/Vulkan/Allocator.h"
@@ -8,50 +8,102 @@
 
 namespace MamontEngine
 {
-    void MSwapchain::Init(VkContextDevice &inDevice, const VkExtent2D& inExtent, Image &inImage)
+    void MSwapchain::Init(VkContextDevice &inDevice, const VkExtent2D &inExtent, Image &inImage)
     {
         Create(inDevice, inExtent);
 
         VkDevice         device          = LogicalDevice::GetDevice();
-        const VkExtent3D drawImageExtent = {inExtent.width, inExtent.height, 1};
+        const VkExtent3D drawImageExtent = {m_SwapchainExtent.width, m_SwapchainExtent.height, 1};
 
-        inImage.DrawImage.ImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
-        inImage.DrawImage.ImageExtent = drawImageExtent;
+        constexpr VmaAllocationCreateInfo rImageAllocInfo = {.usage         = VMA_MEMORY_USAGE_GPU_ONLY,
+                                                             .requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)};
 
-        VkImageUsageFlags drawImageUsages{};
-        drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        drawImageUsages |= VK_IMAGE_USAGE_STORAGE_BIT;
-        drawImageUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        // Draw Image
+        {   
+            inImage.DrawImage.ImageFormat = m_SwapchainImageFormat;
+            inImage.DrawImage.ImageExtent = drawImageExtent;
 
-        const VkImageCreateInfo rImageInfo = vkinit::image_create_info(inImage.DrawImage.ImageFormat, drawImageUsages, drawImageExtent);
+            VkImageUsageFlags drawImageUsages = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        constexpr VmaAllocationCreateInfo rImageAllocInfo = {
-            .usage                   = VMA_MEMORY_USAGE_GPU_ONLY,
-            .requiredFlags           = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-        };
+            const VkImageCreateInfo rImageInfo = vkinit::image_create_info(inImage.DrawImage.ImageFormat, drawImageUsages, drawImageExtent);
 
-        vmaCreateImage(Allocator::GetAllocator(), &rImageInfo, &rImageAllocInfo, &inImage.DrawImage.Image, &inImage.DrawImage.Allocation, nullptr);
+            VK_CHECK(
+                    vmaCreateImage(Allocator::GetAllocator(), &rImageInfo, &rImageAllocInfo, &inImage.DrawImage.Image, &inImage.DrawImage.Allocation, nullptr));
 
-        const VkImageViewCreateInfo rViewInfo =
-                vkinit::imageview_create_info(inImage.DrawImage.ImageFormat, inImage.DrawImage.Image, VK_IMAGE_ASPECT_COLOR_BIT);
+            const VkImageViewCreateInfo rViewInfo =
+                    vkinit::imageview_create_info(inImage.DrawImage.ImageFormat, inImage.DrawImage.Image, VK_IMAGE_ASPECT_COLOR_BIT);
 
-        VK_CHECK(vkCreateImageView(device, &rViewInfo, nullptr, &inImage.DrawImage.ImageView));
+            VK_CHECK(vkCreateImageView(device, &rViewInfo, nullptr, &inImage.DrawImage.ImageView));
+            std::cerr << "DrawImage.Image: " << inImage.DrawImage.Image << std::endl;
 
-        //> depthimg
-        inImage.DepthImage.ImageFormat = VK_FORMAT_D32_SFLOAT;
-        inImage.DepthImage.ImageExtent = drawImageExtent;
-        VkImageUsageFlags depthImageUsages{};
-        depthImageUsages |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            //VkContextDevice::SetObjectName(inImage.DrawImage.Image, VK_OBJECT_TYPE_IMAGE, "DrawImage");
+            //VkContextDevice::SetObjectName(inImage.DrawImage.ImageView, VK_OBJECT_TYPE_IMAGE_VIEW, "DrawImageView");
+        }
 
-        const VkImageCreateInfo dimgInfo = vkinit::image_create_info(inImage.DepthImage.ImageFormat, depthImageUsages, drawImageExtent);
-        vmaCreateImage(Allocator::GetAllocator(), &dimgInfo, &rImageAllocInfo, &inImage.DepthImage.Image, &inImage.DepthImage.Allocation, nullptr);
+        // Depth Image
+        {
+            inImage.DepthImage.ImageFormat = VK_FORMAT_D32_SFLOAT;
+            inImage.DepthImage.ImageExtent = drawImageExtent;
 
-        const VkImageViewCreateInfo dViewInfo =
-                vkinit::imageview_create_info(inImage.DepthImage.ImageFormat, inImage.DepthImage.Image, VK_IMAGE_ASPECT_DEPTH_BIT);
+            VkImageUsageFlags depthImageUsages = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-        VK_CHECK(vkCreateImageView(device, &dViewInfo, nullptr, &inImage.DepthImage.ImageView));
+            const VkImageCreateInfo dimgInfo = vkinit::image_create_info(inImage.DepthImage.ImageFormat, depthImageUsages, drawImageExtent);
 
-        std::cerr << "inImage.DepthImage.ImageView: " << inImage.DepthImage.ImageView << std::endl;
+            VK_CHECK(
+                    vmaCreateImage(Allocator::GetAllocator(), &dimgInfo, &rImageAllocInfo, &inImage.DepthImage.Image, &inImage.DepthImage.Allocation, nullptr));
+
+            const VkImageViewCreateInfo dViewInfo =
+                    vkinit::imageview_create_info(inImage.DepthImage.ImageFormat, inImage.DepthImage.Image, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+            VK_CHECK(vkCreateImageView(device, &dViewInfo, nullptr, &inImage.DepthImage.ImageView));
+
+            //VkContextDevice::SetObjectName(inImage.DepthImage.Image, VK_OBJECT_TYPE_IMAGE, "DepthImage");
+            //VkContextDevice::SetObjectName(inImage.DepthImage.ImageView, VK_OBJECT_TYPE_IMAGE_VIEW, "DepthImageView");
+        }
+
+        // Resolve Image
+        //{
+        //    inImage.ResolveImage.ImageFormat = m_SwapchainImageFormat;
+        //    inImage.ResolveImage.ImageExtent = drawImageExtent;
+
+        //    VkImageUsageFlags resolveImageUsages = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+        //    const VkImageCreateInfo resolveImageInfo = vkinit::image_create_info(inImage.ResolveImage.ImageFormat, resolveImageUsages, drawImageExtent);
+
+        //    VK_CHECK(vmaCreateImage(
+        //            Allocator::GetAllocator(), &resolveImageInfo, &rImageAllocInfo, &inImage.ResolveImage.Image, &inImage.ResolveImage.Allocation, nullptr));
+
+        //    const VkImageViewCreateInfo resolveViewInfo =
+        //            vkinit::imageview_create_info(inImage.ResolveImage.ImageFormat, inImage.ResolveImage.Image, VK_IMAGE_ASPECT_COLOR_BIT);
+
+        //    VK_CHECK(vkCreateImageView(device, &resolveViewInfo, nullptr, &inImage.ResolveImage.ImageView));
+
+        //    //VkContextDevice::SetObjectName(inImage.ResolveImage.Image, VK_OBJECT_TYPE_IMAGE, "ResolveImage");
+        //    //VkContextDevice::SetObjectName(inImage.ResolveImage.ImageView, VK_OBJECT_TYPE_IMAGE_VIEW, "ResolveImageView");
+        //}
+
+        //// UI Draw Image
+        //{
+        //    inImage.UIDrawImage.ImageFormat = m_SwapchainImageFormat;
+        //    inImage.UIDrawImage.ImageExtent = drawImageExtent;
+
+        //    VkImageUsageFlags uiImageUsages = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+        //    // ✅ ИСПРАВЛЕНО: правильное имя переменной
+        //    const VkImageCreateInfo uiImageInfo = vkinit::image_create_info(inImage.UIDrawImage.ImageFormat, uiImageUsages, drawImageExtent);
+
+        //    VK_CHECK(vmaCreateImage(
+        //            Allocator::GetAllocator(), &uiImageInfo, &rImageAllocInfo, &inImage.UIDrawImage.Image, &inImage.UIDrawImage.Allocation, nullptr));
+
+        //    const VkImageViewCreateInfo uiViewInfo =
+        //            vkinit::imageview_create_info(inImage.UIDrawImage.ImageFormat, inImage.UIDrawImage.Image, VK_IMAGE_ASPECT_COLOR_BIT);
+
+        //    VK_CHECK(vkCreateImageView(device, &uiViewInfo, nullptr, &inImage.UIDrawImage.ImageView));
+
+        //    //VkContextDevice::SetObjectName(inImage.UIDrawImage.Image, VK_OBJECT_TYPE_IMAGE, "UIDrawImage");
+        //    //VkContextDevice::SetObjectName(inImage.UIDrawImage.ImageView, VK_OBJECT_TYPE_IMAGE_VIEW, "UIDrawImageView");
+        //}
+
     }
 
     void MSwapchain::Create(const VkContextDevice &inDevice, const VkExtent2D &inExtent)
@@ -63,7 +115,7 @@ namespace MamontEngine
                 swapchainBuilder.set_desired_format(VkSurfaceFormatKHR{.format = m_SwapchainImageFormat, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
                         .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
                         .set_desired_extent(inExtent.width, inExtent.height)
-                        .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+                        .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
                         .build();
 
         if (!resultSwapchain.has_value())
@@ -76,14 +128,14 @@ namespace MamontEngine
         m_Swapchain           = vkbSwapchain.swapchain;
         m_SwapchainImages     = vkbSwapchain.get_images().value();
         m_SwapchainImageViews = vkbSwapchain.get_image_views().value();
+        m_SwapchainImageFormat      = vkbSwapchain.image_format;
 
     }
 
-    std::pair<VkResult, uint32_t> MSwapchain::AcquireImage(VkDevice inDevice, VkSemaphore inSemaphore) const
+    std::pair<VkResult, uint32_t> MSwapchain::AcquireImage(VkDevice inDevice, VkSemaphore inSemaphore)
     {
-        uint32_t swapchainImageIndex;
-        const VkResult result = vkAcquireNextImageKHR(inDevice, m_Swapchain, UINT64_MAX, inSemaphore, VK_NULL_HANDLE, &swapchainImageIndex);
-        return {result, swapchainImageIndex};
+        const VkResult result = vkAcquireNextImageKHR(inDevice, m_Swapchain, UINT64_MAX, inSemaphore, VK_NULL_HANDLE, &m_CurrentImageIndex);
+        return {result, m_CurrentImageIndex};
     }
 
     VkResult MSwapchain::Present(VkQueue inQueue, const VkSemaphore *inRenderSemaphore, const uint32_t inImageIndex) const

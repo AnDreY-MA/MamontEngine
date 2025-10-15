@@ -13,11 +13,16 @@ namespace MamontEngine
 
         void Create(const VkContextDevice &inDevice, const VkExtent2D &inExtent);
 
-        std::pair<VkResult, uint32_t> AcquireImage(VkDevice inDevice, VkSemaphore inSemaphore) const;
+        std::pair<VkResult, uint32_t> AcquireImage(VkDevice inDevice, VkSemaphore inSemaphore);
 
         VkResult Present(VkQueue inQueue, const VkSemaphore *inRenderSemaphore, const uint32_t inImageIndex) const;
 
         void Destroy(VkDevice inDevice);
+
+        inline VkImage GetCurrentImage() const
+        {
+            return m_SwapchainImages[m_CurrentImageIndex];
+        }
 
         inline VkImage GetImageAt(const size_t inIndex) const
         {
@@ -52,12 +57,18 @@ namespace MamontEngine
             return m_SwapchainImageFormat;
         }
 
+        uint32_t GetCurrentImageIndex() const
+        {
+            return m_CurrentImageIndex;
+        }
+
     private:
         VkSwapchainKHR           m_Swapchain;
         VkFormat                 m_SwapchainImageFormat;
         std::vector<VkImage>     m_SwapchainImages;
         std::vector<VkImageView> m_SwapchainImageViews;
         VkExtent2D               m_SwapchainExtent;
+        uint32_t                 m_CurrentImageIndex;
 
 	};
 }

@@ -53,6 +53,8 @@ namespace MamontEditor
 
 		void DrawMainPanel();
 
+		void PickObject(const ImVec2& inMousePostion);
+
 	private:
         std::unordered_map<size_t, std::unique_ptr<EditorPanel>> m_Panels;
 

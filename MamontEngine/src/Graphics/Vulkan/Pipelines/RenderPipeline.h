@@ -13,7 +13,7 @@ namespace MamontEngine
     public:
         RenderPipeline(VkDevice inDevice, VkDescriptorSetLayout inDescriptorLayout, const std::pair<VkFormat, VkFormat> inImageFormats);
         
-        ~RenderPipeline() = default;
+        ~RenderPipeline();
 
         void Destroy(VkDevice inDevice);
 

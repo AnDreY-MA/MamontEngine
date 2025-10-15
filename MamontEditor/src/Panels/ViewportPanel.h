@@ -17,5 +17,7 @@ namespace MamontEditor
         virtual void Init() override;
 
         virtual void GuiRender() override;
+
+        virtual bool IsHovered() const override;
     };
 } // namespace MamontEditor

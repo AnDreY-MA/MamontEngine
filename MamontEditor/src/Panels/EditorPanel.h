@@ -16,6 +16,11 @@ namespace MamontEditor
 
         virtual void GuiRender() {};
 
+        virtual bool IsHovered() const
+        {
+            return false;
+        }
+
     protected:
         bool OnBegin(int32_t inWindowFlags = 0);
         void OnEnd() const;
@@ -24,5 +29,6 @@ namespace MamontEditor
 	protected:
         std::string m_Name;
         bool        isVisible{true};
+        bool        m_IsHovered;
 	};
 }

@@ -1,9 +1,9 @@
 #pragma once 
 
-#include "Graphics/Vulkan/MeshBuffer.h"
 #include "Graphics/Vulkan/Materials/Material.h"
 #include "Graphics/Vulkan/Image.h"
 #include "Core/VkDestriptor.h"
+#include "Graphics/AABB.h"
 
 namespace MamontEngine
 {
@@ -27,7 +27,13 @@ namespace MamontEngine
     {
         glm::mat4       WorldMatrix{glm::mat4(0.f)};
         VkDeviceAddress VertexBuffer{0};
-        uint32_t        CascadeIndex{0};
+        uint64_t        ObjectID{0};
+        //uint32_t        CascadeIndex{0};
+    };
+
+    struct PickingPushConstants
+    {
+        uint32_t ObjectID{0};
     };
 
     struct Primitive
@@ -35,7 +41,7 @@ namespace MamontEngine
         uint32_t StartIndex{0};
         uint32_t Count{0};
 
-        Bounds Bound;
+        AABB Bound;
 
         std::shared_ptr<GLTFMaterial> Material;
     };
@@ -43,6 +49,8 @@ namespace MamontEngine
     struct NewMesh
     {
         std::vector<std::unique_ptr<Primitive>> Primitives;
+
+        std::string Name;
     };
 
     struct Node
@@ -57,7 +65,14 @@ namespace MamontEngine
         glm::vec3 Rotation{0.f};
         glm::vec3 Scale{1.f};
 
+        AABB WorldBounds;
+
         std::string Name;
+
+        /*void UpdateTransform(const glm::mat4 parent)
+        {
+
+        }*/
 
         /*~Node()
         {

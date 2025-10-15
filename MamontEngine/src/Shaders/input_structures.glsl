@@ -1,4 +1,6 @@
-layout(set = 0, binding = 0) uniform  SceneData{   
+#extension GL_ARB_gpu_shader_int64 : enable
+
+layout(set = 0, binding = 0) uniform SceneData{   
 	mat4 view;
 	mat4 proj;
 	mat4 viewproj;
@@ -35,5 +37,5 @@ layout( push_constant ) uniform constants
 {
 	mat4 render_matrix;
 	VertexBuffer vertexBuffer;
-	uint cascadeIndex;
+	uint64_t objectID;
 } PushConstants;

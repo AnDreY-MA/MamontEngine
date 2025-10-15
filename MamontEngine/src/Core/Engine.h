@@ -5,7 +5,6 @@
 #include "FrameData.h"
 #include "Window.h"
 #include "ContextDevice.h"
-#include "Graphics/Vulkan/MeshBuffer.h"
 #include "Graphics/Renderer.h"
 #include "ImGuiRenderer.h"
 #include <ECS/SceneRenderer.h>
@@ -55,11 +54,21 @@ namespace MamontEngine
             return m_Scene;
         }
 
+        const WindowCore* GetMainWindow() const
+        {
+            return m_Window.get();
+        }
+
         void PushGuiLayer(ImGuiLayer *inLayer);
 
         const SDL_Event* GetInputEvent() const
         {
             return m_InputEvent;
+        }
+
+        void TryPickObject(const glm::vec2& inMousePos)
+        {
+            m_Renderer->TryPickObject(inMousePos);
         }
 
     private:

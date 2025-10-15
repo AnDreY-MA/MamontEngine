@@ -19,6 +19,8 @@ namespace MamontEditor
 
         virtual void GuiRender() override;
 
+        virtual bool IsHovered() const override;
+
         //void AddLog(std::string_view fmt, ...) IM_FMTARGS(2);
 
     private:

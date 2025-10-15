@@ -164,6 +164,7 @@ namespace MamontEngine
 
         m_ContextDevice->InitDefaultImages();
 
+
         m_MainDeletionQueue.PushFunction(
                 [&]()
                 {
@@ -230,15 +231,12 @@ namespace MamontEngine
     
     void MEngine::InitImgui()
     {   
-        VkDescriptorPool outImguiPool;
-        m_Renderer->InitImGuiRenderer(outImguiPool);
+        m_Renderer->InitImGuiRenderer();
 
         m_MainDeletionQueue.PushFunction(
                 [=]()
                 {
-
                     ImGui_ImplVulkan_Shutdown();
-                    vkDestroyDescriptorPool(LogicalDevice::GetDevice(), outImguiPool, nullptr);
                 });
 
     }

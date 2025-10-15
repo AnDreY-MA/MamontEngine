@@ -6,6 +6,7 @@
 #include <fastgltf/parser.hpp>
 #include "Core/ContextDevice.h"
 #include "Graphics/RenderData.h"
+#include "Graphics/Vulkan/Buffers/MeshBuffer.h"
 
 namespace MamontEngine
 {
@@ -22,6 +23,8 @@ namespace MamontEngine
         void Draw(DrawContext &inContext) const;
 
         void UpdateTransform(const glm::mat4 &inTransform, const glm::vec3 &inLocation, const glm::vec3 &inRotation, const glm::vec3 &inScale);
+
+        Node *TryGetSelectNode(const glm::vec3 &rayOrigin, const glm::vec3 &rayDir);
 
         const size_t GetSizeMaterials() const
         {
@@ -40,6 +43,9 @@ namespace MamontEngine
         {
             return pathFile.string();
         }
+
+        UID ID;
+
 
     private:
         void                                  LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers);
@@ -65,5 +71,6 @@ namespace MamontEngine
         MeshBuffer Buffer;
 
         std::filesystem::path pathFile;
+
 	};
 }

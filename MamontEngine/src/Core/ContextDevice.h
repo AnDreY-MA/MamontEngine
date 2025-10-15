@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Graphics/Vulkan/MeshBuffer.h"
 #include "Graphics/Vulkan/Image.h"
 #include "Graphics/Vulkan/Materials/Material.h"
 #include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
@@ -29,10 +28,8 @@ namespace MamontEngine
 
         void DestroyFrameData();
 
-        MeshBuffer CreateGPUMeshBuffer(std::span<uint32_t> inIndices, std::span<Vertex> inVertices) const;
-
         AllocatedImage
-        CreateImage(const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped, uint32_t arrayLayers = 1) const;
+        CreateImage(const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false, uint32_t arrayLayers = 1) const;
         AllocatedImage CreateImage(void *inData, const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const;
 
         void InitDefaultImages();
@@ -98,6 +95,8 @@ namespace MamontEngine
         AllocatedImage ErrorCheckerboardImage;
 
         Image Image;
+
+        std::vector<AllocatedImage> PickingImages;
 
         struct DepthImage
         {

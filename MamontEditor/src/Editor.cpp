@@ -1,4 +1,4 @@
-#include "Editor.h"
+﻿#include "Editor.h"
 
 #include "Core/Engine.h"
 #include "ECS/Entity.h"
@@ -7,7 +7,7 @@
 #include "Core/ContextDevice.h"
 #include <Panels/LogPanel.h>
 #include "imgui.h"
-
+#include "EditorUtils/EditorUtils.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
@@ -89,9 +89,24 @@ namespace MamontEditor
 
     void Editor::ImGuiRender()
     {
-        //ImGui::ShowDebugLogWindow();
-        //IMGUI_DEBUG_LOG();
-        //ImGui::ShowMetricsWindow();
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        {
+            bool panelHovered = false;
+            for (const auto& [id, panel] : m_Panels)
+            {
+                if (panel->IsHovered())
+                {
+                    panelHovered = true;
+                    break;
+                }
+            }
+            if (!panelHovered)
+            {
+                const ImVec2 mousePos = ImGui::GetMousePos();
+                PickObject(mousePos);
+            }
+            fmt::println("panelHovered is {}", panelHovered);
+        }
 
         DrawMainPanel();
 
@@ -130,5 +145,12 @@ namespace MamontEditor
 
           ImGui::EndMainMenuBar();
       }
+    }
+
+    void Editor::PickObject(const ImVec2 &inMousePostion)
+    {
+        using namespace MamontEngine;
+
+        MEngine::Get().TryPickObject({inMousePostion.x, inMousePostion.y});
     }
 }

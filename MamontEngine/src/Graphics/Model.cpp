@@ -6,6 +6,43 @@
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Utils/Utilities.h"
 
+namespace
+{
+    bool IntersectRayAABB(const glm::vec3 &origin, const glm::vec3 &dir, const glm::vec3 &bmin, const glm::vec3 &bmax, float &tOut)
+    {
+        const float EPS  = 1e-8f;
+        float       tmin = -FLT_MAX;
+        float       tmax = FLT_MAX;
+
+        for (int i = 0; i < 3; ++i)
+        {
+            if (fabs(dir[i]) < EPS)
+            {
+                if (origin[i] < bmin[i] || origin[i] > bmax[i])
+                    return false;
+            }
+            else
+            {
+                float inv = 1.0f / dir[i];
+                float t1  = (bmin[i] - origin[i]) * inv;
+                float t2  = (bmax[i] - origin[i]) * inv;
+                if (t1 > t2)
+                    std::swap(t1, t2);
+                tmin = std::max(tmin, t1);
+                tmax = std::min(tmax, t2);
+                if (tmin > tmax)
+                    return false;
+            }
+        }
+
+        if (tmax < 0.0f)
+            return false; // всё позади камеры
+
+        tOut = (tmin > 0.0f) ? tmin : 0.0f; // если мы внутри — возвращаем 0 (или 0.0f)
+        return true;
+    }
+}
+
 namespace MamontEngine
 {
     static VkFilter extract_filter(fastgltf::Filter filter)
@@ -146,6 +183,74 @@ namespace MamontEngine
 
     }
 
+    /* Node *MeshModel::TryGetSelectNode(const glm::vec3 &rayOrigin, const glm::vec3 &rayDir)
+    {
+        Node *closestNode = nullptr;
+        float closestT    = FLT_MAX;
+
+        std::function<void(Node *)> testNode = [&](Node *node)
+        {
+            if (!node)
+                return;
+
+            float t   = 0.0f;
+            bool  hit = node->WorldBounds.IntersectsRay(rayOrigin, rayDir, t);
+
+            if (hit && t < closestT)
+            {
+                closestT    = t;
+                closestNode = node;
+            }
+
+            // 🔹 Проверяем детей ВСЕГДА
+            for (auto &child : node->Children)
+                testNode(child.get());
+        };
+
+        for (auto &root : m_Nodes)
+            testNode(root.get());
+
+        return closestNode;
+    }*/
+
+    Node *MeshModel::TryGetSelectNode(const glm::vec3 &rayOrigin, const glm::vec3 &rayDir)
+    {
+        Node *closestNode = nullptr;
+        float closestT    = FLT_MAX;
+
+        std::function<void(Node *)> testNode = [&](Node *node)
+        {
+            if (!node)
+                return;
+
+            if (node->Mesh)
+            {
+                for (auto &primPtr : node->Mesh->Primitives)
+                {
+                    Primitive *prim      = primPtr.get();
+                    AABB       primWorld = prim->Bound.Transform(node->CurrentMatrix);
+                    float      t;
+                    if (IntersectRayAABB(rayOrigin, rayDir, primWorld.Min, primWorld.Max, t))
+                    {
+                        if (t < closestT)
+                        {
+                            closestT    = t;
+                            closestNode = node; // можно сохранить и prim если нужно
+                        }
+                    }
+                }
+            }
+
+            for (auto &child : node->Children)
+                testNode(child.get());
+        };
+
+        for (auto &root : m_Nodes)
+            testNode(root.get());
+
+        return closestNode;
+    }
+
     void MeshModel::Clear()
     {
         const VkDevice device = LogicalDevice::GetDevice();
@@ -186,7 +291,7 @@ namespace MamontEngine
                                         material.get(),
                                         primitive->Bound,
                                         nodeMatrix,
-                                        Buffer.VertexBufferAddress);
+                                        Buffer.VertexBufferAddress, ID);
 
                 if (material->PassType == EMaterialPass::TRANSPARENT)
                     inContext.TransparentSurfaces.push_back(def);
@@ -208,13 +313,8 @@ namespace MamontEngine
         }
     }
 
-    void MeshModel::UpdateTransform(const glm::mat4 &inTransform, const glm::vec3 &inLocation, const glm::vec3 &inRotation, const glm::vec3 &inScale)
+   void MeshModel::UpdateTransform(const glm::mat4 &inTransform, const glm::vec3 &inLocation, const glm::vec3 &inRotation, const glm::vec3 &inScale)
     {
-        /*for (auto &n : m_Nodes)
-        {
-            n->Matrix      = inTransform;
-        }*/
-
         glm::mat4 newTransform = glm::mat4(1.0f);
         newTransform           = glm::translate(newTransform, inLocation);
         newTransform           = glm::rotate(newTransform, glm::radians(inRotation.x), glm::vec3(1, 0, 0));
@@ -230,16 +330,26 @@ namespace MamontEngine
 
             node->CurrentMatrix = parentMatrix * node->Matrix;
 
-            for (auto &child : node->Children)
+            AABB local;
+            local.Reset();
+
+            if (node->Mesh)
             {
-                updateNode(child.get(), node->CurrentMatrix);
+                for (auto &primPtr : node->Mesh->Primitives)
+                {
+                    local.Expand(primPtr->Bound.Min); // или local.Expand(prim->Bound) если есть метод Merge(AABB)
+                    local.Expand(primPtr->Bound.Max);
+                }
             }
+
+            node->WorldBounds = local.Transform(node->CurrentMatrix);
+
+            for (auto &child : node->Children)
+                updateNode(child.get(), node->CurrentMatrix);
         };
 
         for (auto &rootNode : m_Nodes)
-        {
             updateNode(rootNode.get(), newTransform);
-        }
     }
 
     void MeshModel::Load(std::string_view filePath)
@@ -350,8 +460,7 @@ namespace MamontEngine
                 {
                     auto matData = std::make_shared<GLTFMaterial>();
                     matData->PassType    = pass;
-                    matData->Pipeline =
-                            pass == EMaterialPass::TRANSPARENT ? m_ContextDevice.RenderPipeline->TransparentPipeline :
+                    matData->Pipeline = pass == EMaterialPass::TRANSPARENT ? m_ContextDevice.RenderPipeline->TransparentPipeline :
                             m_ContextDevice.RenderPipeline->OpaquePipeline;
                     matData->MaterialSet = descriptorAllocator.Allocate(device, m_ContextDevice.RenderPipeline->Layout);
                     matData->Constants   = constants;
@@ -466,10 +575,20 @@ namespace MamontEngine
         for (const fastgltf::Node &node : inFileAsset.nodes)
         {
             auto newNode = std::make_shared<Node>();
+            newNode->Name = node.name;
+            fmt::println("NewNode name: {}", node.name);
+
 
             if (node.meshIndex.has_value())
             {
                 newNode->Mesh = m_Meshes[*node.meshIndex];
+            }
+
+            AABB localBounds;
+
+            for (const auto &prim : newNode->Mesh->Primitives)
+            {
+                localBounds.Expand(prim->Bound);
             }
 
             /*std::visit(fastgltf::visitor{[&](const fastgltf::Node::TransformMatrix &matrix) { memcpy(&newNode->Matrix, matrix.data(), sizeof(matrix)); },
@@ -489,12 +608,10 @@ namespace MamontEngine
             std::visit(fastgltf::visitor{[&](const fastgltf::Node::TransformMatrix &matrix) { memcpy(&newNode->Matrix, matrix.data(), sizeof(matrix)); },
                                          [&](const fastgltf::Node::TRS &transform)
                                          {
-                                             // Сохраняем оригинальные значения из файла
                                              newNode->Translation = glm::vec3(transform.translation[0], transform.translation[1], transform.translation[2]);
-                                             newNode->Rotation    = glm::vec3(0); // Будешь вычислять из кватерниона
+                                             newNode->Rotation    = glm::vec3(0);
                                              newNode->Scale       = glm::vec3(transform.scale[0], transform.scale[1], transform.scale[2]);
 
-                                             // Создаем матрицу из TRS
                                              glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), newNode->Translation);
                                              glm::quat rotation(transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]);
                                              glm::mat4 rotationMat = glm::toMat4(rotation);
@@ -503,6 +620,8 @@ namespace MamontEngine
                                              newNode->Matrix = translationMat * rotationMat * scaleMat;
                                          }},
                        node.transform);
+
+            newNode->WorldBounds = localBounds;
 
             nodes.push_back(std::move(newNode));
         }
@@ -537,10 +656,10 @@ namespace MamontEngine
         {
             std::shared_ptr<NewMesh> newmesh = std::make_shared<NewMesh>();
             //inFile.Primitives[mesh.name.c_str()] = newmesh;
-            //newmesh->Name                  = mesh.name;
+            newmesh->Name                  = mesh.name;
 
-            /*indices.clear();
-            vertices.clear();*/
+            indices.clear();
+            vertices.clear();
 
             for (auto &&p : mesh.primitives)
             {
@@ -570,6 +689,7 @@ namespace MamontEngine
                                                                         newvtx.Position               = v;
                                                                         vertices[initial_vtx + index] = newvtx;
                                                                     });
+
                 }
 
                 const auto normals = p.findAttribute("NORMAL");
@@ -622,22 +742,24 @@ namespace MamontEngine
 
                 glm::vec3 minpos = vertices[initial_vtx].Position;
                 glm::vec3 maxpos = vertices[initial_vtx].Position;
-                for (size_t i = initial_vtx; i < vertices.size(); ++i)
+                for (size_t i = initial_vtx; i < vertices.size(); ++i)  
                 {
                     minpos = glm::min(minpos, vertices[i].Position);
                     maxpos = glm::max(maxpos, vertices[i].Position);
                 }
 
-                newPrimitive->Bound.Origin     = (maxpos + minpos) / 2.f;
+                newPrimitive->Bound = AABB(minpos, maxpos);
+
+                /*newPrimitive->Bound.Origin     = (maxpos + minpos) / 2.f;
                 newPrimitive->Bound.Extents    = (maxpos - minpos) / 2.f;
-                newPrimitive->Bound.SpherRadius = glm::length(maxpos - newPrimitive->Bound.Extents);
+                newPrimitive->Bound.SpherRadius = glm::length(maxpos - newPrimitive->Bound.Extents);*/
 
                 newmesh->Primitives.push_back(std::move(newPrimitive));
             }
 
             m_Meshes.push_back(newmesh);
         }
-        Buffer = m_ContextDevice.CreateGPUMeshBuffer(indices, vertices);
+        Buffer.Create(indices, vertices);
 
     }
 }

@@ -13,6 +13,8 @@ namespace MamontEditor
 
         virtual void GuiRender() override;
 
+        virtual bool IsHovered() const override;
+
     private:
         void DrawComponents(MamontEngine::Entity inEntity);
 

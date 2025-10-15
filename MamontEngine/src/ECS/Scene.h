@@ -48,6 +48,13 @@ namespace MamontEngine
             return m_Registry;
         }
 
+		const GPUSceneData& GetViewSceneData() const
+        {
+            return m_SceneRenderer->GetGPUSceneData();
+		}
+
+		Node* Pick(const glm::vec3 &rayOrigin, const glm::vec3 &rayDir);
+
 		Entity GetEntity(UID Id);
         const Entity& GetEntity(UID Id) const;
 

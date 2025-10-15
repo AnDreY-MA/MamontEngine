@@ -81,13 +81,11 @@ namespace MamontEngine
         pipelineBuilder.SetMultisamplingNone();
         pipelineBuilder.DisableBlending();
         pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
-
         pipelineBuilder.SetColorAttachmentFormat(inImageFormats.first);
         pipelineBuilder.SetDepthFormat(inImageFormats.second);
-
         pipelineBuilder.SetLayout(newLayout);
 
-        OpaquePipeline          = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), newLayout);
+        OpaquePipeline          = std::make_unique<PipelineData>(pipelineBuilder.BuildPipline(inDevice), newLayout);
 
         //Transparent
         pipelineBuilder.EnableBlendingAdditive();
@@ -99,20 +97,10 @@ namespace MamontEngine
         vkDestroyShaderModule(inDevice, meshVertexShader, nullptr);
     }
 
-    void RenderPipeline::Destroy(VkDevice inDevice)
+    RenderPipeline::~RenderPipeline()
     {
-        /*if (OpaquePipeline == nullptr)
-        {
-            fmt::println("OpaquePipeline == nullptr");
-        }
-        vkDestroyPipelineLayout(inDevice, OpaquePipeline->Layout, nullptr);
-        vkDestroyPipeline(inDevice, OpaquePipeline->Pipeline, nullptr);
-        if (TransparentPipeline == nullptr)
-        {
-            fmt::println("TransparentPipeline == nullptr");
-        }
-        vkDestroyPipelineLayout(inDevice, TransparentPipeline->Layout, nullptr);
-        vkDestroyPipeline(inDevice, TransparentPipeline->Pipeline, nullptr);*/
+        OpaquePipeline.reset();
+        TransparentPipeline.reset();
     }
     
 } // namespace MamontEngine

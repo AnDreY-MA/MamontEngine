@@ -23,6 +23,8 @@ namespace MamontEditor
 
         virtual void GuiRender() override;
 
+        virtual bool IsHovered() const override;
+
         MamontEngine::Entity GetSelectedEntity() const
         {
             return m_SeletctedEntity;

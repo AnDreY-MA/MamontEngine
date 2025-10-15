@@ -3,6 +3,7 @@
 #include "Graphics/Vulkan/Materials/Material.h"
 #include "Graphics/Mesh.h"
 #include <bitset>
+#include "Core/UID.h"
 
 namespace MamontEngine
 {
@@ -19,9 +20,9 @@ namespace MamontEngine
                      const VkBuffer  inVertexBuffer,
 
                      const GLTFMaterial *InMaterial,
-                     Bounds inBound,
+                     AABB inBound,
                      glm::mat4       InTransform,
-                     VkDeviceAddress InVertexBufferAdders)
+                     VkDeviceAddress InVertexBufferAdders, UID id)
             : IndexCount(InIndexCount)
             , FirstIndex(InFirstIndex)
             , IndexBuffer(InIndexBuffer)
@@ -30,6 +31,7 @@ namespace MamontEngine
             , Bound(inBound)
             , Transform(InTransform)
             , VertexBufferAddress(InVertexBufferAdders)
+            , Id(id)
         {
         }
 
@@ -39,10 +41,12 @@ namespace MamontEngine
         const VkBuffer VertexBuffer;
 
 		const GLTFMaterial *Material;
-        Bounds            Bound;
+        AABB            Bound;
 
 		glm::mat4 Transform;
         VkDeviceAddress VertexBufferAddress;
+
+        UID Id;
 	};
 
     struct DrawContext

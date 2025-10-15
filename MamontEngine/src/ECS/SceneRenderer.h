@@ -32,6 +32,9 @@ namespace MamontEngine
                           const glm::mat4 &inViewProjection,
                           VkPipelineLayout inGlobalLayout,
                           uint32_t         cascadeIndex);
+
+        void RenderPicking(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, VkPipeline inPipeline, VkPipelineLayout inLayout);
+
         void Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades);
 
         void UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades);
@@ -68,6 +71,11 @@ namespace MamontEngine
         const glm::vec3& GetLightPos() const
         {
             return m_LightPosition;
+        }
+
+        void ClearDrawContext()
+        {
+            m_DrawContext.Clear();
         }
 
 	private:

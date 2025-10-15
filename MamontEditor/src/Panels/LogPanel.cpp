@@ -144,7 +144,15 @@ namespace MamontEditor
         }
         ImGui::EndChild();
 
+        m_IsHovered = ImGui::IsWindowHovered();
+
+
         OnEnd();
+    }
+
+    bool LogPanel::IsHovered() const
+    {
+        return m_IsHovered;
     }
 
 } // namespace MamontEditor

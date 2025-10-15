@@ -24,8 +24,15 @@ namespace MamontEditor
             ImGui::Text("Framerate: %f ms", io.Framerate);
             ImGui::Text("Drawtime: %f ms", stats.MeshDrawTime);
 
+            m_IsHovered = ImGui::IsWindowHovered();
+
+
             OnEnd();
         }
+    }
+    bool StatisticsPanel::IsHovered() const
+    {
+        return m_IsHovered;
     }
     void StatisticsPanel::Deactivate()
     {

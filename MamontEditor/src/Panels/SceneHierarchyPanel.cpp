@@ -88,8 +88,16 @@ namespace MamontEditor
                 ImGui::EndPopup();
             }
 
+            //fmt::println("SceneHierachy, Hovered: {}", ImGui::IsWindowHovered());
+            m_IsHovered = ImGui::IsWindowHovered();
+
             OnEnd();
         }
+    }
+
+    bool SceneHierarchyPanel::IsHovered() const
+    {
+        return m_IsHovered;
     }
 
     void SceneHierarchyPanel::DrawEntityNode(const MamontEngine::Entity& inEntity)

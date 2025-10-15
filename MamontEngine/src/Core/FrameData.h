@@ -2,7 +2,7 @@
 
 #include "Core/VkDestriptor.h"
 #include "Graphics/Vulkan/Image.h"
-#include "Graphics/Vulkan/MeshBuffer.h"
+#include "Graphics/Vulkan/Buffers/Buffer.h"
 #include "tracy/TracyVulkan.hpp"
 
 namespace MamontEngine

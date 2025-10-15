@@ -138,6 +138,11 @@ MamontEngine::vkinit::attachment_info(VkImageView view, VkClearValue *clear, VkI
     colorAttachment.imageLayout = layout;
     colorAttachment.loadOp      = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     colorAttachment.storeOp     = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.storeOp            = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.resolveMode        = VK_RESOLVE_MODE_NONE;
+    colorAttachment.resolveImageView   = VK_NULL_HANDLE;
+    colorAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
     if (clear)
     {
         colorAttachment.clearValue = *clear;
@@ -147,7 +152,9 @@ MamontEngine::vkinit::attachment_info(VkImageView view, VkClearValue *clear, VkI
 }
 //< color_info
 //> depth_info
-VkRenderingAttachmentInfo MamontEngine::vkinit::depth_attachment_info(VkImageView view, VkImageLayout layout /*= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL*/)
+VkRenderingAttachmentInfo MamontEngine::vkinit::depth_attachment_info(VkImageView                     view,
+                                                                      VkAttachmentLoadOp loadOp,
+                                                                      float clearDepth, VkImageLayout layout /*= VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL*/)
 {
     VkRenderingAttachmentInfo depthAttachment{};
     depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -155,9 +162,11 @@ VkRenderingAttachmentInfo MamontEngine::vkinit::depth_attachment_info(VkImageVie
 
     depthAttachment.imageView                     = view;
     depthAttachment.imageLayout                   = layout;
+    depthAttachment.loadOp                        = loadOp;
     depthAttachment.loadOp                        = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp                       = VK_ATTACHMENT_STORE_OP_STORE;
-    depthAttachment.clearValue.depthStencil.depth = 0.f;
+    depthAttachment.clearValue.depthStencil.depth   = clearDepth;
+    depthAttachment.clearValue.depthStencil.stencil = 0.f;
 
     return depthAttachment;
 }

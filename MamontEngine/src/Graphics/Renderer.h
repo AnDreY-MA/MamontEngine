@@ -28,12 +28,15 @@ namespace MamontEngine
         ~Renderer() = default;
 
         void InitSceneRenderer(const std::shared_ptr<Camera>& inMainCamera);
-        void InitImGuiRenderer(VkDescriptorPool &outDescPool);
+        void InitImGuiRenderer();
 
         void InitPipelines();
         void DestroyPipelines();
 
         void Render();
+
+        void DrawPickingPass(VkCommandBuffer cmd, const uint32_t inCurrentSwapchainIndex);
+        void TryPickObject(const glm::vec2& inMousePos);
 
         void UpdateWindowEvent(const SDL_EventType inType);
 
@@ -99,6 +102,7 @@ namespace MamontEngine
         std::shared_ptr<WindowCore> m_Window;
 
         std::unique_ptr<PipelineData> m_CascadePipeline;
+        std::unique_ptr<PipelineData> m_PickingPipeline;
 
         bool IsActiveCascade{false};
 
@@ -127,5 +131,8 @@ namespace MamontEngine
         float      m_RenderScale{1.f};
 
         RenderStats m_Stats;
+
+        VkImage m_CurrentSwapchainImage;
+        VkImageView m_CurrentSwapchainImageView;
 	};
 }

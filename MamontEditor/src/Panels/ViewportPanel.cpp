@@ -36,4 +36,8 @@ namespace MamontEditor
         OnEnd();
 
     }
+    bool ViewportPanel::IsHovered() const
+    {
+        return ImGui::IsWindowHovered();
+    }
 }

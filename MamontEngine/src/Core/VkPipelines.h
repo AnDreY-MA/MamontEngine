@@ -35,7 +35,7 @@ namespace MamontEngine::VkPipelines
         VkPipeline BuildPipline(VkDevice inDevice, uint32_t attachmentCount = 1);
 
 
-    private:
+    //private:
         std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStages;
 
         VkPipelineInputAssemblyStateCreateInfo m_InputAssembly;

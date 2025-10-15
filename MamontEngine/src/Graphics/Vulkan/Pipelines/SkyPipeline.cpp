@@ -1,7 +1,7 @@
 #include "SkyPipeline.h"
 
 #include "Core/VkPipelines.h"
-
+#include "Graphics/Devices/LogicalDevice.h"
 
 namespace MamontEngine
 {
@@ -77,18 +77,19 @@ namespace MamontEngine
         vkDestroyShaderModule(inDevice, skyShader, nullptr);
     }
 
-    void SkyPipeline::Draw(VkCommandBuffer inCmd, const VkDescriptorSet *inDescriptorSet)
+    SkyPipeline::~SkyPipeline()
+    {
+        const VkDevice devie = LogicalDevice::GetDevice();
+        vkDestroyPipelineLayout(devie, m_GradientPipelineLayout, nullptr);
+        vkDestroyPipeline(devie, m_Effect.Pipeline, nullptr);
+    }
+
+    void SkyPipeline::Draw(VkCommandBuffer inCmd, const VkDescriptorSet *inDescriptorSet) const
     {
         vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_Effect.Pipeline);
 
         vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_GradientPipelineLayout, 0, 1, inDescriptorSet, 0, nullptr);
 
         vkCmdPushConstants(inCmd, m_GradientPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &m_Effect.Data);
-    }
-
-    void SkyPipeline::Destroy(VkDevice inDevice)
-    {
-        vkDestroyPipelineLayout(inDevice, m_GradientPipelineLayout, nullptr);
-        vkDestroyPipeline(inDevice, m_Effect.Pipeline, nullptr);
     }
 }

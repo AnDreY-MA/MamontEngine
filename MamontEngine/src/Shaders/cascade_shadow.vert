@@ -5,13 +5,11 @@
 
 #include "input_structures.glsl"
 
-#define SHADOW_MAP_CASCADE_COUNT 4
+layout(location = 0) in vec3 in_pos;
 
-layout (set = 0, binding = 3) uniform UBO {
-	mat4[SHADOW_MAP_CASCADE_COUNT] cascadeViewProjMat;
-} ubo;
-
-layout (location = 0) out vec2 outUV;
+layout(push_constant) uniform PushConstants {
+    mat4 vp_matrix;
+};
 
 void main() {
 

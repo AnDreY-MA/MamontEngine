@@ -3,6 +3,9 @@
 #include "Graphics/Model.h"
 #include "Utils/Profile.h"
 #include "Core/Log.h"
+#include "Core/VkInitializers.h"
+#include "Core/VkImages.h"
+#include "Core/VkPipelines.h"
 
 namespace MamontEngine
 {
@@ -28,7 +31,7 @@ namespace MamontEngine
 
         for (int c = 0; c < 8; c++)
         {
-            glm::vec4 v = matrix * glm::vec4(obj.Bound.Origin + (corners[c] * obj.Bound.Extents), 1.f);
+            glm::vec4 v = matrix * glm::vec4(obj.Bound.Center() + (corners[c] * obj.Bound.Extent()), 1.f);
 
             v.x = v.x / v.w;
             v.y = v.y / v.w;
@@ -118,8 +121,11 @@ namespace MamontEngine
             vkCmdBindIndexBuffer(inCmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
             const GPUDrawPushConstants push_constants{
-                .WorldMatrix = r.Transform, .VertexBuffer = r.VertexBufferAddress, .CascadeIndex = cascadeIndex
+                .WorldMatrix = r.Transform, 
+                .VertexBuffer = r.VertexBufferAddress, 
+                //.CascadeIndex = cascadeIndex
             };
+
             constexpr uint32_t         constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
             vkCmdPushConstants(
                     inCmd, r.Material->Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
@@ -139,7 +145,7 @@ namespace MamontEngine
             draw(m_DrawContext.TransparentSurfaces[r]);
         }
 
-        m_DrawContext.Clear();
+        //m_DrawContext.Clear();
     }
 
     void SceneRenderer::RenderShadow(
@@ -151,11 +157,10 @@ namespace MamontEngine
 
         for (size_t i = 0; i < m_DrawContext.OpaqueSurfaces.size(); i++)
         {
-            /*f (is_visible(m_DrawContext.OpaqueSurfaces[i], inViewProjection))
+            if (is_visible(m_DrawContext.OpaqueSurfaces[i], inViewProjection))
             {
-                
-            }*/
-            opaque_draws.push_back(i);
+                opaque_draws.push_back(i);
+            }
         }
 
         if (globalDescriptor == VK_NULL_HANDLE)
@@ -187,7 +192,7 @@ namespace MamontEngine
             const GPUDrawPushConstants push_constants {
                 .WorldMatrix = r.Transform, 
                 .VertexBuffer = r.VertexBufferAddress, 
-                .CascadeIndex = cascadeIndex
+                //.CascadeIndex = cascadeIndex
             };
 
             vkCmdPushConstants(inCmd,
@@ -204,6 +209,40 @@ namespace MamontEngine
         for (const auto &r : opaque_draws)
         {
             draw(m_DrawContext.OpaqueSurfaces[r]);
+        }
+    }
+
+    void SceneRenderer::RenderPicking(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, VkPipeline inPipeline, VkPipelineLayout inLayout)
+    {
+        uint64_t   idRenderObject{1};
+        constexpr VkDeviceSize offsets[1] = {0};
+
+        const auto draw = [&](const RenderObject& r) -> void
+        {
+            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipeline);
+            //vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inLayout, 0, 1, &globalDescriptor, 0, nullptr);
+
+            vkCmdBindVertexBuffers(cmd, 0, 1, &r.VertexBuffer, offsets);
+
+            vkCmdBindIndexBuffer(cmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+            const GPUDrawPushConstants pushConstants{
+                    .WorldMatrix = r.Transform, 
+                    .VertexBuffer = r.VertexBufferAddress, 
+                    .ObjectID = (uint64_t)r.Id
+            };
+
+            constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
+            vkCmdPushConstants(cmd, inLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &pushConstants);
+
+            vkCmdDrawIndexed(cmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
+
+            ++idRenderObject;
+        };
+
+        for (const auto& object : m_DrawContext.OpaqueSurfaces)
+        {
+            draw(object);
         }
     }
 
@@ -324,5 +363,7 @@ namespace MamontEngine
     void SceneRenderer::SubmitMesh(const MeshComponent& inMesh)
     {
         m_MeshComponents.push_back(inMesh);
+
+        inMesh.Mesh->ID = m_MeshComponents.size();
     }
 }

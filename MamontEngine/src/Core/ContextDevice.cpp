@@ -3,7 +3,6 @@
 #include "Window.h"
 #include "VkInitializers.h"
 #include "VkImages.h"
-#include "Graphics/Vulkan/MeshBuffer.h"
 #include <glm/gtx/transform.hpp>
 #include "ECS/SceneRenderer.h"
 #include "tracy/TracyVulkan.hpp"
@@ -156,6 +155,7 @@ namespace MamontEngine
                 .depthClamp        = VK_TRUE,
                 .depthBiasClamp    = VK_TRUE,
                 .samplerAnisotropy = VK_TRUE,
+                .shaderInt64 = VK_TRUE
         };
 
         constexpr VkPhysicalDeviceVulkan14Features features14 = {.maintenance6 = VK_TRUE, .pushDescriptor = VK_TRUE};
@@ -254,62 +254,6 @@ namespace MamontEngine
     
     }
 
-    MeshBuffer VkContextDevice::CreateGPUMeshBuffer(std::span<uint32_t> inIndices, std::span<Vertex> inVertices) const
-    {
-        const size_t vertexBufferSize{inVertices.size() * sizeof(Vertex)};
-        const size_t indexBufferSize{inIndices.size() * sizeof(uint32_t)};
-
-        MeshBuffer newSurface{};
-
-        newSurface.VertexBuffer.Create(vertexBufferSize,
-                                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                                               VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                             VMA_MEMORY_USAGE_GPU_ONLY);
-
-        const VkBufferDeviceAddressInfo deviceAddressInfo = {
-            .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, 
-            .buffer = newSurface.VertexBuffer.Buffer
-        };
-        newSurface.VertexBufferAddress                    = vkGetBufferDeviceAddress(LogicalDevice::GetDevice(), &deviceAddressInfo);
-
-        newSurface.IndexBuffer.Create(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-
-        AllocatedBuffer staging;
-        staging.Create(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
-
-        /*VmaAllocationInfo allocInfo;
-        vmaGetAllocationInfo(Allocator::GetAllocator(), staging.Allocation, &allocInfo);*/
-        void *data = staging.Info.pMappedData;
-        //void *data = staging.Allocation->GetMappedData;   
-
-        memcpy(data, inVertices.data(), vertexBufferSize);
-        memcpy((char *)data + vertexBufferSize, inIndices.data(), indexBufferSize);
-
-        ImmediateSubmit(
-                [&](VkCommandBuffer cmd)
-                {
-                    const VkBufferCopy vertexCopy = {
-                        .srcOffset = 0, 
-                        .dstOffset = 0, 
-                        .size = vertexBufferSize
-                    };
-
-                    vkCmdCopyBuffer(cmd, staging.Buffer, newSurface.VertexBuffer.Buffer, 1, &vertexCopy);
-
-                    const VkBufferCopy indexCopy = {
-                        .srcOffset = vertexBufferSize, 
-                        .dstOffset = 0, 
-                        .size = indexBufferSize
-                    };
-
-                    vkCmdCopyBuffer(cmd, staging.Buffer, newSurface.IndexBuffer.Buffer, 1, &indexCopy);
-                });
-
-        staging.Destroy();
-
-        return newSurface;
-    }
-
     AllocatedImage
     VkContextDevice::CreateImage(const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped, uint32_t arrayLayers) const
     {
@@ -338,18 +282,14 @@ namespace MamontEngine
 
         VK_CHECK(vkCreateImageView(device, &view_info, nullptr, &newImage.ImageView));
 
-        //fmt::println("NewImage: {}", (uint64_t)newImage.Image);
-
-        //std::cerr << "NewImage: " << newImage.Image << std::endl;
-
         return newImage;
     }
 
     AllocatedImage VkContextDevice::CreateImage(void *inData, const VkExtent3D& inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const
     {
         const size_t          data_size    = inSize.depth * inSize.width * inSize.height * 4;
-        AllocatedBuffer uploadbuffer;
-        uploadbuffer.Create(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        AllocatedBuffer uploadbuffer = CreateStagingBuffer(data_size);
+        //uploadbuffer.Create(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
         memcpy(uploadbuffer.Info.pMappedData, inData, data_size);
 
@@ -392,26 +332,26 @@ namespace MamontEngine
 
     void VkContextDevice::InitDefaultImages()
     {
-        const uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
-        WhiteImage =
-                CreateImage((void *)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
-        std::cerr << "WhiteImage: " << ErrorCheckerboardImage.Image << std::endl;
-
-        const uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
-
-        const uint32_t                magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-        std::array<uint32_t, 16 * 16> pixels{}; // for 16x16 checkerboard texture
-        for (int x = 0; x < 16; x++)
         {
-            for (int y = 0; y < 16; y++)
-            {
-                pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
-            }
-        }
-        ErrorCheckerboardImage =
-                CreateImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
-        std::cerr << "ErrorCheckerboardImage: " << ErrorCheckerboardImage.Image << std::endl;
+            const uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
+            WhiteImage           = CreateImage((void *)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+            std::cerr << "WhiteImage: " << ErrorCheckerboardImage.Image << std::endl;
 
+            const uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
+
+            const uint32_t                magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+            std::array<uint32_t, 16 * 16> pixels{}; // for 16x16 checkerboard texture
+            for (int x = 0; x < 16; x++)
+            {
+                for (int y = 0; y < 16; y++)
+                {
+                    pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+                }
+            }
+            ErrorCheckerboardImage = CreateImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+            std::cerr << "ErrorCheckerboardImage: " << ErrorCheckerboardImage.Image << std::endl;
+        }
+        
     }
 
     void VkContextDevice::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction) const
@@ -504,6 +444,7 @@ namespace MamontEngine
             VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &GetFrameAt(i).RenderFence));
 
             VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &GetFrameAt(i).SwapchainSemaphore));
+            std::cerr << "semaphore: " << GetFrameAt(i).SwapchainSemaphore << std::endl;
 
             //VK_CHECK(vkCreateSemaphore(Device, &semaphoreCreateInfo, nullptr, &GetFrameAt(i).RenderSemaphore));
         }
@@ -512,11 +453,27 @@ namespace MamontEngine
         for (auto& semaphore : RenderCopleteSemaphores)
         {
             VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphore));
+
         }
 
         VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &TransferFence));
         VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &m_ImmFence));
 
+        {
+            const VkExtent3D extent = {Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
+
+            PickingImages.resize(Swapchain.GetImages().size());
+            for (size_t i{0}; i < Swapchain.GetImages().size(); ++i)
+            {
+                PickingImages[i] = CreateImage(
+                        extent, VK_FORMAT_R32G32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+                ImmediateSubmit([&](VkCommandBuffer cmd)
+                        { VkUtil::transition_image(cmd, PickingImages[i].Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); });
+
+                // std::cerr << "PickingImage: " << PickingImage.Image << std::endl;
+            }
+        }
 
     }
 
@@ -584,15 +541,14 @@ namespace MamontEngine
             DrawImageDescriptorLayout = builder.Build(device, VK_SHADER_STAGE_COMPUTE_BIT);
         }
 
-        //{
-        //    DescriptorLayoutBuilder builder;
-        //    builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);         // GLTFMaterialData
-        //    builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // colorTex
-        //    builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // metalRoughTex
-        //    // binding 3 УДАЛЕН - shadowMap теперь только в Set 0
-        //    builder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // colorMap (теперь binding 3 вместо 4)
-        //    MaterialDescriptorLayout = builder.Build(Device, VK_SHADER_STAGE_FRAGMENT_BIT);
-        //}
+        DrawImageDescriptors = GlobalDescriptorAllocator.Allocate(device, DrawImageDescriptorLayout);
+        {
+            DescriptorWriter writer;
+            writer.WriteImage(0, Image.DrawImage.ImageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+            writer.UpdateSet(device, DrawImageDescriptors);
+        }
+        std::cerr << "DrawImageDescriptors: " << DrawImageDescriptors << std::endl;
+        std::cerr << "Image.DrawImage.ImageView: " << Image.DrawImage.ImageView << std::endl;
 
         {
             DescriptorLayoutBuilder builder;
@@ -600,17 +556,11 @@ namespace MamontEngine
             builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             builder.AddBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            builder.AddBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             GPUSceneDataDescriptorLayout = builder.Build(device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
         }
 
-
-        DrawImageDescriptors = GlobalDescriptorAllocator.Allocate(device, DrawImageDescriptorLayout);
-
-        {
-            DescriptorWriter writer;
-            writer.WriteImage(0, Image.DrawImage.ImageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-            writer.UpdateSet(device, DrawImageDescriptors);
-        }
+        
 
         constexpr size_t cascadeUBO = sizeof(ShadowCascadeUBO);
         constexpr size_t cascadeMatrices = sizeof(ShadowCascadeMatrices);
@@ -629,6 +579,8 @@ namespace MamontEngine
             writer.WriteBuffer(2, GetFrameAt(i).ShadowUBOBuffer.Buffer, cascadeUBO, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             writer.WriteBuffer(3, GetFrameAt(i).ShadowmMatrixBuffer.Buffer, cascadeMatrices, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             writer.UpdateSet(device, globalDescriptor);
+
+            std::cerr << "globalDescriptor: " << globalDescriptor << std::endl;
 
         }
     }
@@ -666,6 +618,8 @@ namespace MamontEngine
     void VkContextDevice::InitSwapchain(const VkExtent2D &inWindowExtent)
     {
         Swapchain.Init(*this, inWindowExtent, Image);
+
+        
         
         InitShadowImages();
 
@@ -778,6 +732,11 @@ namespace MamontEngine
         
         DestroyImage(Image.DepthImage);
 
+        for (auto& pickImage : PickingImages)
+        {
+            DestroyImage(pickImage);
+        }
+        //PickingImages.clear();
         //DestroyImage(ShadowDepthImage);
     }
 

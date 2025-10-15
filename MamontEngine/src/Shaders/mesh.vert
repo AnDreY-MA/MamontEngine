@@ -26,4 +26,3 @@ void main()
 	outTangent = v.tangent;
     outPos = v.position;
 }
-
