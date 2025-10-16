@@ -37,23 +37,13 @@ namespace MamontEngine
         void DestroyImage(const AllocatedImage &inImage) const;
 
         void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction) const;
-
-        void InitCommands();
-
-        void InitSyncStructeres();
-
-        void InitDescriptors();
-
+        
         void InitSamples();
-
-        void InitSceneBuffers();
 
         void InitShadowImages();
 
-        void InitSwapchain(const VkExtent2D &inWindowExtent);
         void ResizeSwapchain(const VkExtent2D &inWindowExtent);
 
-        void InitTracyContext();
 
         FrameData &GetCurrentFrame();
         inline FrameData& GetFrameAt(const size_t inIndex)
@@ -120,15 +110,31 @@ namespace MamontEngine
         RenderPipeline* RenderPipeline;
 
     private:
+#pragma region Initialize functions
+        void InitSwapchain(const VkExtent2D &inWindowExtent);
+
+        void InitCommands();
+
+        void InitSyncStructeres();
+
+        void InitDescriptors();
+
+        void InitSceneBuffers();
+
+        void InitTracyContext();
+#pragma endregion
+
+#pragma region Destroy functions
         void DestroyImages() const;
-       
+
         void DestroyCommands();
-       
+
         void DestroySyncStructeres();
 
         void DestroyDescriptors();
-        
+
         void DestroySceneBuffers();
+#pragma endregion        
 
         VkFormat GetSupportedDepthFormat(bool checkSamplingSupport);
 

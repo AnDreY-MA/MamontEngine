@@ -108,7 +108,8 @@ namespace MamontEngine
 {
     const std::string RootDirectories = PROJECT_ROOT_DIR;
 
-    Renderer::Renderer(VkContextDevice &inDeviceContext, const std::shared_ptr<WindowCore> &inWindow) : m_DeviceContext(inDeviceContext), m_Window(inWindow)
+    Renderer::Renderer(VkContextDevice &inDeviceContext, const std::shared_ptr<WindowCore> &inWindow) 
+        : m_DeviceContext(inDeviceContext), m_Window(inWindow)
     {
     }
 
@@ -515,17 +516,17 @@ namespace MamontEngine
         m_PickingPipeline.release();
     }
 
-    void Renderer::TryPickObject(const glm::vec2 &inMousePos)
+    uint64_t Renderer::TryPickObject(const glm::vec2 &inMousePos)
     {
         constexpr size_t bufferSize{sizeof(uint32_t) * 2};
         const auto      &extent        = m_DeviceContext.Swapchain.GetExtent();
 
-        const uint32_t x = static_cast<uint32_t>(inMousePos.x);
-        const uint32_t y = static_cast<uint32_t>(extent.height - inMousePos.y);
+        const int32_t xPos = static_cast<int32_t>(inMousePos.x);
+        const int32_t yPos = static_cast<int32_t>(extent.height - inMousePos.y);
 
-        if (x >= extent.width || y >= extent.height)
+        if (xPos >= extent.width || yPos >= extent.height)
         {
-            return;
+            return 0;
         }
 
         AllocatedBuffer stagingBuffer;
@@ -535,7 +536,7 @@ namespace MamontEngine
 
         m_DeviceContext.ImmediateSubmit([&](VkCommandBuffer cmd) 
             {
-                    VkUtil::transition_image(cmd, currentPickingImage,
+                VkUtil::transition_image(cmd, currentPickingImage,
                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
@@ -547,7 +548,7 @@ namespace MamontEngine
                 copyRegion.imageSubresource.mipLevel       = 0;
                 copyRegion.imageSubresource.baseArrayLayer = 0;
                 copyRegion.imageSubresource.layerCount     = 1;
-                copyRegion.imageOffset                     = {(int32_t)x, (int32_t)y, 0}; 
+                copyRegion.imageOffset                     = {xPos, yPos, 0}; 
                 copyRegion.imageExtent                     = {1, 1, 1};
 
                 vkCmdCopyImageToBuffer(cmd, currentPickingImage,
@@ -563,15 +564,15 @@ namespace MamontEngine
 
         uint32_t pickedData[2] = {};
         memcpy(&pickedData, stagingBuffer.Info.pMappedData, bufferSize);
-        uint64_t lower = pickedData[0];
-        uint64_t upper = pickedData[1];
-        uint64_t resultID = (upper << 32) | lower;
+        const uint64_t lower = pickedData[0];
+        const uint64_t upper = pickedData[1];
+        const uint64_t resultID = (upper << 32) | lower;
         fmt::println("resultID is {}", resultID);
-        fmt::println("stagingBuffer.Info.pMappedData is {}", stagingBuffer.Info.pMappedData);
+        //fmt::println("stagingBuffer.Info.pMappedData is {}", stagingBuffer.Info.pMappedData);
 
         stagingBuffer.Destroy();
 
-        //fmt::println("TryPicking: ID: {}", pickedID);
+        return resultID;
     }
 
 /// Shadows

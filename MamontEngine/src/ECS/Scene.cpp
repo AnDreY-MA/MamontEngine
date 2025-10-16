@@ -123,25 +123,6 @@ namespace MamontEngine
         return {};
     }
 
-    Node *Scene::Pick(const glm::vec3 &rayOrigin, const glm::vec3 &rayDir)
-    {
-        Node      *currentNode = nullptr;
-
-        const auto meshes = m_Registry.view<MeshComponent, TransformComponent>();
-        for (const auto &&[entity, meshComponent, transform] : meshes.each())
-        {
-            currentNode = meshComponent.Mesh->TryGetSelectNode(rayOrigin, rayDir);
-            if (currentNode != nullptr)
-            {
-                fmt::println("Model: {}", meshComponent.Mesh->GetPathFile().c_str());
-                return currentNode;
-            }
-        }
-
-        return currentNode;
-    }
-
-
     template<>
     void Scene::RemoveComponent<MeshComponent>(Entity inEntity)
     {

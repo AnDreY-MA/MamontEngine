@@ -39,18 +39,6 @@ namespace MamontEngine
 
         m_Renderer = std::make_unique<Renderer>(*m_ContextDevice.get(), m_Window);
 
-        m_ContextDevice->InitSwapchain(m_Window->GetExtent());
-
-        m_ContextDevice->InitCommands();
-
-        m_ContextDevice->InitSyncStructeres();
-        
-        m_ContextDevice->InitSceneBuffers();
-
-        m_ContextDevice->InitDescriptors();
-        
-        m_ContextDevice->InitTracyContext();
-
         m_MainDeletionQueue.PushFunction([&]() { 
             m_ContextDevice->DestroyFrameData(); 
         });

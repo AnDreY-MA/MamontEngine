@@ -144,7 +144,7 @@ namespace MamontEngine
                 const auto meshPath = DeserializeMesh(jsonComponent);
                 if (meshPath != "")
                 {
-                    auto model = std::make_shared<MeshModel>(contextDevice, meshPath);
+                    auto model = std::make_shared<MeshModel>(contextDevice, id, meshPath);
                     entity.AddComponent<MeshComponent>(std::move(model));
                 }
 

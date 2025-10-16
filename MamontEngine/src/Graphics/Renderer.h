@@ -36,7 +36,7 @@ namespace MamontEngine
         void Render();
 
         void DrawPickingPass(VkCommandBuffer cmd, const uint32_t inCurrentSwapchainIndex);
-        void TryPickObject(const glm::vec2& inMousePos);
+        uint64_t TryPickObject(const glm::vec2 &inMousePos);
 
         void UpdateWindowEvent(const SDL_EventType inType);
 

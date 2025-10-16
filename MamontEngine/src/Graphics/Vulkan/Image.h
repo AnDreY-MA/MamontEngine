@@ -10,11 +10,15 @@ namespace MamontEngine
         VmaAllocationInfo Info;
         VkExtent3D        ImageExtent{0, 0, 0};
         VkFormat      ImageFormat;
+
+        void Create(const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false, uint32_t arrayLayers = 1);
     };
 
     struct Image
     {
         AllocatedImage DrawImage;
         AllocatedImage DepthImage;
+        AllocatedImage ResolveImage;
+        AllocatedImage UIDrawImage;
     };
 }

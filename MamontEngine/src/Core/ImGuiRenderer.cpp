@@ -14,7 +14,7 @@
 
 namespace MamontEngine
 {
-    ImGuiRenderer::ImGuiRenderer(const VkContextDevice &inContextDevice, SDL_Window *inWindow, VkFormat inColorFormat, VkDescriptorPool &outPoolResult)
+    ImGuiRenderer::ImGuiRenderer(const VkContextDevice &inContextDevice, SDL_Window *inWindow, VkFormat inColorFormat)
     {
         constexpr VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
                                                       {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
@@ -35,9 +35,9 @@ namespace MamontEngine
                                                      .poolSizeCount = (uint32_t)std::size(poolSizes),
                                                      .pPoolSizes    = poolSizes};
         VkDevice device = LogicalDevice::GetDevice();
-        VkDescriptorPool                 imguiPool;
-        VK_CHECK_MESSAGE(vkCreateDescriptorPool(device, &poolInfo, nullptr, &imguiPool), "CreateDescPool");
-        outPoolResult = imguiPool;
+        
+        VK_CHECK_MESSAGE(vkCreateDescriptorPool(device, &poolInfo, nullptr, &m_DescriptorPool), "CreateDescPool");
+        //outPoolResult = imguiPool;
 
         ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance                  = inContextDevice.Instance;
@@ -45,7 +45,7 @@ namespace MamontEngine
         initInfo.Device                    = device;
         initInfo.QueueFamily               = inContextDevice.GetGraphicsQueueFamily();
         initInfo.Queue                     = inContextDevice.GetGraphicsQueue();
-        initInfo.DescriptorPool            = imguiPool;
+        initInfo.DescriptorPool            = m_DescriptorPool;
         initInfo.MinImageCount             = 3;
         initInfo.ImageCount                = 3;
         initInfo.MSAASamples               = VK_SAMPLE_COUNT_1_BIT;
@@ -57,6 +57,11 @@ namespace MamontEngine
 
         ImGui_ImplSDL3_InitForVulkan(inWindow);
         ImGui_ImplVulkan_Init(&initInfo);
+    }
+
+    ImGuiRenderer::~ImGuiRenderer()
+    {
+        vkDestroyDescriptorPool(LogicalDevice::GetDevice(), m_DescriptorPool, nullptr);
     }
 
     void ImGuiRenderer::Draw(VkCommandBuffer inCmd, VkImageView inTargetImageView, const VkExtent2D& inRenderExtent)

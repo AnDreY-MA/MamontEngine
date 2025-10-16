@@ -217,6 +217,18 @@ namespace MamontEngine
                                                       .instance       = Instance};
         Allocator::Init(allocatorInfo);
 
+        InitSwapchain(inWindow->GetExtent());
+
+        InitCommands();
+
+        InitSyncStructeres();
+
+        InitSceneBuffers();
+
+        InitDescriptors();
+
+        InitTracyContext();
+
     }
 
     VkContextDevice::~VkContextDevice()

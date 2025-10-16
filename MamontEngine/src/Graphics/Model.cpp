@@ -6,42 +6,6 @@
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Utils/Utilities.h"
 
-namespace
-{
-    bool IntersectRayAABB(const glm::vec3 &origin, const glm::vec3 &dir, const glm::vec3 &bmin, const glm::vec3 &bmax, float &tOut)
-    {
-        const float EPS  = 1e-8f;
-        float       tmin = -FLT_MAX;
-        float       tmax = FLT_MAX;
-
-        for (int i = 0; i < 3; ++i)
-        {
-            if (fabs(dir[i]) < EPS)
-            {
-                if (origin[i] < bmin[i] || origin[i] > bmax[i])
-                    return false;
-            }
-            else
-            {
-                float inv = 1.0f / dir[i];
-                float t1  = (bmin[i] - origin[i]) * inv;
-                float t2  = (bmax[i] - origin[i]) * inv;
-                if (t1 > t2)
-                    std::swap(t1, t2);
-                tmin = std::max(tmin, t1);
-                tmax = std::min(tmax, t2);
-                if (tmin > tmax)
-                    return false;
-            }
-        }
-
-        if (tmax < 0.0f)
-            return false; // всё позади камеры
-
-        tOut = (tmin > 0.0f) ? tmin : 0.0f; // если мы внутри — возвращаем 0 (или 0.0f)
-        return true;
-    }
-}
 
 namespace MamontEngine
 {
@@ -148,13 +112,14 @@ namespace MamontEngine
         return newImage;
     }
 
-    MeshModel::MeshModel(const VkContextDevice &inDevice)
-        : m_ContextDevice(inDevice)
+    MeshModel::MeshModel(const VkContextDevice &inDevice, UID inID) : 
+        m_ContextDevice(inDevice), ID(inID)
     {
 
     }
 
-    MeshModel::MeshModel(const VkContextDevice &inDevice, std::string_view filePath) : m_ContextDevice(inDevice)
+    MeshModel::MeshModel(const VkContextDevice &inDevice, UID inID, std::string_view filePath) : 
+        m_ContextDevice(inDevice), ID(inID)
     {
         Load(filePath);
     }
@@ -166,9 +131,11 @@ namespace MamontEngine
             m_ContextDevice.DestroyBuffer(mesh->Buffer.IndexBuffer);
             m_ContextDevice.DestroyBuffer(mesh->Buffer.VertexBuffer);
         }*/
+        std::cerr << "Buffer.IndexBuffer.Buffer: " << Buffer.IndexBuffer.Buffer << std::endl;
+        std::cerr << "Buffer.VertexBuffer.Buffer: " << Buffer.VertexBuffer.Buffer << std::endl;
         Buffer.IndexBuffer.Destroy();
         Buffer.VertexBuffer.Destroy();
-
+        
 
         //for (auto &image : m_Images)
         //{
@@ -181,74 +148,6 @@ namespace MamontEngine
 
         Clear();
 
-    }
-
-    /* Node *MeshModel::TryGetSelectNode(const glm::vec3 &rayOrigin, const glm::vec3 &rayDir)
-    {
-        Node *closestNode = nullptr;
-        float closestT    = FLT_MAX;
-
-        std::function<void(Node *)> testNode = [&](Node *node)
-        {
-            if (!node)
-                return;
-
-            float t   = 0.0f;
-            bool  hit = node->WorldBounds.IntersectsRay(rayOrigin, rayDir, t);
-
-            if (hit && t < closestT)
-            {
-                closestT    = t;
-                closestNode = node;
-            }
-
-            // 🔹 Проверяем детей ВСЕГДА
-            for (auto &child : node->Children)
-                testNode(child.get());
-        };
-
-        for (auto &root : m_Nodes)
-            testNode(root.get());
-
-        return closestNode;
-    }*/
-
-    Node *MeshModel::TryGetSelectNode(const glm::vec3 &rayOrigin, const glm::vec3 &rayDir)
-    {
-        Node *closestNode = nullptr;
-        float closestT    = FLT_MAX;
-
-        std::function<void(Node *)> testNode = [&](Node *node)
-        {
-            if (!node)
-                return;
-
-            if (node->Mesh)
-            {
-                for (auto &primPtr : node->Mesh->Primitives)
-                {
-                    Primitive *prim      = primPtr.get();
-                    AABB       primWorld = prim->Bound.Transform(node->CurrentMatrix);
-                    float      t;
-                    if (IntersectRayAABB(rayOrigin, rayDir, primWorld.Min, primWorld.Max, t))
-                    {
-                        if (t < closestT)
-                        {
-                            closestT    = t;
-                            closestNode = node; // можно сохранить и prim если нужно
-                        }
-                    }
-                }
-            }
-
-            for (auto &child : node->Children)
-                testNode(child.get());
-        };
-
-        for (auto &root : m_Nodes)
-            testNode(root.get());
-
-        return closestNode;
     }
 
     void MeshModel::Clear()

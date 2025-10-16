@@ -115,12 +115,12 @@ namespace MamontEditor
 
         if (ImGui::IsItemClicked())
         {
-            m_SeletctedEntity = inEntity;
+            SelectEntity(inEntity);
         }
         if (ImGui::IsItemClicked(1))
         {
             ImGui::OpenPopup("Properties", ImGuiPopupFlags_AnyPopupLevel);
-            m_SeletctedEntity = inEntity;
+            SelectEntity(inEntity);
         }
 
         ImGui::TableNextColumn();
@@ -150,15 +150,6 @@ namespace MamontEditor
             DrawItemAddPrimitives("Cone", "D:/Repos/MamontEngine/MamontEngine/assets/cone.glb", contextDevice);
             DrawItemAddPrimitives("Cylinder", "D:/Repos/MamontEngine/MamontEngine/assets/cylinder.glb", contextDevice);
 
-            /*if (ImGui::MenuItem("Cube"))
-            {
-                auto cube = m_Scene->CreateEntity("Cube");
-                const std::string cubeFile = "D:/Repos/MamontEngine/MamontEngine/assets/cube.glb";
-                const auto                      &contextDevice = MEngine::Get().GetContextDevice();
-                auto              cubeModel     = std::make_shared<MeshModel>(contextDevice, cubeFile);
-                cube.AddComponent<MeshComponent>(std::move(cubeModel));
-            }*/
-
             ImGui::EndMenu();
         }
 
@@ -170,7 +161,7 @@ namespace MamontEditor
         if (ImGui::MenuItem(inNameItem.data()))
         {
             auto              newEntity          = m_Scene->CreateEntity(inNameItem);
-            auto              newModel     = std::make_shared<MamontEngine::MeshModel>(inContexDevice, inPath);
+            auto              newModel     = std::make_shared<MamontEngine::MeshModel>(inContexDevice, newEntity.GetID(), inPath);
             newEntity.AddComponent<MamontEngine::MeshComponent>(std::move(newModel));
         }
     }

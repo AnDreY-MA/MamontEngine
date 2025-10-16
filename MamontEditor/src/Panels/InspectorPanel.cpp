@@ -185,7 +185,7 @@ namespace MamontEditor
 
                                                  if (ImGui::Selectable(file.c_str(), isSelected))
                                                  {
-                                                     auto newModel = std::make_shared<MeshModel>(MEngine::Get().GetContextDevice(), fullPath);
+                                                     auto newModel = std::make_shared<MeshModel>(MEngine::Get().GetContextDevice(), inEntity.GetID(), fullPath);
                                                      m_SceneContext->RemoveComponent<MeshComponent>(inEntity);
                                                      inEntity.AddComponent<MeshComponent>(newModel);
                                                      //component.Mesh.swap(newModel);

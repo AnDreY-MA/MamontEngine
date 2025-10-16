@@ -66,9 +66,9 @@ namespace MamontEngine
             return m_InputEvent;
         }
 
-        void TryPickObject(const glm::vec2& inMousePos)
+        uint64_t TryPickObject(const glm::vec2 &inMousePos)
         {
-            m_Renderer->TryPickObject(inMousePos);
+            return m_Renderer->TryPickObject(inMousePos);
         }
 
     private:

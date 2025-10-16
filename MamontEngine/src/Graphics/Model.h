@@ -13,8 +13,8 @@ namespace MamontEngine
 	class MeshModel
 	{
     public:
-        explicit MeshModel(const VkContextDevice &inDevice);
-        explicit MeshModel(const VkContextDevice &inDevice, std::string_view filePath);
+        explicit MeshModel(const VkContextDevice &inDevice, UID inID);
+        explicit MeshModel(const VkContextDevice &inDevice, UID inID, std::string_view filePath);
         
         ~MeshModel();
 
@@ -23,8 +23,6 @@ namespace MamontEngine
         void Draw(DrawContext &inContext) const;
 
         void UpdateTransform(const glm::mat4 &inTransform, const glm::vec3 &inLocation, const glm::vec3 &inRotation, const glm::vec3 &inScale);
-
-        Node *TryGetSelectNode(const glm::vec3 &rayOrigin, const glm::vec3 &rayDir);
 
         const size_t GetSizeMaterials() const
         {
@@ -45,7 +43,6 @@ namespace MamontEngine
         }
 
         UID ID;
-
 
     private:
         void                                  LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers);

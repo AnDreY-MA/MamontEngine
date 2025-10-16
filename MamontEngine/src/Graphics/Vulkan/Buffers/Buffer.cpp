@@ -41,8 +41,22 @@ namespace MamontEngine
         return vkMapMemory(device, Info.deviceMemory, inOffset, inSize, 0, &Info.pMappedData);
     }
 
+    void AllocatedBuffer::UnMap()
+    {
+        const VkDevice device = LogicalDevice::GetDevice();
+
+        vkUnmapMemory(device, Info.deviceMemory);
+    }
+
     void *AllocatedBuffer::GetMappedData() const
     {
         return Info.pMappedData;
+    }
+
+    AllocatedBuffer CreateStagingBuffer(const size_t inAllocationSize)
+    {
+        AllocatedBuffer newBuffer;
+        newBuffer.Create(inAllocationSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+        return newBuffer;
     }
 }

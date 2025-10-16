@@ -25,6 +25,11 @@ namespace MamontEditor
 
         virtual bool IsHovered() const override;
 
+        void SelectEntity(const MamontEngine::Entity& inEntity)
+        {
+            m_SeletctedEntity = inEntity;
+        }
+
         MamontEngine::Entity GetSelectedEntity() const
         {
             return m_SeletctedEntity;

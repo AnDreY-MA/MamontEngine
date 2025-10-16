@@ -364,6 +364,6 @@ namespace MamontEngine
     {
         m_MeshComponents.push_back(inMesh);
 
-        inMesh.Mesh->ID = m_MeshComponents.size();
+        //inMesh.Mesh->ID = m_MeshComponents.size();
     }
 }
