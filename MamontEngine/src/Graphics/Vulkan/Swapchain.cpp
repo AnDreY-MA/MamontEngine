@@ -35,9 +35,6 @@ namespace MamontEngine
 
             VK_CHECK(vkCreateImageView(device, &rViewInfo, nullptr, &inImage.DrawImage.ImageView));
             std::cerr << "DrawImage.Image: " << inImage.DrawImage.Image << std::endl;
-
-            //VkContextDevice::SetObjectName(inImage.DrawImage.Image, VK_OBJECT_TYPE_IMAGE, "DrawImage");
-            //VkContextDevice::SetObjectName(inImage.DrawImage.ImageView, VK_OBJECT_TYPE_IMAGE_VIEW, "DrawImageView");
         }
 
         // Depth Image
@@ -56,53 +53,7 @@ namespace MamontEngine
                     vkinit::imageview_create_info(inImage.DepthImage.ImageFormat, inImage.DepthImage.Image, VK_IMAGE_ASPECT_DEPTH_BIT);
 
             VK_CHECK(vkCreateImageView(device, &dViewInfo, nullptr, &inImage.DepthImage.ImageView));
-
-            //VkContextDevice::SetObjectName(inImage.DepthImage.Image, VK_OBJECT_TYPE_IMAGE, "DepthImage");
-            //VkContextDevice::SetObjectName(inImage.DepthImage.ImageView, VK_OBJECT_TYPE_IMAGE_VIEW, "DepthImageView");
         }
-
-        // Resolve Image
-        //{
-        //    inImage.ResolveImage.ImageFormat = m_SwapchainImageFormat;
-        //    inImage.ResolveImage.ImageExtent = drawImageExtent;
-
-        //    VkImageUsageFlags resolveImageUsages = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-        //    const VkImageCreateInfo resolveImageInfo = vkinit::image_create_info(inImage.ResolveImage.ImageFormat, resolveImageUsages, drawImageExtent);
-
-        //    VK_CHECK(vmaCreateImage(
-        //            Allocator::GetAllocator(), &resolveImageInfo, &rImageAllocInfo, &inImage.ResolveImage.Image, &inImage.ResolveImage.Allocation, nullptr));
-
-        //    const VkImageViewCreateInfo resolveViewInfo =
-        //            vkinit::imageview_create_info(inImage.ResolveImage.ImageFormat, inImage.ResolveImage.Image, VK_IMAGE_ASPECT_COLOR_BIT);
-
-        //    VK_CHECK(vkCreateImageView(device, &resolveViewInfo, nullptr, &inImage.ResolveImage.ImageView));
-
-        //    //VkContextDevice::SetObjectName(inImage.ResolveImage.Image, VK_OBJECT_TYPE_IMAGE, "ResolveImage");
-        //    //VkContextDevice::SetObjectName(inImage.ResolveImage.ImageView, VK_OBJECT_TYPE_IMAGE_VIEW, "ResolveImageView");
-        //}
-
-        //// UI Draw Image
-        //{
-        //    inImage.UIDrawImage.ImageFormat = m_SwapchainImageFormat;
-        //    inImage.UIDrawImage.ImageExtent = drawImageExtent;
-
-        //    VkImageUsageFlags uiImageUsages = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-        //    // ✅ ИСПРАВЛЕНО: правильное имя переменной
-        //    const VkImageCreateInfo uiImageInfo = vkinit::image_create_info(inImage.UIDrawImage.ImageFormat, uiImageUsages, drawImageExtent);
-
-        //    VK_CHECK(vmaCreateImage(
-        //            Allocator::GetAllocator(), &uiImageInfo, &rImageAllocInfo, &inImage.UIDrawImage.Image, &inImage.UIDrawImage.Allocation, nullptr));
-
-        //    const VkImageViewCreateInfo uiViewInfo =
-        //            vkinit::imageview_create_info(inImage.UIDrawImage.ImageFormat, inImage.UIDrawImage.Image, VK_IMAGE_ASPECT_COLOR_BIT);
-
-        //    VK_CHECK(vkCreateImageView(device, &uiViewInfo, nullptr, &inImage.UIDrawImage.ImageView));
-
-        //    //VkContextDevice::SetObjectName(inImage.UIDrawImage.Image, VK_OBJECT_TYPE_IMAGE, "UIDrawImage");
-        //    //VkContextDevice::SetObjectName(inImage.UIDrawImage.ImageView, VK_OBJECT_TYPE_IMAGE_VIEW, "UIDrawImageView");
-        //}
 
     }
 

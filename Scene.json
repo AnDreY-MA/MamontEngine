@@ -2,61 +2,13 @@
     "Entities": [
         {
             "Components": {
-                "ID": 9303452099611773098,
-                "Mesh": "D:/Repos/MamontEngine/MamontEngine/assets/monkeyHD.glb",
-                "Tag": "Monkeys",
-                "Transform": {
-                    "position": [
-                        -3.9000000953674316,
-                        2.0999999046325684,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                }
-            }
-        },
-        {
-            "Components": {
-                "ID": 5754764736870995949,
-                "Mesh": "D:/Repos/MamontEngine/MamontEngine/assets/cube.glb",
+                "ID": 3334081894725175982,
+                "Mesh": "D:/Repos/MamontEngine/MamontEngine/assets/plane.glb",
                 "Tag": "Plane",
                 "Transform": {
                     "position": [
                         0.0,
                         0.0,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "scale": [
-                        3.5999999046325684,
-                        0.30000001192092896,
-                        3.4000000953674316
-                    ]
-                }
-            }
-        },
-        {
-            "Components": {
-                "ID": 2837906817473986444,
-                "Mesh": "D:/Repos/MamontEngine/MamontEngine/assets/cube.glb",
-                "Tag": "Cube",
-                "Transform": {
-                    "position": [
-                        3.9000000953674316,
-                        0.6000000238418579,
                         0.0
                     ],
                     "rotation": [
@@ -98,6 +50,30 @@
         },
         {
             "Components": {
+                "ID": 2837906817473986444,
+                "Mesh": "D:/Repos/MamontEngine/MamontEngine/assets/cube.glb",
+                "Tag": "Cube",
+                "Transform": {
+                    "position": [
+                        3.9000000953674316,
+                        0.6000000238418579,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            }
+        },
+        {
+            "Components": {
                 "ID": 9292412341627756170,
                 "Mesh": "D:/Repos/MamontEngine/MamontEngine/assets/cone.glb",
                 "Tag": "Cone",
@@ -105,6 +81,30 @@
                     "position": [
                         -0.6000000238418579,
                         0.699999988079071,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            }
+        },
+        {
+            "Components": {
+                "ID": 9303452099611773098,
+                "Mesh": "D:/Repos/MamontEngine/MamontEngine/assets/monkeyHD.glb",
+                "Tag": "Monkeys",
+                "Transform": {
+                    "position": [
+                        -3.9000000953674316,
+                        2.0999999046325684,
                         0.0
                     ],
                     "rotation": [

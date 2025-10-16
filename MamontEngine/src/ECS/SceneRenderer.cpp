@@ -116,9 +116,14 @@ namespace MamontEngine
             }
 
             constexpr VkDeviceSize offsets[1] = {0};
-            vkCmdBindVertexBuffers(inCmd, 0, 1, &r.VertexBuffer, offsets);
-
-            vkCmdBindIndexBuffer(inCmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+            if (r.VertexBuffer != VK_NULL_HANDLE)
+            {
+                vkCmdBindVertexBuffers(inCmd, 0, 1, &r.VertexBuffer, offsets);
+            }
+            if (r.IndexBuffer != VK_NULL_HANDLE)
+            {
+                vkCmdBindIndexBuffer(inCmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+            }
 
             const GPUDrawPushConstants push_constants{
                 .WorldMatrix = r.Transform, 

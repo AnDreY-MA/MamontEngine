@@ -5,7 +5,8 @@
 #include "Core/Log.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Utils/Utilities.h"
-
+#include "Core/Engine.h"
+#include "Graphics/Vulkan/Allocator.h"
 
 namespace MamontEngine
 {
@@ -126,26 +127,10 @@ namespace MamontEngine
 
     MeshModel::~MeshModel()
     {
-        /*for (const auto &mesh : m_Meshes)
-        {
-            m_ContextDevice.DestroyBuffer(mesh->Buffer.IndexBuffer);
-            m_ContextDevice.DestroyBuffer(mesh->Buffer.VertexBuffer);
-        }*/
-        std::cerr << "Buffer.IndexBuffer.Buffer: " << Buffer.IndexBuffer.Buffer << std::endl;
-        std::cerr << "Buffer.VertexBuffer.Buffer: " << Buffer.VertexBuffer.Buffer << std::endl;
+        vkDeviceWaitIdle(LogicalDevice::GetDevice());
         Buffer.IndexBuffer.Destroy();
         Buffer.VertexBuffer.Destroy();
-        
-
-        //for (auto &image : m_Images)
-        //{
-        //    if (image.Image != VK_NULL_HANDLE && image.Allocation != VK_NULL_HANDLE)
-        //    {
-        //        m_ContextDevice.DestroyImage(image);
-        //        image = {}; // îáíóëÿåì
-        //    }
-        //}
-
+ 
         Clear();
 
     }
@@ -557,8 +542,8 @@ namespace MamontEngine
             //inFile.Primitives[mesh.name.c_str()] = newmesh;
             newmesh->Name                  = mesh.name;
 
-            indices.clear();
-            vertices.clear();
+            /*indices.clear();
+            vertices.clear();*/
 
             for (auto &&p : mesh.primitives)
             {

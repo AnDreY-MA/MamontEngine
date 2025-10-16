@@ -52,6 +52,10 @@
 #define CREATE_NAME_WITH_PREFIX(prefix) CREATE_NAME_HELPER(prefix, __LINE__)
 #define CREATE_NAME CREATE_NAME_WITH_PREFIX()
 
+const std::string ROOT_DIRECTORY = PROJECT_ROOT_DIR;
+const std::string ENGINE_DIRECTORY = ROOT_DIRECTORY + "/MamontEngine";
+const std::string DEFAULT_ASSETS_DIRECTORY = ENGINE_DIRECTORY + "/assets/";
+
 struct NonCopyable
 {
     inline constexpr NonCopyable() {}

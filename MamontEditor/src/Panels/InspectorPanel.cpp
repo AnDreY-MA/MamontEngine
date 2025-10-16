@@ -170,7 +170,6 @@ namespace MamontEditor
                                          {
                                              ImGui::Text("Meshes count: %i", component.Mesh->GetSizeMeshes());
                                              ImGui::Text("Materials count: %i", component.Mesh->GetSizeMaterials());
-                                             ImGui::Text("Model id: %i", component.Mesh->ID);
                                          }
                                          const std::string selectedString = component.Mesh != nullptr ? component.Mesh->GetPathFile() : "";
                                          if (ImGui::BeginCombo("##Extensions", selectedString.c_str()))

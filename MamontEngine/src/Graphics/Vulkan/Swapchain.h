@@ -68,7 +68,7 @@ namespace MamontEngine
         std::vector<VkImage>     m_SwapchainImages;
         std::vector<VkImageView> m_SwapchainImageViews;
         VkExtent2D               m_SwapchainExtent;
-        uint32_t                 m_CurrentImageIndex;
+        uint32_t                 m_CurrentImageIndex{0};
 
 	};
 }

@@ -226,10 +226,14 @@ namespace MamontEngine
         auto    &currentFrame = m_DeviceContext.GetCurrentFrame();
         const VkDevice device       = LogicalDevice::GetDevice();
 
-        if (vkGetFenceStatus(device, currentFrame.RenderFence) != VK_SUCCESS)
+        /*if (vkGetFenceStatus(device, currentFrame.RenderFence) != VK_SUCCESS)
         {
-            VK_CHECK_MESSAGE(vkWaitForFences(device, 1, &currentFrame.RenderFence, VK_TRUE, UINT64_MAX), "Wait FENCE");
-        }
+            
+        }*/
+        VK_CHECK_MESSAGE(vkWaitForFences(device, 1, &currentFrame.RenderFence, VK_TRUE, UINT64_MAX), "Wait FENCE");
+        VK_CHECK(vkResetFences(device, 1, &currentFrame.RenderFence));
+
+        currentFrame.Deleteions.Flush();
 
         const auto [resultAcquire, swapchainImageIndex] = m_DeviceContext.Swapchain.AcquireImage(device, currentFrame.SwapchainSemaphore);
         if (resultAcquire == VK_ERROR_OUT_OF_DATE_KHR || resultAcquire == VK_SUBOPTIMAL_KHR)
@@ -244,12 +248,10 @@ namespace MamontEngine
 
         VkCommandBuffer cmd = currentFrame.MainCommandBuffer;
 
-        VK_CHECK(vkResetFences(device, 1, &currentFrame.RenderFence));
         VK_CHECK(vkResetCommandBuffer(cmd, 0));
 
         const VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
-
 
         VkUtil::transition_image(cmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         VkUtil::transition_image(cmd, m_DeviceContext.Image.DepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
@@ -257,7 +259,6 @@ namespace MamontEngine
         DrawMain(cmd);
 
         VkUtil::transition_image(cmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
         
         VkImage currentSwapchainImage = m_DeviceContext.Swapchain.GetImageAt(swapchainImageIndex);
         VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -270,17 +271,17 @@ namespace MamontEngine
 
         DrawImGui(cmd, m_DeviceContext.Swapchain.GetImageView(swapchainImageIndex));
 
-        VkUtil::transition_image(
-                cmd, m_DeviceContext.PickingImages[swapchainImageIndex].Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        DrawPickingPass(cmd, swapchainImageIndex);
-        VkUtil::transition_image(cmd,
-                                 m_DeviceContext.PickingImages[swapchainImageIndex].Image,
-                                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        {
+            VkUtil::transition_image(
+                    cmd, m_DeviceContext.PickingImages[swapchainImageIndex].Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            DrawPickingPass(cmd, swapchainImageIndex);
+            VkUtil::transition_image(cmd,
+                                     m_DeviceContext.PickingImages[swapchainImageIndex].Image,
+                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
 
         VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-        //std::cerr << "Renderer, m_DeviceContext.Image.DrawImage.Image: " << m_DeviceContext.Image.DrawImage.Image << std::endl;
-
 
         m_SceneRenderer->ClearDrawContext();
 
@@ -290,13 +291,17 @@ namespace MamontEngine
         const VkSemaphoreSubmitInfo     waitInfo = vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR,
                                                                              currentFrame.SwapchainSemaphore);
         const VkSemaphoreSubmitInfo     signalInfo =
-                vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, m_DeviceContext.RenderCopleteSemaphores[swapchainImageIndex]);
+                vkinit::semaphore_submit_info(0, m_DeviceContext.RenderCopleteSemaphores[swapchainImageIndex]);
 
         const VkSubmitInfo2 submit = vkinit::submit_info(&cmdInfo, &signalInfo, &waitInfo);
         VK_CHECK(vkQueueSubmit2(m_DeviceContext.GetGraphicsQueue(), 1, &submit, currentFrame.RenderFence));
 
         const VkResult presentResult = m_DeviceContext.Swapchain.Present(
-                m_DeviceContext.GetGraphicsQueue(), &m_DeviceContext.RenderCopleteSemaphores[swapchainImageIndex], swapchainImageIndex);
+                m_DeviceContext.GetGraphicsQueue(), 
+            &m_DeviceContext.RenderCopleteSemaphores[swapchainImageIndex], 
+            swapchainImageIndex
+        );
+
         if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR)
         {
             m_IsResizeRequested = true;
@@ -361,13 +366,6 @@ namespace MamontEngine
                 SetViewportScissor(inCmd, cascadeExtent);
                 vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Pipeline);
 
-                /*vkCmdBindDescriptorSets(inCmd,
-                                        VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Layout,
-                                        0,
-                                       1,
-                                        &currentFrame.GlobalDescriptor,
-                                        0,
-                                        nullptr);*/
                 m_SceneRenderer->RenderShadow(
                         inCmd, currentFrame.GlobalDescriptor, m_DeviceContext.Cascades[i].ViewProjectMatrix, m_CascadePipeline->Layout, static_cast<uint32_t>(i));
                 
@@ -383,7 +381,7 @@ namespace MamontEngine
 
         /*VkUtil::transition_image(
                 inCmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);*/
-        VkClearValue                    clearColor = {.color = {0.0f, 0.0f, 0.0f, 1.0f}};
+        VkClearValue                    clearColor = {.color = {0.0f, 0.0f, 0.0f, 0.0f}};
         VkClearValue                    clearDepth = {.depthStencil = {1.0f, 0}};
         const VkRenderingAttachmentInfo colorAttachment =
                 vkinit::attachment_info(m_DeviceContext.Image.DrawImage.ImageView, nullptr);
@@ -474,7 +472,8 @@ namespace MamontEngine
 
     void Renderer::ResizeSwapchain()
     {
-        m_IsResizeRequested = true;
+        if (!m_IsResizeRequested)
+            return;
 
         fmt::println("Resize Swapchain");
 

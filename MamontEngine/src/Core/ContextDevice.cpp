@@ -251,6 +251,11 @@ namespace MamontEngine
 
     void VkContextDevice::DestroyFrameData()
     {
+        for (auto& frame : m_Frames)
+        {
+            frame.Deleteions.Flush();
+        }
+
         DestroyImages();
         DestroyCommands();
         DestroySyncStructeres();
@@ -369,12 +374,13 @@ namespace MamontEngine
     void VkContextDevice::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction) const
     {
         const VkDevice device = LogicalDevice::GetDevice();
+        VkCommandBuffer cmd = m_ImmCommandBuffer;
+
+        VK_CHECK(vkWaitForFences(device, 1, &m_ImmFence, true, UINT64_MAX));
         VK_CHECK(vkResetFences(device, 1, &m_ImmFence));
         VK_CHECK(vkResetCommandBuffer(m_ImmCommandBuffer, 0));
 
-        VkCommandBuffer cmd = m_ImmCommandBuffer;
-
-        VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        const VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
@@ -387,7 +393,7 @@ namespace MamontEngine
 
         VK_CHECK(vkQueueSubmit2(m_GraphicsQueue, 1, &submit, m_ImmFence));
 
-        VK_CHECK(vkWaitForFences(device, 1, &m_ImmFence, true, 9999999999));
+        VK_CHECK(vkWaitForFences(device, 1, &m_ImmFence, VK_TRUE, UINT64_MAX));
     }
 
     void VkContextDevice::DestroyImage(const AllocatedImage &inImage) const
@@ -480,8 +486,8 @@ namespace MamontEngine
                 PickingImages[i] = CreateImage(
                         extent, VK_FORMAT_R32G32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-                ImmediateSubmit([&](VkCommandBuffer cmd)
-                        { VkUtil::transition_image(cmd, PickingImages[i].Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); });
+                /*ImmediateSubmit([&](VkCommandBuffer cmd)
+                        { VkUtil::transition_image(cmd, PickingImages[i].Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); });*/
 
                 // std::cerr << "PickingImage: " << PickingImage.Image << std::endl;
             }
@@ -631,8 +637,6 @@ namespace MamontEngine
     {
         Swapchain.Init(*this, inWindowExtent, Image);
 
-        
-        
         InitShadowImages();
 
     }
@@ -646,7 +650,7 @@ namespace MamontEngine
         DestroyImages();
 
         Swapchain.Destroy(device);
-
+        Swapchain.Create(*this, inWindowExtent);
         Swapchain.Init(*this, inWindowExtent, Image);
     }
 
@@ -757,6 +761,11 @@ namespace MamontEngine
         return m_Frames.at(m_FrameNumber % FRAME_OVERLAP);
     }
 
+    const FrameData &VkContextDevice::GetCurrentFrame() const
+    {
+        return m_Frames.at(m_FrameNumber % FRAME_OVERLAP);
+    }
+
     VkPhysicalDevice VkContextDevice::GetPhysicalDevice() const
     {
         return m_PhysicalDevice->GetDevice();
@@ -786,4 +795,5 @@ namespace MamontEngine
         }
         throw std::runtime_error("Could not find a matching depth format");
     }
+
 }

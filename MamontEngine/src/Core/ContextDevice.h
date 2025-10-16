@@ -44,8 +44,9 @@ namespace MamontEngine
 
         void ResizeSwapchain(const VkExtent2D &inWindowExtent);
 
-
         FrameData &GetCurrentFrame();
+        const FrameData &GetCurrentFrame() const;
+
         inline FrameData& GetFrameAt(const size_t inIndex)
         {
             return m_Frames.at(inIndex);

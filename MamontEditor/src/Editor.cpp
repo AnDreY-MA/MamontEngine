@@ -105,7 +105,6 @@ namespace MamontEditor
                 const ImVec2 mousePos = ImGui::GetMousePos();
                 PickObject(mousePos);
             }
-            fmt::println("panelHovered is {}", panelHovered);
         }
 
         DrawMainPanel();
