@@ -17,10 +17,6 @@ namespace MamontEngine
 
         void Destroy();
 
-        VkResult Map(VkDeviceSize inSize = VK_WHOLE_SIZE, VkDeviceSize inOffset = 0);
-
-        void UnMap();
-
         void *GetMappedData() const;
 
         bool IsValid() const noexcept

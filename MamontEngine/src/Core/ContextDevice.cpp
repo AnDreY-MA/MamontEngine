@@ -293,7 +293,8 @@ namespace MamontEngine
 
         VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &img_info, &allocinfo, &newImage.Image, &newImage.Allocation, &newImage.Info));
 
-        const VkImageAspectFlags aspectFlag = inFormat == VK_FORMAT_D32_SFLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT  : VK_IMAGE_ASPECT_COLOR_BIT;
+        const VkImageAspectFlags aspectFlag =
+                (inFormat == VK_FORMAT_D32_SFLOAT || inFormat == VK_FORMAT_D24_UNORM_S8_UINT) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
         const VkImageViewCreateInfo view_info       = vkinit::imageview_create_info(inFormat, newImage.Image, aspectFlag, img_info.mipLevels);
 
@@ -477,21 +478,7 @@ namespace MamontEngine
         VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &TransferFence));
         VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &m_ImmFence));
 
-        {
-            const VkExtent3D extent = {Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
-
-            PickingImages.resize(Swapchain.GetImages().size());
-            for (size_t i{0}; i < Swapchain.GetImages().size(); ++i)
-            {
-                PickingImages[i] = CreateImage(
-                        extent, VK_FORMAT_R32G32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-
-                /*ImmediateSubmit([&](VkCommandBuffer cmd)
-                        { VkUtil::transition_image(cmd, PickingImages[i].Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); });*/
-
-                // std::cerr << "PickingImage: " << PickingImage.Image << std::endl;
-            }
-        }
+        
 
     }
 
@@ -560,13 +547,12 @@ namespace MamontEngine
         }
 
         DrawImageDescriptors = GlobalDescriptorAllocator.Allocate(device, DrawImageDescriptorLayout);
+
         {
             DescriptorWriter writer;
             writer.WriteImage(0, Image.DrawImage.ImageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
             writer.UpdateSet(device, DrawImageDescriptors);
         }
-        std::cerr << "DrawImageDescriptors: " << DrawImageDescriptors << std::endl;
-        std::cerr << "Image.DrawImage.ImageView: " << Image.DrawImage.ImageView << std::endl;
 
         {
             DescriptorLayoutBuilder builder;
@@ -635,10 +621,33 @@ namespace MamontEngine
 
     void VkContextDevice::InitSwapchain(const VkExtent2D &inWindowExtent)
     {
-        Swapchain.Init(*this, inWindowExtent, Image);
+        Swapchain.Init(*this, inWindowExtent);
+        InitImage();
 
         InitShadowImages();
 
+    }
+
+    void VkContextDevice::InitImage()
+    {
+        const VkExtent3D extent{Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
+        
+        constexpr VkImageUsageFlags drawImageUsages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+        Image.DrawImage                             = CreateImage(extent, Swapchain.GetImageFormat(), drawImageUsages, false);
+        
+        constexpr VkImageUsageFlags depthImageUsages = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        Image.DepthImage                             = CreateImage(extent, VK_FORMAT_D32_SFLOAT, depthImageUsages, false);
+
+        {
+            const VkExtent3D extent = {Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
+
+            PickingImages.resize(Swapchain.GetImages().size());
+            for (size_t i{0}; i < Swapchain.GetImages().size(); ++i)
+            {
+                PickingImages[i] = CreateImage(
+                        extent, VK_FORMAT_R32G32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+            }
+        }
     }
 
     void VkContextDevice::ResizeSwapchain(const VkExtent2D& inWindowExtent)
@@ -647,11 +656,13 @@ namespace MamontEngine
 
         vkDeviceWaitIdle(device);
 
-        DestroyImages();
+        DestroyImage(Image.DrawImage);
+        DestroyImage(Image.DepthImage);
 
-        Swapchain.Destroy(device);
-        Swapchain.Create(*this, inWindowExtent);
-        Swapchain.Init(*this, inWindowExtent, Image);
+        //Swapchain.Destroy(device);
+        Swapchain.ReCreate(*this, inWindowExtent);
+
+        InitImage();
     }
 
     void VkContextDevice::InitShadowImages()

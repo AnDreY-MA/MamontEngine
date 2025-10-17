@@ -28,7 +28,7 @@ namespace MamontEngine
         glm::mat4       WorldMatrix{glm::mat4(0.f)};
         VkDeviceAddress VertexBuffer{0};
         uint64_t        ObjectID{0};
-        //uint32_t        CascadeIndex{0};
+        uint32_t        CascadeIndex{0};
     };
 
     struct PickingPushConstants

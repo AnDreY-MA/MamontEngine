@@ -195,10 +195,10 @@ namespace MamontEditor
                                                      ImGui::SetItemDefaultFocus();
                                                  }
 
-                                                 if (ImGui::IsItemHovered())
+                                                 /*if (ImGui::IsItemHovered())
                                                  {
                                                      ImGui::SetTooltip("%s", fullPath.c_str());
-                                                 }
+                                                 }*/
                                              }
                                              ImGui::EndCombo();
                                          }

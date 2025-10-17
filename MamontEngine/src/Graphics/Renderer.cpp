@@ -140,7 +140,7 @@ namespace MamontEngine
         m_DeviceContext.RenderPipeline = m_RenderPipeline.get();
 
         {
-            const std::string pickingPath = RootDirectories + "/MamontEngine/src/Shaders/picking.frag.spv";
+            const std::string pickingPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/picking.frag.spv";
 
             VkShaderModule pickingFragShader;
             if (!VkPipelines::LoadShaderModule(pickingPath.c_str(), device, &pickingFragShader))
@@ -149,7 +149,7 @@ namespace MamontEngine
                 return;
             }
 
-            const std::string pickingShaderVertPath = RootDirectories + "/MamontEngine/src/Shaders/picking.vert.spv";
+            const std::string pickingShaderVertPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/picking.vert.spv";
             VkShaderModule    pickingVertShader;
             if (!VkPipelines::LoadShaderModule(pickingShaderVertPath.c_str(), device, &pickingVertShader))
             {
@@ -239,13 +239,20 @@ namespace MamontEngine
         if (resultAcquire == VK_ERROR_OUT_OF_DATE_KHR || resultAcquire == VK_SUBOPTIMAL_KHR)
         {
             m_IsResizeRequested = true;
+            //ResizeSwapchain();
             return;
         }
 
         const VkExtent2D swapchainExtent = m_DeviceContext.Swapchain.GetExtent();
-        m_DrawExtent.height              = std::min(swapchainExtent.height, m_DeviceContext.Image.DrawImage.ImageExtent.height) * m_RenderScale;
-        m_DrawExtent.width               = std::min(swapchainExtent.width, m_DeviceContext.Image.DrawImage.ImageExtent.width) * m_RenderScale;
-
+        m_DrawExtent                     = swapchainExtent;
+        /*m_DrawExtent.height              = std::min(swapchainExtent.height, m_DeviceContext.Image.DrawImage.ImageExtent.height) * m_RenderScale;
+        m_DrawExtent.width               = std::min(swapchainExtent.width, m_DeviceContext.Image.DrawImage.ImageExtent.width) * m_RenderScale;*/
+        if (m_DeviceContext.Image.DrawImage.ImageExtent.width != m_DrawExtent.width ||
+            m_DeviceContext.Image.DrawImage.ImageExtent.height != m_DrawExtent.height)
+        {
+            fmt::println("Wront image extents");
+        }
+    
         VkCommandBuffer cmd = currentFrame.MainCommandBuffer;
 
         VK_CHECK(vkResetCommandBuffer(cmd, 0));
@@ -255,13 +262,40 @@ namespace MamontEngine
 
         VkUtil::transition_image(cmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         VkUtil::transition_image(cmd, m_DeviceContext.Image.DepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        
+        if (m_DeviceContext.Image.DepthImage.Image == VK_NULL_HANDLE || m_DeviceContext.Image.DepthImage.ImageView == VK_NULL_HANDLE)
+        {
+            fmt::println("DepthImage is NULL");
+        }
 
         DrawMain(cmd);
+
+        /*{
+            const auto depthBarrier = VkImageMemoryBarrier2{
+                    .sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                    .srcStageMask     = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+                    .srcAccessMask    = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                    .dstStageMask     = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    .dstAccessMask    = VK_ACCESS_2_SHADER_READ_BIT,
+                    .oldLayout        = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                    .newLayout        = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    .image            = m_DeviceContext.Image.DepthImage.Image,
+                    .subresourceRange = vkinit::image_subresource_range(VK_IMAGE_ASPECT_DEPTH_BIT),
+            };
+
+            const auto barriers       = std::array{depthBarrier};
+            const auto dependencyInfo = VkDependencyInfo{
+                    .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                    .imageMemoryBarrierCount = barriers.size(),
+                    .pImageMemoryBarriers    = barriers.data(),
+            };
+            vkCmdPipelineBarrier2(cmd, &dependencyInfo);
+        }*/
 
         VkUtil::transition_image(cmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         
         VkImage currentSwapchainImage = m_DeviceContext.Swapchain.GetImageAt(swapchainImageIndex);
-        VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         VkUtil::copy_image_to_image(cmd, m_DeviceContext.Image.DrawImage.Image, currentSwapchainImage, m_DrawExtent, m_DeviceContext.Swapchain.GetExtent());
 
@@ -305,6 +339,7 @@ namespace MamontEngine
         if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR)
         {
             m_IsResizeRequested = true;
+            //ResizeSwapchain();
             return;
         }
 
@@ -380,13 +415,15 @@ namespace MamontEngine
         const VkExtent2D& extent = m_Window->GetExtent();
 
         /*VkUtil::transition_image(
-                inCmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);*/
+                inCmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VkUtil::transition_image(
+                inCmd, m_DeviceContext.Image.DepthImage.Image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);*/
         VkClearValue                    clearColor = {.color = {0.0f, 0.0f, 0.0f, 0.0f}};
         VkClearValue                    clearDepth = {.depthStencil = {1.0f, 0}};
         const VkRenderingAttachmentInfo colorAttachment =
                 vkinit::attachment_info(m_DeviceContext.Image.DrawImage.ImageView, nullptr);
         const VkRenderingAttachmentInfo depthAttachment =
-                vkinit::depth_attachment_info(m_DeviceContext.Image.DepthImage.ImageView, VK_ATTACHMENT_LOAD_OP_CLEAR, 0.f);
+                vkinit::depth_attachment_info(m_DeviceContext.Image.DepthImage.ImageView);
         //std::cerr << "m_DeviceContext.Image.DepthImage.ImageView: " << m_DeviceContext.Image.DepthImage.ImageView << std::endl;
 
         const VkRenderingInfo renderInfo = vkinit::rendering_info(extent, &colorAttachment, &depthAttachment);
@@ -408,8 +445,15 @@ namespace MamontEngine
 
     void Renderer::SetViewportScissor(VkCommandBuffer cmd, const VkExtent2D &inExtent) const
     {
-        const VkViewport viewport = {0, 0, (float)inExtent.width, (float)inExtent.height, 0.f, 1.f};
-        const VkRect2D   scissor  = {{0, 0}, {inExtent.width, inExtent.height}};
+        const VkViewport viewport = {.x        = 0.0f,
+                                        .y        = 0.0f,
+                                        .width    = static_cast<float>(inExtent.width),
+                                        .height   = static_cast<float>(inExtent.height),
+                                        .minDepth = 0.0f,
+                                        .maxDepth = 1.0f
+        };
+
+        const VkRect2D scissor = {.offset = {0, 0}, .extent = inExtent};
 
         vkCmdSetViewport(cmd, 0, 1, &viewport);
         vkCmdSetScissor(cmd, 0, 1, &scissor);
@@ -566,8 +610,6 @@ namespace MamontEngine
         const uint64_t lower = pickedData[0];
         const uint64_t upper = pickedData[1];
         const uint64_t resultID = (upper << 32) | lower;
-        fmt::println("resultID is {}", resultID);
-        //fmt::println("stagingBuffer.Info.pMappedData is {}", stagingBuffer.Info.pMappedData);
 
         stagingBuffer.Destroy();
 

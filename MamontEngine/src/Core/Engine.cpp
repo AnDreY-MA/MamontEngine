@@ -61,7 +61,6 @@ namespace MamontEngine
         SDL_Event event;
         bool      bQuit{false};
 
-
         tracy::SetThreadName("Main Thread");
         //FrameMarkStart("MainLoop");
 
@@ -74,13 +73,13 @@ namespace MamontEngine
                 if (event.type == SDL_EVENT_QUIT)
                     bQuit = true;
 
+                ImGui_ImplSDL3_ProcessEvent(&event);
+                
                 m_Renderer->UpdateWindowEvent(event.window.type);
 
                 m_MainCamera->ProccessEvent(event);
 
                 m_InputEvent = &event;
-
-                ImGui_ImplSDL3_ProcessEvent(&event);
             }
 
             if (m_Renderer->IsStopRendering())
@@ -92,6 +91,9 @@ namespace MamontEngine
             if (m_Renderer->IsResizeRequested())
             {
                 m_Renderer->ResizeSwapchain();
+                //bResize = false;
+               /* std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                continue;*/
             }
 
             if (!m_Renderer->IsResizeRequested())

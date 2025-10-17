@@ -34,20 +34,6 @@ namespace MamontEngine
         }
     }
 
-    VkResult AllocatedBuffer::Map(VkDeviceSize inSize, VkDeviceSize inOffset)
-    {
-        const VkDevice device = LogicalDevice::GetDevice();
-
-        return vkMapMemory(device, Info.deviceMemory, inOffset, inSize, 0, &Info.pMappedData);
-    }
-
-    void AllocatedBuffer::UnMap()
-    {
-        const VkDevice device = LogicalDevice::GetDevice();
-
-        vkUnmapMemory(device, Info.deviceMemory);
-    }
-
     void *AllocatedBuffer::GetMappedData() const
     {
         return Info.pMappedData;

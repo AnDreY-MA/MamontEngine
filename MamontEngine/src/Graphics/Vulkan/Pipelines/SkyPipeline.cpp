@@ -24,7 +24,7 @@ namespace MamontEngine
 
         VK_CHECK(vkCreatePipelineLayout(inDevice, &computeLayout, nullptr, &m_GradientPipelineLayout));
 
-        const std::string shaderPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/gradient_color.comp.spv";
+        const std::string shaderPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/gradient_color.comp.spv";
         VkShaderModule    gradientShader;
         if (!VkPipelines::LoadShaderModule(shaderPath.c_str(), inDevice, &gradientShader))
         {
@@ -32,7 +32,7 @@ namespace MamontEngine
         }
 
         VkShaderModule    skyShader;
-        const std::string skyShaderPath = std::string(PROJECT_ROOT_DIR) + "/MamontEngine/src/Shaders/sky.comp.spv";
+        const std::string skyShaderPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/sky.comp.spv";
         if (!VkPipelines::LoadShaderModule(skyShaderPath.c_str(), inDevice, &skyShader))
         {
             fmt::print("Error when building the Sky shader ");

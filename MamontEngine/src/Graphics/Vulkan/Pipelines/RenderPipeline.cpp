@@ -13,11 +13,9 @@
 
 namespace MamontEngine
 {
-    const std::string RootDirectories = PROJECT_ROOT_DIR;
-
     RenderPipeline::RenderPipeline(VkDevice inDevice, VkDescriptorSetLayout inDescriptorLayout, const std::pair<VkFormat, VkFormat> inImageFormats)
     {
-        const std::string meshPath = RootDirectories + "/MamontEngine/src/Shaders/mesh.frag.spv";
+        const std::string meshPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/mesh.frag.spv";
 
         VkShaderModule meshFragShader;
         if (!VkPipelines::LoadShaderModule(meshPath.c_str(), inDevice, &meshFragShader))
@@ -25,7 +23,7 @@ namespace MamontEngine
             fmt::println("Error when building the triangle fragment shader module");
         }
 
-        const std::string meshVertexShaderPath = RootDirectories + "/MamontEngine/src/Shaders/mesh.vert.spv";
+        const std::string meshVertexShaderPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/mesh.vert.spv";
         VkShaderModule    meshVertexShader;
         if (!VkPipelines::LoadShaderModule(meshVertexShaderPath.c_str(), inDevice, &meshVertexShader))
         {

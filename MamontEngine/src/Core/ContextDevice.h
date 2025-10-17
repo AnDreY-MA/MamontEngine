@@ -114,6 +114,8 @@ namespace MamontEngine
 #pragma region Initialize functions
         void InitSwapchain(const VkExtent2D &inWindowExtent);
 
+        void InitImage();
+
         void InitCommands();
 
         void InitSyncStructeres();
