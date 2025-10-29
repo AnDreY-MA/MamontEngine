@@ -11,98 +11,9 @@
 #include "Graphics/Vulkan/Allocator.h"
 
 #include "Graphics/Devices/LogicalDevice.h"
+#include "Core/Log.h"
 //#define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
-
-namespace
-{
-    std::array<glm::vec3, 8> CalcFrustumCornersWorldSpace(const glm::mat4 &view_proj)
-    {
-        std::array<glm::vec3, 8>           corners{};
-        const glm::mat4          inv_view_proj            = glm::inverse(view_proj);
-        constexpr glm::vec3                untransformed_corners[8] = {
-                glm::vec3(-1.0f, 1.0f, 0.0f),
-                glm::vec3(1.0f, 1.0f, 0.0f),
-                glm::vec3(1.0f, -1.0f, 0.0f),
-                glm::vec3(-1.0f, -1.0f, 0.0f),
-                glm::vec3(-1.0f, 1.0f, 1.0f),
-                glm::vec3(1.0f, 1.0f, 1.0f),
-                glm::vec3(1.0f, -1.0f, 1.0f),
-                glm::vec3(-1.0f, -1.0f, 1.0f),
-        };
-        for (size_t i = 0; i < 8; i++)
-        {
-            const glm::vec4 pt = inv_view_proj * glm::vec4(untransformed_corners[i], 1.0);
-            corners[i]         = glm::vec3(pt / pt.w);
-        }
-        return corners;
-    }
-
-    glm::mat4 GetLightMatrix(float                  near_plane,
-                             float                  far_plane,
-                             float                  fov_degrees,
-                             float                  aspect_ratio,
-                             const glm::mat4       &cam_view,
-                             const glm::vec3       &light_dir,
-                             [[maybe_unused]] float z_mult)
-    {
-        glm::mat4 proj_matrix = glm::perspective(glm::radians(fov_degrees), aspect_ratio, near_plane, far_plane);
-        proj_matrix[1][1] *= -1;
-        auto frustum_corners = CalcFrustumCornersWorldSpace(proj_matrix * cam_view);
-        // avg the frustum corner positions to get the center of the frustum
-        glm::vec3 center{0};
-        for (const glm::vec3 &corner : frustum_corners)
-        {
-            center += corner;
-        }
-        center /= 8;
-        // light is looking at center of frustum from its direction
-        // glm::vec3 up = glm::abs(light_dir.y) > 0.99f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
-        glm::vec3 up         = {0.f, 1.f, 0.f};
-        glm::mat4 light_view = glm::lookAt(center, center + light_dir, up);
-
-        // fit the frustum with orthographic projection matrix
-        float min_x = std::numeric_limits<float>::max();
-        float max_x = std::numeric_limits<float>::lowest();
-        float min_y = std::numeric_limits<float>::max();
-        float max_y = std::numeric_limits<float>::lowest();
-        float min_z = std::numeric_limits<float>::max();
-        float max_z = std::numeric_limits<float>::lowest();
-        for (const auto &corner : frustum_corners)
-        {
-            const glm::vec4 transformed_corner = light_view * glm::vec4(corner, 1.0);
-            min_x                              = std::min(min_x, transformed_corner.x);
-            max_x                              = std::max(max_x, transformed_corner.x);
-            min_y                              = std::min(min_y, transformed_corner.y);
-            max_y                              = std::max(max_y, transformed_corner.y);
-            min_z                              = std::min(min_z, transformed_corner.z);
-            max_z                              = std::max(max_z, transformed_corner.z);
-        }
-        if (z_mult > 0.0)
-        {
-            if (min_z < 0)
-            {
-                min_z *= z_mult;
-            }
-            else
-            {
-                min_z /= z_mult;
-            }
-            if (max_z < 0)
-            {
-                max_z /= z_mult;
-            }
-            else
-            {
-                max_z *= z_mult;
-            }
-        }
-
-        return glm::orthoRH_ZO(min_x, max_x, max_y, min_y, min_z, max_z) * light_view;
-
-        // return glm::ortho(min_x, max_x, max_y, min_y, max_z, min_z) * light_view;
-    }
-}
 
 namespace MamontEngine
 {
@@ -170,18 +81,12 @@ namespace MamontEngine
                 constexpr VkPushConstantRange pushConstRange = {
                     .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                     .offset              = 0,
-                        .size       = sizeof(GPUDrawPushConstants),
+                    .size       = sizeof(GPUDrawPushConstants),
                 };
-
-                fmt::println("Sizeof GPUDrawPushConstants: {}", sizeof(GPUDrawPushConstants));
 
                 const VkDescriptorSetLayout layouts[] = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_RenderPipeline->Layout};
 
-                VkPipelineLayoutCreateInfo picking_layout_info = vkinit::pipeline_layout_create_info();
-                picking_layout_info.setLayoutCount             = 2;
-                picking_layout_info.pSetLayouts                = layouts;
-                picking_layout_info.pPushConstantRanges        = &pushConstRange;
-                picking_layout_info.pushConstantRangeCount     = 1;
+                const VkPipelineLayoutCreateInfo picking_layout_info = vkinit::pipeline_layout_create_info(2, layouts, &pushConstRange);
 
                 VK_CHECK(vkCreatePipelineLayout(device, &picking_layout_info, nullptr, &pickingLayout));
             }
@@ -216,7 +121,7 @@ namespace MamontEngine
             vkDestroyShaderModule(device, pickingVertShader, nullptr);
         }
 
-        //CreateShadowPipeline();
+        CreateShadowPipeline();
     }
 
     void Renderer::Render()
@@ -269,28 +174,6 @@ namespace MamontEngine
         }
 
         DrawMain(cmd);
-
-        /*{
-            const auto depthBarrier = VkImageMemoryBarrier2{
-                    .sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                    .srcStageMask     = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
-                    .srcAccessMask    = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                    .dstStageMask     = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                    .dstAccessMask    = VK_ACCESS_2_SHADER_READ_BIT,
-                    .oldLayout        = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-                    .newLayout        = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                    .image            = m_DeviceContext.Image.DepthImage.Image,
-                    .subresourceRange = vkinit::image_subresource_range(VK_IMAGE_ASPECT_DEPTH_BIT),
-            };
-
-            const auto barriers       = std::array{depthBarrier};
-            const auto dependencyInfo = VkDependencyInfo{
-                    .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                    .imageMemoryBarrierCount = barriers.size(),
-                    .pImageMemoryBarriers    = barriers.data(),
-            };
-            vkCmdPipelineBarrier2(cmd, &dependencyInfo);
-        }*/
 
         VkUtil::transition_image(cmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         
@@ -355,62 +238,38 @@ namespace MamontEngine
             m_SkyPipeline->Draw(inCmd, &m_DeviceContext.DrawImageDescriptors);
         }
 
-        const auto start = std::chrono::high_resolution_clock::now();
+        UpdateUniformBuffers();
 
-        DrawGeometry(inCmd);
+        VkUtil::transition_image(inCmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+        const VkExtent2D &extent = m_Window->GetExtent();
+        vkCmdDispatch(inCmd, std::ceil(extent.width / 16.0), std::ceil(extent.height / 16.0), 1);
 
-        const auto end     = std::chrono::high_resolution_clock::now();
-        const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        VkUtil::transition_image(inCmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);  
 
-        m_Stats.MeshDrawTime = elapsed.count() / 1000.f;
+        
+
+        {
+            const auto start = std::chrono::high_resolution_clock::now();
+
+            DrawGeometry(inCmd);
+
+            const auto end     = std::chrono::high_resolution_clock::now();
+            const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+            m_Stats.MeshDrawTime = elapsed.count() / 1000.f;
+        }
+
+        {
+            RenderCascadeShadow(inCmd);
+        }
     }
 
     void Renderer::DrawGeometry(VkCommandBuffer inCmd)
     {
-        auto &currentFrame = m_DeviceContext.GetCurrentFrame();
+        const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
         PROFILE_VK_ZONE(currentFrame.TracyContext, inCmd, "Draw Geometry");
 
-        UpdateUniformBuffers();
-
         const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
-
-        if (IsActiveCascade)
-        {
-            VkUtil::transition_image(
-                    inCmd, m_DeviceContext.CascadeDepthImage.Image.Image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-
-            const VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION, .height = SHADOWMAP_DIMENSION};
-
-            for (size_t i = 0; i < CASCADECOUNT; i++)
-            {
-                VkImageView cascadeDepth = m_DeviceContext.Cascades[i].View;
-                if (cascadeDepth == VK_NULL_HANDLE)
-                {
-                    fmt::println("cascadeDepth is Null");
-                    continue;
-                }
-                VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(cascadeDepth);
-                depthAttachment.clearValue.depthStencil.depth = 1.0;
-                depthAttachment.loadOp                        = VK_ATTACHMENT_LOAD_OP_CLEAR;
-                depthAttachment.storeOp                       = VK_ATTACHMENT_STORE_OP_STORE;
-
-                const VkRenderingInfo renderCascadeInfo = vkinit::rendering_info(cascadeExtent, nullptr, &depthAttachment);
-
-                vkCmdBeginRendering(inCmd, &renderCascadeInfo);
-                vkCmdSetDepthBias(inCmd, 1.25f, 0.f, 1.75f);
-                SetViewportScissor(inCmd, cascadeExtent);
-                vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Pipeline);
-
-                m_SceneRenderer->RenderShadow(
-                        inCmd, currentFrame.GlobalDescriptor, m_DeviceContext.Cascades[i].ViewProjectMatrix, m_CascadePipeline->Layout, static_cast<uint32_t>(i));
-                
-                vkCmdEndRendering(inCmd);
-            }
-
-            VkUtil::transition_image(
-                    inCmd, m_DeviceContext.CascadeDepthImage.Image.Image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-        }
 
         const VkExtent2D& extent = m_Window->GetExtent();
 
@@ -427,7 +286,6 @@ namespace MamontEngine
         //std::cerr << "m_DeviceContext.Image.DepthImage.ImageView: " << m_DeviceContext.Image.DepthImage.ImageView << std::endl;
 
         const VkRenderingInfo renderInfo = vkinit::rendering_info(extent, &colorAttachment, &depthAttachment);
-        vkCmdDispatch(inCmd, std::ceil(extent.width / 16.0), std::ceil(extent.height / 16.0), 1);
 
         vkCmdBeginRendering(inCmd, &renderInfo);
 
@@ -459,6 +317,46 @@ namespace MamontEngine
         vkCmdSetScissor(cmd, 0, 1, &scissor);
     }
 
+    void Renderer::RenderCascadeShadow(VkCommandBuffer inCmd)
+    {
+        if (IsActiveCascade)
+        {
+            VkUtil::transition_image(inCmd, m_DeviceContext.CascadeDepthImage.Image.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+            const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
+
+            const VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION, .height = SHADOWMAP_DIMENSION};
+
+            for (size_t i = 0; i < CASCADECOUNT; i++)
+            {
+                const VkImageView cascadeDepth = m_DeviceContext.Cascades[i].View;
+                if (cascadeDepth == VK_NULL_HANDLE)
+                {
+                    fmt::println("cascadeDepth is Null");
+                    continue;
+                }
+                VkRenderingAttachmentInfo depthAttachment     = vkinit::depth_attachment_info(cascadeDepth);
+                depthAttachment.clearValue.depthStencil.depth = 1.0;
+                depthAttachment.loadOp                        = VK_ATTACHMENT_LOAD_OP_CLEAR;
+                depthAttachment.storeOp                       = VK_ATTACHMENT_STORE_OP_STORE;
+
+                const VkRenderingInfo renderCascadeInfo = vkinit::rendering_info(cascadeExtent, nullptr, &depthAttachment);
+
+                vkCmdBeginRendering(inCmd, &renderCascadeInfo);
+                vkCmdSetDepthBias(inCmd, 1.25f, 0.f, 1.75f);
+                SetViewportScissor(inCmd, cascadeExtent);
+                vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Pipeline);
+
+                m_SceneRenderer->RenderShadow(inCmd,
+                                              currentFrame.GlobalDescriptor,
+                                              m_DeviceContext.Cascades[i].ViewProjectMatrix,
+                                              *m_CascadePipeline,
+                   static_cast<uint32_t>(i));
+
+                vkCmdEndRendering(inCmd);
+            }
+        }
+    }
+
     void Renderer::DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView)
     {
         m_ImGuiRenderer->Draw(inCmd, inTargetImageView, m_DeviceContext.Swapchain.GetExtent());
@@ -480,7 +378,7 @@ namespace MamontEngine
         const VkExtent2D                extent          = m_Window->GetExtent();
 
         const VkRenderingInfo renderInfo = vkinit::rendering_info(extent, &colorAttachment, &depthAttachment);
-        vkCmdDispatch(cmd, std::ceil(extent.width / 16.0), std::ceil(extent.height / 16.0), 1);
+        //vkCmdDispatch(cmd, std::ceil(extent.width / 16.0), std::ceil(extent.height / 16.0), 1);
         vkCmdBeginRendering(cmd, &renderInfo);
 
         SetViewportScissor(cmd, m_Window->GetExtent());
@@ -494,24 +392,30 @@ namespace MamontEngine
     void Renderer::UpdateUniformBuffers()
     {
         const auto&  currentFrame    = m_DeviceContext.GetCurrentFrame();
-        void        *sceneBufferData = currentFrame.SceneDataBuffer.GetMappedData();
-
-        const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
-        std::memcpy(sceneBufferData, &sceneData, sizeof(GPUSceneData));
-
-        /*std::array<glm::mat4, CASCADECOUNT> cascadeViewProjMatrices{};
-        for (size_t i = 0; i < CASCADECOUNT; i++)
-        {
-            cascadeViewProjMatrices[i] = m_DeviceContext.Cascades[i].ViewProjectMatrix;
-        }
-        void *cascadeViewData = currentFrame.CascadeViewProjMatrices.GetMappedData();
-        std::memcpy(cascadeViewData, cascadeViewProjMatrices.data(), sizeof(glm::mat4) * CASCADECOUNT);
-
         
+        // Cascade Matrix Buffer
+        {
+            std::array<glm::mat4, CASCADECOUNT> cascadeViewProjMatrices{};
+            for (size_t i{ 0 }; i < CASCADECOUNT; i++)
+            {
+                cascadeViewProjMatrices[i] = m_DeviceContext.Cascades[i].ViewProjectMatrix;
+            }
+            std::memcpy(currentFrame.CascadeMatrixBuffer.Info.pMappedData, cascadeViewProjMatrices.data(), sizeof(glm::mat4) * CASCADECOUNT);
+        }
 
-        void       *cascadeBufferData = currentFrame.FragmentBuffer.GetMappedData();
-        const auto &sceneFragmentData = m_SceneRenderer->GetSceneFragment();
-        std::memcpy(cascadeBufferData, &sceneFragmentData, sizeof(SceneDataFragment));*/
+        // Scene Buffer
+        {
+            void *sceneBufferData = currentFrame.SceneDataBuffer.GetMappedData();
+
+            const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
+            std::memcpy(sceneBufferData, &sceneData, sizeof(GPUSceneData));
+        }
+
+        // Cascade Data Buffer
+        {
+            const CascadeData &cascadeData = m_SceneRenderer->GetCascadeData();
+            std::memcpy(currentFrame.CascadeDataBuffer.Info.pMappedData, &cascadeData, sizeof(CascadeData));
+        }
     }
 
     void Renderer::ResizeSwapchain()
@@ -628,25 +532,23 @@ namespace MamontEngine
         };
         const VkDevice device = LogicalDevice::GetDevice();
 
-        const std::array<VkDescriptorSetLayout, 2> layouts = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderPipeline->Layout};
+        const std::array<VkDescriptorSetLayout, 2> layouts = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_RenderPipeline->Layout};
 
-        VkPipelineLayoutCreateInfo layoutInfo = vkinit::pipeline_layout_create_info();
-        layoutInfo.setLayoutCount                   = static_cast<uint32_t>(layouts.size());
-        layoutInfo.pSetLayouts                      = layouts.data();
-        layoutInfo.pPushConstantRanges              = &matrixRange;
-        layoutInfo.pushConstantRangeCount           = 1;
+        const VkPipelineLayoutCreateInfo layoutInfo       = vkinit::pipeline_layout_create_info(static_cast<uint32_t>(layouts.size()), layouts.data(), &matrixRange);
 
         VkPipelineLayout layout;
         VK_CHECK(vkCreatePipelineLayout(device, &layoutInfo, nullptr, &layout));
 
-        const std::string cascadeShadowPath = RootDirectories + "/MamontEngine/src/Shaders/cascade_shadow.vert.spv";
+        std::cerr << "Shadow Pipline laoyot: " << layout << std::endl;
+
+        const std::string cascadeShadowPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/cascade_shadow.vert.spv";
 
         VkShaderModule cascadeShadowShader;
         if (!VkPipelines::LoadShaderModule(cascadeShadowPath.c_str(), device, &cascadeShadowShader))
         {
             fmt::println("Error when building the triangle fragment shader module");
         }
-        const std::string cascadeFragmentShadowPath = RootDirectories + "/MamontEngine/src/Shaders/cascade_shadow.frag.spv";
+        const std::string cascadeFragmentShadowPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/cascade_shadow.frag.spv ";
 
         VkShaderModule cascadeFragmentShadowShader;
         if (!VkPipelines::LoadShaderModule(cascadeFragmentShadowPath.c_str(), device, &cascadeFragmentShadowShader))
@@ -654,9 +556,14 @@ namespace MamontEngine
             fmt::println("Error when building the triangle fragment shader module");
         }
 
+        const std::vector<VkVertexInputBindingDescription>   vertexInputBindings{};
+        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes{};
+        const VkPipelineVertexInputStateCreateInfo           vertexInputInfo =
+                vkinit::pipeline_vertex_input_state_create_info(vertexInputBindings, vertexInputAttributes);
+
         VkPipelines::PipelineBuilder pipelineBuilder;
         pipelineBuilder.Clear();
-//        pipelineBuilder.SetVertexInput(vertexInputInfo);
+        pipelineBuilder.SetVertexInput(vertexInputInfo);
         pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
         pipelineBuilder.SetLayout(layout);
         pipelineBuilder.SetShaders(cascadeShadowShader, cascadeFragmentShadowShader);
@@ -669,13 +576,16 @@ namespace MamontEngine
         pipelineBuilder.DisableBlending();
   //      pipelineBuilder.SetDepthBiasEnable(VK_TRUE);
         pipelineBuilder.EnableDepthClamp(VK_TRUE);
-      //  pipelineBuilder.AddDynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS);
+        //pipelineBuilder.AddDynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS);
 
-        VkPipeline shadowPipeline = pipelineBuilder.BuildPipline(device/*, 0*/);
+        VkPipeline shadowPipeline = pipelineBuilder.BuildPipline(device, 0);
         if (shadowPipeline == VK_NULL_HANDLE)
         {
             fmt::println("shadowPipeline == VK_NULL_HANDLE");
         }
+
+        std::cerr << "shadowPipeline: " << shadowPipeline << std::endl;
+
         m_CascadePipeline       = std::make_unique<PipelineData>(shadowPipeline, layout);
 
         vkDestroyShaderModule(device, cascadeShadowShader, nullptr);
@@ -684,41 +594,11 @@ namespace MamontEngine
         pipelineBuilder.Clear();
     }
 
-    void Renderer::CalculateShadowData(const glm::mat4& inCameraView, const glm::vec4 inLightDirection)
+    void Renderer::EnableCascade(bool inValue)
     {
-        m_ShadowCascadeUBOData.PlaneDistances[0] = m_Settings.Z_Far / 50.0f;
-        m_ShadowCascadeUBOData.PlaneDistances[1]    = m_Settings.Z_Far / 25.0f;
-        m_ShadowCascadeUBOData.PlaneDistances[2] = m_Settings.Z_Far / 10.0f;
-        m_ShadowCascadeUBOData.PlaneDistances[3]    = m_Settings.Z_Far / 2.0f;
-        std::array<float, CASCADECOUNT - 1> levels{};
-        for (size_t i = 0; i < 4; i++)
-        {
-            levels[i] = m_ShadowCascadeUBOData.PlaneDistances[i];
-        }
+        IsActiveCascade = inValue;
 
-        CalculateLightSpaceMatrices(levels, inLightDirection, m_Settings.Shadow.ZMult);
+        Log::Info("Enable Cascade: {}", inValue);
     }
-
-    void Renderer::CalculateLightSpaceMatrices(std::span<float> inCascadeLevels, const glm::vec4 inLightDirection, float zMult)
-    {
-        const glm::vec3 direction = glm::normalize(inLightDirection);
-        const auto      camera                 = m_SceneRenderer->GetCamera();
-        const auto      cameraView             = camera->GetViewMatrix();
-        const auto      aspectRatio            = camera->GetAspectRatio();
-        const auto      fov                    = camera->GetFOV();
-        m_ShadowMatrices.LightSpaceMatrices[0] = GetLightMatrix(camera->GetNearClip(), inCascadeLevels[0], 
-            camera->GetFOV(), camera->GetAspectRatio(), camera->GetViewMatrix(), inLightDirection, zMult);
-
-        const size_t levelsSize = inCascadeLevels.size();
-        for (size_t i = 1; i < levelsSize; i++)
-        {
-            m_ShadowMatrices.LightSpaceMatrices[i] =
-                    GetLightMatrix(inCascadeLevels[i - 1], inCascadeLevels[i], fov, aspectRatio, cameraView, inLightDirection, zMult);
-        }
-
-        m_ShadowMatrices.LightSpaceMatrices[levelsSize] =
-                GetLightMatrix(inCascadeLevels.back(), camera->GetFarClip(), fov, aspectRatio, cameraView, inLightDirection, zMult);
-    }
-
 
 } // namespace MamontEngine

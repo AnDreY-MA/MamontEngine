@@ -47,7 +47,10 @@ namespace MamontEngine::vkinit
     VkImageViewCreateInfo           imageview_create_info(
                       VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, const uint32_t inLayerCount = 1, VkImageViewType type = VK_IMAGE_VIEW_TYPE_2D);
     VkImageView                     create_imageview(VkDevice inDevice, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
-    VkPipelineLayoutCreateInfo      pipeline_layout_create_info();
+    VkPipelineLayoutCreateInfo      pipeline_layout_create_info(const uint32_t               inLayoutCount,
+                                                                const VkDescriptorSetLayout *inLaouts,
+                                                                const VkPushConstantRange   *inPushConstRange,
+                                                                const uint32_t               inPushRangeCount = 1);
     VkPipelineShaderStageCreateInfo pipeline_shader_stage_create_info(VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char *entry = "main");
 
     VkRenderPassBeginInfo create_render_pass_info(VkRenderPass inRenderPass, VkFramebuffer inFrameBuffer, const VkExtent2D& inSwachainExtent);

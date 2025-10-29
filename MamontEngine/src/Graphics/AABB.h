@@ -30,7 +30,6 @@ namespace MamontEngine
             Max = glm::max(Max, other.Max);
         }
 
-        // Расширяет AABB точкой
         void Expand(const glm::vec3 &point)
         {
             Min = glm::min(Min, point);
@@ -47,7 +46,6 @@ namespace MamontEngine
             return (Min + Max) * 0.5f;
         }
 
-        // Трансформирует AABB матрицей (например, для world-space)
         AABB Transform(const glm::mat4 &m) const
         {
             const glm::vec3 corners[8] = {{Min.x, Min.y, Min.z},
@@ -70,7 +68,6 @@ namespace MamontEngine
             return result;
         }
 
-        // Проверка пересечения с лучом
         bool IntersectsRay(const glm::vec3 &origin, const glm::vec3 &dir, float &outDist) const
         {
             float tmin = 0.0f;
@@ -105,8 +102,5 @@ namespace MamontEngine
 
         glm::vec3 Min = glm::vec3(FLT_MAX);
         glm::vec3 Max = glm::vec3(-FLT_MAX);
-    };
-
-
-       
+    }; 
 }

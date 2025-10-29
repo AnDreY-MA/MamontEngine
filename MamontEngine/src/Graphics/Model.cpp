@@ -48,17 +48,17 @@ namespace MamontEngine
     {
         AllocatedImage newImage{};
 
-        int width, height, nrChannels;
+        int width = 0, height = 0, nrChannels = 0;
 
         auto process_pixels = [&](unsigned char *data) -> bool
         {
             if (!data)
                 return false;
             const VkExtent3D imagesize{(uint32_t)width, (uint32_t)height, 1u};
-            fmt::println("load_image: begin");
             newImage = inDevice.CreateImage(
                     data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, /*mip=*/false);
-            fmt::println("load_image: end");
+            std::cerr << "Model newImage, Image:" << newImage.Image << std::endl;
+            std::cerr << "Model newImage, ImageView:" << newImage.ImageView << std::endl;
             
             stbi_image_free(data);
 
@@ -76,16 +76,16 @@ namespace MamontEngine
                             unsigned char    *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
                             process_pixels(data);
                         },
-                        [&](fastgltf::sources::Vector &vector)
+                        [&](const fastgltf::sources::Vector &vector)
                         {
                             unsigned char *data =
                                     stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
                             process_pixels(data);
                         },
-                        [&](fastgltf::sources::BufferView &view)
+                        [&](const fastgltf::sources::BufferView &view)
                         {
-                            auto &bufferView = asset.bufferViews[view.bufferViewIndex];
-                            auto &buffer     = asset.buffers[bufferView.bufferIndex];
+                            const auto &bufferView = asset.bufferViews[view.bufferViewIndex];
+                            const auto &buffer     = asset.buffers[bufferView.bufferIndex];
 
                             std::visit(fastgltf::visitor{[](auto &arg) {},
                                                          [&](fastgltf::sources::Vector &vector)
@@ -221,7 +221,7 @@ namespace MamontEngine
             {
                 for (auto &primPtr : node->Mesh->Primitives)
                 {
-                    local.Expand(primPtr->Bound.Min); // или local.Expand(prim->Bound) если есть метод Merge(AABB)
+                    local.Expand(primPtr->Bound.Min);
                     local.Expand(primPtr->Bound.Max);
                 }
             }
@@ -363,9 +363,15 @@ namespace MamontEngine
                                         materialResources.MetalRoughSampler,
                                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                    Writer.WriteImage(3,
+                                      materialResources.ColorImage.ImageView,
+                                      materialResources.ColorSampler,
+                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
                     Writer.UpdateSet(device, matData->MaterialSet);
 
+                    std::cerr << "matData->MaterialSet: " << matData->MaterialSet << std::endl;
                     return matData;
                 };
 

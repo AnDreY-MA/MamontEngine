@@ -1,8 +1,6 @@
 #pragma once 
 
 #include "Graphics/Vulkan/Materials/Material.h"
-#include "Graphics/Vulkan/Image.h"
-#include "Core/VkDestriptor.h"
 #include "Graphics/AABB.h"
 
 namespace MamontEngine
@@ -14,13 +12,6 @@ namespace MamontEngine
         alignas(8) glm::vec2 UV = glm::vec2{0.f};
         alignas(16) glm::vec4 Color = glm::vec4(1.f);
         alignas(16) glm::vec4 Tangent = glm::vec4(0.f);
-    };
-
-    struct Bounds
-    {
-        glm::vec3 Origin  = glm::vec3(0.0f);
-        glm::vec3 Extents = glm::vec3(0.0f);
-        float     SpherRadius{0.0f};
     };
 
     struct GPUDrawPushConstants

@@ -1,4 +1,4 @@
-#include "VkImages.h"
+﻿#include "VkImages.h"
 #include "VkInitializers.h"
 
 #define STB_IMAGE_IMPLEMENTATION

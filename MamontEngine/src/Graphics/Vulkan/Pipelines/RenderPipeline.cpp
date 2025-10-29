@@ -6,10 +6,8 @@
 #include "Core/ContextDevice.h"
 #include <ECS/SceneRenderer.h>
 
-
 //#define VMA_IMPLEMENTATION
 //#include <vk_mem_alloc.h>
-
 
 namespace MamontEngine
 {
@@ -31,7 +29,7 @@ namespace MamontEngine
         }
 
         constexpr VkPushConstantRange matrixRange {
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
             .offset = 0, 
             .size = sizeof(GPUDrawPushConstants)
         };
@@ -44,13 +42,9 @@ namespace MamontEngine
 
         Layout = layoutBuilder.Build(inDevice, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
-        const VkDescriptorSetLayout layouts[] = {inDescriptorLayout, Layout};
+        const std::array<VkDescriptorSetLayout, 2> layouts = {inDescriptorLayout, Layout};
 
-        VkPipelineLayoutCreateInfo mesh_layout_info = vkinit::pipeline_layout_create_info();
-        mesh_layout_info.setLayoutCount             = 2;
-        mesh_layout_info.pSetLayouts                = layouts;
-        mesh_layout_info.pPushConstantRanges        = &matrixRange;
-        mesh_layout_info.pushConstantRangeCount     = 1;
+        const VkPipelineLayoutCreateInfo mesh_layout_info = vkinit::pipeline_layout_create_info(2, layouts.data(), &matrixRange, 1);
 
         VkPipelineLayout newLayout;
         VK_CHECK(vkCreatePipelineLayout(inDevice, &mesh_layout_info, nullptr, &newLayout));
@@ -85,11 +79,14 @@ namespace MamontEngine
 
         OpaquePipeline          = std::make_unique<PipelineData>(pipelineBuilder.BuildPipline(inDevice), newLayout);
 
+        std::cerr << "OpaquePipeline->Pipeline: " << OpaquePipeline->Pipeline << std::endl;
+
         //Transparent
         pipelineBuilder.EnableBlendingAdditive();
-        pipelineBuilder.EnableDepthTest(false, VK_COMPARE_OP_GREATER_OR_EQUAL);
+        pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
         TransparentPipeline          = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), newLayout);
+        std::cerr << "TransparentPipeline->Pipeline: " << TransparentPipeline->Pipeline << std::endl;
 
         vkDestroyShaderModule(inDevice, meshFragShader, nullptr);
         vkDestroyShaderModule(inDevice, meshVertexShader, nullptr);

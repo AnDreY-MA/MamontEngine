@@ -54,7 +54,7 @@ namespace MamontEngine
 
         inline void IncrementFrameNumber()
         {
-            ++m_FrameNumber;
+            m_FrameNumber = (m_FrameNumber + 1) % FRAME_OVERLAP;
         }
 
         inline size_t GetFrame() const
@@ -106,7 +106,6 @@ namespace MamontEngine
         VkDescriptorSet       DrawImageDescriptors{VK_NULL_HANDLE};
         VkDescriptorSetLayout DrawImageDescriptorLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
-        VkDescriptorSetLayout MaterialDescriptorLayout{VK_NULL_HANDLE};
         
         RenderPipeline* RenderPipeline;
 

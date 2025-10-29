@@ -68,25 +68,20 @@ namespace MamontEngine
             return m_SceneRenderer;
         }
 
-        void EnableCascade(bool inValue)
-        {
-            IsActiveCascade = inValue;
-        }
+        void EnableCascade(bool inValue);
 
     private:
         void DrawMain(VkCommandBuffer inCmd);
         void DrawGeometry(VkCommandBuffer inCmd);
         void DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView);
 
+        void RenderCascadeShadow(VkCommandBuffer inCmd);
+
         void CreateShadowPipeline();
 
         void SetViewportScissor(VkCommandBuffer cmd, const VkExtent2D &inExtent) const;
 
         void UpdateUniformBuffers();
-
-        void CalculateShadowData(const glm::mat4& inCameraView, const glm::vec4 inLightDirection);
-
-        void CalculateLightSpaceMatrices(std::span<float> inCascadeLevels, const glm::vec4 inLightDirection, float zMult);
 
 	private:
         VkContextDevice &m_DeviceContext;

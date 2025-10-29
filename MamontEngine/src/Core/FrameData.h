@@ -2,6 +2,7 @@
 
 #include "Core/VkDestriptor.h"
 #include "Graphics/Vulkan/Image.h"
+#include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/Buffers/Buffer.h"
 #include "tracy/TracyVulkan.hpp"
 
@@ -45,8 +46,12 @@ namespace MamontEngine
         VkDescriptorSet             GlobalDescriptor;
         
         AllocatedBuffer SceneDataBuffer;
-        AllocatedBuffer ShadowmMatrixBuffer;
-        AllocatedBuffer ShadowUBOBuffer;
+        AllocatedBuffer CascadeDataBuffer;
+
+        AllocatedBuffer CascadeMatrixBuffer;
+
+        Cascade CascadeShadowMap;
+
         TracyVkCtx TracyContext = nullptr;
 
     };

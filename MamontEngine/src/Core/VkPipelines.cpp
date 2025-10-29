@@ -207,11 +207,11 @@ namespace MamontEngine::VkPipelines
         constexpr VkDynamicState states[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
         const VkPipelineDynamicStateCreateInfo dynamicInfo = {
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .dynamicStateCount = 2,
-            .pDynamicStates                   = states
+            .sType              = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+            .pNext              = nullptr,
+            .flags              = 0,
+            .dynamicStateCount  = 2,
+            .pDynamicStates     = states
         };
         
         pipelineInfo.pDynamicState = &dynamicInfo;

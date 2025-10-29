@@ -328,7 +328,8 @@ VkImageView MamontEngine::vkinit::create_imageview(VkDevice inDevice, VkImage im
     return imageView;
 } 
 //< image_set
-VkPipelineLayoutCreateInfo MamontEngine::vkinit::pipeline_layout_create_info()
+VkPipelineLayoutCreateInfo
+MamontEngine::vkinit::pipeline_layout_create_info(const uint32_t inLayoutCount, const VkDescriptorSetLayout *inLaouts, const VkPushConstantRange* inPushConstRange, const uint32_t inPushRangeCount)
 {
     VkPipelineLayoutCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -336,10 +337,10 @@ VkPipelineLayoutCreateInfo MamontEngine::vkinit::pipeline_layout_create_info()
 
     // empty defaults
     info.flags                  = 0;
-    info.setLayoutCount         = 0;
-    info.pSetLayouts            = nullptr;
-    info.pushConstantRangeCount = 0;
-    info.pPushConstantRanges    = nullptr;
+    info.setLayoutCount         = inLayoutCount;
+    info.pSetLayouts            = inLaouts;
+    info.pushConstantRangeCount = inPushRangeCount;
+    info.pPushConstantRanges    = inPushConstRange;
     return info;
 }
 

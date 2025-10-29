@@ -6,7 +6,7 @@ namespace MamontEngine
     {
         const VkDescriptorSetLayoutBinding newBind = {
             .binding         = inBinding,
-            .descriptorType = inType,
+            .descriptorType  = inType,
             .descriptorCount = 1,
         };
 
@@ -39,51 +39,9 @@ namespace MamontEngine
         return set;
     }
 
-    void DescriptorAllocator::init_pool(VkDevice inDevice, const uint32_t inMaxSets, const std::vector<PoolSizeRatio> &inPoolRatios)
-    {
-        std::vector<VkDescriptorPoolSize> poolSizes;
-        for (const auto &ratio : inPoolRatios)
-        {
-            poolSizes.push_back(VkDescriptorPoolSize{.type = ratio.Type, .descriptorCount = uint32_t(ratio.Ratio * inMaxSets)});
-        }
-
-        VkDescriptorPoolCreateInfo poolInfo = {.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
-        poolInfo.flags                      = 0;
-        poolInfo.maxSets                    = inMaxSets;
-        poolInfo.poolSizeCount              = (uint32_t)poolSizes.size();
-        poolInfo.pPoolSizes                 = poolSizes.data();
-
-        vkCreateDescriptorPool(inDevice, &poolInfo, nullptr, &m_Pool);
-    }
-
-    void DescriptorAllocator::clear_descriptors(VkDevice inDevice)
-    {
-        vkResetDescriptorPool(inDevice, m_Pool, 0);
-    }
-
-    void DescriptorAllocator::destroy_pool(VkDevice inDevice)
-    {
-        vkDestroyDescriptorPool(inDevice, m_Pool, nullptr);
-    }
-
-    VkDescriptorSet DescriptorAllocator::Allocate(VkDevice inDevice, VkDescriptorSetLayout inLayout)
-    {
-        VkDescriptorSetAllocateInfo allocInfo{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
-        allocInfo.pNext              = nullptr;
-        allocInfo.descriptorPool     = m_Pool;
-        allocInfo.descriptorSetCount = 1;
-        allocInfo.pSetLayouts        = &inLayout;
-
-        VkDescriptorSet ds;
-        VK_CHECK(vkAllocateDescriptorSets(inDevice, &allocInfo, &ds));
-
-        return ds;
-    }
-
-
     ///// DescriptorAllocatorGrowable
 
-    void DescriptorAllocatorGrowable::Init(VkDevice inDevice, const uint32_t inInitialSets, const std::vector<PoolSizeRatio>& inPoolRatios)
+    void DescriptorAllocatorGrowable::Init(VkDevice inDevice, const uint32_t inInitialSets, const std::span<PoolSizeRatio> inPoolRatios)
     {
         const uint32_t initSize = inInitialSets != 0 ? inInitialSets : 1;
         m_Ratios.assign(inPoolRatios.begin(), inPoolRatios.end());
@@ -95,12 +53,12 @@ namespace MamontEngine
 
     void DescriptorAllocatorGrowable::ClearPools(VkDevice inDevice)
     {
-        for (auto p : m_ReadyPools)
+        for (auto& p : m_ReadyPools)
         {
             vkResetDescriptorPool(inDevice, p, 0);
         }
 
-        for (auto p : m_FullPools)
+        for (auto& p : m_FullPools)
         {
             vkResetDescriptorPool(inDevice, p, 0);
             m_ReadyPools.push_back(p);
@@ -129,8 +87,8 @@ namespace MamontEngine
         VkDescriptorPool poolToUse = GetPool(inDevice);
 
         VkDescriptorSetAllocateInfo allocInfo = {};
-        allocInfo.pNext                       = pNext;
         allocInfo.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.pNext                       = pNext;
         allocInfo.descriptorPool              = poolToUse;
         allocInfo.descriptorSetCount          = 1;
         allocInfo.pSetLayouts                 = &inLayout;
@@ -175,7 +133,7 @@ namespace MamontEngine
         return newPool;
     }
 
-    VkDescriptorPool DescriptorAllocatorGrowable::CreatePool(VkDevice inDevice, const uint32_t inSetCount, const std::vector<PoolSizeRatio> &inPoolRatios)
+    VkDescriptorPool DescriptorAllocatorGrowable::CreatePool(VkDevice inDevice, const uint32_t inSetCount, const std::span<PoolSizeRatio> inPoolRatios)
     {
         std::vector<VkDescriptorPoolSize> poolSizes;
         for (const auto &ratio : inPoolRatios)

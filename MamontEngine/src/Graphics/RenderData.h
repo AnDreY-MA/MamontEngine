@@ -68,6 +68,15 @@ namespace MamontEngine
         glm::mat4   ViewProjectMatrix{glm::mat4(0.f)};
     };
 
+    struct CascadeData
+    {
+        std::array<float, 4> Splits{};
+        glm::mat4            InverseViewMatrix{glm::mat4(0.f)};
+        glm::vec3            LightDirection;
+        float                _pad;
+        int32_t              Color;
+    };
+
     struct ShadowCascadeUBO
     {
         static constexpr const int kDebugCascadeBit = 0;

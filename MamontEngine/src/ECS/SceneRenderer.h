@@ -29,13 +29,14 @@ namespace MamontEngine
                     uint32_t cascadeIndex = 0);
         void RenderShadow(VkCommandBuffer  inCmd,
                           VkDescriptorSet  globalDescriptor,
-                          const glm::mat4 &inViewProjection,
-                          VkPipelineLayout inGlobalLayout,
+                          const glm::mat4 &inViewProjection, const PipelineData& inPipelineData,
                           uint32_t         cascadeIndex);
 
         void RenderPicking(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, VkPipeline inPipeline, VkPipelineLayout inLayout);
 
         void Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades);
+
+        void UpdateLight();
 
         void UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades);
 
@@ -62,6 +63,10 @@ namespace MamontEngine
         {
             return m_SceneData;
         }
+        const CascadeData& GetCascadeData() const
+        {
+            return m_CascadeData;
+        }
 
         const Camera* GetCamera() const
         {
@@ -84,6 +89,7 @@ namespace MamontEngine
         DrawContext                m_DrawContext;
 
         GPUSceneData m_SceneData;
+        CascadeData  m_CascadeData;
 
         glm::vec3 m_LightPosition{0.f};
 

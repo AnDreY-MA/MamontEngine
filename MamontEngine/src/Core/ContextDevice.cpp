@@ -59,7 +59,6 @@ namespace MamontEngine
 
         std::cerr << "Message: " << pCallbackData->pMessage << std::endl;
 
-        // ✅ ВЫВОДИМ ОБЪЕКТЫ
         if (pCallbackData->objectCount > 0)
         {
             std::cerr << "Objects involved (" << pCallbackData->objectCount << "):" << std::endl;
@@ -75,7 +74,6 @@ namespace MamontEngine
             }
         }
 
-        // ✅ ВЫВОДИМ QUEUE LABELS ЕСЛИ ЕСТЬ
         if (pCallbackData->queueLabelCount > 0)
         {
             std::cerr << "Queue labels:" << std::endl;
@@ -85,7 +83,6 @@ namespace MamontEngine
             }
         }
 
-        // ✅ ВЫВОДИМ COMMAND BUFFER LABELS ЕСЛИ ЕСТЬ
         if (pCallbackData->cmdBufLabelCount > 0)
         {
             std::cerr << "Command buffer labels:" << std::endl;
@@ -507,9 +504,9 @@ namespace MamontEngine
         for (size_t i{ 0 }; i < FRAME_OVERLAP; ++i)
         {
             GetFrameAt(i).SceneDataBuffer.Create(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-            GetFrameAt(i).ShadowUBOBuffer.Create(sizeof(ShadowCascadeUBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+            GetFrameAt(i).CascadeDataBuffer.Create(sizeof(CascadeData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-            GetFrameAt(i).ShadowmMatrixBuffer.Create(sizeof(ShadowCascadeMatrices), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+            GetFrameAt(i).CascadeMatrixBuffer.Create(sizeof(glm::mat4) * CASCADECOUNT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
             
             //VK_CHECK(GetFrameAt(i).SceneDataBuffer.Map());
             //vkMapMemory(Device, GetFrameAt(i).SceneDataBuffer.Memory, 0, VK_WHOLE_SIZE, 0, &GetFrameAt(i).SceneDataBuffer.MappedData);
@@ -521,8 +518,8 @@ namespace MamontEngine
         for (size_t i{ 0 }; i < FRAME_OVERLAP; i++)
         {
             GetFrameAt(i).SceneDataBuffer.Destroy();
-            GetFrameAt(i).ShadowUBOBuffer.Destroy();
-            GetFrameAt(i).ShadowmMatrixBuffer.Destroy();
+            GetFrameAt(i).CascadeDataBuffer.Destroy();
+            GetFrameAt(i).CascadeMatrixBuffer.Destroy();
             /*GetFrameAt(i).ShadowMatrixBuffer.Destroy();
             GetFrameAt(i).ShadowUBOBuffer.Destroy();*/
         }
@@ -530,7 +527,7 @@ namespace MamontEngine
 
     void VkContextDevice::InitDescriptors()
     {
-        std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
+        std::array<DescriptorAllocatorGrowable::PoolSizeRatio, 4> sizes = {
             DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3}, 
             DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3}, 
             DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3}, 
@@ -538,15 +535,18 @@ namespace MamontEngine
         };
         const VkDevice device = LogicalDevice::GetDevice();
 
-        GlobalDescriptorAllocator.Init(device, 10000, sizes);
+        GlobalDescriptorAllocator.Init(device, 100, sizes);
 
         {
             DescriptorLayoutBuilder builder;
             builder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+            builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            builder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             DrawImageDescriptorLayout = builder.Build(device, VK_SHADER_STAGE_COMPUTE_BIT);
-        }
 
-        DrawImageDescriptors = GlobalDescriptorAllocator.Allocate(device, DrawImageDescriptorLayout);
+            DrawImageDescriptors = GlobalDescriptorAllocator.Allocate(device, DrawImageDescriptorLayout);
+        }
 
         {
             DescriptorWriter writer;
@@ -560,32 +560,29 @@ namespace MamontEngine
             builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             builder.AddBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            builder.AddBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            //builder.AddBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             GPUSceneDataDescriptorLayout = builder.Build(device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
         }
 
-        
+        constexpr size_t cascadeDataSize = sizeof(CascadeData);
+        constexpr size_t cascadeMatricesSize = sizeof(glm::mat4) * CASCADECOUNT;
 
-        constexpr size_t cascadeUBO = sizeof(ShadowCascadeUBO);
-        constexpr size_t cascadeMatrices = sizeof(ShadowCascadeMatrices);
-        fmt::println("Buffers size shadow: {}, {}", cascadeUBO, cascadeMatrices);
-        for (size_t i = 0; i < FRAME_OVERLAP; i++)
+        for (auto& frame : m_Frames)
         {
             /*GetFrameAt(i).FrameDescriptors = DescriptorAllocatorGrowable{};
             GetFrameAt(i).FrameDescriptors.Init(Device, 1000, frame_sizes);*/
             DescriptorWriter writer;
             writer.Clear();
 
-            auto &globalDescriptor         = GetFrameAt(i).GlobalDescriptor;
+            auto &globalDescriptor = frame.GlobalDescriptor;
             globalDescriptor       = GlobalDescriptorAllocator.Allocate(device, GPUSceneDataDescriptorLayout);
-            writer.WriteBuffer(0, GetFrameAt(i).SceneDataBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            writer.WriteBuffer(0, frame.SceneDataBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             writer.WriteImage(1, CascadeDepthImage.Image.ImageView, CascadeDepthImage.Sampler, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            writer.WriteBuffer(2, GetFrameAt(i).ShadowUBOBuffer.Buffer, cascadeUBO, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            writer.WriteBuffer(3, GetFrameAt(i).ShadowmMatrixBuffer.Buffer, cascadeMatrices, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            writer.WriteBuffer(2, frame.CascadeDataBuffer.Buffer, cascadeDataSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            writer.WriteBuffer(3, frame.CascadeMatrixBuffer.Buffer, cascadeMatricesSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             writer.UpdateSet(device, globalDescriptor);
 
             std::cerr << "globalDescriptor: " << globalDescriptor << std::endl;
-
         }
     }
 
@@ -623,9 +620,6 @@ namespace MamontEngine
     {
         Swapchain.Init(*this, inWindowExtent);
         InitImage();
-
-        InitShadowImages();
-
     }
 
     void VkContextDevice::InitImage()
@@ -642,12 +636,18 @@ namespace MamontEngine
             const VkExtent3D extent = {Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
 
             PickingImages.resize(Swapchain.GetImages().size());
-            for (size_t i{0}; i < Swapchain.GetImages().size(); ++i)
+            for (auto &image : PickingImages)
             {
-                PickingImages[i] = CreateImage(
+                image = CreateImage(
                         extent, VK_FORMAT_R32G32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+                std::cerr << "PickingImages Image:" << image.Image << std::endl;
+                std::cerr << "PickingImages ImageView:" << image.ImageView << std::endl;
+
             }
         }
+
+        InitShadowImages();
     }
 
     void VkContextDevice::ResizeSwapchain(const VkExtent2D& inWindowExtent)
@@ -669,8 +669,9 @@ namespace MamontEngine
     {
         const VkDevice device = LogicalDevice::GetDevice();
 
-        const VkFormat         depthFormat = GetSupportedDepthFormat(true);
-        const VkExtent3D shadowImageExtent{SHADOWMAP_DIMENSION, SHADOWMAP_DIMENSION, 1};
+        const VkFormat depthFormat = VK_FORMAT_D32_SFLOAT;
+            //= GetSupportedDepthFormat(true);
+        constexpr VkExtent3D shadowImageExtent{SHADOWMAP_DIMENSION, SHADOWMAP_DIMENSION, 1};
         auto imageInfo = vkinit::image_create_info(depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, shadowImageExtent);
 
         imageInfo.extent.depth = 1;
@@ -696,6 +697,8 @@ namespace MamontEngine
 
             VK_CHECK(vkCreateImageView(device, &imageViewInfo, nullptr, &CascadeDepthImage.Image.ImageView));
         }
+        std::cerr << "Shadow Image:" << CascadeDepthImage.Image.Image << std::endl;
+        std::cerr << "Shadow ImageView:" << CascadeDepthImage.Image.ImageView << std::endl;
 
         for (size_t i{ 0 }; i < CASCADECOUNT; i++)
         {
@@ -713,23 +716,27 @@ namespace MamontEngine
 
             VK_CHECK(vkCreateImageView(device, &layerViewInfo, nullptr, &Cascades[i].View));
 
-            fmt::println("Cascade[{}].View = {}", i, (uint64_t)Cascades[i].View);
+            std::cerr << "Cascades[i].View: " << Cascades[i].View << std::endl;
+
         }
 
-        VkSamplerCreateInfo samplerInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .maxAnisotropy = 1.f};
-        samplerInfo.magFilter     = VK_FILTER_LINEAR;
-        samplerInfo.minFilter     = VK_FILTER_LINEAR;
-        samplerInfo.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.addressModeU  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeV  = samplerInfo.addressModeU;
-        samplerInfo.addressModeW  = samplerInfo.addressModeU;
-        samplerInfo.mipLodBias    = 0.0f;
-        samplerInfo.maxAnisotropy = 1.0f;
-        samplerInfo.minLod        = 0.0f;
-        samplerInfo.maxLod        = 1.0f;
-        samplerInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+// Cascade Sampler
+        {
+            VkSamplerCreateInfo samplerInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .maxAnisotropy = 1.f};
+            samplerInfo.magFilter     = VK_FILTER_LINEAR;
+            samplerInfo.minFilter     = VK_FILTER_LINEAR;
+            samplerInfo.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            samplerInfo.addressModeU  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            samplerInfo.addressModeV  = samplerInfo.addressModeU;
+            samplerInfo.addressModeW  = samplerInfo.addressModeU;
+            samplerInfo.mipLodBias    = 0.0f;
+            samplerInfo.maxAnisotropy = 1.0f;
+            samplerInfo.minLod        = 0.0f;
+            samplerInfo.maxLod        = 1.0f;
+            samplerInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-        VK_CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &CascadeDepthImage.Sampler));
+            VK_CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &CascadeDepthImage.Sampler));
+        }
     }
 
     void VkContextDevice::InitTracyContext()
@@ -769,12 +776,12 @@ namespace MamontEngine
 
     FrameData &VkContextDevice::GetCurrentFrame()
     {
-        return m_Frames.at(m_FrameNumber % FRAME_OVERLAP);
+        return m_Frames.at(m_FrameNumber);
     }
 
     const FrameData &VkContextDevice::GetCurrentFrame() const
     {
-        return m_Frames.at(m_FrameNumber % FRAME_OVERLAP);
+        return m_Frames.at(m_FrameNumber);
     }
 
     VkPhysicalDevice VkContextDevice::GetPhysicalDevice() const

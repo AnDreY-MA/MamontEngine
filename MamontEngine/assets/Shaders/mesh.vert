@@ -3,13 +3,14 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_buffer_reference : require
 
-#include "input_structures.glsl"
+#include "include/input_structures.glsl"
 
 layout (location = 0) out vec3 outPos;
 layout (location = 1) out vec3 outNormal;
 layout (location = 2) out vec2 outUV;
 layout (location = 3) out vec4 outColor;
 layout (location = 4) out vec4 outTangent;
+layout (location = 5) out vec3 outViewPos;
 
 
 void main() 
@@ -25,4 +26,6 @@ void main()
     outUV = v.uv;
 	outTangent = v.tangent;
     outPos = v.position;
+
+    outViewPos = (sceneData.view * vec4(position.xyz, 1.0)).xyz;
 }

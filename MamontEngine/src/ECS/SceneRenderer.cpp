@@ -93,7 +93,7 @@ namespace MamontEngine
             }
         }
 
-        std::shared_ptr<PipelineData> lastPipeline     = nullptr;
+        PipelineData*        lastPipeline = nullptr;
         const GLTFMaterial       *lastMaterial     = nullptr;
 
         const auto draw = [&](const RenderObject &r)
@@ -101,9 +101,9 @@ namespace MamontEngine
             if (r.Material != lastMaterial)
             {
                 lastMaterial = r.Material;
-                if (r.Material->Pipeline != lastPipeline)
+                if (r.Material->Pipeline.get() != lastPipeline)
                 {
-                    lastPipeline = r.Material->Pipeline;
+                    lastPipeline = r.Material->Pipeline.get();
                     vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Pipeline);
 
                     vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
@@ -153,8 +153,11 @@ namespace MamontEngine
         //m_DrawContext.Clear();
     }
 
-    void SceneRenderer::RenderShadow(
-            VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const glm::mat4 &inViewProjection, VkPipelineLayout inGlobalLayout, uint32_t cascadeIndex)
+    void SceneRenderer::RenderShadow(VkCommandBuffer            inCmd,
+                                     VkDescriptorSet            globalDescriptor,
+                                     const glm::mat4           &inViewProjection,
+                                     const PipelineData &inPipelineData,
+                                     uint32_t                   cascadeIndex)
     {
         PROFILE_ZONE("SceneRenderer::RenderShadow");
         std::vector<uint32_t> opaque_draws;
@@ -168,20 +171,12 @@ namespace MamontEngine
             }
         }
 
-        if (globalDescriptor == VK_NULL_HANDLE)
-        {
-            Log::Warn("globalDescriptor is NULL");
-        }
-        if (inGlobalLayout == VK_NULL_HANDLE)
-        {
-            Log::Warn("inGlobalLayout is NULL");
-        }
-
         const auto draw = [&](const RenderObject &r)
         {
+            vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineData.Pipeline);
+
             vkCmdBindDescriptorSets(inCmd,
-                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                    inGlobalLayout,
+                                    VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineData.Layout,
                                     0,
                                     1,
                                     &globalDescriptor,
@@ -197,14 +192,12 @@ namespace MamontEngine
             const GPUDrawPushConstants push_constants {
                 .WorldMatrix = r.Transform, 
                 .VertexBuffer = r.VertexBufferAddress, 
-                //.CascadeIndex = cascadeIndex
+                .CascadeIndex = cascadeIndex
             };
 
-            vkCmdPushConstants(inCmd,
-                               inGlobalLayout,
-                               VK_SHADER_STAGE_VERTEX_BIT,
-                               0,
-                               sizeof(GPUDrawPushConstants),
+            constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
+            vkCmdPushConstants(inCmd, inPipelineData.Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                               0, constantsSize,
                                &push_constants);
 
             vkCmdDrawIndexed(inCmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
@@ -255,23 +248,24 @@ namespace MamontEngine
     {
         const glm::mat4& view       = m_Camera->GetViewMatrix();
         const glm::mat4& projection = m_Camera->GetProjection();
+        const auto       lightDirection{glm::normalize(-m_LightPosition)};
 
         m_Camera->UpdateProjection(inWindowExtent);
-        const auto lightDirection {glm::normalize(-m_LightPosition)};
         m_SceneData.View     = view;
         m_SceneData.Proj     = projection;
         m_SceneData.Viewproj = projection * view;
         m_SceneData.LightDirection = lightDirection;
 
-        /*for (size_t i = 0; i < CASCADECOUNT; i++)
+        for (size_t i = 0; i < CASCADECOUNT; i++)
         {
-            m_FragmentData.CascadePlits[i] = inCascades[i].SplitDepth;
+            m_CascadeData.Splits[i] = inCascades[i].SplitDepth;
         }
 
-        m_FragmentData.InverseViewMat = glm::inverse(view);
-        m_FragmentData.LightDirection = lightDirection;
-        m_FragmentData.ColorCascades  = 0;*/
+        m_CascadeData.InverseViewMatrix  = glm::inverse(view);
+        m_CascadeData.LightDirection = lightDirection;
+        m_CascadeData.Color   = 0;
 
+        UpdateLight();
 
         for (const auto &mesh : m_MeshComponents)
         {
@@ -282,9 +276,17 @@ namespace MamontEngine
         }
     }
 
+    void SceneRenderer::UpdateLight()
+    {
+        const float angle = glm::radians(0.2f * 360.f);
+        const float radius{20.f};
+
+        m_LightPosition = glm::vec3(cos(angle) * radius, -radius, sin(angle) * radius);
+    }
+
     void SceneRenderer::UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades)
     {
-        float cascadeSplits[CASCADECOUNT]{};
+        std::array<float, CASCADECOUNT> cascadeSplits{};
 
         const float nearClip{m_Camera->GetNearClip()};
         const float farClip{m_Camera->GetFarClip()};
@@ -322,7 +324,7 @@ namespace MamontEngine
                     glm::vec3(-1.0f, -1.0f, 1.0f),
             };
 
-            glm::mat4 inverseCamera = glm::inverse(m_Camera->GetViewMatrix() * m_Camera->GetProjection());
+            const glm::mat4 inverseCamera = glm::inverse(m_Camera->GetViewMatrix() * m_Camera->GetProjection());
             for (uint32_t j = 0; j < 8; j++)
             {
                 const glm::vec4 invCorner = inverseCamera * glm::vec4(frustumCorners[j], 1.f);
@@ -358,7 +360,7 @@ namespace MamontEngine
             const glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDirection * -minExtents.z, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
             const glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.f, maxExtents.z - minExtents.z);
 
-            outCascades[i].SplitDepth = (m_Camera->GetNearClip() + splitDist * clipRange) * -1.f;
+            outCascades[i].SplitDepth = (nearClip + splitDist * clipRange) * -1.f;
             outCascades[i].ViewProjectMatrix = lightOrthoMatrix * lightViewMatrix;
 
             lastSplitDist = cascadeSplits[i];
@@ -368,7 +370,5 @@ namespace MamontEngine
     void SceneRenderer::SubmitMesh(const MeshComponent& inMesh)
     {
         m_MeshComponents.push_back(inMesh);
-
-        //inMesh.Mesh->ID = m_MeshComponents.size();
     }
 }

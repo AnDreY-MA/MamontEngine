@@ -2,37 +2,13 @@
     "Entities": [
         {
             "Components": {
-                "ID": 3334081894725175982,
+                "ID": 16206069851895889868,
                 "Mesh": "D:/Repos/MamontEngine/MamontEngine/assets/plane.glb",
                 "Tag": "Plane",
                 "Transform": {
                     "position": [
                         0.0,
                         0.0,
-                        0.0
-                    ],
-                    "rotation": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "scale": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
-                }
-            }
-        },
-        {
-            "Components": {
-                "ID": 13191605861421057313,
-                "Mesh": "D:/Repos/MamontEngine/MamontEngine/assets/cylinder.glb",
-                "Tag": "Cylinder",
-                "Transform": {
-                    "position": [
-                        1.5,
-                        0.699999988079071,
                         0.0
                     ],
                     "rotation": [
@@ -74,12 +50,12 @@
         },
         {
             "Components": {
-                "ID": 9292412341627756170,
-                "Mesh": "D:/Repos/MamontEngine/MamontEngine/assets/cone.glb",
-                "Tag": "Cone",
+                "ID": 13191605861421057313,
+                "Mesh": "D:/Repos/MamontEngine/MamontEngine/assets/cylinder.glb",
+                "Tag": "Cylinder",
                 "Transform": {
                     "position": [
-                        -0.6000000238418579,
+                        1.5,
                         0.699999988079071,
                         0.0
                     ],
@@ -98,13 +74,13 @@
         },
         {
             "Components": {
-                "ID": 9303452099611773098,
-                "Mesh": "D:/Repos/MamontEngine/MamontEngine/assets/monkeyHD.glb",
-                "Tag": "Monkeys",
+                "ID": 9292412341627756170,
+                "Mesh": "D:/Repos/MamontEngine/MamontEngine/assets/cone.glb",
+                "Tag": "Cone",
                 "Transform": {
                     "position": [
-                        -3.9000000953674316,
-                        2.0999999046325684,
+                        -0.6000000238418579,
+                        0.699999988079071,
                         0.0
                     ],
                     "rotation": [

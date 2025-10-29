@@ -13,24 +13,6 @@ namespace MamontEngine
         std::vector<VkDescriptorSetLayoutBinding> m_Bindings;
     };
 
-    struct DescriptorAllocator
-    {
-        struct PoolSizeRatio
-        {
-            VkDescriptorType Type;
-            float            Ratio;
-        };
-
-        void init_pool(VkDevice inDevice, const uint32_t inMaxSets, const std::vector<PoolSizeRatio> &inPoolRatios);
-        void clear_descriptors(VkDevice inDevice);
-        void destroy_pool(VkDevice inDevice);
-
-        VkDescriptorSet Allocate(VkDevice inDevice, VkDescriptorSetLayout inLayout);
-
-    private:
-        VkDescriptorPool m_Pool;
-    };
-
     struct DescriptorAllocatorGrowable
     {
     public:
@@ -40,7 +22,7 @@ namespace MamontEngine
             float Ratio{0.0f};
         };
 
-        void Init(VkDevice inDevice, const uint32_t inInitialSets, const std::vector<PoolSizeRatio> &inPoolRatios);
+        void Init(VkDevice inDevice, const uint32_t inInitialSets, const std::span<PoolSizeRatio> inPoolRatios);
         void ClearPools(VkDevice inDevice);
         void DestroyPools(VkDevice inDevice);
 
@@ -48,7 +30,7 @@ namespace MamontEngine
 
     private:
         VkDescriptorPool GetPool(VkDevice inDevice);
-        VkDescriptorPool CreatePool(VkDevice inDevice, const uint32_t inSetCount, const std::vector<PoolSizeRatio> &inPoolRatios);
+        VkDescriptorPool CreatePool(VkDevice inDevice, const uint32_t inSetCount, const std::span<PoolSizeRatio> inPoolRatios);
 
         std::vector<PoolSizeRatio>    m_Ratios;
         std::vector<VkDescriptorPool> m_FullPools;

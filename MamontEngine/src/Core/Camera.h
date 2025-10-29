@@ -64,7 +64,7 @@ namespace MamontEngine
         float     m_MouseSensitivity = 0.001f;
 
         float m_NearClip{0.1f};
-        float m_FarClip{100.f};
+        float m_FarClip{1000.f};
 
         float m_AspectRatio{0.f};
 
