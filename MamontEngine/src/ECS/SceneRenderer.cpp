@@ -278,7 +278,7 @@ namespace MamontEngine
 
     void SceneRenderer::UpdateLight()
     {
-        const float angle = glm::radians(0.2f * 360.f);
+        const float angle = glm::radians( 360.f);
         const float radius{20.f};
 
         m_LightPosition = glm::vec3(cos(angle) * radius, -radius, sin(angle) * radius);

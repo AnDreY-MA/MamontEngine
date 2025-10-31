@@ -116,6 +116,7 @@ namespace MamontEngine
 
             VkPipeline pickingPipeline = pipelineBuilder.BuildPipline(device, 1);
             m_PickingPipeline          = std::make_unique<PipelineData>(pickingPipeline, pickingLayout);
+            std::cerr << "pickingPipeline: " << pickingPipeline << std::endl;
 
             vkDestroyShaderModule(device, pickingFragShader, nullptr);
             vkDestroyShaderModule(device, pickingVertShader, nullptr);

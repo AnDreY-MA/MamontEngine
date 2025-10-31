@@ -48,7 +48,7 @@ namespace MamontEngine
     {
         AllocatedImage newImage{};
 
-        int width = 0, height = 0, nrChannels = 0;
+        int width, height, nrChannels;
 
         auto process_pixels = [&](unsigned char *data) -> bool
         {
@@ -56,7 +56,7 @@ namespace MamontEngine
                 return false;
             const VkExtent3D imagesize{(uint32_t)width, (uint32_t)height, 1u};
             newImage = inDevice.CreateImage(
-                    data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, /*mip=*/false);
+                    data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, /*mip=*/true);
             std::cerr << "Model newImage, Image:" << newImage.Image << std::endl;
             std::cerr << "Model newImage, ImageView:" << newImage.ImageView << std::endl;
             
@@ -363,11 +363,11 @@ namespace MamontEngine
                                         materialResources.MetalRoughSampler,
                                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                    Writer.WriteImage(3,
+                    /*Writer.WriteImage(3,
                                       materialResources.ColorImage.ImageView,
                                       materialResources.ColorSampler,
                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                                      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);*/
 
                     Writer.UpdateSet(device, matData->MaterialSet);
 
@@ -437,10 +437,12 @@ namespace MamontEngine
     
     void MeshModel::LoadImages(const fastgltf::Asset &inFileAsset)
     {
-        std::vector<AllocatedImage> newImages; 
+        std::vector<AllocatedImage> newImages;
+        newImages.reserve(inFileAsset.images.size());
         for (const fastgltf::Image &image : inFileAsset.images)
         {
-            std::optional<AllocatedImage> img = load_image(m_ContextDevice, inFileAsset, image);
+            const std::optional<AllocatedImage> img = load_image(m_ContextDevice, inFileAsset, image);
+            fmt::println("LoadImage");
 
             if (img.has_value())
             {
@@ -449,7 +451,7 @@ namespace MamontEngine
             else
             {
                 newImages.push_back(m_ContextDevice.ErrorCheckerboardImage);
-                std::cout << "gltf failed to load texture " << image.name << std::endl;
+                fmt::println("gltf failed to load texture: {}", image.name);
             }
         }
 

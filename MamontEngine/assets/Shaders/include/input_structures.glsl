@@ -10,9 +10,6 @@ layout(set = 0, binding = 0) uniform SceneData{
 	vec3 lightdirection;
 } sceneData;
 
-
-
-
 //push constants block
 layout( push_constant ) uniform constants
 {

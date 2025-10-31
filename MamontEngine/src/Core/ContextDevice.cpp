@@ -349,8 +349,9 @@ namespace MamontEngine
     {
         {
             const uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
-            WhiteImage           = CreateImage((void *)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
-            std::cerr << "WhiteImage: " << ErrorCheckerboardImage.Image << std::endl;
+            WhiteImage           = CreateImage((void *)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, true);
+            std::cerr << "WhiteImage Image: " << ErrorCheckerboardImage.Image << std::endl;
+            std::cerr << "WhiteImage Image.View: " << ErrorCheckerboardImage.ImageView << std::endl;
 
             const uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
 
@@ -360,11 +361,12 @@ namespace MamontEngine
             {
                 for (int y = 0; y < 16; y++)
                 {
-                    pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+                    pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta   : black;
                 }
             }
             ErrorCheckerboardImage = CreateImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
             std::cerr << "ErrorCheckerboardImage: " << ErrorCheckerboardImage.Image << std::endl;
+            std::cerr << "ErrorCheckerboardImage Image.View: " << ErrorCheckerboardImage.ImageView << std::endl;
         }
         
     }
@@ -629,8 +631,14 @@ namespace MamontEngine
         constexpr VkImageUsageFlags drawImageUsages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         Image.DrawImage                             = CreateImage(extent, Swapchain.GetImageFormat(), drawImageUsages, false);
         
+        std::cerr << "Image.DrawImage Image:" << Image.DrawImage.Image << std::endl;
+        std::cerr << "Image.DrawImage ImageView:" << Image.DrawImage.ImageView << std::endl;
+
         constexpr VkImageUsageFlags depthImageUsages = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
         Image.DepthImage                             = CreateImage(extent, VK_FORMAT_D32_SFLOAT, depthImageUsages, false);
+
+        std::cerr << "Image.DepthImage Image:" << Image.DepthImage.Image << std::endl;
+        std::cerr << "Image.DepthImage ImageView:" << Image.DepthImage.ImageView << std::endl;
 
         {
             const VkExtent3D extent = {Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};

@@ -129,4 +129,3 @@ void main()
     // Defualt
 	//outFragColor = vec4(color.rgb * lightValue + color.rgb * irradiance.x * vec3(0.2f), 1.f);
 }
-
