@@ -44,7 +44,7 @@ namespace MamontEngine::vkinit
     VkDescriptorBufferInfo buffer_info(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range);
 
     VkImageCreateInfo               image_create_info(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent, uint32_t arrayLayers = 1);
-    VkImageViewCreateInfo           imageview_create_info(
+    VkImageViewCreateInfo           imageviewCreateInfo(
                       VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, const uint32_t inLayerCount = 1, VkImageViewType type = VK_IMAGE_VIEW_TYPE_2D);
     VkImageView                     create_imageview(VkDevice inDevice, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
     VkPipelineLayoutCreateInfo      pipeline_layout_create_info(const uint32_t               inLayoutCount,

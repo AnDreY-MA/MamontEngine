@@ -55,8 +55,11 @@ namespace MamontEngine
             if (!data)
                 return false;
             const VkExtent3D imagesize{(uint32_t)width, (uint32_t)height, 1u};
-            newImage = inDevice.CreateImage(
-                    data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, /*mip=*/true);
+            newImage = inDevice.CreateImage(data,
+                                            imagesize,
+                                            /*VK_FORMAT_R8G8B8A8_UNORM*/ VK_FORMAT_R16G16B16A16_SFLOAT,
+                                            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                                            /*mip=*/true);
             std::cerr << "Model newImage, Image:" << newImage.Image << std::endl;
             std::cerr << "Model newImage, ImageView:" << newImage.ImageView << std::endl;
             
@@ -427,6 +430,7 @@ namespace MamontEngine
             }
 
             auto newMat = writerMaterial(passType, materialResources, DescriptorPool, constants);
+            std::cerr << "NewMat - Pipeline: " << newMat->Pipeline->Pipeline << std::endl;
             materials.push_back(std::move(newMat));
 
             data_index++;

@@ -9,8 +9,6 @@
 #define SHADOW_MAP_CASCADE_COUNT 4
 #define ambient 0.3
 
-//layout(set = 1, binding = 1) uniform sampler2D colorTex;
-
 layout (location = 0) in vec3 inPos;
 layout (location = 1) in vec3 inNormal;
 layout (location = 2) in vec2 inUV;
@@ -96,11 +94,11 @@ void main()
 {
     const float lightValue = max(dot(inNormal, vec3(0.3f,1.f,0.3f)), 0.1f);
 
-	const vec3 irradiance = calcIrradiance(inNormal); 
+  	const vec3 irradiance = calcIrradiance(inNormal); 
 
     const vec4 textureColor = texture(colorMap, inUV);
-	const vec4 color = inColor * textureColor;
-    if (color.a < 0.5) {
+	  //const vec4 color = inColor * textureColor;
+    if (textureColor.a < 0.5) {
         discard;
     }
 
@@ -122,9 +120,9 @@ void main()
     const float diffuse = max(dot(N, L), ambient);
     const vec3 lightColor = vec3(1.0);
 
-    outFragColor.rgb = max(lightColor * (diffuse * color.rgb), vec3(0.0));
+    outFragColor.rgb = max(lightColor * (diffuse * textureColor.rgb), vec3(0.0));
     outFragColor.rgb *= shadow;
-    outFragColor.a = color.a;
+    outFragColor.a = textureColor.a;
 
     // Defualt
 	//outFragColor = vec4(color.rgb * lightValue + color.rgb * irradiance.x * vec3(0.2f), 1.f);

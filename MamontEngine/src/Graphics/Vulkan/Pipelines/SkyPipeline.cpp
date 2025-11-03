@@ -71,6 +71,9 @@ namespace MamontEngine
 
         VK_CHECK(vkCreateComputePipelines(inDevice, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &sky.Pipeline));
 
+        std::cerr << "gradient.Pipeline: " << gradient.Pipeline << std::endl;
+        std::cerr << "sky.Pipeline: " << sky.Pipeline << std::endl;
+
         m_Effect = sky;
 
         vkDestroyShaderModule(inDevice, gradientShader, nullptr);

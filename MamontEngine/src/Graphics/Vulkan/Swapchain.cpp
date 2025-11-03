@@ -16,7 +16,7 @@ namespace MamontEngine
     void MSwapchain::Create(const VkContextDevice &inDevice, const VkExtent2D &inExtent)
     {
         vkb::SwapchainBuilder swapchainBuilder{inDevice.GetPhysicalDevice(), LogicalDevice::GetDevice(), inDevice.Surface};
-        m_SwapchainImageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+        m_SwapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM;/*VK_FORMAT_R16G16B16A16_SFLOAT*/
 
         const auto resultSwapchain =
                 swapchainBuilder.set_desired_format(VkSurfaceFormatKHR{.format = m_SwapchainImageFormat, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})

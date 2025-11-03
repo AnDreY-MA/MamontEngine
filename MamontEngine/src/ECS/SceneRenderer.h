@@ -24,19 +24,19 @@ namespace MamontEngine
 
         void Render(VkCommandBuffer  inCmd,
                     VkDescriptorSet  globalDescriptor,
-                    const glm::mat4 &inViewProjection,
-                    VkPipelineLayout inGlobalLayout = VK_NULL_HANDLE,
-                    uint32_t cascadeIndex = 0);
+                    const glm::mat4 &inViewProjection);
         void RenderShadow(VkCommandBuffer  inCmd,
                           VkDescriptorSet  globalDescriptor,
-                          const glm::mat4 &inViewProjection, const PipelineData& inPipelineData,
+                          const glm::mat4    &inViewProjection,
+                          const PipelineData &inPipelineData,
+                          VkPipelineLayout    inDrawDescriptorLayout,
                           uint32_t         cascadeIndex);
 
         void RenderPicking(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, VkPipeline inPipeline, VkPipelineLayout inLayout);
 
-        void Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades);
+        void Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades, float inDeltaTime);
 
-        void UpdateLight();
+        void UpdateLight(float inDeltaTime);
 
         void UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades);
 

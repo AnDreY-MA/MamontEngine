@@ -8,7 +8,7 @@
 #include "tracy/TracyVulkan.hpp"
 #include "Graphics/Vulkan/Allocator.h"
 #include "Graphics/Devices/LogicalDevice.h"
-
+#include "vulkan/vk_enum_string_helper.h"
 #include <vk_mem_alloc.h>
 
 namespace MamontEngine
@@ -20,7 +20,6 @@ namespace MamontEngine
                                                                 void                                       *pUserData)
     {
 
-        // ✅ ВЫВОДИМ ВСЕ ДЕТАЛИ
         std::cerr << "\n=== VALIDATION LAYER ===" << std::endl;
         std::cerr << "Severity: ";
         switch (severity)
@@ -155,11 +154,15 @@ namespace MamontEngine
                 .shaderInt64 = VK_TRUE
         };
 
-        constexpr VkPhysicalDeviceVulkan14Features features14 = {.maintenance6 = VK_TRUE, .pushDescriptor = VK_TRUE};
+        constexpr VkPhysicalDeviceVulkan14Features features14 = {
+            .maintenance5 = VK_TRUE,
+            .maintenance6 = VK_TRUE, 
+            .pushDescriptor = VK_TRUE
+        };
 
         constexpr VkPhysicalDeviceVulkan13Features features = {
             .synchronization2 = VK_TRUE, 
-            .dynamicRendering = VK_TRUE
+            .dynamicRendering = VK_TRUE,
         };
 
         constexpr VkPhysicalDeviceVulkan12Features features12 = {.uniformAndStorageBuffer8BitAccess            = VK_TRUE,
@@ -282,7 +285,6 @@ namespace MamontEngine
             img_info.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(inSize.width, inSize.height)))) + 1;
         }
 
-        // always allocate images on dedicated GPU memory
         constexpr auto allocinfo = VmaAllocationCreateInfo {
             .usage                   = VMA_MEMORY_USAGE_GPU_ONLY,
             .requiredFlags           = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
@@ -293,7 +295,7 @@ namespace MamontEngine
         const VkImageAspectFlags aspectFlag =
                 (inFormat == VK_FORMAT_D32_SFLOAT || inFormat == VK_FORMAT_D24_UNORM_S8_UINT) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
-        const VkImageViewCreateInfo view_info       = vkinit::imageview_create_info(inFormat, newImage.Image, aspectFlag, img_info.mipLevels);
+        const VkImageViewCreateInfo view_info       = vkinit::imageviewCreateInfo(inFormat, newImage.Image, aspectFlag, img_info.mipLevels);
 
         VK_CHECK(vkCreateImageView(device, &view_info, nullptr, &newImage.ImageView));
 
@@ -629,7 +631,7 @@ namespace MamontEngine
         const VkExtent3D extent{Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
         
         constexpr VkImageUsageFlags drawImageUsages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-        Image.DrawImage                             = CreateImage(extent, Swapchain.GetImageFormat(), drawImageUsages, false);
+        Image.DrawImage                             = CreateImage(extent, Swapchain.GetImageFormat()/*VK_FORMAT_B8G8R8A8_UNORM*/, drawImageUsages, false);
         
         std::cerr << "Image.DrawImage Image:" << Image.DrawImage.Image << std::endl;
         std::cerr << "Image.DrawImage ImageView:" << Image.DrawImage.ImageView << std::endl;
@@ -698,7 +700,7 @@ namespace MamontEngine
         CascadeDepthImage.Image.ImageExtent = shadowImageExtent;
         CascadeDepthImage.Image.ImageFormat = depthFormat;
         {
-            auto imageViewInfo = vkinit::imageview_create_info(
+            auto imageViewInfo = vkinit::imageviewCreateInfo(
                     depthFormat, CascadeDepthImage.Image.Image, VK_IMAGE_ASPECT_DEPTH_BIT, CASCADECOUNT, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
 
             imageViewInfo.subresourceRange.baseArrayLayer = 0;
@@ -713,7 +715,7 @@ namespace MamontEngine
             /*auto imageViewInfo = vkinit::imageview_create_info(
                     VK_FORMAT_D32_SFLOAT, CascadeDepthImage.Image.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, VK_IMAGE_VIEW_TYPE_2D_ARRAY);*/
             auto layerViewInfo =
-                    vkinit::imageview_create_info(depthFormat,
+                    vkinit::imageviewCreateInfo(depthFormat,
                                                                CascadeDepthImage.Image.Image,
                                                                VK_IMAGE_ASPECT_DEPTH_BIT,
                                                                1,

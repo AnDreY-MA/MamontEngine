@@ -40,7 +40,7 @@ namespace MamontEngine
 
         void UpdateWindowEvent(const SDL_EventType inType);
 
-        void UpdateSceneRenderer();
+        void UpdateSceneRenderer(float inDeltaTime);
 
         void ResizeSwapchain();
 
@@ -83,6 +83,8 @@ namespace MamontEngine
 
         void UpdateUniformBuffers();
 
+        void InitPickPipepline();
+
 	private:
         VkContextDevice &m_DeviceContext;
 
@@ -99,22 +101,7 @@ namespace MamontEngine
         std::unique_ptr<PipelineData> m_CascadePipeline;
         std::unique_ptr<PipelineData> m_PickingPipeline;
 
-        bool IsActiveCascade{false};
-
-        struct Settings
-        {
-            float Z_Near{0.1f};
-            float Z_Far{100.f};
-            
-            struct
-            {
-                float DepthBiasConstantFactor{1.25f};
-                float DetphBiasSlopeFactor{1.75f};
-                float CascadeSplitLambda{0.95f};
-                float ZMult{2.2f};
-            } Shadow;
-
-        } m_Settings;
+        bool IsActiveCascade{true};
 
         ShadowCascadeUBO m_ShadowCascadeUBOData;
         ShadowCascadeMatrices m_ShadowMatrices;

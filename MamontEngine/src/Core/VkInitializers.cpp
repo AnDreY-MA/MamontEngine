@@ -297,14 +297,14 @@ VkImageCreateInfo MamontEngine::vkinit::image_create_info(VkFormat format, VkIma
 }
 
 VkImageViewCreateInfo
-MamontEngine::vkinit::imageview_create_info(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, const uint32_t inLayerCount, VkImageViewType type)
+MamontEngine::vkinit::imageviewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, const uint32_t inLayerCount, VkImageViewType type)
 {
     // build a image-view for the depth image to use for rendering
     VkImageViewCreateInfo info = {};
     info.sType                 = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     info.pNext                 = nullptr;
 
-    info.viewType                        = type;
+    info.viewType                        = inLayerCount == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY;
     info.image                           = image;
     info.format                          = format;
     info.subresourceRange                = {},
@@ -319,7 +319,7 @@ MamontEngine::vkinit::imageview_create_info(VkFormat format, VkImage image, VkIm
 
 VkImageView MamontEngine::vkinit::create_imageview(VkDevice inDevice, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
 {
-    VkImageViewCreateInfo viewInfo = imageview_create_info(format, image, aspectFlags);
+    VkImageViewCreateInfo viewInfo = imageviewCreateInfo(format, image, aspectFlags);
     VkImageView           imageView;
     if (vkCreateImageView(inDevice, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
     {

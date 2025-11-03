@@ -77,9 +77,11 @@ namespace MamontEngine
         pipelineBuilder.SetDepthFormat(inImageFormats.second);
         pipelineBuilder.SetLayout(newLayout);
 
-        OpaquePipeline          = std::make_unique<PipelineData>(pipelineBuilder.BuildPipline(inDevice), newLayout);
+        const VkPipeline opaquePipeline = pipelineBuilder.BuildPipline(inDevice);
+        OpaquePipeline            = std::make_unique<PipelineData>(opaquePipeline, newLayout);
 
         std::cerr << "OpaquePipeline->Pipeline: " << OpaquePipeline->Pipeline << std::endl;
+        std::cerr << "OpaquePipeline->Pipeline, newLayout: " << newLayout << std::endl;
 
         //Transparent
         pipelineBuilder.EnableBlendingAdditive();

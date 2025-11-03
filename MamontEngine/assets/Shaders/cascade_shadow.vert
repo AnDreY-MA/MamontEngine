@@ -17,7 +17,7 @@ void main() {
 	const Vertex v = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
 	outUV = v.uv;
 
-	const vec4 position = vec4(v.position, 1.0f);
-	gl_Position = ubo.cascadeViewProjMat[PushConstants.cascadeIndex] * position;
+	const vec4 position = vec4(v.position, 1.0);
+	gl_Position = ubo.cascadeViewProjMat[PushConstants.cascadeIndex] * position * PushConstants.render_matrix;
 
 }

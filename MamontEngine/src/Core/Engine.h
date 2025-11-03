@@ -79,7 +79,7 @@ namespace MamontEngine
         void InitImgui();
 
         void InitScene();
-        void UpdateScene();
+        void UpdateScene(float inDeltaTime);
 
         VkFormat FindDepthFormat() const;
         VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;

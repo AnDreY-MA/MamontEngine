@@ -9,6 +9,7 @@
 
 #include "Utils/Profile.h"
 #include "Graphics/Vulkan/Allocator.h"
+#include "vulkan/vk_enum_string_helper.h"
 
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Core/Log.h"
@@ -32,7 +33,7 @@ namespace MamontEngine
     void Renderer::InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera)
     {
         m_SceneRenderer = std::make_shared<SceneRenderer>(inMainCamera);
-        m_SceneRenderer->UpdateCascades(m_DeviceContext.Cascades);
+        //m_SceneRenderer->UpdateCascades(m_DeviceContext.Cascades);
     }
 
     void Renderer::InitImGuiRenderer()
@@ -44,85 +45,97 @@ namespace MamontEngine
     {
         const VkDevice device = LogicalDevice::GetDevice();
 
-        const std::pair<VkFormat, VkFormat> inImageFormats{m_DeviceContext.Image.DrawImage.ImageFormat, m_DeviceContext.Image.DepthImage.ImageFormat};
+        const std::pair<VkFormat, VkFormat> inImageFormats {
+            m_DeviceContext.Image.DrawImage.ImageFormat, 
+            m_DeviceContext.Image.DepthImage.ImageFormat
+        };
+        
+        fmt::println("DrawImage.ImageFormat: {}", string_VkFormat(inImageFormats.first));
+        fmt::println("DepthImage.ImageFormat: {}", string_VkFormat(inImageFormats.second));
+
         m_RenderPipeline = std::make_unique<RenderPipeline>(device, m_DeviceContext.GPUSceneDataDescriptorLayout, inImageFormats);
         m_SkyPipeline    = std::make_unique<SkyPipeline>(device, &m_DeviceContext.DrawImageDescriptorLayout);
 
         m_DeviceContext.RenderPipeline = m_RenderPipeline.get();
 
-        {
-            const std::string pickingPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/picking.frag.spv";
-
-            VkShaderModule pickingFragShader;
-            if (!VkPipelines::LoadShaderModule(pickingPath.c_str(), device, &pickingFragShader))
-            {
-                fmt::println("Error when building the triangle fragment shader module");
-                return;
-            }
-
-            const std::string pickingShaderVertPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/picking.vert.spv";
-            VkShaderModule    pickingVertShader;
-            if (!VkPipelines::LoadShaderModule(pickingShaderVertPath.c_str(), device, &pickingVertShader))
-            {
-                fmt::println("Error when building the triangle vertex shader module");
-                return;
-            }
-
-
-            const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {
-                vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, pickingVertShader),
-                vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, pickingFragShader)
-            };
-
-            VkPipelineLayout pickingLayout;
-
-            // Create Layout
-            {
-                constexpr VkPushConstantRange pushConstRange = {
-                    .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                    .offset              = 0,
-                    .size       = sizeof(GPUDrawPushConstants),
-                };
-
-                const VkDescriptorSetLayout layouts[] = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_RenderPipeline->Layout};
-
-                const VkPipelineLayoutCreateInfo picking_layout_info = vkinit::pipeline_layout_create_info(2, layouts, &pushConstRange);
-
-                VK_CHECK(vkCreatePipelineLayout(device, &picking_layout_info, nullptr, &pickingLayout));
-            }
-
-            const std::vector<VkVertexInputBindingDescription>   vertexInputBindings{};
-            const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes{};
-            const VkPipelineVertexInputStateCreateInfo           vertexInputInfo =
-                    vkinit::pipeline_vertex_input_state_create_info(vertexInputBindings, vertexInputAttributes);
-
-            VkPipelines::PipelineBuilder pipelineBuilder;
-            pipelineBuilder.SetShaders(pickingVertShader, pickingFragShader);
-            pipelineBuilder.SetLayout(pickingLayout);
-            pipelineBuilder.SetVertexInput(vertexInputInfo);
-            pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-            pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
-            //pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
-            pipelineBuilder.SetMultisamplingNone();
-
-            pipelineBuilder.DisableBlending();
-            pipelineBuilder.m_ColorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT;
-
-            pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
-            pipelineBuilder.m_Rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-
-            pipelineBuilder.SetColorAttachmentFormat(m_DeviceContext.PickingImages[0].ImageFormat);
-            pipelineBuilder.SetDepthFormat(m_DeviceContext.Image.DepthImage.ImageFormat);
-
-            VkPipeline pickingPipeline = pipelineBuilder.BuildPipline(device, 1);
-            m_PickingPipeline          = std::make_unique<PipelineData>(pickingPipeline, pickingLayout);
-            std::cerr << "pickingPipeline: " << pickingPipeline << std::endl;
-
-            vkDestroyShaderModule(device, pickingFragShader, nullptr);
-            vkDestroyShaderModule(device, pickingVertShader, nullptr);
-        }
+        InitPickPipepline();
 
         CreateShadowPipeline();
+    }
+
+    void Renderer::InitPickPipepline()
+    {
+        const VkDevice device = LogicalDevice::GetDevice();
+
+        const std::string pickingPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/picking.frag.spv";
+
+        VkShaderModule pickingFragShader;
+        if (!VkPipelines::LoadShaderModule(pickingPath.c_str(), device, &pickingFragShader))
+        {
+            fmt::println("Error when building the triangle fragment shader module");
+            return;
+        }
+
+        const std::string pickingShaderVertPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/picking.vert.spv";
+        VkShaderModule    pickingVertShader;
+        if (!VkPipelines::LoadShaderModule(pickingShaderVertPath.c_str(), device, &pickingVertShader))
+        {
+            fmt::println("Error when building the triangle vertex shader module");
+            return;
+        }
+
+
+        const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {
+                vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, pickingVertShader),
+                vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, pickingFragShader)};
+
+        VkPipelineLayout pickingLayout;
+
+        // Create Layout
+        {
+            constexpr VkPushConstantRange pushConstRange = {
+                    .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                    .offset     = 0,
+                    .size       = sizeof(GPUDrawPushConstants),
+            };
+
+            const VkDescriptorSetLayout layouts[] = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_RenderPipeline->Layout};
+
+            const VkPipelineLayoutCreateInfo picking_layout_info = vkinit::pipeline_layout_create_info(2, layouts, &pushConstRange);
+
+            VK_CHECK(vkCreatePipelineLayout(device, &picking_layout_info, nullptr, &pickingLayout));
+        }
+
+        const std::vector<VkVertexInputBindingDescription>   vertexInputBindings{};
+        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes{};
+        const VkPipelineVertexInputStateCreateInfo           vertexInputInfo =
+                vkinit::pipeline_vertex_input_state_create_info(vertexInputBindings, vertexInputAttributes);
+
+        VkPipelines::PipelineBuilder pipelineBuilder;
+        pipelineBuilder.SetShaders(pickingVertShader, pickingFragShader);
+        pipelineBuilder.SetLayout(pickingLayout);
+        pipelineBuilder.SetVertexInput(vertexInputInfo);
+        pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
+        // pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+        pipelineBuilder.SetMultisamplingNone();
+
+        pipelineBuilder.DisableBlending();
+        pipelineBuilder.m_ColorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT;
+
+        pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+        pipelineBuilder.m_Rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+
+        pipelineBuilder.SetColorAttachmentFormat(m_DeviceContext.PickingImages[0].ImageFormat);
+        pipelineBuilder.SetDepthFormat(m_DeviceContext.Image.DepthImage.ImageFormat);
+
+        VkPipeline pickingPipeline = pipelineBuilder.BuildPipline(device, 1);
+        m_PickingPipeline          = std::make_unique<PipelineData>(pickingPipeline, pickingLayout);
+        std::cerr << "PickingPipeline: " << pickingPipeline << std::endl;
+        std::cerr << "PickingPipeline, Layout: " << pickingLayout << std::endl;
+
+        vkDestroyShaderModule(device, pickingFragShader, nullptr);
+        vkDestroyShaderModule(device, pickingVertShader, nullptr);
     }
 
     void Renderer::Render()
@@ -244,10 +257,9 @@ namespace MamontEngine
         VkUtil::transition_image(inCmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
         const VkExtent2D &extent = m_Window->GetExtent();
         vkCmdDispatch(inCmd, std::ceil(extent.width / 16.0), std::ceil(extent.height / 16.0), 1);
-
         VkUtil::transition_image(inCmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);  
-
         
+        RenderCascadeShadow(inCmd);
 
         {
             const auto start = std::chrono::high_resolution_clock::now();
@@ -258,10 +270,6 @@ namespace MamontEngine
             const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
             m_Stats.MeshDrawTime = elapsed.count() / 1000.f;
-        }
-
-        {
-            RenderCascadeShadow(inCmd);
         }
     }
 
@@ -294,7 +302,7 @@ namespace MamontEngine
         vkCmdSetDepthBias(inCmd, 0, 0, 0);
         {
             PROFILE_VK_ZONE(currentFrame.TracyContext, inCmd, "Scene Render");
-            m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, sceneData.Viewproj, m_DeviceContext.RenderPipeline->OpaquePipeline->Layout);
+            m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, sceneData.Viewproj);
         }
         vkCmdEndRendering(inCmd);
 
@@ -320,41 +328,44 @@ namespace MamontEngine
 
     void Renderer::RenderCascadeShadow(VkCommandBuffer inCmd)
     {
-        if (IsActiveCascade)
+        if (!IsActiveCascade)
+            return;
+        const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
+        const VkExtent2D cascadeExtent = {
+            .width = SHADOWMAP_DIMENSION, 
+            .height = SHADOWMAP_DIMENSION
+        };
+
+        for (size_t i = 0; i < CASCADECOUNT; i++)
         {
             VkUtil::transition_image(inCmd, m_DeviceContext.CascadeDepthImage.Image.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-            const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
 
-            const VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION, .height = SHADOWMAP_DIMENSION};
-
-            for (size_t i = 0; i < CASCADECOUNT; i++)
+            const VkImageView cascadeDepth = m_DeviceContext.Cascades[i].View;
+            if (cascadeDepth == VK_NULL_HANDLE)
             {
-                const VkImageView cascadeDepth = m_DeviceContext.Cascades[i].View;
-                if (cascadeDepth == VK_NULL_HANDLE)
-                {
-                    fmt::println("cascadeDepth is Null");
-                    continue;
-                }
-                VkRenderingAttachmentInfo depthAttachment     = vkinit::depth_attachment_info(cascadeDepth);
-                depthAttachment.clearValue.depthStencil.depth = 1.0;
-                depthAttachment.loadOp                        = VK_ATTACHMENT_LOAD_OP_CLEAR;
-                depthAttachment.storeOp                       = VK_ATTACHMENT_STORE_OP_STORE;
-
-                const VkRenderingInfo renderCascadeInfo = vkinit::rendering_info(cascadeExtent, nullptr, &depthAttachment);
-
-                vkCmdBeginRendering(inCmd, &renderCascadeInfo);
-                vkCmdSetDepthBias(inCmd, 1.25f, 0.f, 1.75f);
-                SetViewportScissor(inCmd, cascadeExtent);
-                vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Pipeline);
-
-                m_SceneRenderer->RenderShadow(inCmd,
-                                              currentFrame.GlobalDescriptor,
-                                              m_DeviceContext.Cascades[i].ViewProjectMatrix,
-                                              *m_CascadePipeline,
-                   static_cast<uint32_t>(i));
-
-                vkCmdEndRendering(inCmd);
+                fmt::println("cascadeDepth is Null");
+                continue;
             }
+            VkRenderingAttachmentInfo depthAttachment     = vkinit::depth_attachment_info(cascadeDepth);
+            depthAttachment.clearValue.depthStencil.depth = 1.0;
+            depthAttachment.loadOp                        = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            depthAttachment.storeOp                       = VK_ATTACHMENT_STORE_OP_STORE;
+
+            const VkRenderingInfo renderCascadeInfo = vkinit::rendering_info(cascadeExtent, nullptr, &depthAttachment);
+
+            vkCmdBeginRendering(inCmd, &renderCascadeInfo);
+            vkCmdSetDepthBias(inCmd, 1.25f, 0.f, 1.75f);
+            SetViewportScissor(inCmd, cascadeExtent);
+            vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Pipeline);
+
+            m_SceneRenderer->RenderShadow(
+                    inCmd, currentFrame.GlobalDescriptor, m_DeviceContext.Cascades[i].ViewProjectMatrix, *m_CascadePipeline, m_RenderPipeline->OpaquePipeline->Layout,static_cast<uint32_t>(i));
+
+            vkCmdEndRendering(inCmd);
+            VkUtil::transition_image(inCmd,
+                                     m_DeviceContext.CascadeDepthImage.Image.Image,
+                                     VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
         }
     }
 
@@ -448,13 +459,12 @@ namespace MamontEngine
         }
     }
 
-    void Renderer::UpdateSceneRenderer()
+    void Renderer::UpdateSceneRenderer(float inDeltaTime)
     {
         m_SceneRenderer->UpdateCascades(m_DeviceContext.Cascades);
 
-        m_SceneRenderer->Update(m_Window->GetExtent(), m_DeviceContext.Cascades);
+        m_SceneRenderer->Update(m_Window->GetExtent(), m_DeviceContext.Cascades, inDeltaTime);
 
-        //m_SceneRenderer->UpdateCascades(m_DeviceContext.Cascades);
     }
 
     void Renderer::DestroyPipelines()
@@ -533,7 +543,9 @@ namespace MamontEngine
         };
         const VkDevice device = LogicalDevice::GetDevice();
 
-        const std::array<VkDescriptorSetLayout, 2> layouts = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_RenderPipeline->Layout};
+        const std::array<VkDescriptorSetLayout, 2> layouts = {
+            m_DeviceContext.GPUSceneDataDescriptorLayout, m_RenderPipeline->Layout
+        };
 
         const VkPipelineLayoutCreateInfo layoutInfo       = vkinit::pipeline_layout_create_info(static_cast<uint32_t>(layouts.size()), layouts.data(), &matrixRange);
 
@@ -586,6 +598,7 @@ namespace MamontEngine
         }
 
         std::cerr << "shadowPipeline: " << shadowPipeline << std::endl;
+        std::cerr << "shadowPipeline, Layout: " << layout << std::endl;
 
         m_CascadePipeline       = std::make_unique<PipelineData>(shadowPipeline, layout);
 

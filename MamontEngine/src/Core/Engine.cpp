@@ -108,7 +108,9 @@ namespace MamontEngine
                     m_GuiLayer->End();
                 }
 
-                UpdateScene();
+                const float deltaTime = ImGui::GetIO().DeltaTime;
+
+                UpdateScene(deltaTime);
                 m_Renderer->Render();
                 //Draw();
             }
@@ -175,11 +177,11 @@ namespace MamontEngine
         m_Scene->Init(*m_ContextDevice);
     }
 
-    void MEngine::UpdateScene()
+    void MEngine::UpdateScene(float inDeltaTime)
     {
         m_MainCamera->Update();
         m_Scene->Update();
-        m_Renderer->UpdateSceneRenderer();
+        m_Renderer->UpdateSceneRenderer(inDeltaTime);
 
     }
     
