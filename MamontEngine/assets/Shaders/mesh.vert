@@ -15,13 +15,13 @@ layout (location = 5) out vec3 outViewPos;
 
 void main() 
 {
-	Vertex v = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
+	const Vertex v = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
     
     vec4 position = vec4(v.position, 1.0);
     gl_Position = sceneData.viewproj * (PushConstants.render_matrix * position);    
 
-    //outNormal = normalize(mat3(PushConstants.render_matrix) * v.normal);
-    outNormal = v.normal;
+    outNormal = normalize(mat3(PushConstants.render_matrix) * v.normal);
+    //outNormal = v.normal;
 	outColor = v.color;    
     outUV = v.uv;
 	outTangent = v.tangent;

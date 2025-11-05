@@ -7,9 +7,10 @@
 - GLTF model loading
 - ECS Integration
 - Save/Load scene
+- Cascade Shadow Mapping
 
 ## Dependencies
-- Vulkan SDK (1.3)
+- Vulkan SDK (1.4)
 - CMake 3.2
 - DearImGui
 - SDL3

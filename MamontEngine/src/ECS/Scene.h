@@ -53,6 +53,11 @@ namespace MamontEngine
             return m_SceneRenderer->GetGPUSceneData();
 		}
 
+		const std::shared_ptr<SceneRenderer>& GetSceneRenderer() const
+		{
+            return m_SceneRenderer;
+		}
+
 		Entity GetEntity(UID Id);
         const Entity& GetEntity(UID Id) const;
 

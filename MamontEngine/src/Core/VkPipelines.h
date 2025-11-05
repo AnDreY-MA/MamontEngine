@@ -10,6 +10,10 @@ namespace MamontEngine::VkPipelines
     public:
         PipelineBuilder()
         {
+            m_DynamicStates.reserve(2);
+            m_DynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+            m_DynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
+
             Clear();
         }
 
@@ -30,13 +34,18 @@ namespace MamontEngine::VkPipelines
         void EnableDepthTest(const bool inDepthWriteEnable, VkCompareOp inOp);
         void EnableDepthClamp(VkBool32 inValue);
         void DisableDepthtest();
+        void SetDepthBiasEnable(VkBool32 inValue);
+        void AddDynamicState(VkDynamicState inState);
+
         void Clear();
+
 
         VkPipeline BuildPipline(VkDevice inDevice, uint32_t attachmentCount = 1);
 
 
     //private:
         std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStages;
+        std::vector<VkDynamicState>                  m_DynamicStates;
 
         VkPipelineInputAssemblyStateCreateInfo m_InputAssembly;
         VkPipelineRasterizationStateCreateInfo m_Rasterizer;

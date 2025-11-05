@@ -347,20 +347,21 @@ namespace MamontEngine
                 fmt::println("cascadeDepth is Null");
                 continue;
             }
-            VkRenderingAttachmentInfo depthAttachment     = vkinit::depth_attachment_info(cascadeDepth);
-            depthAttachment.clearValue.depthStencil.depth = 1.0;
+            VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(cascadeDepth);
+            depthAttachment.clearValue.depthStencil = {1.f, 0};
             depthAttachment.loadOp                        = VK_ATTACHMENT_LOAD_OP_CLEAR;
             depthAttachment.storeOp                       = VK_ATTACHMENT_STORE_OP_STORE;
 
             const VkRenderingInfo renderCascadeInfo = vkinit::rendering_info(cascadeExtent, nullptr, &depthAttachment);
 
             vkCmdBeginRendering(inCmd, &renderCascadeInfo);
-            //vkCmdSetDepthBias(inCmd, 1.25f, 0.f, 1.75f);
+            vkCmdSetDepthBias(inCmd, 1.25f, 0.f, 1.75f);
             SetViewportScissor(inCmd, cascadeExtent);
             vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Pipeline);
 
             m_SceneRenderer->RenderShadow(
-                    inCmd, currentFrame.GlobalDescriptor, m_DeviceContext.Cascades[i].ViewProjectMatrix, *m_CascadePipeline, m_RenderPipeline->OpaquePipeline->Layout,static_cast<uint32_t>(i));
+                    inCmd, currentFrame.GlobalDescriptor, m_DeviceContext.Cascades[i].ViewProjectMatrix, 
+                *m_CascadePipeline, static_cast<uint32_t>(i));
 
             vkCmdEndRendering(inCmd);
             VkUtil::transition_image(inCmd,
@@ -588,9 +589,9 @@ namespace MamontEngine
         pipelineBuilder.SetMultisamplingNone();
         pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
         pipelineBuilder.DisableBlending();
-  //      pipelineBuilder.SetDepthBiasEnable(VK_TRUE);
+        //pipelineBuilder.SetDepthBiasEnable(VK_TRUE);
         pipelineBuilder.EnableDepthClamp(VK_TRUE);
-        //pipelineBuilder.AddDynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS);
+        pipelineBuilder.AddDynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS);
 
         VkPipeline shadowPipeline = pipelineBuilder.BuildPipline(device, 0);
         if (shadowPipeline == VK_NULL_HANDLE)

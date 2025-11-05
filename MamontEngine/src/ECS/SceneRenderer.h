@@ -28,7 +28,6 @@ namespace MamontEngine
                           VkDescriptorSet  globalDescriptor,
                           const glm::mat4    &inViewProjection,
                           const PipelineData &inPipelineData,
-                          VkPipelineLayout    inDrawDescriptorLayout,
                           uint32_t         cascadeIndex);
 
         void RenderPicking(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, VkPipeline inPipeline, VkPipelineLayout inLayout);
@@ -72,11 +71,6 @@ namespace MamontEngine
             return m_Camera.get();
         }
 
-        const glm::vec3& GetLightPos() const
-        {
-            return m_LightPosition;
-        }
-
         void ClearDrawContext()
         {
             m_DrawContext.Clear();
@@ -91,6 +85,8 @@ namespace MamontEngine
         {
             m_LightPosition = inPos;
         }
+        glm::vec3 m_LightPosition{glm::vec3(1.f)};
+
 	private:
         std::vector<MeshComponent>  m_MeshComponents;
         std::shared_ptr<Camera>     m_Camera;
@@ -99,7 +95,6 @@ namespace MamontEngine
         GPUSceneData m_SceneData;
         CascadeData  m_CascadeData;
 
-        glm::vec3 m_LightPosition{0.f};
 
 	};
 

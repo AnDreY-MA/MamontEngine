@@ -8,6 +8,7 @@
 #include <Panels/LogPanel.h>
 #include "imgui.h"
 #include "EditorUtils/EditorUtils.h"
+#include "Panels/SceneSettingsPanel.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
@@ -48,6 +49,7 @@ namespace MamontEditor
         AddPanel<InspectorPanel>();
         AddPanel<StatisticsPanel>();
         AddPanel<LogPanel>();
+        AddPanel<SceneSettingsPanel>();
 
         //ImGui_ImplVulkanH_CreateOrResizeWindow
 

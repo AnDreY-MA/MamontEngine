@@ -4,7 +4,7 @@
 
 #include "include/input_structures.glsl"
 
-#define SHADOW_MAP_CASCADE_COUNT 5
+#define SHADOW_MAP_CASCADE_COUNT 4
 
 layout (location = 0) out vec2 outUV;
 

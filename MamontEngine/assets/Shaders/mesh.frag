@@ -6,7 +6,7 @@
 
 #include "include/input_structures.glsl"
 
-#define SHADOW_MAP_CASCADE_COUNT 5
+#define SHADOW_MAP_CASCADE_COUNT 4
 #define ambient 0.3
 
 layout (location = 0) in vec3 inPos;
@@ -111,7 +111,7 @@ void main()
         }
     }
 
-    const vec4 shadowCoord = (biasMat * cascadeViewProjMatrices.matrices[cascadeIndex]) * vec4(inPos, 1.0);	
+    const vec4 shadowCoord = (biasMat * cascadeViewProjMatrices.matrices[cascadeIndex]) * PushConstants.render_matrix * vec4(inPos, 1.0);
     const float shadow = textureProj(shadowCoord / shadowCoord.w, vec2(0.0), cascadeIndex);
 
     const vec3 N = normalize(inNormal);
@@ -121,7 +121,7 @@ void main()
     const vec3 lightColor = vec3(1.0);
 
     outFragColor.rgb = max(lightColor * (diffuse * textureColor.rgb), vec3(0.0));
-    outFragColor.rgb *= shadow;w
+    outFragColor.rgb *= shadow;
     outFragColor.a = textureColor.a;
 
     // Defualt

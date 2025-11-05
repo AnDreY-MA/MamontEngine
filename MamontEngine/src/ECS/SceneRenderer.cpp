@@ -55,7 +55,7 @@ namespace MamontEngine
         constexpr float angle  = glm::radians(360.0f);
         constexpr float  radius = 20.0f;
         //m_LightPosition     = glm::vec3(cos(angle) * radius, -radius, sin(angle) * radius);
-        m_LightPosition = glm::vec3(1.5f, 4.4f, 6.7f);
+        m_LightPosition = glm::vec3(-2.f, 2.f, 0.f);
     }
     
     SceneRenderer::~SceneRenderer() 
@@ -157,7 +157,6 @@ namespace MamontEngine
                                      VkDescriptorSet            globalDescriptor,
                                      const glm::mat4           &inViewProjection,
                                      const PipelineData   &inPipelineData,
-                                     VkPipelineLayout inDrawDescriptorLayout,
                                      uint32_t                   cascadeIndex)
     {
         PROFILE_ZONE("SceneRenderer::RenderShadow");
@@ -242,27 +241,36 @@ namespace MamontEngine
 
     void SceneRenderer::Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades, float inDeltaTime)
     {
-        const glm::mat4& view       = m_Camera->GetViewMatrix();
-        const auto       lightDirection{glm::normalize(-m_LightPosition)};
+        const glm::mat4 &view = m_Camera->GetViewMatrix();
 
         m_Camera->UpdateProjection(inWindowExtent);
-        const glm::mat4& projection = m_Camera->GetProjection();
+        const glm::mat4 &projection = m_Camera->GetProjection();
 
-        m_SceneData.View     = view;
-        m_SceneData.Proj     = projection;
-        m_SceneData.Viewproj = projection * view;
-        m_SceneData.LightDirection = lightDirection;
+        UpdateLight(inDeltaTime);
+
+        glm::vec3 lightDir = -m_LightPosition;
+        if (glm::length(lightDir) < 1e-6f)
+        {
+            lightDir = glm::vec3(0.0f, -1.0f, 0.0f);
+        }
+        else
+        {
+            lightDir = glm::normalize(lightDir);
+        }
+
+        m_SceneData.View           = view;
+        m_SceneData.Proj           = projection;
+        m_SceneData.Viewproj       = projection * view;
+        m_SceneData.LightDirection = lightDir;
 
         for (size_t i = 0; i < CASCADECOUNT; i++)
         {
             m_CascadeData.Splits[i] = inCascades[i].SplitDepth;
         }
 
-        m_CascadeData.InverseViewMatrix  = glm::inverse(view);
-        m_CascadeData.LightDirection = lightDirection;
-        m_CascadeData.Color   = 0;
-
-        UpdateLight(inDeltaTime);
+        m_CascadeData.InverseViewMatrix = glm::inverse(view);
+        m_CascadeData.LightDirection    = lightDir;
+        m_CascadeData.Color             = 0;
 
         for (const auto &mesh : m_MeshComponents)
         {
@@ -277,9 +285,9 @@ namespace MamontEngine
     {
         static float angle = 0.f;
         angle += inDeltaTime * 0.5f; 
-        const float radius = 20.f;
-        m_LightPosition    = glm::vec3(cos(angle) * radius, -radius, sin(angle) * radius);
-        //m_LightPosition = glm::vec3(1.5f, 4.4f, 6.7f);
+        const float radius = 5.f;
+        m_LightPosition    = glm::vec3(cos(angle) * radius, radius, sin(angle) * radius);
+        //m_LightPosition.y  = 3.f;
     }
 
     void SceneRenderer::UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades)
@@ -307,7 +315,7 @@ namespace MamontEngine
             cascadeSplits[i]    = (d - nearClip) / clipRange;
         }
 
-        float lastSplitDist = 0;
+        float lastSplitDist = 0.f;
         for (size_t i = 0; i < CASCADECOUNT; i++)
         {
             float splitDist = cascadeSplits[i];
@@ -322,8 +330,8 @@ namespace MamontEngine
                     glm::vec3(-1.0f, -1.0f, 1.0f),
             };
 
-            const glm::mat4 inverseCamera = glm::inverse(m_Camera->GetViewMatrix() * m_Camera->GetProjection());
-            //const glm::mat4 inverseCamera = glm::inverse(m_Camera->GetProjection() * m_Camera->GetViewMatrix());
+            //const glm::mat4 inverseCamera = glm::inverse(m_Camera->GetViewMatrix() * m_Camera->GetProjection());
+            const glm::mat4 inverseCamera = glm::inverse(m_Camera->GetProjection() * m_Camera->GetViewMatrix());
             for (uint32_t j = 0; j < 8; j++)
             {
                 const glm::vec4 invCorner = inverseCamera * glm::vec4(frustumCorners[j], 1.f);
@@ -334,7 +342,7 @@ namespace MamontEngine
             {
                 const glm::vec3 dist = frustumCorners[j + 4] - frustumCorners[j];
                 frustumCorners[j + 4] = frustumCorners[j] + (dist * splitDist);
-                frustumCorners[j] = frustumCorners[j] + (dist * splitDist);
+                frustumCorners[j]     = frustumCorners[j] + (dist * lastSplitDist);
             }
 
             glm::vec3 frustumCenter = glm::vec3(0.f);
@@ -356,10 +364,11 @@ namespace MamontEngine
             const glm::vec3 minExtents = -maxExtents;
 
             const glm::vec3 lightDirection = glm::normalize(-m_LightPosition);
-            glm::mat4       lightViewMatrix = glm::lookAt(frustumCenter - lightDirection * maxExtents.z, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
-            glm::mat4 lightOrthoMatrix = glm::orthoRH_ZO(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.f, maxExtents.z * 2.f);
+            const glm::mat4       lightViewMatrix = glm::lookAt(frustumCenter - lightDirection * -minExtents.z, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
+            const glm::mat4 lightOrthoMatrix =
+                    glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.f, maxExtents.z - minExtents.z);
 
-            outCascades[i].SplitDepth        = (m_Camera->GetNearClip() + splitDist * clipRange) /** -1.f*/;
+            outCascades[i].SplitDepth        = (m_Camera->GetNearClip() + splitDist * clipRange) * -1.f;
             outCascades[i].ViewProjectMatrix = lightOrthoMatrix * lightViewMatrix;
 
             lastSplitDist = cascadeSplits[i];

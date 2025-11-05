@@ -93,30 +93,33 @@ namespace MamontEngine
         ImGui::PopStyleVar();
     }
 
-    bool MUI::DrawVec3Control(std::string_view inLabel, glm::vec3& inValues, float inResetValue)
+    bool MUI::DrawVec3Control(std::string_view inLabel, glm::vec3 &inValues, float inResetValue)
     {
-        bool changed{false};
+        bool changed = false;
 
         BeginPropertyGrid(inLabel, "tooltip");
-
         PushFrameStyle(false);
 
         ImGui::PushMultiItemsWidths(3, ImGui::GetWindowWidth() - 150.f);
 
-        const ImVec2 buttonSize = {2.f, ImGui::GetFrameHeight()};
-        //X
+        const ImVec2 buttonSize       = {ImGui::GetFrameHeight(), ImGui::GetFrameHeight()};
+        const float  frameHeight      = ImGui::GetFrameHeight();
+        const ImVec2 actualButtonSize = {frameHeight, frameHeight};
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0, 0});
+
+        // X
         {
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0, 0});
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1.0f, 1.0f, 1.0f, 1.0f});
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.8f, 0.1f, 0.15f, 1.0f});
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.9f, 0.2f, 0.2f, 1.0f});
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.8f, 0.1f, 0.15f, 1.0f});
-            if (ImGui::Button("##", buttonSize))
+
+            if (ImGui::Button("X", actualButtonSize))
             {
                 inValues.x = inResetValue;
+                changed    = true;
             }
-
-            ImGui::PopStyleColor(4);
+            ImGui::PopStyleColor(3);
 
             ImGui::SameLine();
             if (ImGui::DragFloat("##X", &inValues.x, 0.1f, 0.0f, 0.0f, "%.2f"))
@@ -124,23 +127,21 @@ namespace MamontEngine
                 changed = true;
             }
             ImGui::PopItemWidth();
-            ImGui::PopStyleVar();
+            ImGui::SameLine();
         }
-
-        ImGui::SameLine();
 
         // Y
         {
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0, 0});
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1.0f, 1.0f, 1.0f, 1.0f});
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.2f, 0.7f, 0.2f, 1.0f});
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.8f, 0.3f, 1.0f});
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.2f, 0.7f, 0.2f, 1.0f});
-            if (ImGui::Button("##", buttonSize))
+
+            if (ImGui::Button("Y", actualButtonSize))
             {
                 inValues.y = inResetValue;
+                changed    = true;
             }
-            ImGui::PopStyleColor(4);
+            ImGui::PopStyleColor(3);
 
             ImGui::SameLine();
             if (ImGui::DragFloat("##Y", &inValues.y, 0.1f, 0.0f, 0.0f, "%.2f"))
@@ -148,23 +149,21 @@ namespace MamontEngine
                 changed = true;
             }
             ImGui::PopItemWidth();
-            ImGui::PopStyleVar();
+            ImGui::SameLine();
         }
-
-        ImGui::SameLine();
 
         // Z
         {
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0, 0});
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1.0f, 1.0f, 1.0f, 1.0f});
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.1f, 0.25f, 0.8f, 1.0f});
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.2f, 0.35f, 0.9f, 1.0f});
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.1f, 0.25f, 0.8f, 1.0f});
-            if (ImGui::Button("##", buttonSize))
+
+            if (ImGui::Button("Z", actualButtonSize))
             {
                 inValues.z = inResetValue;
+                changed    = true;
             }
-            ImGui::PopStyleColor(4);
+            ImGui::PopStyleColor(3);
 
             ImGui::SameLine();
             if (ImGui::DragFloat("##Z", &inValues.z, 0.1f, 0.0f, 0.0f, "%.2f"))
@@ -172,11 +171,11 @@ namespace MamontEngine
                 changed = true;
             }
             ImGui::PopItemWidth();
-            ImGui::PopStyleVar();
         }
 
-        EndPropertyGrid();
+        ImGui::PopStyleVar(); 
 
+        EndPropertyGrid();
         PopFrameStyle();
 
         return changed;

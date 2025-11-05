@@ -67,7 +67,7 @@ namespace MamontEngine
         float m_MovementSpeed{5.f};
 
         float m_NearClip{0.5f};
-        float m_FarClip{100.f};
+        float m_FarClip{45.f};
 
         float m_AspectRatio{0.f};
 

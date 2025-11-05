@@ -1,7 +1,6 @@
 #include <memory>
 #include "EditorPanel.h"
 
-#include <ECS/Entity.h>
 #include <ECS/Scene.h>
 
 namespace MamontEditor
@@ -18,6 +17,9 @@ namespace MamontEditor
         virtual void Init() override;
 
         virtual void GuiRender() override;
+
+    private:
+        std::shared_ptr<MamontEngine::SceneRenderer> m_SceneRenderer;
 
 	};
 }

@@ -128,7 +128,7 @@ namespace MamontEngine::VkPipelines
 
     void PipelineBuilder::EnableDepthTest(const bool inDepthWriteEnable, VkCompareOp inOp)
     {
-        m_DepthStencil.depthTestEnable      = VK_TRUE;
+        m_DepthStencil.depthTestEnable       = VK_TRUE;
         m_DepthStencil.depthWriteEnable      = inDepthWriteEnable;
         m_DepthStencil.depthCompareOp        = inOp;
         m_DepthStencil.depthBoundsTestEnable = VK_FALSE;
@@ -154,6 +154,16 @@ namespace MamontEngine::VkPipelines
         m_DepthStencil.back                  = {};
         m_DepthStencil.minDepthBounds        = 0.f;
         m_DepthStencil.maxDepthBounds        = 1.f;
+    }
+
+    void PipelineBuilder::SetDepthBiasEnable(VkBool32 inValue)
+    {
+        m_Rasterizer.depthBiasEnable = inValue;
+    }
+
+    void PipelineBuilder::AddDynamicState(VkDynamicState inState)
+    {
+        m_DynamicStates.push_back(inState);
     }
 
     void PipelineBuilder::Clear()
@@ -205,14 +215,12 @@ namespace MamontEngine::VkPipelines
         pipelineInfo.pDepthStencilState           = &m_DepthStencil;
         pipelineInfo.layout                       = m_PipelineLayout;
 
-        constexpr VkDynamicState states[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-
         const VkPipelineDynamicStateCreateInfo dynamicInfo = {
             .sType              = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
             .pNext              = nullptr,
             .flags              = 0,
-            .dynamicStateCount  = 2,
-            .pDynamicStates     = states
+            .dynamicStateCount = static_cast<uint32_t>(m_DynamicStates.size()),
+            .pDynamicStates     = m_DynamicStates.data()
         };
         
         pipelineInfo.pDynamicState = &dynamicInfo;
