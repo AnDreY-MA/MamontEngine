@@ -290,8 +290,9 @@ namespace MamontEngine
         VkClearValue                    clearDepth = {.depthStencil = {1.0f, 0}};
         const VkRenderingAttachmentInfo colorAttachment =
                 vkinit::attachment_info(m_DeviceContext.Image.DrawImage.ImageView, nullptr);
-        const VkRenderingAttachmentInfo depthAttachment =
+        VkRenderingAttachmentInfo depthAttachment =
                 vkinit::depth_attachment_info(m_DeviceContext.Image.DepthImage.ImageView);
+        depthAttachment.clearValue.depthStencil   = {1.f, 0};
         //std::cerr << "m_DeviceContext.Image.DepthImage.ImageView: " << m_DeviceContext.Image.DepthImage.ImageView << std::endl;
 
         const VkRenderingInfo renderInfo = vkinit::rendering_info(extent, &colorAttachment, &depthAttachment);
@@ -299,10 +300,10 @@ namespace MamontEngine
         vkCmdBeginRendering(inCmd, &renderInfo);
 
         SetViewportScissor(inCmd, m_DrawExtent);
-        vkCmdSetDepthBias(inCmd, 0, 0, 0);
+        //vkCmdSetDepthBias(inCmd, 0, 0, 0);
         {
             PROFILE_VK_ZONE(currentFrame.TracyContext, inCmd, "Scene Render");
-            m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, sceneData.Viewproj);
+            m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor);
         }
         vkCmdEndRendering(inCmd);
 
@@ -354,7 +355,7 @@ namespace MamontEngine
             const VkRenderingInfo renderCascadeInfo = vkinit::rendering_info(cascadeExtent, nullptr, &depthAttachment);
 
             vkCmdBeginRendering(inCmd, &renderCascadeInfo);
-            vkCmdSetDepthBias(inCmd, 1.25f, 0.f, 1.75f);
+            //vkCmdSetDepthBias(inCmd, 1.25f, 0.f, 1.75f);
             SetViewportScissor(inCmd, cascadeExtent);
             vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Pipeline);
 

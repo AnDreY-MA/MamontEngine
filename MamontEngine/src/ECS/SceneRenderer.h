@@ -18,13 +18,12 @@ namespace MamontEngine
 	class SceneRenderer
 	{
     public:
-        SceneRenderer(const std::shared_ptr<Camera> &inCamera);
+        explicit SceneRenderer(const std::shared_ptr<Camera> &inCamera);
 
         ~SceneRenderer();
 
         void Render(VkCommandBuffer  inCmd,
-                    VkDescriptorSet  globalDescriptor,
-                    const glm::mat4 &inViewProjection);
+                    VkDescriptorSet  globalDescriptor);
         void RenderShadow(VkCommandBuffer  inCmd,
                           VkDescriptorSet  globalDescriptor,
                           const glm::mat4    &inViewProjection,
@@ -83,6 +82,15 @@ namespace MamontEngine
             m_DrawContext.Clear();
         }
 
+        glm::vec3& CascadeLightPosition()
+        {
+            return m_LightPosition;
+        }
+
+        void SetCascadeLightPosition(const glm::vec3& inPos)
+        {
+            m_LightPosition = inPos;
+        }
 	private:
         std::vector<MeshComponent>  m_MeshComponents;
         std::shared_ptr<Camera>     m_Camera;

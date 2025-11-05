@@ -69,10 +69,10 @@ namespace MamontEngine
         pipelineBuilder.SetVertexInput(vertexInputInfo);
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
         pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
-        pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+        pipelineBuilder.SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
         pipelineBuilder.SetMultisamplingNone();
         pipelineBuilder.DisableBlending();
-        pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+        pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
         pipelineBuilder.SetColorAttachmentFormat(inImageFormats.first);
         pipelineBuilder.SetDepthFormat(inImageFormats.second);
         pipelineBuilder.SetLayout(newLayout);
@@ -85,7 +85,7 @@ namespace MamontEngine
 
         //Transparent
         pipelineBuilder.EnableBlendingAdditive();
-        pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+        //pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
         TransparentPipeline          = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), newLayout);
         std::cerr << "TransparentPipeline->Pipeline: " << TransparentPipeline->Pipeline << std::endl;

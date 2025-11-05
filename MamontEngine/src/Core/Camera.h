@@ -10,7 +10,7 @@ namespace MamontEngine
         glm::mat4 GetRotationMatrix() const;
 
         void ProccessEvent(SDL_Event &inEvent);
-        void Update();
+        void Update(float inDeltaTime);
 
         void UpdateProjection(const VkExtent2D &inWindowExtent);
 
@@ -52,7 +52,7 @@ namespace MamontEngine
         void Rotate(const SDL_MouseMotionEvent& inMotion);
 
     private:
-        glm::mat4 m_Projection;
+        glm::mat4 m_Projection{glm::mat4(1.f)};
 
         glm::vec3 m_Velocity;
         glm::vec3 m_Position{0.8f, 5.f, 34.f};
@@ -60,11 +60,14 @@ namespace MamontEngine
         float     m_Pitch{0.f};
         float     m_Yaw{0.f};
 
+        bool      m_IsMotion{false};
         bool      m_IsRotating       = false;
         float     m_MouseSensitivity = 0.001f;
 
-        float m_NearClip{0.1f};
-        float m_FarClip{1000.f};
+        float m_MovementSpeed{5.f};
+
+        float m_NearClip{0.5f};
+        float m_FarClip{100.f};
 
         float m_AspectRatio{0.f};
 

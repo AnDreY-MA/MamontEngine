@@ -179,7 +179,7 @@ namespace MamontEngine
 
     void MEngine::UpdateScene(float inDeltaTime)
     {
-        m_MainCamera->Update();
+        m_MainCamera->Update(inDeltaTime);
         m_Scene->Update();
         m_Renderer->UpdateSceneRenderer(inDeltaTime);
 

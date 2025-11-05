@@ -6,7 +6,7 @@
 
 #include "include/input_structures.glsl"
 
-#define SHADOW_MAP_CASCADE_COUNT 4
+#define SHADOW_MAP_CASCADE_COUNT 5
 #define ambient 0.3
 
 layout (location = 0) in vec3 inPos;
@@ -121,9 +121,9 @@ void main()
     const vec3 lightColor = vec3(1.0);
 
     outFragColor.rgb = max(lightColor * (diffuse * textureColor.rgb), vec3(0.0));
-    outFragColor.rgb *= shadow;
+    outFragColor.rgb *= shadow;w
     outFragColor.a = textureColor.a;
 
     // Defualt
-	//outFragColor = vec4(color.rgb * lightValue + color.rgb * irradiance.x * vec3(0.2f), 1.f);
+	//outFragColor = vec4(textureColor.rgb * lightValue + textureColor.rgb * irradiance.x * vec3(0.2f), 1.f);
 }

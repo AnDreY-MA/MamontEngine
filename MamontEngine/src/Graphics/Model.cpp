@@ -560,8 +560,8 @@ namespace MamontEngine
             for (auto &&p : mesh.primitives)
             {
                 std::unique_ptr<Primitive> newPrimitive = std::make_unique<Primitive>();
-                newPrimitive->StartIndex = (uint32_t)indices.size();
-                newPrimitive->Count                     = (uint32_t)inFileAsset.accessors[p.indicesAccessor.value()].count;
+                newPrimitive->StartIndex                = static_cast<uint32_t>(indices.size());
+                newPrimitive->Count                     = static_cast<uint32_t>(inFileAsset.accessors[p.indicesAccessor.value()].count);
 
                 const size_t initial_vtx = vertices.size();
 

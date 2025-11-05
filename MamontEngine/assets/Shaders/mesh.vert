@@ -17,8 +17,8 @@ void main()
 {
 	Vertex v = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
     
-    vec4 position = vec4(v.position, 1.0f);
-    gl_Position = sceneData.viewproj * PushConstants.render_matrix * position;    
+    vec4 position = vec4(v.position, 1.0);
+    gl_Position = sceneData.viewproj * (PushConstants.render_matrix * position);    
 
     //outNormal = normalize(mat3(PushConstants.render_matrix) * v.normal);
     outNormal = v.normal;
@@ -27,5 +27,5 @@ void main()
 	outTangent = v.tangent;
     outPos = v.position;
 
-    outViewPos = (sceneData.view * vec4(position.xyz, 1.0)).xyz;
+    outViewPos = (sceneData.view * position).xyz;
 }

@@ -296,24 +296,23 @@ VkImageCreateInfo MamontEngine::vkinit::image_create_info(VkFormat format, VkIma
     return info;
 }
 
-VkImageViewCreateInfo
-MamontEngine::vkinit::imageviewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags, const uint32_t inLayerCount, VkImageViewType type)
+VkImageViewCreateInfo MamontEngine::vkinit::imageviewCreateInfo(VkFormat           format,
+                                                                                      VkImage            image,
+                                                                                      VkImageAspectFlags aspectFlags,
+                                                                                      uint32_t           mipLevels,
+                                                                                      uint32_t           layerCount,
+                                                                                      VkImageViewType    viewType)
 {
-    // build a image-view for the depth image to use for rendering
-    VkImageViewCreateInfo info = {};
-    info.sType                 = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    info.pNext                 = nullptr;
-
-    info.viewType                        = inLayerCount == 1 ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+    VkImageViewCreateInfo info{};
+    info.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     info.image                           = image;
+    info.viewType                        = viewType;
     info.format                          = format;
-    info.subresourceRange                = {},
     info.subresourceRange.baseMipLevel   = 0;
-    info.subresourceRange.levelCount     = 1;
+    info.subresourceRange.levelCount     = mipLevels;
     info.subresourceRange.baseArrayLayer = 0;
-    info.subresourceRange.layerCount     = inLayerCount;
+    info.subresourceRange.layerCount     = layerCount;
     info.subresourceRange.aspectMask     = aspectFlags;
-
     return info;
 }
 

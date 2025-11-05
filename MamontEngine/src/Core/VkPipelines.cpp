@@ -53,6 +53,7 @@ namespace MamontEngine::VkPipelines
     {
         m_InputAssembly.topology = inTopology;
         m_InputAssembly.primitiveRestartEnable = VK_FALSE;
+        m_InputAssembly.flags = 0;
     }
 
     void PipelineBuilder::SetVertexInput(VkPipelineVertexInputStateCreateInfo inInfo)

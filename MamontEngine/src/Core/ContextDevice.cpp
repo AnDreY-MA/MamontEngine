@@ -274,9 +274,9 @@ namespace MamontEngine
     AllocatedImage
     VkContextDevice::CreateImage(const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped, uint32_t arrayLayers) const
     {
-        AllocatedImage newImage {};
-        newImage.ImageFormat = inFormat;
-        newImage.ImageExtent = inSize;
+        AllocatedImage newImage{};
+        newImage.ImageFormat  = inFormat;
+        newImage.ImageExtent  = inSize;
         const VkDevice device = LogicalDevice::GetDevice();
 
         VkImageCreateInfo img_info = vkinit::image_create_info(inFormat, inUsage, inSize, arrayLayers);
@@ -285,17 +285,33 @@ namespace MamontEngine
             img_info.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(inSize.width, inSize.height)))) + 1;
         }
 
-        constexpr auto allocinfo = VmaAllocationCreateInfo {
-            .usage                   = VMA_MEMORY_USAGE_GPU_ONLY,
-            .requiredFlags           = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-        };
+        constexpr auto allocinfo =
+                VmaAllocationCreateInfo{.usage = VMA_MEMORY_USAGE_GPU_ONLY, .requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)};
 
         VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &img_info, &allocinfo, &newImage.Image, &newImage.Allocation, &newImage.Info));
 
         const VkImageAspectFlags aspectFlag =
                 (inFormat == VK_FORMAT_D32_SFLOAT || inFormat == VK_FORMAT_D24_UNORM_S8_UINT) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
-        const VkImageViewCreateInfo view_info       = vkinit::imageviewCreateInfo(inFormat, newImage.Image, aspectFlag, img_info.mipLevels);
+        // ИСПРАВЛЕНИЕ: Правильно определяем тип ImageView и параметры
+        VkImageViewType viewType       = VK_IMAGE_VIEW_TYPE_2D;
+        uint32_t        viewLayerCount = arrayLayers;
+
+        if (arrayLayers > 1)
+        {
+            viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+        }
+
+        uint32_t mipLevels = inIsMipMapped ? img_info.mipLevels : 1;
+
+        // Убедимся, что mipLevels > 0
+        if (mipLevels == 0)
+        {
+            mipLevels = 1;
+        }
+
+        const VkImageViewCreateInfo view_info =
+                vkinit::imageviewCreateInfo(inFormat, newImage.Image, aspectFlag, mipLevels, viewLayerCount, viewType); // Добавлен viewLayerCount
 
         VK_CHECK(vkCreateImageView(device, &view_info, nullptr, &newImage.ImageView));
 
@@ -631,7 +647,7 @@ namespace MamontEngine
         const VkExtent3D extent{Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
         
         constexpr VkImageUsageFlags drawImageUsages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-        Image.DrawImage                             = CreateImage(extent, Swapchain.GetImageFormat()/*VK_FORMAT_B8G8R8A8_UNORM*/, drawImageUsages, false);
+        Image.DrawImage                             = CreateImage(extent, Swapchain.GetImageFormat()/*VK_FORMAT_B8G8R8A8_UNORM*/, drawImageUsages, true);
         
         std::cerr << "Image.DrawImage Image:" << Image.DrawImage.Image << std::endl;
         std::cerr << "Image.DrawImage ImageView:" << Image.DrawImage.ImageView << std::endl;
@@ -679,55 +695,55 @@ namespace MamontEngine
     {
         const VkDevice device = LogicalDevice::GetDevice();
 
-        const VkFormat depthFormat = VK_FORMAT_D32_SFLOAT;
-            //= GetSupportedDepthFormat(true);
+        const VkFormat       depthFormat = VK_FORMAT_D32_SFLOAT;
         constexpr VkExtent3D shadowImageExtent{SHADOWMAP_DIMENSION, SHADOWMAP_DIMENSION, 1};
+
         auto imageInfo = vkinit::image_create_info(depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, shadowImageExtent);
 
-        imageInfo.extent.depth = 1;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.mipLevels = 1;
+        imageInfo.mipLevels   = 1;
         imageInfo.arrayLayers = CASCADECOUNT;
-        imageInfo.samples     = VK_SAMPLE_COUNT_1_BIT;
-        imageInfo.tiling      = VK_IMAGE_TILING_OPTIMAL;
 
-        constexpr auto allocinfo = VmaAllocationCreateInfo{
-            .usage = VMA_MEMORY_USAGE_GPU_ONLY, 
-            .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-        };
+        constexpr auto allocinfo = VmaAllocationCreateInfo{.usage = VMA_MEMORY_USAGE_GPU_ONLY, .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
 
-        VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &imageInfo, &allocinfo, &CascadeDepthImage.Image.Image, &CascadeDepthImage.Image.Allocation, &CascadeDepthImage.Image.Info));
+        VK_CHECK(vmaCreateImage(Allocator::GetAllocator(),
+                                &imageInfo,
+                                &allocinfo,
+                                &CascadeDepthImage.Image.Image,
+                                &CascadeDepthImage.Image.Allocation,
+                                &CascadeDepthImage.Image.Info));
+
         CascadeDepthImage.Image.ImageExtent = shadowImageExtent;
         CascadeDepthImage.Image.ImageFormat = depthFormat;
-        {
-            auto imageViewInfo = vkinit::imageviewCreateInfo(
-                    depthFormat, CascadeDepthImage.Image.Image, VK_IMAGE_ASPECT_DEPTH_BIT, CASCADECOUNT, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
 
-            imageViewInfo.subresourceRange.baseArrayLayer = 0;
+        {
+            auto imageViewInfo = vkinit::imageviewCreateInfo(depthFormat,
+                                                             CascadeDepthImage.Image.Image,
+                                                             VK_IMAGE_ASPECT_DEPTH_BIT,
+                                                             1,
+                                                             CASCADECOUNT,
+                                                             VK_IMAGE_VIEW_TYPE_2D_ARRAY
+            );
 
             VK_CHECK(vkCreateImageView(device, &imageViewInfo, nullptr, &CascadeDepthImage.Image.ImageView));
         }
+
         std::cerr << "Shadow Image:" << CascadeDepthImage.Image.Image << std::endl;
         std::cerr << "Shadow ImageView:" << CascadeDepthImage.Image.ImageView << std::endl;
 
-        for (size_t i{ 0 }; i < CASCADECOUNT; i++)
+        for (size_t i = 0; i < CASCADECOUNT; i++)
         {
-            /*auto imageViewInfo = vkinit::imageview_create_info(
-                    VK_FORMAT_D32_SFLOAT, CascadeDepthImage.Image.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, VK_IMAGE_VIEW_TYPE_2D_ARRAY);*/
-            auto layerViewInfo =
-                    vkinit::imageviewCreateInfo(depthFormat,
-                                                               CascadeDepthImage.Image.Image,
-                                                               VK_IMAGE_ASPECT_DEPTH_BIT,
-                                                               1,
-                                                               VK_IMAGE_VIEW_TYPE_2D_ARRAY); 
+            auto layerViewInfo = vkinit::imageviewCreateInfo(depthFormat,
+                                                             CascadeDepthImage.Image.Image,
+                                                             VK_IMAGE_ASPECT_DEPTH_BIT,
+                                                             1,  
+                                                             1,                          
+                                                             VK_IMAGE_VIEW_TYPE_2D_ARRAY);
 
             layerViewInfo.subresourceRange.baseArrayLayer = static_cast<uint32_t>(i);
-            //layerViewInfo.subresourceRange.layerCount     = 1;
+            layerViewInfo.subresourceRange.layerCount     = 1; 
 
             VK_CHECK(vkCreateImageView(device, &layerViewInfo, nullptr, &Cascades[i].View));
-
-            std::cerr << "Cascades[i].View: " << Cascades[i].View << std::endl;
-
+            std::cerr << "Cascades[" << i << "].View: " << Cascades[i].View << std::endl;
         }
 
 // Cascade Sampler
