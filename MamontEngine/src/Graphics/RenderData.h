@@ -72,27 +72,8 @@ namespace MamontEngine
     {
         std::array<float, 4> Splits{};
         glm::mat4            InverseViewMatrix{glm::mat4(0.f)};
-        glm::vec3            LightDirection;
+        glm::vec3 LightDirection{glm::vec3()};
         float                _pad;
-        int32_t              Color;
+        int32_t              Color{1};
     };
-
-    struct ShadowCascadeUBO
-    {
-        static constexpr const int kDebugCascadeBit = 0;
-        static constexpr const int kPCFBit          = 0;
-        std::bitset<64>            SettingBits{0};
-        glm::vec2                  Pad;
-        float                      MinBias{0.001};
-        float                      MaxBias{0.005};
-        float                      PcfScale{0.75};
-        float                      Pad2;
-        glm::vec4                  PlaneDistances;
-    };
-
-    struct ShadowCascadeMatrices
-    {
-        std::array<glm::mat4, 5> LightSpaceMatrices;
-    };
-
 }

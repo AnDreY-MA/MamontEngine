@@ -11,8 +11,6 @@
 
 namespace MamontEngine
 {
-    const std::string RootDirectories = PROJECT_ROOT_DIR;
-
     Scene::Scene(const std::shared_ptr<SceneRenderer> &inSceneRenderer) 
         : m_SceneRenderer(inSceneRenderer)
     {
@@ -41,14 +39,14 @@ namespace MamontEngine
 
     void Scene::Save()
     {
-        const std::string fileScene = RootDirectories + "/Scene.json";
+        const std::string fileScene = DEFAULT_ASSETS_DIRECTORY + "Scenes/Scene.json";
         Serializer::SaveToFile(m_Registry, fileScene);
     }
 
     void Scene::Load()
     {
         Clear();
-        const std::string fileScene = RootDirectories + "/Scene.json";
+        const std::string fileScene = DEFAULT_ASSETS_DIRECTORY + "Scenes/Scene.json";
         Serializer::LoadFromFile(this, fileScene);
     }
 

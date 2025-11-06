@@ -103,9 +103,6 @@ namespace MamontEngine
 
         bool IsActiveCascade{true};
 
-        ShadowCascadeUBO m_ShadowCascadeUBOData;
-        ShadowCascadeMatrices m_ShadowMatrices;
-
         bool m_StopRendering{false};
         bool m_IsResizeRequested{false};
 

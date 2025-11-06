@@ -134,12 +134,6 @@ namespace MamontEditor
                   GetSceneContext()->Load();
               }
 
-              if (ImGui::MenuItem("Cascade"))
-              {
-                  MamontEngine::MEngine::Get().EnableCascade(EnableCascade);
-                  EnableCascade = !EnableCascade;
-              }
-
               ImGui::EndMenu();
           }
 

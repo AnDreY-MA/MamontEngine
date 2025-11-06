@@ -332,7 +332,9 @@ namespace MamontEngine
         if (!IsActiveCascade)
             return;
         const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
-        const VkExtent2D cascadeExtent = {
+        PROFILE_VK_ZONE(currentFrame.TracyContext, inCmd, "Render Cascade Shadow");
+
+        constexpr VkExtent2D cascadeExtent = {
             .width = SHADOWMAP_DIMENSION, 
             .height = SHADOWMAP_DIMENSION
         };

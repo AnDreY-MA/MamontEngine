@@ -270,7 +270,7 @@ namespace MamontEngine
 
         const fastgltf::Asset gltf = std::move(loadResult.get());
 
-        std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
+        std::array<DescriptorAllocatorGrowable::PoolSizeRatio, 3> sizes = {
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3},
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}
@@ -295,10 +295,10 @@ namespace MamontEngine
     void MeshModel::LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers)
     {
         VkSamplerCreateInfo sampl = {
-            .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, 
-            .pNext = nullptr,
+            .sType  = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, 
+            .pNext  = nullptr,
             .minLod = 0,
-            .maxLod              = VK_LOD_CLAMP_NONE
+            .maxLod = VK_LOD_CLAMP_NONE
         };
 
         std::vector<VkSampler> modelSamplers;
@@ -366,12 +366,6 @@ namespace MamontEngine
                                         materialResources.MetalRoughSampler,
                                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                    /*Writer.WriteImage(3,
-                                      materialResources.ColorImage.ImageView,
-                                      materialResources.ColorSampler,
-                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);*/
-
                     Writer.UpdateSet(device, matData->MaterialSet);
 
                     std::cerr << "matData->MaterialSet: " << matData->MaterialSet << std::endl;

@@ -9,8 +9,6 @@
 
 namespace MamontEngine
 {
-    constexpr float FOV = 70.f;
-    
     static bool     is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
     {
         constexpr std::array<glm::vec3, 8> corners{
@@ -330,7 +328,6 @@ namespace MamontEngine
                     glm::vec3(-1.0f, -1.0f, 1.0f),
             };
 
-            //const glm::mat4 inverseCamera = glm::inverse(m_Camera->GetViewMatrix() * m_Camera->GetProjection());
             const glm::mat4 inverseCamera = glm::inverse(m_Camera->GetProjection() * m_Camera->GetViewMatrix());
             for (uint32_t j = 0; j < 8; j++)
             {
