@@ -587,7 +587,6 @@ namespace MamontEngine
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
         pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
         pipelineBuilder.SetDepthFormat(m_DeviceContext.CascadeDepthImage.Image.ImageFormat);
-        //pipelineBuilder.SetColorAttachmentFormat(VK_FORMAT_UNDEFINED);
         pipelineBuilder.SetMultisamplingNone();
         pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
         pipelineBuilder.DisableBlending();

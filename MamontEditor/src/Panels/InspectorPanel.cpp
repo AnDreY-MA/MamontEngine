@@ -6,7 +6,7 @@
 #include <ECS/Components/TransformComponent.h>
 #include <ECS/Entity.h>
 #include "UI/UI.h"
-#include "Graphics/Model.h"
+#include "Graphics/Resources/Models/Model.h"
 #include "Core/Engine.h"
 #include "EditorUtils/EditorUtils.h"
 
@@ -166,43 +166,68 @@ namespace MamontEditor
                                      [&](MeshComponent &component, entt::entity entity)
                                      {
                                          // MUI::BeginProperties();
-                                         if (component.Mesh)
-                                         {
-                                             ImGui::Text("Meshes count: %i", component.Mesh->GetSizeMeshes());
-                                             ImGui::Text("Materials count: %i", component.Mesh->GetSizeMaterials());
-                                         }
+                                         ImGui::Text("Meshes count: %i", component.Mesh->GetSizeMeshes());
+
                                          const std::string selectedString = component.Mesh != nullptr ? component.Mesh->GetPathFile() : "";
-                                         if (ImGui::BeginCombo("##Extensions", selectedString.c_str()))
+                                         if (ImGui::BeginCombo("##File", selectedString.c_str()))
                                          {
-                                             constexpr auto                     extensionFile = ".glb";
+                                             constexpr auto                 extensionFile = ".glb";
                                              const std::vector<std::string> files         = ScanFolder(AssetsPath, extensionFile);
                                              for (size_t index = 0; index < files.size(); ++index)
                                              {
-                                                 const auto &file       = files[index];
+                                                 const auto       &file       = files[index];
                                                  const std::string fullPath   = AssetsPath + "/" + file;
-                                                 const bool  isSelected = (component.Mesh != nullptr && component.Mesh->GetPathFile() == fullPath);
+                                                 const bool        isSelected = (component.Mesh != nullptr && component.Mesh->GetPathFile() == fullPath);
 
                                                  if (ImGui::Selectable(file.c_str(), isSelected))
                                                  {
                                                      auto newModel = std::make_shared<MeshModel>(MEngine::Get().GetContextDevice(), inEntity.GetID(), fullPath);
                                                      m_SceneContext->RemoveComponent<MeshComponent>(inEntity);
                                                      inEntity.AddComponent<MeshComponent>(newModel);
-                                                     //component.Mesh.swap(newModel);
                                                  }
 
                                                  if (isSelected)
                                                  {
                                                      ImGui::SetItemDefaultFocus();
                                                  }
-
-                                                 /*if (ImGui::IsItemHovered())
-                                                 {
-                                                     ImGui::SetTooltip("%s", fullPath.c_str());
-                                                 }*/
                                              }
                                              ImGui::EndCombo();
                                          }
-                                         
+
+                                         if (component.Mesh)
+                                         {
+                                             if (ImGui::TreeNodeEx("Materials"))
+                                             {
+                                                 for (size_t i{0}; i < component.Mesh->GetSizeMaterials(); i++)
+                                                 {
+                                                     auto material = component.Mesh->GetMaterial(i);
+                                                     if (!material)
+                                                         return;
+
+                                                     if (ImGui::TreeNode(fmt::format("{}", material->Name).c_str()))
+                                                     {
+                                                         if (ImGui::ColorEdit4("Base Color", &material->Constants.ColorFactors[0]))
+                                                             material->IsDity = true;
+                                                         if(ImGui::DragFloat("Metallic", &material->Constants.MetalicFactor, 0.01f, 0.f, 1.f))
+                                                         {
+                                                             material->IsDity = true;
+                                                         }
+                                                         if (ImGui::DragFloat("Roughness", &material->Constants.RoughFactor, 0.01f, 0.f, 1.f))
+                                                         {
+                                                             material->IsDity = true;
+                                                         }
+
+
+                                                         ImGui::TreePop();
+                                                     }
+                                                 }
+
+                                                 ImGui::TreePop();
+                                             }
+                                             
+                                         }
+
+
                                          // MUI::EndProperties();
                                           });
 

@@ -1,7 +1,7 @@
 #include "VkPipelines.h"
 #include <fstream>
 #include "VkInitializers.h"
-#include <Graphics/Mesh.h>
+#include "Graphics/Resources/Models/Mesh.h"
 
 namespace MamontEngine::VkPipelines
 {

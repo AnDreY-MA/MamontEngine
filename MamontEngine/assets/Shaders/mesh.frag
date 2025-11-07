@@ -2,7 +2,6 @@
 
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_buffer_reference : require
-#extension GL_EXT_debug_printf : enable
 
 #include "include/input_structures.glsl"
 
@@ -55,7 +54,7 @@ float textureProj(vec4 shadowCoord, vec2 offset, uint cascadeIndex)
 void main() 
 {
     const vec4 textureColor = texture(colorMap, inUV);
-	const vec4 color = inColor * textureColor;
+	const vec4 color = materialData.colorFactors * textureColor;
     /*if (color.a < 0.5) {
         discard;
     }*/

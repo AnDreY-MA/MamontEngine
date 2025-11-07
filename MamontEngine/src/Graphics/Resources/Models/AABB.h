@@ -62,7 +62,7 @@ namespace MamontEngine
 
             for (const auto &c : corners)
             {
-                glm::vec3 world = glm::vec3(m * glm::vec4(c, 1.0f));
+                const glm::vec3 world = glm::vec3(m * glm::vec4(c, 1.0f));
                 result.Expand(world);
             }
             return result;

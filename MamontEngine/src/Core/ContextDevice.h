@@ -1,30 +1,31 @@
 #pragma once
 
-#include "Graphics/Vulkan/Image.h"
-#include "Graphics/Vulkan/Materials/Material.h"
-#include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
-#include "Graphics/RenderData.h"
+// #include "Graphics/Vulkan/Image.h"
+#include "Graphics/Resources/Texture.h"
 
-#include "Graphics/Mesh.h"
+#include "Graphics/RenderData.h"
+#include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
+
 #include "FrameData.h"
-#include "Graphics/Vulkan/Swapchain.h"
 #include "Graphics/Devices/PhysicalDevice.h"
+#include "Graphics/Resources/Models/Mesh.h"
+#include "Graphics/Vulkan/Swapchain.h"
 #include "Utils/Profile.h"
 
 namespace MamontEngine
 {
     class WindowCore;
     struct AllocatedImage;
-    
+
     constexpr size_t FRAME_OVERLAP = 3;
 
-	struct VkContextDevice
-	{
+    struct VkContextDevice
+    {
         explicit VkContextDevice(WindowCore *inWindow);
 
         ~VkContextDevice();
 
-        //void PrepareFrame(); 
+        // void PrepareFrame();
 
         void DestroyFrameData();
 
@@ -37,17 +38,17 @@ namespace MamontEngine
         void DestroyImage(const AllocatedImage &inImage) const;
 
         void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction) const;
-        
+
         void InitSamples();
 
         void InitShadowImages();
 
         void ResizeSwapchain(const VkExtent2D &inWindowExtent);
 
-        FrameData &GetCurrentFrame();
+        FrameData       &GetCurrentFrame();
         const FrameData &GetCurrentFrame() const;
 
-        inline FrameData& GetFrameAt(const size_t inIndex)
+        inline FrameData &GetFrameAt(const size_t inIndex)
         {
             return m_Frames.at(inIndex);
         }
@@ -72,8 +73,6 @@ namespace MamontEngine
             return m_GraphicsQueueFamily;
         }
 
-        VkPhysicalDevice GetPhysicalDevice() const;
-
         VkInstance               Instance{VK_NULL_HANDLE};
         VkDebugUtilsMessengerEXT DebugMessenger{VK_NULL_HANDLE};
         VkSurfaceKHR             Surface{VK_NULL_HANDLE};
@@ -81,9 +80,6 @@ namespace MamontEngine
         VkFence TransferFence{VK_NULL_HANDLE};
 
         std::vector<VkSemaphore> RenderCopleteSemaphores{};
-
-        AllocatedImage WhiteImage;
-        AllocatedImage ErrorCheckerboardImage;
 
         Image Image;
 
@@ -103,11 +99,11 @@ namespace MamontEngine
         VkSampler DefaultSamplerNearest{VK_NULL_HANDLE};
 
         DescriptorAllocatorGrowable GlobalDescriptorAllocator;
-        VkDescriptorSet       DrawImageDescriptors{VK_NULL_HANDLE};
-        VkDescriptorSetLayout DrawImageDescriptorLayout{VK_NULL_HANDLE};
-        VkDescriptorSetLayout GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
-        
-        RenderPipeline* RenderPipeline;
+        VkDescriptorSet             DrawImageDescriptors{VK_NULL_HANDLE};
+        VkDescriptorSetLayout       DrawImageDescriptorLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout       GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
+
+        RenderPipeline *RenderPipeline;
 
     private:
 #pragma region Initialize functions
@@ -136,15 +132,13 @@ namespace MamontEngine
         void DestroyDescriptors();
 
         void DestroySceneBuffers();
-#pragma endregion        
+#pragma endregion
 
         VkFormat GetSupportedDepthFormat(bool checkSamplingSupport);
 
     private:
         std::array<FrameData, FRAME_OVERLAP> m_Frames{};
-        size_t                                  m_FrameNumber{0};
-
-        std::unique_ptr<PhysicalDevice> m_PhysicalDevice;
+        size_t                               m_FrameNumber{0};
 
         VkFence         m_ImmFence{VK_NULL_HANDLE};
         VkCommandBuffer m_ImmCommandBuffer{VK_NULL_HANDLE};
@@ -152,14 +146,14 @@ namespace MamontEngine
 
         VkQueue  m_GraphicsQueue{VK_NULL_HANDLE};
         uint32_t m_GraphicsQueueFamily{0};
-   
+
         struct TracyInfo
         {
             VkCommandPool                                      CommandPool{VK_NULL_HANDLE};
             VkCommandBuffer                                    CommandBuffer{VK_NULL_HANDLE};
             PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT GetPhysicalDeviceCalibrateableTimeDomainsEXT = nullptr;
-            PFN_vkGetCalibratedTimestampsEXT                   GetCalibratedTimestampsEXT = nullptr;
+            PFN_vkGetCalibratedTimestampsEXT                   GetCalibratedTimestampsEXT                   = nullptr;
         } m_TracyInfo;
+    };
+} // namespace MamontEngine
 
-	};
-}

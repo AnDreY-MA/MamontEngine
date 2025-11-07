@@ -3,7 +3,7 @@
 #include "ECS/Components/TagComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MeshComponent.h"
-#include "Graphics/Model.h"
+#include "Graphics/Resources/Models/Model.h"
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
 #include <fstream>

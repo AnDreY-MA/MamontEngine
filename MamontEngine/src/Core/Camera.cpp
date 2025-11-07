@@ -38,27 +38,53 @@ namespace MamontEngine
     {
         if (inEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN && inEvent.button.button == SDL_BUTTON_RIGHT)
         {
-            m_IsRotating = true;
             m_IsMotion   = true;
         }
 
         if (inEvent.type == SDL_EVENT_MOUSE_BUTTON_UP && inEvent.button.button == SDL_BUTTON_RIGHT)
         {
-            m_IsRotating = false;
             m_IsMotion   = false;
         }
 
-        if (inEvent.type == SDL_EVENT_MOUSE_MOTION && m_IsRotating)
+        if (inEvent.type == SDL_EVENT_KEY_UP)
+        {
+            if (inEvent.key.key == SDLK_E)
+            {
+                m_Velocity.y = 0;
+            }
+            if (inEvent.key.key == SDLK_Q)
+            {
+                m_Velocity.y = 0;
+            }
+            if (inEvent.key.key == SDLK_W)
+            {
+                m_Velocity.z = 0;
+            }
+            if (inEvent.key.key == SDLK_S)
+            {
+                m_Velocity.z = 0;
+            }
+            if (inEvent.key.key == SDLK_A)
+            {
+                m_Velocity.x = 0;
+            }
+            if (inEvent.key.key == SDLK_D)
+            {
+                m_Velocity.x = 0;
+            }
+        }
+        
+        if (!m_IsMotion)
+            return;
+
+        if (inEvent.type == SDL_EVENT_MOUSE_MOTION)
         {
             Rotate(inEvent.motion);
         }
 
-        if (m_IsMotion)
+        if (inEvent.type == SDL_EVENT_MOUSE_WHEEL)
         {
-            if (inEvent.type == SDL_EVENT_MOUSE_WHEEL)
-            {
-                m_MovementSpeed += inEvent.wheel.y;
-            }
+            m_MovementSpeed += inEvent.wheel.y;
         }
 
         if (inEvent.type == SDL_EVENT_KEY_DOWN)
@@ -89,33 +115,7 @@ namespace MamontEngine
             }
         }
 
-        if (inEvent.type == SDL_EVENT_KEY_UP)
-        {
-            if (inEvent.key.key == SDLK_E)
-            {
-                m_Velocity.y = 0;
-            }
-            if (inEvent.key.key == SDLK_Q)
-            {
-                m_Velocity.y = 0;
-            }
-            if (inEvent.key.key == SDLK_W)
-            {
-                m_Velocity.z = 0 ;
-            }
-            if (inEvent.key.key == SDLK_S)
-            {
-                m_Velocity.z = 0;
-            }
-            if (inEvent.key.key == SDLK_A)
-            {
-                m_Velocity.x = 0;
-            }
-            if (inEvent.key.key == SDLK_D)
-            {
-                m_Velocity.x = 0;
-            }
-        }
+        
     }
 
     void Camera::Update(float inDeltaTime)

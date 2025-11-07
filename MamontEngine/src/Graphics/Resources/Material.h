@@ -1,6 +1,7 @@
 #pragma once 
 
 #include "Graphics/Vulkan/Image.h"
+#include "Graphics/Resources/Texture.h"
 
 namespace MamontEngine
 {
@@ -13,11 +14,21 @@ namespace MamontEngine
         OTHER
     };
 
-    struct GLTFMaterial
+    struct Material
     {
         std::shared_ptr<PipelineData> Pipeline;
         VkDescriptorSet               MaterialSet{VK_NULL_HANDLE};
         EMaterialPass PassType{EMaterialPass::MAIN_COLOR};
+
+        std::string Name{std::string("Empty Material")};
+
+        struct MaterialResources
+        {
+            Texture   ColorTexture;
+            Texture   MetalRoughTexture;
+            VkBuffer  DataBuffer{VK_NULL_HANDLE};
+            uint32_t  DataBufferOffset{0};
+        } Resources;
 
         struct MaterialConstants
         {
@@ -33,18 +44,8 @@ namespace MamontEngine
             float RoughFactor{0.f};
         } Constants;
 
+        bool IsDity{true};
+
     };
 
-    struct GLTFMetallic_Roughness
-    {
-        struct MaterialResources
-        {
-            AllocatedImage ColorImage;
-            VkSampler      ColorSampler{VK_NULL_HANDLE};
-            AllocatedImage MetalRoughImage;
-            VkSampler      MetalRoughSampler{VK_NULL_HANDLE};
-            VkBuffer       DataBuffer{VK_NULL_HANDLE};
-            uint32_t       DataBufferOffset{0};
-        };
-    };
 }

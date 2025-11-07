@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphics/Model.h"
+#include "Graphics/Resources/Models/Model.h"
 
 namespace MamontEngine
 {

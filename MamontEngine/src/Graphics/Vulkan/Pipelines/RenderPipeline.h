@@ -1,6 +1,5 @@
 #pragma once 
 
-#include "Graphics/Vulkan/Materials/Material.h"
 #include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/Pipelines/PipelineData.h"
 

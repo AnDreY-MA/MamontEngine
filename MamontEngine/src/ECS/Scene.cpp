@@ -3,11 +3,11 @@
 #include "ECS/Components/TagComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MeshComponent.h"
-#include "Graphics/Mesh.h"
-#include "Graphics/Model.h"
+#include "Graphics/Resources/Models/Mesh.h"
+#include "Graphics/Resources/Models/Model.h"
 #include "Core/ContextDevice.h"
 #include "Core/Log.h"
-#include "Graphics/Model.h"
+#include "Graphics/Resources/Models/Model.h"
 
 namespace MamontEngine
 {

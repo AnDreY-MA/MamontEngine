@@ -115,6 +115,8 @@ namespace MamontEditor
         {
             panel->GuiRender();
         }
+
+        ImGui::ShowDemoWindow();
         
     }
     static bool EnableCascade = true;

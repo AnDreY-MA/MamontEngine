@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Vulkan/Materials/Material.h"
-#include "Graphics/Mesh.h"
+#include "Graphics/Resources/Material.h"
+#include "Graphics/Resources/Models/Mesh.h"
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/parser.hpp>
 #include "Core/ContextDevice.h"
@@ -42,14 +42,20 @@ namespace MamontEngine
             return pathFile.string();
         }
 
+        Material* GetMaterial(size_t index) const
+        {
+            return m_Materials.at(index).get();
+        }
+
         UID ID;
 
     private:
-        void                                  LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers);
-        void                                  LoadMaterials(const fastgltf::Asset &inFileAsset);
-        void                                  LoadImages(const fastgltf::Asset &inFileAsset);
+        void                                  LoadMaterials(const fastgltf::Asset &inFileAsset, const std::vector<VkSampler> &inSamplers);
+        void                                  LoadImages(const fastgltf::Asset &inFileAsset, const std::vector<VkSampler>& inSamplers);
         void                                  LoadNodes(const fastgltf::Asset &inFileAsset);
         void                                  LoadMesh(const fastgltf::Asset &inFileAsset);
+
+        std::vector<VkSampler> LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers);
 
         void Clear();
 
@@ -57,9 +63,9 @@ namespace MamontEngine
         const VkContextDevice &m_ContextDevice;
 
         std::vector<std::shared_ptr<Node>>         m_Nodes;
-        std::vector<AllocatedImage>                m_Images;
-        std::vector<std::shared_ptr<GLTFMaterial>> m_Materials;
-        std::vector<VkSampler>                     m_Samplers;
+        std::vector<Texture>               m_Textures;
+        //std::vector<Texture>                       m_Textures;
+        std::vector<std::shared_ptr<Material>> m_Materials;
         std::vector<std::shared_ptr<NewMesh>>      m_Meshes;
 
         DescriptorAllocatorGrowable DescriptorPool;

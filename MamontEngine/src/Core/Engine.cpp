@@ -7,13 +7,13 @@
 #include "Graphics/Vulkan/Swapchain.h"
 #include "ImGuiRenderer.h"
 
-#include "ECS/Scene.h"
 #include "ECS/Entity.h"
 #include <ECS/Components/MeshComponent.h>
 
 #include "Utils/Profile.h"
 #include "tracy/public/TracyClient.cpp"
 #include "Graphics/Devices/LogicalDevice.h"
+#include "Graphics/Devices/PhysicalDevice.h"
 
 namespace MamontEngine
 {
@@ -22,6 +22,7 @@ namespace MamontEngine
     MEngine       &MEngine::Get()
     {
         return *loadedEngine;
+#include "ECS/Scene.h"
     }
 
     const std::string RootDirectories = PROJECT_ROOT_DIR;
@@ -163,9 +164,6 @@ namespace MamontEngine
                     const VkDevice device = LogicalDevice::GetDevice();
                     vkDestroySampler(device, m_ContextDevice->DefaultSamplerNearest, nullptr);
                     vkDestroySampler(device, m_ContextDevice->DefaultSamplerLinear, nullptr);
-
-                    m_ContextDevice->DestroyImage(m_ContextDevice->WhiteImage);
-                    m_ContextDevice->DestroyImage(m_ContextDevice->ErrorCheckerboardImage);
                 });
     }
     
@@ -190,7 +188,7 @@ namespace MamontEngine
         for (const VkFormat format : candidates)
         {
             VkFormatProperties props;
-            vkGetPhysicalDeviceFormatProperties(m_ContextDevice->GetPhysicalDevice(), format, &props);
+            vkGetPhysicalDeviceFormatProperties(PhysicalDevice::GetDevice(), format, &props);
 
             if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
             {

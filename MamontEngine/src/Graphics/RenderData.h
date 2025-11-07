@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Graphics/Vulkan/Materials/Material.h"
-#include "Graphics/Mesh.h"
+#include "Graphics/Resources/Models/Mesh.h"
 #include <bitset>
 #include "Core/UID.h"
 
@@ -19,7 +18,7 @@ namespace MamontEngine
                      const VkBuffer InIndexBuffer,
                      const VkBuffer  inVertexBuffer,
 
-                     const GLTFMaterial *InMaterial,
+                     const Material *InMaterial,
                      AABB inBound,
                      glm::mat4       InTransform,
                      VkDeviceAddress InVertexBufferAdders, UID id)
@@ -40,7 +39,7 @@ namespace MamontEngine
         const VkBuffer IndexBuffer;
         const VkBuffer VertexBuffer;
 
-		const GLTFMaterial *Material;
+		const Material *Material;
         AABB            Bound;
 
 		glm::mat4 Transform;

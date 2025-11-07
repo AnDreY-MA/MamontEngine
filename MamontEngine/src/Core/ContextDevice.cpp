@@ -1,15 +1,15 @@
 ﻿#include "ContextDevice.h"
 
-#include "Window.h"
-#include "VkInitializers.h"
-#include "VkImages.h"
 #include <glm/gtx/transform.hpp>
-#include "ECS/SceneRenderer.h"
-#include "tracy/TracyVulkan.hpp"
-#include "Graphics/Vulkan/Allocator.h"
-#include "Graphics/Devices/LogicalDevice.h"
-#include "vulkan/vk_enum_string_helper.h"
 #include <vk_mem_alloc.h>
+#include "ECS/SceneRenderer.h"
+#include "Graphics/Devices/LogicalDevice.h"
+#include "Graphics/Vulkan/Allocator.h"
+#include "VkImages.h"
+#include "VkInitializers.h"
+#include "Window.h"
+#include "tracy/TracyVulkan.hpp"
+#include "vulkan/vk_enum_string_helper.h"
 
 namespace MamontEngine
 {
@@ -106,7 +106,7 @@ namespace MamontEngine
                                      //.use_default_debug_messenger()
                                      .require_api_version(1, 4, 321)
                                      .build();
-        
+
 
         const vkb::Instance vkbInstance = instRet.value();
         Instance                        = vkbInstance.instance;
@@ -131,7 +131,7 @@ namespace MamontEngine
                 fmt::println("Failed to create debug messenger!");
             }
         }
-        //DebugMessenger                  = vkbInstance.debug_messenger;
+        // DebugMessenger                  = vkbInstance.debug_messenger;
         if (vkbInstance.allocation_callbacks == nullptr)
         {
             fmt::println("allocation_callbacks == nullptr");
@@ -144,42 +144,37 @@ namespace MamontEngine
 
         inWindow->CreateSurface(Instance, &Surface);
 
-        constexpr auto deviceFeatures = VkPhysicalDeviceFeatures{
-                .imageCubeArray    = VK_TRUE,
-                .geometryShader    = VK_TRUE,
-                .multiDrawIndirect = VK_TRUE,
-                .drawIndirectFirstInstance = VK_TRUE,
-                .depthClamp        = VK_TRUE,
-                .depthBiasClamp    = VK_TRUE,
-                .samplerAnisotropy = VK_TRUE,
-                .shaderInt64 = VK_TRUE
-        };
+        constexpr auto deviceFeatures = VkPhysicalDeviceFeatures{.imageCubeArray            = VK_TRUE,
+                                                                 .geometryShader            = VK_TRUE,
+                                                                 .multiDrawIndirect         = VK_TRUE,
+                                                                 .drawIndirectFirstInstance = VK_TRUE,
+                                                                 .depthClamp                = VK_TRUE,
+                                                                 .depthBiasClamp            = VK_TRUE,
+                                                                 .samplerAnisotropy         = VK_TRUE,
+                                                                 .shaderInt64               = VK_TRUE};
 
-        constexpr VkPhysicalDeviceVulkan14Features features14 = {
-            .maintenance5 = VK_TRUE,
-            .maintenance6 = VK_TRUE, 
-            .pushDescriptor = VK_TRUE
-        };
+        constexpr VkPhysicalDeviceVulkan14Features features14 = {.maintenance5 = VK_TRUE, .maintenance6 = VK_TRUE, .pushDescriptor = VK_TRUE};
 
         constexpr VkPhysicalDeviceVulkan13Features features = {
-            .synchronization2 = VK_TRUE, 
-            .dynamicRendering = VK_TRUE,
+                .synchronization2 = VK_TRUE,
+                .dynamicRendering = VK_TRUE,
         };
 
-        constexpr VkPhysicalDeviceVulkan12Features features12 = {.uniformAndStorageBuffer8BitAccess            = VK_TRUE,
-                                                                 .shaderInt8                                   = VK_TRUE,
-                                                                 .descriptorIndexing                           = VK_TRUE,
-                                                                 .shaderSampledImageArrayNonUniformIndexing    = VK_TRUE,
-                                                                 .descriptorBindingSampledImageUpdateAfterBind = VK_TRUE,
-                                                                 .descriptorBindingUpdateUnusedWhilePending    = VK_TRUE,
-                                                                 .descriptorBindingPartiallyBound              = VK_TRUE,
-                                                                 .descriptorBindingVariableDescriptorCount     = VK_TRUE,
-                                                                 .runtimeDescriptorArray                       = VK_TRUE,
+        constexpr VkPhysicalDeviceVulkan12Features features12 = {
+                .uniformAndStorageBuffer8BitAccess            = VK_TRUE,
+                .shaderInt8                                   = VK_TRUE,
+                .descriptorIndexing                           = VK_TRUE,
+                .shaderSampledImageArrayNonUniformIndexing    = VK_TRUE,
+                .descriptorBindingSampledImageUpdateAfterBind = VK_TRUE,
+                .descriptorBindingUpdateUnusedWhilePending    = VK_TRUE,
+                .descriptorBindingPartiallyBound              = VK_TRUE,
+                .descriptorBindingVariableDescriptorCount     = VK_TRUE,
+                .runtimeDescriptorArray                       = VK_TRUE,
 #ifdef PROFILING
-                                                                 .hostQueryReset                               = VK_TRUE,
+                .hostQueryReset = VK_TRUE,
 #endif
-                                                                 .timelineSemaphore                            = VK_TRUE,
-                                                                 .bufferDeviceAddress                          = VK_TRUE,
+                .timelineSemaphore   = VK_TRUE,
+                .bufferDeviceAddress = VK_TRUE,
         };
 
 
@@ -197,7 +192,7 @@ namespace MamontEngine
                                                            .set_required_features_13(features)
                                                            .set_required_features_12(features12)
                                                            .set_surface(Surface)
-                                                           .add_required_extensions(extensions) 
+                                                           .add_required_extensions(extensions)
                                                            .select()
                                                            .value();
         fmt::print("Name {}", physicalDevice.name);
@@ -207,13 +202,14 @@ namespace MamontEngine
         const vkb::Device vkbDevice = deviceBuilder.build().value();
 
         LogicalDevice::InitDevice(vkbDevice.device);
-        m_PhysicalDevice = std::make_unique<PhysicalDevice>(physicalDevice.physical_device);
+        // m_PhysicalDevice = std::make_unique<PhysicalDevice>(physicalDevice.physical_device);
+        PhysicalDevice::Init(physicalDevice.physical_device);
 
         m_GraphicsQueue       = vkbDevice.get_queue(vkb::QueueType::graphics).value();
         m_GraphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
 
         const VmaAllocatorCreateInfo allocatorInfo = {.flags          = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
-                                                      .physicalDevice = m_PhysicalDevice->GetDevice(),
+                                                      .physicalDevice = PhysicalDevice::GetDevice(),
                                                       .device         = LogicalDevice::GetDevice(),
                                                       .instance       = Instance};
         Allocator::Init(allocatorInfo);
@@ -229,7 +225,6 @@ namespace MamontEngine
         InitDescriptors();
 
         InitTracyContext();
-
     }
 
     VkContextDevice::~VkContextDevice()
@@ -252,7 +247,7 @@ namespace MamontEngine
 
     void VkContextDevice::DestroyFrameData()
     {
-        for (auto& frame : m_Frames)
+        for (auto &frame : m_Frames)
         {
             frame.Deleteions.Flush();
         }
@@ -261,15 +256,14 @@ namespace MamontEngine
         DestroyCommands();
         DestroySyncStructeres();
         DestroyDescriptors();
-        DestroySceneBuffers(); 
+        DestroySceneBuffers();
 
-    #ifdef PROFILING
-        for (size_t i{ 0 }; i < FRAME_OVERLAP; ++i)
+#ifdef PROFILING
+        for (size_t i{0}; i < FRAME_OVERLAP; ++i)
         {
             tracy::DestroyVkContext(GetFrameAt(i).TracyContext);
         }
-    #endif
-    
+#endif
     }
 
     AllocatedImage
@@ -294,36 +288,28 @@ namespace MamontEngine
         const VkImageAspectFlags aspectFlag =
                 (inFormat == VK_FORMAT_D32_SFLOAT || inFormat == VK_FORMAT_D24_UNORM_S8_UINT) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
-        // ИСПРАВЛЕНИЕ: Правильно определяем тип ImageView и параметры
-        VkImageViewType viewType       = VK_IMAGE_VIEW_TYPE_2D;
-        uint32_t        viewLayerCount = arrayLayers;
-
-        if (arrayLayers > 1)
-        {
-            viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-        }
+        const VkImageViewType viewType = arrayLayers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
 
         uint32_t mipLevels = inIsMipMapped ? img_info.mipLevels : 1;
 
-        // Убедимся, что mipLevels > 0
         if (mipLevels == 0)
         {
             mipLevels = 1;
         }
 
-        const VkImageViewCreateInfo view_info =
-                vkinit::imageviewCreateInfo(inFormat, newImage.Image, aspectFlag, mipLevels, viewLayerCount, viewType); // Добавлен viewLayerCount
+        const VkImageViewCreateInfo view_info = vkinit::imageviewCreateInfo(inFormat, newImage.Image, aspectFlag, mipLevels, arrayLayers, viewType);
 
         VK_CHECK(vkCreateImageView(device, &view_info, nullptr, &newImage.ImageView));
 
         return newImage;
     }
 
-    AllocatedImage VkContextDevice::CreateImage(void *inData, const VkExtent3D& inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const
+    AllocatedImage
+    VkContextDevice::CreateImage(void *inData, const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const
     {
-        const size_t          data_size    = inSize.depth * inSize.width * inSize.height * 4;
+        const size_t    data_size    = inSize.depth * inSize.width * inSize.height * 4;
         AllocatedBuffer uploadbuffer = CreateStagingBuffer(data_size);
-        //uploadbuffer.Create(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        // uploadbuffer.Create(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
         memcpy(uploadbuffer.Info.pMappedData, inData, data_size);
 
@@ -359,41 +345,19 @@ namespace MamontEngine
 
         uploadbuffer.Destroy();
 
-        //std::cerr << "NewImage: " << new_image.Image << std::endl;
+        // std::cerr << "NewImage: " << new_image.Image << std::endl;
 
         return new_image;
     }
 
     void VkContextDevice::InitDefaultImages()
     {
-        {
-            const uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
-            WhiteImage           = CreateImage((void *)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, true);
-            std::cerr << "WhiteImage Image: " << ErrorCheckerboardImage.Image << std::endl;
-            std::cerr << "WhiteImage Image.View: " << ErrorCheckerboardImage.ImageView << std::endl;
-
-            const uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
-
-            const uint32_t                magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-            std::array<uint32_t, 16 * 16> pixels{}; // for 16x16 checkerboard texture
-            for (int x = 0; x < 16; x++)
-            {
-                for (int y = 0; y < 16; y++)
-                {
-                    pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta   : black;
-                }
-            }
-            ErrorCheckerboardImage = CreateImage(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
-            std::cerr << "ErrorCheckerboardImage: " << ErrorCheckerboardImage.Image << std::endl;
-            std::cerr << "ErrorCheckerboardImage Image.View: " << ErrorCheckerboardImage.ImageView << std::endl;
-        }
-        
     }
 
     void VkContextDevice::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction) const
     {
-        const VkDevice device = LogicalDevice::GetDevice();
-        VkCommandBuffer cmd = m_ImmCommandBuffer;
+        const VkDevice  device = LogicalDevice::GetDevice();
+        VkCommandBuffer cmd    = m_ImmCommandBuffer;
 
         VK_CHECK(vkWaitForFences(device, 1, &m_ImmFence, true, UINT64_MAX));
         VK_CHECK(vkResetFences(device, 1, &m_ImmFence));
@@ -441,7 +405,7 @@ namespace MamontEngine
 
         VK_CHECK(vkAllocateCommandBuffers(device, &cmdAllocInfo, &m_ImmCommandBuffer));
 
-    #ifdef PROFILING
+#ifdef PROFILING
 
         m_TracyInfo.GetPhysicalDeviceCalibrateableTimeDomainsEXT =
                 (PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT)vkGetInstanceProcAddr(Instance, "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
@@ -452,9 +416,9 @@ namespace MamontEngine
         const VkCommandBufferAllocateInfo tracyCmdAllocInfo = vkinit::command_buffer_allocate_info(m_TracyInfo.CommandPool, 1);
 
         VK_CHECK(vkAllocateCommandBuffers(device, &tracyCmdAllocInfo, &m_TracyInfo.CommandBuffer));
-     #endif   
+#endif
     }
-    
+
     void VkContextDevice::DestroyCommands()
     {
         const VkDevice device = LogicalDevice::GetDevice();
@@ -465,7 +429,6 @@ namespace MamontEngine
         }
         vkDestroyCommandPool(device, m_ImmCommandPool, nullptr);
         vkDestroyCommandPool(device, m_TracyInfo.CommandPool, nullptr);
-
     }
 
     void VkContextDevice::InitSyncStructeres()
@@ -483,21 +446,17 @@ namespace MamontEngine
             VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &GetFrameAt(i).SwapchainSemaphore));
             std::cerr << "semaphore: " << GetFrameAt(i).SwapchainSemaphore << std::endl;
 
-            //VK_CHECK(vkCreateSemaphore(Device, &semaphoreCreateInfo, nullptr, &GetFrameAt(i).RenderSemaphore));
+            // VK_CHECK(vkCreateSemaphore(Device, &semaphoreCreateInfo, nullptr, &GetFrameAt(i).RenderSemaphore));
         }
 
         RenderCopleteSemaphores.resize(Swapchain.GetImages().size());
-        for (auto& semaphore : RenderCopleteSemaphores)
+        for (auto &semaphore : RenderCopleteSemaphores)
         {
             VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphore));
-
         }
 
         VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &TransferFence));
         VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &m_ImmFence));
-
-        
-
     }
 
     void VkContextDevice::DestroySyncStructeres()
@@ -511,32 +470,31 @@ namespace MamontEngine
         {
             vkDestroyFence(device, GetFrameAt(i).RenderFence, nullptr);
             vkDestroySemaphore(device, GetFrameAt(i).SwapchainSemaphore, nullptr);
-            //vkDestroySemaphore(Device, GetFrameAt(i).RenderSemaphore, nullptr);
+            // vkDestroySemaphore(Device, GetFrameAt(i).RenderSemaphore, nullptr);
         }
-        for (auto& semaphore : RenderCopleteSemaphores)
+        for (auto &semaphore : RenderCopleteSemaphores)
         {
             vkDestroySemaphore(device, semaphore, nullptr);
         }
-
     }
 
     void VkContextDevice::InitSceneBuffers()
     {
-        for (size_t i{ 0 }; i < FRAME_OVERLAP; ++i)
+        for (size_t i{0}; i < FRAME_OVERLAP; ++i)
         {
             GetFrameAt(i).SceneDataBuffer.Create(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
             GetFrameAt(i).CascadeDataBuffer.Create(sizeof(CascadeData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
             GetFrameAt(i).CascadeMatrixBuffer.Create(sizeof(glm::mat4) * CASCADECOUNT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-            
-            //VK_CHECK(GetFrameAt(i).SceneDataBuffer.Map());
-            //vkMapMemory(Device, GetFrameAt(i).SceneDataBuffer.Memory, 0, VK_WHOLE_SIZE, 0, &GetFrameAt(i).SceneDataBuffer.MappedData);
+
+            // VK_CHECK(GetFrameAt(i).SceneDataBuffer.Map());
+            // vkMapMemory(Device, GetFrameAt(i).SceneDataBuffer.Memory, 0, VK_WHOLE_SIZE, 0, &GetFrameAt(i).SceneDataBuffer.MappedData);
         }
     }
-    
+
     void VkContextDevice::DestroySceneBuffers()
     {
-        for (size_t i{ 0 }; i < FRAME_OVERLAP; i++)
+        for (size_t i{0}; i < FRAME_OVERLAP; i++)
         {
             GetFrameAt(i).SceneDataBuffer.Destroy();
             GetFrameAt(i).CascadeDataBuffer.Destroy();
@@ -549,11 +507,10 @@ namespace MamontEngine
     void VkContextDevice::InitDescriptors()
     {
         std::array<DescriptorAllocatorGrowable::PoolSizeRatio, 4> sizes = {
-            DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3}, 
-            DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3}, 
-            DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3}, 
-            DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4}
-        };
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3},
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3},
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4}};
         const VkDevice device = LogicalDevice::GetDevice();
 
         GlobalDescriptorAllocator.Init(device, 100, sizes);
@@ -581,14 +538,14 @@ namespace MamontEngine
             builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             builder.AddBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            //builder.AddBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            // builder.AddBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             GPUSceneDataDescriptorLayout = builder.Build(device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
         }
 
-        constexpr size_t cascadeDataSize = sizeof(CascadeData);
+        constexpr size_t cascadeDataSize     = sizeof(CascadeData);
         constexpr size_t cascadeMatricesSize = sizeof(glm::mat4) * CASCADECOUNT;
 
-        for (auto& frame : m_Frames)
+        for (auto &frame : m_Frames)
         {
             /*GetFrameAt(i).FrameDescriptors = DescriptorAllocatorGrowable{};
             GetFrameAt(i).FrameDescriptors.Init(Device, 1000, frame_sizes);*/
@@ -598,7 +555,11 @@ namespace MamontEngine
             auto &globalDescriptor = frame.GlobalDescriptor;
             globalDescriptor       = GlobalDescriptorAllocator.Allocate(device, GPUSceneDataDescriptorLayout);
             writer.WriteBuffer(0, frame.SceneDataBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            writer.WriteImage(1, CascadeDepthImage.Image.ImageView, CascadeDepthImage.Sampler, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            writer.WriteImage(1,
+                              CascadeDepthImage.Image.ImageView,
+                              CascadeDepthImage.Sampler,
+                              VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             writer.WriteBuffer(2, frame.CascadeDataBuffer.Buffer, cascadeDataSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             writer.WriteBuffer(3, frame.CascadeMatrixBuffer.Buffer, cascadeMatricesSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             writer.UpdateSet(device, globalDescriptor);
@@ -624,8 +585,8 @@ namespace MamontEngine
     {
         VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
 
-        sampl.magFilter = VK_FILTER_NEAREST;
-        sampl.minFilter = VK_FILTER_NEAREST;
+        sampl.magFilter       = VK_FILTER_NEAREST;
+        sampl.minFilter       = VK_FILTER_NEAREST;
         const VkDevice device = LogicalDevice::GetDevice();
 
         vkCreateSampler(device, &sampl, nullptr, &DefaultSamplerNearest);
@@ -634,7 +595,6 @@ namespace MamontEngine
         sampl.minFilter = VK_FILTER_LINEAR;
 
         vkCreateSampler(device, &sampl, nullptr, &DefaultSamplerLinear);
-
     }
 
     void VkContextDevice::InitSwapchain(const VkExtent2D &inWindowExtent)
@@ -646,10 +606,10 @@ namespace MamontEngine
     void VkContextDevice::InitImage()
     {
         const VkExtent3D extent{Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
-        
+
         constexpr VkImageUsageFlags drawImageUsages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-        Image.DrawImage                             = CreateImage(extent, Swapchain.GetImageFormat()/*VK_FORMAT_B8G8R8A8_UNORM*/, drawImageUsages, true);
-        
+        Image.DrawImage                             = CreateImage(extent, Swapchain.GetImageFormat() /*VK_FORMAT_B8G8R8A8_UNORM*/, drawImageUsages, true);
+
         std::cerr << "Image.DrawImage Image:" << Image.DrawImage.Image << std::endl;
         std::cerr << "Image.DrawImage ImageView:" << Image.DrawImage.ImageView << std::endl;
 
@@ -670,14 +630,13 @@ namespace MamontEngine
 
                 std::cerr << "PickingImages Image:" << image.Image << std::endl;
                 std::cerr << "PickingImages ImageView:" << image.ImageView << std::endl;
-
             }
         }
 
         InitShadowImages();
     }
 
-    void VkContextDevice::ResizeSwapchain(const VkExtent2D& inWindowExtent)
+    void VkContextDevice::ResizeSwapchain(const VkExtent2D &inWindowExtent)
     {
         const VkDevice device = LogicalDevice::GetDevice();
 
@@ -686,7 +645,7 @@ namespace MamontEngine
         DestroyImage(Image.DrawImage);
         DestroyImage(Image.DepthImage);
 
-        //Swapchain.Destroy(device);
+        // Swapchain.Destroy(device);
         Swapchain.ReCreate(*this, inWindowExtent);
 
         InitImage();
@@ -717,13 +676,8 @@ namespace MamontEngine
         CascadeDepthImage.Image.ImageFormat = depthFormat;
 
         {
-            auto imageViewInfo = vkinit::imageviewCreateInfo(depthFormat,
-                                                             CascadeDepthImage.Image.Image,
-                                                             VK_IMAGE_ASPECT_DEPTH_BIT,
-                                                             1,
-                                                             CASCADECOUNT,
-                                                             VK_IMAGE_VIEW_TYPE_2D_ARRAY
-            );
+            auto imageViewInfo = vkinit::imageviewCreateInfo(
+                    depthFormat, CascadeDepthImage.Image.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, CASCADECOUNT, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
 
             VK_CHECK(vkCreateImageView(device, &imageViewInfo, nullptr, &CascadeDepthImage.Image.ImageView));
         }
@@ -733,21 +687,17 @@ namespace MamontEngine
 
         for (size_t i = 0; i < CASCADECOUNT; i++)
         {
-            auto layerViewInfo = vkinit::imageviewCreateInfo(depthFormat,
-                                                             CascadeDepthImage.Image.Image,
-                                                             VK_IMAGE_ASPECT_DEPTH_BIT,
-                                                             1,  
-                                                             1,                          
-                                                             VK_IMAGE_VIEW_TYPE_2D_ARRAY);
+            auto layerViewInfo =
+                    vkinit::imageviewCreateInfo(depthFormat, CascadeDepthImage.Image.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
 
             layerViewInfo.subresourceRange.baseArrayLayer = static_cast<uint32_t>(i);
-            layerViewInfo.subresourceRange.layerCount     = 1; 
+            layerViewInfo.subresourceRange.layerCount     = 1;
 
             VK_CHECK(vkCreateImageView(device, &layerViewInfo, nullptr, &Cascades[i].View));
             std::cerr << "Cascades[" << i << "].View: " << Cascades[i].View << std::endl;
         }
 
-// Cascade Sampler
+        // Cascade Sampler
         {
             VkSamplerCreateInfo samplerInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .maxAnisotropy = 1.f};
             samplerInfo.magFilter     = VK_FILTER_LINEAR;
@@ -770,35 +720,35 @@ namespace MamontEngine
     {
         const VkDevice device = LogicalDevice::GetDevice();
 
-        #ifdef PROFILING
-        for (size_t i{ 0 }; i < FRAME_OVERLAP; ++i)
+#ifdef PROFILING
+        for (size_t i{0}; i < FRAME_OVERLAP; ++i)
         {
-            GetFrameAt(i).TracyContext = tracy::CreateVkContext(m_PhysicalDevice->GetDevice(),
+            GetFrameAt(i).TracyContext = tracy::CreateVkContext(PhysicalDevice::GetDevice(),
                                                                 device,
                                                                 m_GraphicsQueue,
                                                                 m_TracyInfo.CommandBuffer,
                                                                 m_TracyInfo.GetPhysicalDeviceCalibrateableTimeDomainsEXT,
                                                                 m_TracyInfo.GetCalibratedTimestampsEXT);
 
-            char buf[50];
-            const int  n = sprintf(buf, "Vulkan Context [%d]", i);
+            char      buf[50];
+            const int n = sprintf(buf, "Vulkan Context [%d]", i);
             TracyVkContextName(GetFrameAt(i).TracyContext, buf, n);
         }
-        #endif
+#endif
     }
 
     void VkContextDevice::DestroyImages() const
     {
         DestroyImage(Image.DrawImage);
-        
+
         DestroyImage(Image.DepthImage);
 
-        for (auto& pickImage : PickingImages)
+        for (auto &pickImage : PickingImages)
         {
             DestroyImage(pickImage);
         }
-        //PickingImages.clear();
-        //DestroyImage(ShadowDepthImage);
+        // PickingImages.clear();
+        // DestroyImage(ShadowDepthImage);
     }
 
     FrameData &VkContextDevice::GetCurrentFrame()
@@ -811,11 +761,6 @@ namespace MamontEngine
         return m_Frames.at(m_FrameNumber);
     }
 
-    VkPhysicalDevice VkContextDevice::GetPhysicalDevice() const
-    {
-        return m_PhysicalDevice->GetDevice();
-    }
-
     VkFormat VkContextDevice::GetSupportedDepthFormat(bool checkSamplingSupport)
     {
         // All depth formats may be optional, so we need to find a suitable depth format to use
@@ -824,7 +769,7 @@ namespace MamontEngine
         for (const auto &format : depthFormats)
         {
             VkFormatProperties formatProperties;
-            vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice->GetDevice(), format, &formatProperties);
+            vkGetPhysicalDeviceFormatProperties(PhysicalDevice::GetDevice(), format, &formatProperties);
             // Format must support depth stencil attachment for optimal tiling
             if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
             {
@@ -841,4 +786,4 @@ namespace MamontEngine
         throw std::runtime_error("Could not find a matching depth format");
     }
 
-}
+} // namespace MamontEngine

@@ -4,9 +4,11 @@
 #include <glm/gtx/quaternion.hpp>
 #include "Core/Log.h"
 #include "Graphics/Devices/LogicalDevice.h"
+#include "Graphics/Devices/PhysicalDevice.h"
 #include "Utils/Utilities.h"
 #include "Core/Engine.h"
 #include "Graphics/Vulkan/Allocator.h"
+#include "Graphics/Resources/Texture.h"
 
 namespace MamontEngine
 {
@@ -44,9 +46,9 @@ namespace MamontEngine
         }
     }
 
-    static std::optional<AllocatedImage> load_image(const VkContextDevice &inDevice, const fastgltf::Asset &asset, const fastgltf::Image &image)
+    static std::optional<Texture> load_image(const fastgltf::Asset &asset, const fastgltf::Image &image, VkSampler inSampler)
     {
-        AllocatedImage newImage{};
+        Texture newTexture{};
 
         int width, height, nrChannels;
 
@@ -55,17 +57,16 @@ namespace MamontEngine
             if (!data)
                 return false;
             const VkExtent3D imagesize{(uint32_t)width, (uint32_t)height, 1u};
-            newImage = inDevice.CreateImage(data,
-                                            imagesize,
-                                            /*VK_FORMAT_R8G8B8A8_UNORM*/ VK_FORMAT_R16G16B16A16_SFLOAT,
-                                            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                                            /*mip=*/true);
-            std::cerr << "Model newImage, Image:" << newImage.Image << std::endl;
-            std::cerr << "Model newImage, ImageView:" << newImage.ImageView << std::endl;
+
+            newTexture.Load(data,
+                            imagesize,
+                            VK_FORMAT_R16G16B16A16_SFLOAT,
+                            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                            /*mip=*/true);
             
             stbi_image_free(data);
 
-            return newImage.Image != VK_NULL_HANDLE;
+            return newTexture.Image != VK_NULL_HANDLE;
         };
 
         std::visit(
@@ -106,14 +107,15 @@ namespace MamontEngine
                 },
                 image.data);
 
-
-        if (newImage.Image == VK_NULL_HANDLE)
+        if (newTexture.Image == VK_NULL_HANDLE)
         {
             Log::Warn("Load Image(): image = NULL");
             return {};
         }
 
-        return newImage;
+        newTexture.Sampler = inSampler;
+
+        return newTexture;
     }
 
     MeshModel::MeshModel(const VkContextDevice &inDevice, UID inID) : 
@@ -141,22 +143,41 @@ namespace MamontEngine
     void MeshModel::Clear()
     {
         const VkDevice device = LogicalDevice::GetDevice();
-        for (const auto &sampler : m_Samplers)
+        /*for (const auto &sampler : m_Samplers)
         {
             vkDestroySampler(device, sampler, nullptr);
-        }
+        }*/
         DescriptorPool.DestroyPools(device);
 
-        m_Samplers.clear();
+        //m_Samplers.clear();
 
-        m_Images.clear();
+        /*for (auto& texture : m_Textures)
+        {
+            texture.Destroy();
+        }*/
+
+        m_Textures.clear();
         m_Nodes.clear();
         m_Materials.clear();
         m_Meshes.clear();
+
+        MaterialDataBuffer.Destroy();
+
     }
 
     void MeshModel::Draw( DrawContext &inContext) const
     {
+        for (auto& material : m_Materials)
+        {
+            if (!material || !material->IsDity)
+                continue;
+
+            //void *dst = material->Resources.DataBuffer;
+            memcpy(MaterialDataBuffer.Info.pMappedData, &material->Constants, sizeof(Material::MaterialConstants));
+
+            material->IsDity = false;
+        }
+
         std::function<void(Node*, DrawContext&)> collect = 
             ([&collect, this](Node* node, DrawContext &inContext)
         {
@@ -202,13 +223,13 @@ namespace MamontEngine
 
    void MeshModel::UpdateTransform(const glm::mat4 &inTransform, const glm::vec3 &inLocation, const glm::vec3 &inRotation, const glm::vec3 &inScale)
     {
-        glm::mat4 newTransform = glm::mat4(1.0f);
-        newTransform           = glm::translate(newTransform, inLocation);
-        newTransform           = glm::rotate(newTransform, glm::radians(inRotation.x), glm::vec3(1, 0, 0));
-        newTransform           = glm::rotate(newTransform, glm::radians(inRotation.y), glm::vec3(0, 1, 0));
-        newTransform           = glm::rotate(newTransform, glm::radians(inRotation.z), glm::vec3(0, 0, 1));
-        newTransform           = glm::scale(newTransform, inScale);
-        newTransform           = inTransform * newTransform;
+        glm::mat4 local = glm::translate(glm::mat4(1.0f), inLocation);
+        local           = glm::rotate(local, glm::radians(inRotation.x), {1, 0, 0});
+        local           = glm::rotate(local, glm::radians(inRotation.y), {0, 1, 0});
+        local           = glm::rotate(local, glm::radians(inRotation.z), {0, 0, 1});
+        local           = glm::scale(local, inScale);
+
+        const glm::mat4 world = inTransform * local;
 
         std::function<void(Node *, const glm::mat4 &)> updateNode = [&](Node *node, const glm::mat4 &parentMatrix)
         {
@@ -217,26 +238,26 @@ namespace MamontEngine
 
             node->CurrentMatrix = parentMatrix * node->Matrix;
 
-            AABB local;
-            local.Reset();
+            AABB localBounds;
+            localBounds.Reset();
 
             if (node->Mesh)
             {
-                for (auto &primPtr : node->Mesh->Primitives)
+                for (const auto &prim : node->Mesh->Primitives)
                 {
-                    local.Expand(primPtr->Bound.Min);
-                    local.Expand(primPtr->Bound.Max);
+                    localBounds.Expand(prim->Bound.Min);
+                    localBounds.Expand(prim->Bound.Max);
                 }
             }
 
-            node->WorldBounds = local.Transform(node->CurrentMatrix);
+            node->WorldBounds = localBounds.Transform(node->CurrentMatrix);
 
             for (auto &child : node->Children)
                 updateNode(child.get(), node->CurrentMatrix);
         };
 
-        for (auto &rootNode : m_Nodes)
-            updateNode(rootNode.get(), newTransform);
+        for (auto &root : m_Nodes)
+            updateNode(root.get(), world);
     }
 
     void MeshModel::Load(std::string_view filePath)
@@ -252,8 +273,6 @@ namespace MamontEngine
 
         fastgltf::GltfDataBuffer data;
         data.loadFromFile(filePath);
-
-        
 
         const std::filesystem::path path = filePath;
 
@@ -276,23 +295,22 @@ namespace MamontEngine
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}
         };
         const VkDevice device = LogicalDevice::GetDevice();
-        DescriptorPool.Init(device, gltf.materials.size(), sizes);
+        DescriptorPool.Init(device, std::max<size_t>(1, gltf.materials.size()), sizes);
 
-        LoadSamplers(device, gltf.samplers);
-        LoadImages(gltf);
-        LoadMaterials(gltf);
+        std::vector<VkSampler> samplers = LoadSamplers(device, gltf.samplers);
+        LoadImages(gltf, samplers);
+        LoadMaterials(gltf, samplers);
         
         LoadMesh(gltf);
         LoadNodes(gltf);
 
         pathFile = filePath;
-        MaterialDataBuffer.Destroy();
 
         Log::Info("Loaded model: {}", pathFile.string());
     
     }
 
-    void MeshModel::LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers)
+    std::vector<VkSampler> MeshModel::LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers)
     {
         VkSamplerCreateInfo sampl = {
             .sType  = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, 
@@ -302,6 +320,19 @@ namespace MamontEngine
         };
 
         std::vector<VkSampler> modelSamplers;
+        modelSamplers.reserve(samplers.size() + 1);
+
+        if (modelSamplers.empty())
+        {
+            VkSampler sampler;
+            sampl.magFilter = VK_FILTER_LINEAR;
+            sampl.minFilter = VK_FILTER_LINEAR;
+
+            vkCreateSampler(inDevice, &sampl, nullptr, &sampler);
+            modelSamplers.push_back(sampler);
+            return modelSamplers;
+        }
+
 
         for (const fastgltf::Sampler &sampler : samplers)
         {
@@ -316,36 +347,60 @@ namespace MamontEngine
             modelSamplers.push_back(newSampler);
         }
 
-        m_Samplers = modelSamplers;
+        return modelSamplers;
     }
 
-    void MeshModel::LoadMaterials(const fastgltf::Asset &inFileAsset)
+    void MeshModel::LoadImages(const fastgltf::Asset &inFileAsset, const std::vector<VkSampler> &inSamplers)
     {
-        std::vector<std::shared_ptr<GLTFMaterial>> materials;
-        materials.reserve(inFileAsset.materials.size());
+        m_Textures.reserve(inFileAsset.images.size());
+        int samplerIndex = 0;
+        for (const fastgltf::Image &image : inFileAsset.images)
+        {
+            VkSampler sampler = samplerIndex < inSamplers.size() && inSamplers[samplerIndex] != VK_NULL_HANDLE ? inSamplers[samplerIndex] : inSamplers.front();
+
+            std::optional<Texture> img = load_image(inFileAsset, image, sampler);
+
+            if (img.has_value())
+            {
+                m_Textures.push_back(*img);
+            }
+            else
+            {
+                Texture errorTexture = CreateErrorTexture();
+                m_Textures.push_back(errorTexture);
+                fmt::println("gltf failed to load texture: {}", image.name);
+            }
+            samplerIndex++;
+        }
+
+        Log::Info("Textures size: {}", m_Textures.size());
+    }
+
+    void MeshModel::LoadMaterials(const fastgltf::Asset &inFileAsset, const std::vector<VkSampler> &inSamplers)
+    {
+        m_Materials.reserve(inFileAsset.materials.size());
 
         const VkDevice device = LogicalDevice::GetDevice();
         
-        VkPhysicalDeviceProperties properties{};
-        vkGetPhysicalDeviceProperties(m_ContextDevice.GetPhysicalDevice(), &properties);
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(PhysicalDevice::GetDevice(), &properties);
         const uint32_t minAlignment = properties.limits.minUniformBufferOffsetAlignment;
-        constexpr size_t   materialConstSize   = sizeof(GLTFMaterial::MaterialConstants);
+        constexpr size_t   materialConstSize   = sizeof(Material::MaterialConstants);
         const size_t   alignedMaterialSize = Utils::AlignUp(materialConstSize, minAlignment);
 
         const size_t bufferSize = alignedMaterialSize * inFileAsset.materials.size();
-        //const size_t bufferSize = sizeof(GLTFMaterial::MaterialConstants) * inFileAsset.materials.size();
 
         MaterialDataBuffer.Create(bufferSize == 0 ? 64 : bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VMA_MEMORY_USAGE_CPU_TO_GPU);
         int data_index = 0;
-        //GLTFMaterial::MaterialConstants *sceneMaterialConstants = (GLTFMaterial::MaterialConstants *)MaterialDataBuffer.Info.pMappedData;
         DescriptorWriter Writer;
 
-        const auto writerMaterial =
-                [&](const EMaterialPass pass, GLTFMetallic_Roughness::MaterialResources materialResources, DescriptorAllocatorGrowable &descriptorAllocator,
-                                        const GLTFMaterial::MaterialConstants& constants)
+        const auto writerMaterial = [&](const EMaterialPass                pass,
+                                        Material::MaterialResources        materialResources,
+                                        DescriptorAllocatorGrowable       &descriptorAllocator,
+                                        const Material::MaterialConstants& constants)
                 {
-                    auto matData = std::make_shared<GLTFMaterial>();
+                    auto matData = std::make_shared<Material>();
                     matData->PassType    = pass;
                     matData->Pipeline = pass == EMaterialPass::TRANSPARENT ? m_ContextDevice.RenderPipeline->TransparentPipeline :
                             m_ContextDevice.RenderPipeline->OpaquePipeline;
@@ -357,28 +412,29 @@ namespace MamontEngine
                                        materialResources.DataBufferOffset,
                             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                     Writer.WriteImage(1,
-                                        materialResources.ColorImage.ImageView,
-                                        materialResources.ColorSampler,
+                                        materialResources.ColorTexture.ImageView,
+                                      materialResources.ColorTexture.Sampler,
                                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                     Writer.WriteImage(2,
-                                        materialResources.MetalRoughImage.ImageView,
-                                        materialResources.MetalRoughSampler,
+                                        materialResources.MetalRoughTexture.ImageView,
+                                        materialResources.MetalRoughTexture.Sampler,
                                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                     Writer.UpdateSet(device, matData->MaterialSet);
 
-                    std::cerr << "matData->MaterialSet: " << matData->MaterialSet << std::endl;
                     return matData;
                 };
 
+        const Texture whiteTexture = CreateWhiteTexture();
+
         const auto getMaterialResources = [&]()
             {
-                GLTFMetallic_Roughness::MaterialResources materialResources{};
-                materialResources.ColorImage        = m_ContextDevice.WhiteImage;
-                materialResources.ColorSampler      = m_ContextDevice.DefaultSamplerLinear;
-                materialResources.MetalRoughImage   = m_ContextDevice.WhiteImage;
-                materialResources.MetalRoughSampler = m_ContextDevice.DefaultSamplerLinear;
+                Material::MaterialResources materialResources{};
+                materialResources.ColorTexture              = whiteTexture;
+                materialResources.ColorTexture.Sampler      = m_ContextDevice.DefaultSamplerLinear;
+                materialResources.MetalRoughTexture         = whiteTexture;
+                materialResources.MetalRoughTexture.Sampler = m_ContextDevice.DefaultSamplerLinear;
                 materialResources.DataBuffer        = MaterialDataBuffer.Buffer;
                 materialResources.DataBufferOffset  = data_index * alignedMaterialSize;
 
@@ -389,11 +445,11 @@ namespace MamontEngine
         {
             // Create Empty Material
             fmt::println("Materials is empty");
-            GLTFMaterial::MaterialConstants constants{};
+            Material::MaterialConstants constants{};
             constants.ColorFactors  = glm::vec4(1.0f);
             constants.MetalicFactor = 0.0f;
             constants.RoughFactor   = 1.0f;
-            GLTFMetallic_Roughness::MaterialResources materialResources = getMaterialResources();
+            Material::MaterialResources materialResources = getMaterialResources();
             auto material                      = writerMaterial(EMaterialPass::MAIN_COLOR, materialResources, DescriptorPool, constants);
             m_Materials.push_back(std::move(material));
             return;
@@ -401,8 +457,7 @@ namespace MamontEngine
 
         for (const fastgltf::Material &mat : inFileAsset.materials)
         {
-            //Materials.push_back(newMat);
-            const GLTFMaterial::MaterialConstants constants = { 
+            const Material::MaterialConstants constants = { 
                 glm::vec4(mat.pbrData.baseColorFactor[0], mat.pbrData.baseColorFactor[1], 
                     mat.pbrData.baseColorFactor[2], mat.pbrData.baseColorFactor[3]),
                     mat.pbrData.metallicFactor,
@@ -411,49 +466,32 @@ namespace MamontEngine
 
             const EMaterialPass passType = mat.alphaMode == fastgltf::AlphaMode::Blend ? EMaterialPass::TRANSPARENT : EMaterialPass::MAIN_COLOR;
 
-            GLTFMetallic_Roughness::MaterialResources materialResources = getMaterialResources();
+            Material::MaterialResources materialResources = getMaterialResources();
 
-            //grab textures from inFileAsset file
             if (mat.pbrData.baseColorTexture.has_value())
             {
                 const size_t img     = inFileAsset.textures[mat.pbrData.baseColorTexture.value().textureIndex].imageIndex.value();
                 const size_t sampler = inFileAsset.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
 
-                materialResources.ColorImage   = m_Images[img];
-                materialResources.ColorSampler = m_Samplers[sampler];
+                materialResources.ColorTexture   = m_Textures[img];
+                materialResources.ColorTexture.Sampler = sampler >= inSamplers.size() ? inSamplers[0] : inSamplers[sampler];
+            }
+            if (mat.pbrData.metallicRoughnessTexture.has_value())
+            {
+                const size_t img     = inFileAsset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].imageIndex.value();
+                const size_t sampler = inFileAsset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].samplerIndex.value();
+
+                materialResources.MetalRoughTexture         = m_Textures[img];
+                materialResources.MetalRoughTexture.Sampler = sampler >= inSamplers.size() ? inSamplers[0] : inSamplers[sampler];
             }
 
             auto newMat = writerMaterial(passType, materialResources, DescriptorPool, constants);
-            std::cerr << "NewMat - Pipeline: " << newMat->Pipeline->Pipeline << std::endl;
-            materials.push_back(std::move(newMat));
+            newMat->Name = mat.name;
+            m_Materials.push_back(std::move(newMat));
 
             data_index++;
         }
 
-        m_Materials = materials;
-    }
-    
-    void MeshModel::LoadImages(const fastgltf::Asset &inFileAsset)
-    {
-        std::vector<AllocatedImage> newImages;
-        newImages.reserve(inFileAsset.images.size());
-        for (const fastgltf::Image &image : inFileAsset.images)
-        {
-            const std::optional<AllocatedImage> img = load_image(m_ContextDevice, inFileAsset, image);
-            fmt::println("LoadImage");
-
-            if (img.has_value())
-            {
-                newImages.push_back(*img);
-            }
-            else
-            {
-                newImages.push_back(m_ContextDevice.ErrorCheckerboardImage);
-                fmt::println("gltf failed to load texture: {}", image.name);
-            }
-        }
-
-        m_Images = newImages;
     }
     
     void MeshModel::LoadNodes(const fastgltf::Asset &inFileAsset)
@@ -545,7 +583,6 @@ namespace MamontEngine
         for (const fastgltf::Mesh &mesh : inFileAsset.meshes)
         {
             std::shared_ptr<NewMesh> newmesh = std::make_shared<NewMesh>();
-            //inFile.Primitives[mesh.name.c_str()] = newmesh;
             newmesh->Name                  = mesh.name;
 
             /*indices.clear();
@@ -650,6 +687,5 @@ namespace MamontEngine
             m_Meshes.push_back(newmesh);
         }
         Buffer.Create(indices, vertices);
-
     }
 }

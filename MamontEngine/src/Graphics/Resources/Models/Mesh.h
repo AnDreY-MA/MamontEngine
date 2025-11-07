@@ -1,7 +1,7 @@
 #pragma once 
 
-#include "Graphics/Vulkan/Materials/Material.h"
-#include "Graphics/AABB.h"
+#include "Graphics/Resources/Material.h"
+#include "AABB.h"
 
 namespace MamontEngine
 {
@@ -34,7 +34,7 @@ namespace MamontEngine
 
         AABB Bound;
 
-        std::shared_ptr<GLTFMaterial> Material;
+        std::shared_ptr<Material> Material;
     };
 
     struct NewMesh

@@ -2,25 +2,12 @@
 
 namespace MamontEngine
 {
-    class PhysicalDevice : public NonMovable
-	{
-    public:
-        explicit PhysicalDevice(VkPhysicalDevice inDevice);
-        
-		~PhysicalDevice() = default;
+namespace PhysicalDevice
+{
+    void Init(VkPhysicalDevice inDevice);
 
-		VkPhysicalDevice GetDevice() const
-		{
-        	return m_Device;
-		}
+	VkPhysicalDevice GetDevice();
 
-		const VkPhysicalDeviceMemoryProperties& GetMemoryProperties() const
-		{
-			return m_MemoryProperties;
-		}
-
-	private:
-        VkPhysicalDevice                 m_Device;
-        VkPhysicalDeviceMemoryProperties m_MemoryProperties;
-	};
+	const VkPhysicalDeviceMemoryProperties &GetMemoryProperties();
+}
 }

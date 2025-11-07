@@ -4,7 +4,7 @@
 #include <ECS/Components/TagComponent.h>
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
-#include "Graphics/Mesh.h"
+#include "Graphics/Resources/Models/Mesh.h"
 
 #include "UI/UI.h"
 

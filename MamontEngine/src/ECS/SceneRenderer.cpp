@@ -1,6 +1,6 @@
 ﻿#include "SceneRenderer.h"
 #include <glm/gtx/transform.hpp>
-#include "Graphics/Model.h"
+#include "Graphics/Resources/Models/Model.h"
 #include "Utils/Profile.h"
 #include "Core/Log.h"
 #include "Core/VkInitializers.h"
@@ -92,7 +92,7 @@ namespace MamontEngine
         }
 
         PipelineData*        lastPipeline = nullptr;
-        const GLTFMaterial       *lastMaterial     = nullptr;
+        const Material       *lastMaterial     = nullptr;
 
         const auto draw = [&](const RenderObject &r)
         {
@@ -169,12 +169,13 @@ namespace MamontEngine
             }*/
             opaque_draws.push_back(i);
         }
+        
+        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineData.Pipeline);
 
+        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineData.Layout, 0, 1, &globalDescriptor, 0, nullptr);
+        
         const auto draw = [&](const RenderObject &r)
         {
-            vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineData.Pipeline);
-
-            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineData.Layout, 0, 1, &globalDescriptor, 0, nullptr);
             vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineData.Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
 
             constexpr VkDeviceSize offsets[1] = {0};

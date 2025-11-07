@@ -7,6 +7,7 @@
 #include <backends/imgui_impl_vulkan.h>
 #include "FrameData.h"
 #include "Graphics/Devices/LogicalDevice.h"
+#include "Graphics/Devices/PhysicalDevice.h"
 #include "VkInitializers.h"
 
 #include "Engine.h"
@@ -41,7 +42,7 @@ namespace MamontEngine
 
         ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance                  = inContextDevice.Instance;
-        initInfo.PhysicalDevice            = inContextDevice.GetPhysicalDevice();
+        initInfo.PhysicalDevice            = PhysicalDevice::GetDevice();
         initInfo.Device                    = device;
         initInfo.QueueFamily               = inContextDevice.GetGraphicsQueueFamily();
         initInfo.Queue                     = inContextDevice.GetGraphicsQueue();

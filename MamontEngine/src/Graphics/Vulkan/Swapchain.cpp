@@ -5,6 +5,7 @@
 #include "Core/ContextDevice.h"
 #include "Core/VkInitializers.h"
 #include "Graphics/Devices/LogicalDevice.h"
+#include "Graphics/Devices/PhysicalDevice.h"
 
 namespace MamontEngine
 {
@@ -15,7 +16,7 @@ namespace MamontEngine
 
     void MSwapchain::Create(const VkContextDevice &inDevice, const VkExtent2D &inExtent)
     {
-        vkb::SwapchainBuilder swapchainBuilder{inDevice.GetPhysicalDevice(), LogicalDevice::GetDevice(), inDevice.Surface};
+        vkb::SwapchainBuilder swapchainBuilder{PhysicalDevice::GetDevice(), LogicalDevice::GetDevice(), inDevice.Surface};
         m_SwapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM;/*VK_FORMAT_R16G16B16A16_SFLOAT*/
 
         const auto resultSwapchain =

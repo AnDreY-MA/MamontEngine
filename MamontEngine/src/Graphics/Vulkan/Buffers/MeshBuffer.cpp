@@ -1,6 +1,6 @@
 #include "Graphics/Vulkan/Buffers/MeshBuffer.h"
 #include "Graphics/Devices/LogicalDevice.h"
-#include "Graphics/Mesh.h"
+#include "Graphics/Resources/Models/Mesh.h"
 #include "Core/Engine.h"
 
 namespace MamontEngine
