@@ -1,9 +1,5 @@
 #include "Engine.h"
 
-#include "VkInitializers.h"
-#include "VkImages.h"
-#include "VkPipelines.h"
-
 #include "Graphics/Vulkan/Swapchain.h"
 #include "ImGuiRenderer.h"
 
@@ -221,6 +217,8 @@ namespace MamontEngine
     
     void MEngine::InitImgui()
     {   
+        m_GuiLayer->Init();
+
         m_Renderer->InitImGuiRenderer();
 
         m_MainDeletionQueue.PushFunction(
@@ -234,7 +232,6 @@ namespace MamontEngine
     void MEngine::PushGuiLayer(ImGuiLayer *inLayer)
     {
         m_GuiLayer = std::unique_ptr<ImGuiLayer>(inLayer);
-        m_GuiLayer->Init();
         
     }
     

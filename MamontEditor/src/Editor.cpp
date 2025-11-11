@@ -9,6 +9,7 @@
 #include "imgui.h"
 #include "EditorUtils/EditorUtils.h"
 #include "Panels/SceneSettingsPanel.h"
+#include "Panels/ViewportPanel.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
@@ -50,9 +51,6 @@ namespace MamontEditor
         AddPanel<StatisticsPanel>();
         AddPanel<LogPanel>();
         AddPanel<SceneSettingsPanel>();
-
-        //ImGui_ImplVulkanH_CreateOrResizeWindow
-
     }
 
     void Editor::Deactivate()
@@ -115,8 +113,6 @@ namespace MamontEditor
         {
             panel->GuiRender();
         }
-
-        ImGui::ShowDemoWindow();
         
     }
     static bool EnableCascade = true;
@@ -139,7 +135,6 @@ namespace MamontEditor
               ImGui::EndMenu();
           }
 
-
           ImGui::EndMainMenuBar();
       }
     }
@@ -155,6 +150,5 @@ namespace MamontEditor
         {
             GetPanel<SceneHierarchyPanel>()->SelectEntity(Scene->GetEntity(pickID));
         }
-        
     }
 }

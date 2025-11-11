@@ -2,27 +2,7 @@
 
 namespace MamontEngine::Utils
 {
-    uint32_t AlignUp(uint32_t value, uint32_t alignment)
-    {
-        return (value + alignment - 1) & ~(alignment - 1);
-    }
+    VkFormat FindSupportedFormat(VkPhysicalDevice device, const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
-    //uint32 FindMemoryType(const VkPhysicalDevice inPhysicalDevice, const uint32 inFilter, const VkMemoryPropertyFlags inProps)
-    //{
-    //    // #TODO Move this to the Physical device abstraction once we create it
-    //    VkPhysicalDeviceMemoryProperties memoryProperties;
-    //    vkGetPhysicalDeviceMemoryProperties(inPhysicalDevice, &memoryProperties);
-
-    //    for (uint32 i = 0; i < memoryProperties.memoryTypeCount; ++i)
-    //    {
-    //        // Check if this filter bit flag is set and it matches our memory properties
-    //        if ((inFilter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & inProps) == inProps)
-    //        {
-    //            return i;
-    //        }
-    //    }
-
-    //    fmt::println("Failed to find suitable memory type!");
-    //    return 0;
-    //}
+    VkFormat FindDepthFormat(VkPhysicalDevice device);
 }

@@ -3,9 +3,10 @@
 #include "Graphics/Vulkan/Image.h"
 #include "Graphics/Vulkan/Allocator.h"
 #include "Core/ContextDevice.h"
-#include "Core/VkInitializers.h"
+#include "Utils//VkInitializers.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Devices/PhysicalDevice.h"
+//#include "Utils/Utilities.h"
 
 namespace MamontEngine
 {
@@ -17,10 +18,12 @@ namespace MamontEngine
     void MSwapchain::Create(const VkContextDevice &inDevice, const VkExtent2D &inExtent)
     {
         vkb::SwapchainBuilder swapchainBuilder{PhysicalDevice::GetDevice(), LogicalDevice::GetDevice(), inDevice.Surface};
-        m_SwapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM;/*VK_FORMAT_R16G16B16A16_SFLOAT*/
-
+        m_SwapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM; /*VK_FORMAT_R16G16B16A16_SFLOAT*/
+        /*VK_FORMAT_B8G8R8A8_UNORM*/
+        //Utils::FindSupportedFormat(PhysicalDevice::GetDevice());
+        
         const auto resultSwapchain =
-                swapchainBuilder.set_desired_format(VkSurfaceFormatKHR{.format = m_SwapchainImageFormat, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
+                swapchainBuilder.set_desired_format(VkSurfaceFormatKHR{.format = m_SwapchainImageFormat, .colorSpace = VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT})
                         .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
                         .set_desired_extent(inExtent.width, inExtent.height)
                         .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
@@ -41,7 +44,6 @@ namespace MamontEngine
     void MSwapchain::ReCreate(const VkContextDevice &inDevice, const VkExtent2D &inExtent)
     {
         const VkDevice device = LogicalDevice::GetDevice();
-        vkDeviceWaitIdle(device);   
 
         Destroy(device);
 
@@ -69,20 +71,12 @@ namespace MamontEngine
         {
             vkDestroyImageView(inDevice, view, nullptr);
         }
-        /*for (auto& image : m_SwapchainImages)
-        {
-            vkDestroyImage(inDevice, image, nullptr);
-        }*/
+
         m_SwapchainImageViews.clear();
-        //m_SwapchainImages.clear();
 
         if (m_Swapchain != VK_NULL_HANDLE)
         {
             vkDestroySwapchainKHR(inDevice, m_Swapchain, nullptr);
         }
-
-        //vkb::destroy_swapchain(m_vkbSwapchain);
-
     }
-
 }

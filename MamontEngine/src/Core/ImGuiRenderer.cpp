@@ -1,6 +1,6 @@
 #include "ImGuiRenderer.h"
 #include "ContextDevice.h"
-#include "VkDestriptor.h"
+#include "Utils/VkDestriptor.h"
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 #include <backends/imgui_impl_sdl3.h>
@@ -8,7 +8,7 @@
 #include "FrameData.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Devices/PhysicalDevice.h"
-#include "VkInitializers.h"
+#include "Utils/VkInitializers.h"
 
 #include "Engine.h"
 #include "Utils/Profile.h"

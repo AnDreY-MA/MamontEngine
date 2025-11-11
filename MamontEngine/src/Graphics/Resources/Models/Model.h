@@ -20,7 +20,7 @@ namespace MamontEngine
 
         void Load(std::string_view filePath);
         
-        void Draw(DrawContext &inContext) const;
+        void Draw(DrawContext &inContext);
 
         void UpdateTransform(const glm::mat4 &inTransform, const glm::vec3 &inLocation, const glm::vec3 &inRotation, const glm::vec3 &inScale);
 

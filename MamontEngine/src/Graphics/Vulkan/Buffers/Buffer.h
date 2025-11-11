@@ -7,15 +7,16 @@ namespace MamontEngine
         VkBuffer          Buffer{VK_NULL_HANDLE};
         VmaAllocation     Allocation{VK_NULL_HANDLE};
         VmaAllocationInfo Info;
-        VkDeviceMemory    Memory{VK_NULL_HANDLE};
-
-        VkDeviceSize Size{0};
 
         VkDescriptorBufferInfo DescriptorInfo;
 
         void Create(const size_t inAllocSize, const VkBufferUsageFlags inUsage, const VmaMemoryUsage inMemoryUsage);
 
         void Destroy();
+
+        void Copy(const void *inSrc) const;
+
+        void Copy(const void *inSrc, size_t size, size_t offset = 0) const;
 
         void *GetMappedData() const;
 
@@ -26,4 +27,5 @@ namespace MamontEngine
     };
 
     AllocatedBuffer CreateStagingBuffer(const size_t inAllocationSize);
-}
+} // namespace MamontEngine
+

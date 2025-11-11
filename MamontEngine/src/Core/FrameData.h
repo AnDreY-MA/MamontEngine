@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/VkDestriptor.h"
+#include "Utils/VkDestriptor.h"
 #include "Graphics/Vulkan/Image.h"
 #include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/Buffers/Buffer.h"

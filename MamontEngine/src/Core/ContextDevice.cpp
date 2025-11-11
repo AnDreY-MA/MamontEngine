@@ -5,11 +5,12 @@
 #include "ECS/SceneRenderer.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Vulkan/Allocator.h"
-#include "VkImages.h"
-#include "VkInitializers.h"
+#include "Utils/VkImages.h"
+#include "Utils/VkInitializers.h"
 #include "Window.h"
 #include "tracy/TracyVulkan.hpp"
 #include "vulkan/vk_enum_string_helper.h"
+#include "Utils/Utilities.h"
 
 namespace MamontEngine
 {
@@ -527,6 +528,16 @@ namespace MamontEngine
         }
 
         {
+            DescriptorLayoutBuilder layoutBuilder{};
+            layoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            layoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            layoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            layoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+            RenderDescriptorLayout = layoutBuilder.Build(device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+        }
+
+        {
             DescriptorWriter writer;
             writer.WriteImage(0, Image.DrawImage.ImageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
             writer.UpdateSet(device, DrawImageDescriptors);
@@ -614,7 +625,7 @@ namespace MamontEngine
         std::cerr << "Image.DrawImage ImageView:" << Image.DrawImage.ImageView << std::endl;
 
         constexpr VkImageUsageFlags depthImageUsages = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        Image.DepthImage                             = CreateImage(extent, VK_FORMAT_D32_SFLOAT, depthImageUsages, false);
+        Image.DepthImage                             = CreateImage(extent, Utils::FindDepthFormat(PhysicalDevice::GetDevice())/*VK_FORMAT_D32_SFLOAT*/, depthImageUsages, false);
 
         std::cerr << "Image.DepthImage Image:" << Image.DepthImage.Image << std::endl;
         std::cerr << "Image.DepthImage ImageView:" << Image.DepthImage.ImageView << std::endl;
@@ -645,17 +656,18 @@ namespace MamontEngine
         DestroyImage(Image.DrawImage);
         DestroyImage(Image.DepthImage);
 
-        // Swapchain.Destroy(device);
         Swapchain.ReCreate(*this, inWindowExtent);
 
         InitImage();
+
+        InitDescriptors();
     }
 
     void VkContextDevice::InitShadowImages()
     {
         const VkDevice device = LogicalDevice::GetDevice();
 
-        const VkFormat       depthFormat = VK_FORMAT_D32_SFLOAT;
+        const VkFormat       depthFormat = Utils::FindDepthFormat(PhysicalDevice::GetDevice());
         constexpr VkExtent3D shadowImageExtent{SHADOWMAP_DIMENSION, SHADOWMAP_DIMENSION, 1};
 
         auto imageInfo = vkinit::image_create_info(depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, shadowImageExtent);

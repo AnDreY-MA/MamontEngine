@@ -101,6 +101,7 @@ namespace MamontEngine
         DescriptorAllocatorGrowable GlobalDescriptorAllocator;
         VkDescriptorSet             DrawImageDescriptors{VK_NULL_HANDLE};
         VkDescriptorSetLayout       DrawImageDescriptorLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout       RenderDescriptorLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout       GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
 
         RenderPipeline *RenderPipeline;

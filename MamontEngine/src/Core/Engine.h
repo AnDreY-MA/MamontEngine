@@ -1,6 +1,5 @@
 #pragma once
 
-#include "VkDestriptor.h"
 #include "Camera.h"
 #include "FrameData.h"
 #include "Window.h"

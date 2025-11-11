@@ -26,26 +26,22 @@ namespace MamontEngine
         {
             Texture   ColorTexture;
             Texture   MetalRoughTexture;
-            VkBuffer  DataBuffer{VK_NULL_HANDLE};
-            uint32_t  DataBufferOffset{0};
         } Resources;
 
         struct MaterialConstants
         {
-            MaterialConstants() = default;
-
-            MaterialConstants(const glm::vec4 &inColorFactor, const float inMetalicFactor, const float inRoughFactor)
-                : ColorFactors(inColorFactor), MetalicFactor(inMetalicFactor), RoughFactor(inRoughFactor)
-            {
-            }
             glm::vec4 ColorFactors = glm::vec4(1.0f);
 
             float MetalicFactor{0.f};
             float RoughFactor{0.f};
+
+            float _pad0{0.f};
+            float _pad1{0.f};
         } Constants;
 
-        bool IsDity{true};
+        size_t BufferOffset{0}; 
+
+        bool IsDity{false};
 
     };
-
 }

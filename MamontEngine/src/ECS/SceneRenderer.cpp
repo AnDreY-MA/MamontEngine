@@ -3,9 +3,9 @@
 #include "Graphics/Resources/Models/Model.h"
 #include "Utils/Profile.h"
 #include "Core/Log.h"
-#include "Core/VkInitializers.h"
-#include "Core/VkImages.h"
-#include "Core/VkPipelines.h"
+#include "Utils/VkInitializers.h"
+#include "Utils/VkImages.h"
+#include "Utils/VkPipelines.h"
 
 namespace MamontEngine
 {
@@ -209,11 +209,11 @@ namespace MamontEngine
         uint64_t   idRenderObject{1};
         constexpr VkDeviceSize offsets[1] = {0};
 
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipeline);
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inLayout, 0, 1, &globalDescriptor, 0, nullptr);
+
         const auto draw = [&](const RenderObject& r) -> void
         {
-            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipeline);
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inLayout, 0, 1, &globalDescriptor, 0, nullptr);
-
             vkCmdBindVertexBuffers(cmd, 0, 1, &r.VertexBuffer, offsets);
 
             vkCmdBindIndexBuffer(cmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);

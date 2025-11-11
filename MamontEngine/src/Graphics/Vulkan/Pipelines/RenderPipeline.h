@@ -10,7 +10,7 @@ namespace MamontEngine
     class RenderPipeline
     {
     public:
-        RenderPipeline(VkDevice inDevice, VkDescriptorSetLayout inDescriptorLayout, const std::pair<VkFormat, VkFormat> inImageFormats);
+        RenderPipeline(VkDevice inDevice, const std::span<VkDescriptorSetLayout> inDescriptorLayouts, const std::pair<VkFormat, VkFormat> inImageFormats);
         
         ~RenderPipeline();
 
@@ -18,7 +18,5 @@ namespace MamontEngine
 
         std::shared_ptr<PipelineData> OpaquePipeline;
         std::shared_ptr<PipelineData> TransparentPipeline;
-
-        VkDescriptorSetLayout Layout{VK_NULL_HANDLE};
     };
 }

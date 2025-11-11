@@ -1,17 +1,19 @@
 #include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
 
-#include "Core/VkPipelines.h"
-#include <Core/VkDestriptor.h>
-#include <Core/VkInitializers.h>
+#include "Utils//VkPipelines.h"
+#include "Utils//VkDestriptor.h"
+#include "Utils//VkInitializers.h"
 #include "Core/ContextDevice.h"
-#include <ECS/SceneRenderer.h>
+#include "ECS/SceneRenderer.h"
 
 //#define VMA_IMPLEMENTATION
 //#include <vk_mem_alloc.h>
 
 namespace MamontEngine
 {
-    RenderPipeline::RenderPipeline(VkDevice inDevice, VkDescriptorSetLayout inDescriptorLayout, const std::pair<VkFormat, VkFormat> inImageFormats)
+    RenderPipeline::RenderPipeline(VkDevice                              inDevice,
+                                   const std::span<VkDescriptorSetLayout> inDescriptorLayouts,
+                                   const std::pair<VkFormat, VkFormat>   inImageFormats)
     {
         const std::string meshPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/mesh.frag.spv";
 
@@ -34,17 +36,10 @@ namespace MamontEngine
             .size = sizeof(GPUDrawPushConstants)
         };
 
-        DescriptorLayoutBuilder layoutBuilder{};
-        layoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-        layoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-        layoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-        layoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        //const std::array<VkDescriptorSetLayout, 2> layouts = {inDescriptorLayout, Layout};
 
-        Layout = layoutBuilder.Build(inDevice, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-
-        const std::array<VkDescriptorSetLayout, 2> layouts = {inDescriptorLayout, Layout};
-
-        const VkPipelineLayoutCreateInfo mesh_layout_info = vkinit::pipeline_layout_create_info(2, layouts.data(), &matrixRange, 1);
+        const VkPipelineLayoutCreateInfo mesh_layout_info =
+                vkinit::pipeline_layout_create_info(inDescriptorLayouts.size(), inDescriptorLayouts.data(), &matrixRange, 1);
 
         VkPipelineLayout newLayout;
         VK_CHECK(vkCreatePipelineLayout(inDevice, &mesh_layout_info, nullptr, &newLayout));

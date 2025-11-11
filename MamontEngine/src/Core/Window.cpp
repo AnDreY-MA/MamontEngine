@@ -20,7 +20,7 @@ namespace MamontEngine
     {
         SDL_Init(SDL_INIT_VIDEO);
 
-        constexpr SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+        constexpr SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
 
         m_Window = SDL_CreateWindow("Mamont Engine", m_WindowExtent.width, m_WindowExtent.height, window_flags);
 
@@ -28,7 +28,6 @@ namespace MamontEngine
 
         SDL_SetWindowPosition(m_Window, pos, pos);
         SDL_SetWindowSurfaceVSync(m_Window, false);
-        //SetupVulkanWindow(wd, w, h);
     }
 
     void WindowCore::Close()
