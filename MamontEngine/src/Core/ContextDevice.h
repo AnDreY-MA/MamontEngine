@@ -1,6 +1,5 @@
 #pragma once
 
-// #include "Graphics/Vulkan/Image.h"
 #include "Graphics/Resources/Texture.h"
 
 #include "Graphics/RenderData.h"
@@ -36,8 +35,6 @@ namespace MamontEngine
         void InitDefaultImages();
 
         void DestroyImage(const AllocatedImage &inImage) const;
-
-        void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction) const;
 
         void InitSamples();
 
@@ -100,11 +97,13 @@ namespace MamontEngine
 
         DescriptorAllocatorGrowable GlobalDescriptorAllocator;
         VkDescriptorSet             DrawImageDescriptors{VK_NULL_HANDLE};
-        VkDescriptorSetLayout       DrawImageDescriptorLayout{VK_NULL_HANDLE};
-        VkDescriptorSetLayout       RenderDescriptorLayout{VK_NULL_HANDLE};
-        VkDescriptorSetLayout       GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
+
+        VkDescriptorSetLayout DrawImageDescriptorLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout RenderDescriptorLayout{VK_NULL_HANDLE};
+        VkDescriptorSetLayout GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
 
         RenderPipeline *RenderPipeline;
+        void            InitDescriptors();
 
     private:
 #pragma region Initialize functions
@@ -116,7 +115,6 @@ namespace MamontEngine
 
         void InitSyncStructeres();
 
-        void InitDescriptors();
 
         void InitSceneBuffers();
 
@@ -141,12 +139,9 @@ namespace MamontEngine
         std::array<FrameData, FRAME_OVERLAP> m_Frames{};
         size_t                               m_FrameNumber{0};
 
-        VkFence         m_ImmFence{VK_NULL_HANDLE};
-        VkCommandBuffer m_ImmCommandBuffer{VK_NULL_HANDLE};
-        VkCommandPool   m_ImmCommandPool{VK_NULL_HANDLE};
-
         VkQueue  m_GraphicsQueue{VK_NULL_HANDLE};
         uint32_t m_GraphicsQueueFamily{0};
+        Texture  m_SkyboxTexture;
 
         struct TracyInfo
         {
@@ -157,4 +152,3 @@ namespace MamontEngine
         } m_TracyInfo;
     };
 } // namespace MamontEngine
-

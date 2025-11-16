@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Graphics/Vulkan/Pipelines/SkyPipeline.h"
 #include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
 #include "ECS/SceneRenderer.h"
 
@@ -74,6 +73,7 @@ namespace MamontEngine
         void DrawMain(VkCommandBuffer inCmd);
         void DrawGeometry(VkCommandBuffer inCmd);
         void DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView);
+        void DrawSkybox(VkCommandBuffer inCmd);
 
         void RenderCascadeShadow(VkCommandBuffer inCmd);
 
@@ -90,8 +90,6 @@ namespace MamontEngine
 
         std::unique_ptr<RenderPipeline> m_RenderPipeline;
 
-        std::unique_ptr<SkyPipeline> m_SkyPipeline;
-
         std::shared_ptr<SceneRenderer> m_SceneRenderer;
 
         std::unique_ptr<ImGuiRenderer> m_ImGuiRenderer;
@@ -100,6 +98,8 @@ namespace MamontEngine
 
         std::unique_ptr<PipelineData> m_CascadePipeline;
         std::unique_ptr<PipelineData> m_PickingPipeline;
+
+        std::unique_ptr<MeshModel> m_Skybox;
 
         bool IsActiveCascade{true};
 

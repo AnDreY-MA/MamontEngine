@@ -126,9 +126,9 @@ namespace MamontEngine::VkPipelines
         m_RenderInfo.depthAttachmentFormat = inFormat;
     }
 
-    void PipelineBuilder::EnableDepthTest(const bool inDepthWriteEnable, VkCompareOp inOp)
+    void PipelineBuilder::EnableDepthTest(VkBool32 inDepthWriteEnable, VkCompareOp inOp)
     {
-        m_DepthStencil.depthTestEnable       = VK_TRUE;
+        m_DepthStencil.depthTestEnable       = inDepthWriteEnable;
         m_DepthStencil.depthWriteEnable      = inDepthWriteEnable;
         m_DepthStencil.depthCompareOp        = inOp;
         m_DepthStencil.depthBoundsTestEnable = VK_FALSE;

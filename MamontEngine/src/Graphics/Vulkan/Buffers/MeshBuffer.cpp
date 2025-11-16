@@ -2,6 +2,7 @@
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Resources/Models/Mesh.h"
 #include "Core/Engine.h"
+#include "Graphics/Vulkan/ImmediateContext.h"
 
 namespace MamontEngine
 {
@@ -36,7 +37,7 @@ namespace MamontEngine
 
         const auto &ContextDevice = MEngine::Get().GetContextDevice();
 
-        ContextDevice.ImmediateSubmit(
+        ImmediateContext::ImmediateSubmit(
                 [&](VkCommandBuffer cmd)
                 {
                     const VkBufferCopy vertexCopy = {.srcOffset = 0, .dstOffset = 0, .size = vertexBufferSize};

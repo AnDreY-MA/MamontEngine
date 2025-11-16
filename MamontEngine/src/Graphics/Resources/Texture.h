@@ -17,9 +17,12 @@ namespace MamontEngine
 
         void Destroy();
 
-    private:
-        void Create(const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false, uint32_t arrayLayers = 1);
+        void Create(const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, 
+            const bool inIsMipMapped = false, uint32_t arrayLayers = 1, VkImageCreateFlags inCreateFlags = 0);
     };
+
+    Texture LoadCubeMapTexture(const std::string &inFileName, VkFormat inFormat);
+
 
     Texture CreateWhiteTexture();
 

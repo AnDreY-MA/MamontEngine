@@ -52,8 +52,8 @@ namespace MamontEngine
     {
         constexpr float angle  = glm::radians(360.0f);
         constexpr float  radius = 20.0f;
-        //m_LightPosition     = glm::vec3(cos(angle) * radius, -radius, sin(angle) * radius);
         m_LightPosition = glm::vec3(-2.f, 2.f, 0.f);
+
     }
     
     SceneRenderer::~SceneRenderer() 

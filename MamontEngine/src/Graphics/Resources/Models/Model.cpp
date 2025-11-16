@@ -9,6 +9,8 @@
 #include "Graphics/Resources/Texture.h"
 #include "Graphics/Vulkan/Allocator.h"
 #include "Utils/Utilities.h"
+#include "ktx.h"
+#include "ktxvulkan.h"
 
 namespace MamontEngine
 {
@@ -62,7 +64,7 @@ namespace MamontEngine
                             imagesize,
                             VK_FORMAT_R16G16B16A16_SFLOAT,
                             VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                            /*mip=*/true);
+                            true);
 
             stbi_image_free(data);
 

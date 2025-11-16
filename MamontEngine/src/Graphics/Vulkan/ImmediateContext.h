@@ -4,7 +4,10 @@ namespace MamontEngine
 {
 namespace ImmediateContext
 {
-    void InitImmediateContext();
+    void InitImmediateContext(VkQueue graphicQueue, uint32_t queueFamilyIndex);
+
     void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)> &&inFunction);
+
+    void DestroyImmediateContext();
 }
 }

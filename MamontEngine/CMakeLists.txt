@@ -107,6 +107,14 @@ target_include_directories(imgui PUBLIC vendor/imgui)
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
 target_link_libraries(${PROJECT_NAME} PUBLIC imgui)
 
+#ktx
+add_subdirectory("vendor/ktx")
+target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
+
+
+#include_directories("vendor/ktx/include")
+#include_directories("vendor/ktx/other_include")
+
 #fast gltf
 add_subdirectory("vendor/fastgltf")
 target_link_libraries(${PROJECT_NAME} PUBLIC fastgltf::fastgltf)

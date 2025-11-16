@@ -52,40 +52,31 @@ float textureProj(vec4 shadowCoord, vec2 offset, uint cascadeIndex)
   return shadow;
 }
 
-vec3 FresnelSclick(float cosTheta, vec3 F0)
+float filterPCF(vec4 sc, uint cascadeIndex)
 {
-  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+	ivec2 texDim = textureSize(shadowMap, 0).xy;
+	float scale = 0.75;
+	float dx = scale * 1.0 / float(texDim.x);
+	float dy = scale * 1.0 / float(texDim.y);
+
+	float shadowFactor = 0.0;
+	int count = 0;
+	int range = 1;
+	
+	for (int x = -range; x <= range; x++) {
+		for (int y = -range; y <= range; y++) {
+			shadowFactor += textureProj(sc, vec2(dx*x, dy*y), cascadeIndex);
+			count++;
+		}
+	}
+	return shadowFactor / count;
 }
 
-float DistributionGGX(vec3 N, vec3 H, float roughness)
-{
-  const float alpha = roughness * roughness;
-  const float alpha2 = alpha * alpha;
-
-  const float NDotH = max(dot(N, H), 0.0);
-  const float NDotH2 = NDotH * NDotH;
-
-  const float denom
-  (NDotH2 * (alpha2 - 1.0) + 1.0);
-
-  return alpha2 / (PI * denom * denom);
-}
-
-float SchlickGGX(float NdotV, float roughness)
-{
-  const float r = roughness + 1.0;
-  const float k = (r * r) / 8.0;
-
-  return NdotV * (NdotV * (1.0 - k) + k);
-}
 
 void main()
 {
   const vec4 textureColor = texture(colorMap, inUV);
   const vec4 color = materialData.colorFactors * textureColor * inColor;
-  /*if (color.a < 0.05) {
-                    discard;
-                  }*/
 
   const vec4 metallicRoughness = texture(metalRoughTex, inUV);
   const float metallic = metallicRoughness.b * materialData.metallicFactor;
@@ -101,15 +92,21 @@ void main()
   }
 
   const vec4 shadowCoord = (biasMat * cascadeViewProjMatrices.matrices[cascadeIndex]) * PushConstants.render_matrix * vec4(inPos, 1.0);
-  const float shadow = textureProj(shadowCoord / shadowCoord.w, vec2(0.0), cascadeIndex);
 
   const vec3 N = normalize(inNormal);
   const vec3 L = normalize(-ubo.lightDirection);
-  const vec3 H = normalize(L + inViewPos);
+  const vec3 V = normalize(-inViewPos);
+  const vec3 H = normalize(L + V);
+
   const float diffuse = max(dot(N, L), ambient);
   const vec3 lightColor = vec3(1.0);
+
+  const float shadow = textureProj(shadowCoord / shadowCoord.w, vec2(0.0), cascadeIndex);
+  //filterPCF(shadowCoord / shadowCoord.w, cascadeIndex);
+  
 
   outFragColor.rgb = max(lightColor * (diffuse * color.rgb), vec3(0.0));
   outFragColor.rgb *= shadow;
   outFragColor.a = color.a;
+
 }

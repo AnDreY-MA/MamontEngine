@@ -6,7 +6,8 @@
 
 namespace MamontEngine::VkUtil
 {
-    void transition_image(VkCommandBuffer cmd, VkImage image, VkImageLayout currentLayout, VkImageLayout newLayout)
+    void
+    transition_image(VkCommandBuffer cmd, VkImage image, VkImageLayout currentLayout, VkImageLayout newLayout, uint32_t mipLevels , uint32_t layerCount)
     {
         if (cmd == VK_NULL_HANDLE || image == VK_NULL_HANDLE)
             return;
@@ -53,6 +54,8 @@ namespace MamontEngine::VkUtil
                         : VK_IMAGE_ASPECT_COLOR_BIT;
 
         imageBarrier.subresourceRange = vkinit::image_subresource_range(aspectMask);
+        imageBarrier.subresourceRange.levelCount = mipLevels;
+        imageBarrier.subresourceRange.layerCount = layerCount;
         imageBarrier.image            = image;
 
         const VkDependencyInfo depInfo = {

@@ -1,16 +1,12 @@
 #include "ImGuiRenderer.h"
-#include "ContextDevice.h"
-#include "Utils/VkDestriptor.h"
-#include "imgui/imgui.h"
-#include "imgui/imgui_internal.h"
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_vulkan.h>
-#include "FrameData.h"
+#include "ContextDevice.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Devices/PhysicalDevice.h"
 #include "Utils/VkInitializers.h"
+#include "imgui/imgui.h"
 
-#include "Engine.h"
 #include "Utils/Profile.h"
 
 namespace MamontEngine
@@ -35,10 +31,10 @@ namespace MamontEngine
                                                      .maxSets       = 1000,
                                                      .poolSizeCount = (uint32_t)std::size(poolSizes),
                                                      .pPoolSizes    = poolSizes};
-        VkDevice device = LogicalDevice::GetDevice();
-        
+        VkDevice                         device   = LogicalDevice::GetDevice();
+
         VK_CHECK_MESSAGE(vkCreateDescriptorPool(device, &poolInfo, nullptr, &m_DescriptorPool), "CreateDescPool");
-        //outPoolResult = imguiPool;
+        // outPoolResult = imguiPool;
 
         ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance                  = inContextDevice.Instance;
@@ -52,12 +48,14 @@ namespace MamontEngine
         initInfo.MSAASamples               = VK_SAMPLE_COUNT_1_BIT;
         initInfo.UseDynamicRendering       = true;
 
-        initInfo.PipelineRenderingCreateInfo                         = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
+        initInfo.PipelineRenderingCreateInfo                         = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, .pNext = nullptr};
         initInfo.PipelineRenderingCreateInfo.colorAttachmentCount    = 1;
         initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &inColorFormat;
 
         ImGui_ImplSDL3_InitForVulkan(inWindow);
         ImGui_ImplVulkan_Init(&initInfo);
+
+        //vkDestroyDescriptorPool(device, m_DescriptorPool, nullptr);
     }
 
     ImGuiRenderer::~ImGuiRenderer()
@@ -65,12 +63,12 @@ namespace MamontEngine
         vkDestroyDescriptorPool(LogicalDevice::GetDevice(), m_DescriptorPool, nullptr);
     }
 
-    void ImGuiRenderer::Draw(VkCommandBuffer inCmd, VkImageView inTargetImageView, const VkExtent2D& inRenderExtent)
+    void ImGuiRenderer::Draw(VkCommandBuffer inCmd, VkImageView inTargetImageView, const VkExtent2D &inRenderExtent)
     {
         PROFILE_ZONE("ImGuiRenderer::Draw");
 
         const VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(inTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        const VkRenderingInfo     renderInfo      = vkinit::rendering_info(inRenderExtent, &colorAttachment, nullptr);
+        const VkRenderingInfo           renderInfo      = vkinit::rendering_info(inRenderExtent, &colorAttachment, nullptr);
 
         vkCmdBeginRendering(inCmd, &renderInfo);
 
@@ -79,4 +77,5 @@ namespace MamontEngine
         vkCmdEndRendering(inCmd);
     }
 
-}
+} // namespace MamontEngine
+

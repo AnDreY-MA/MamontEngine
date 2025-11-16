@@ -31,7 +31,7 @@ namespace MamontEngine::VkPipelines
 
         void SetColorAttachmentFormat(VkFormat inFormat);
         void SetDepthFormat(VkFormat inFormat);
-        void EnableDepthTest(const bool inDepthWriteEnable, VkCompareOp inOp);
+        void EnableDepthTest(VkBool32 inDepthWriteEnable, VkCompareOp inOp);
         void EnableDepthClamp(VkBool32 inValue);
         void DisableDepthtest();
         void SetDepthBiasEnable(VkBool32 inValue);

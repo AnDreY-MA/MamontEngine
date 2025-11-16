@@ -14,9 +14,9 @@ namespace MamontEngine
         
         ~RenderPipeline();
 
-        void Destroy(VkDevice inDevice);
-
         std::shared_ptr<PipelineData> OpaquePipeline;
         std::shared_ptr<PipelineData> TransparentPipeline;
+
+        std::shared_ptr<PipelineData> SkyboxPipline;
     };
 }

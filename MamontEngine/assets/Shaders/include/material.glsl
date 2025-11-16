@@ -14,3 +14,6 @@ layout(set = 0, binding = 1) uniform sampler2DArray shadowMap;
 
 layout(set = 1, binding = 1) uniform sampler2D colorMap;
 layout(set = 1, binding = 2) uniform sampler2D metalRoughTex;
+
+layout(set = 0, binding = 4) uniform samplerCube samplerCubeMap;
+
