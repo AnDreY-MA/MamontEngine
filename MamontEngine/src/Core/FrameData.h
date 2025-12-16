@@ -43,7 +43,8 @@ namespace MamontEngine
 
         DeletionQueue               Deleteions;
         DescriptorAllocatorGrowable FrameDescriptors;
-        VkDescriptorSet             GlobalDescriptor;
+        VkDescriptorSet             GlobalDescriptor{VK_NULL_HANDLE};
+        VkDescriptorSet             ViewportDescriptor{VK_NULL_HANDLE};
         
         AllocatedBuffer SceneDataBuffer;
         AllocatedBuffer CascadeDataBuffer;

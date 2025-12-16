@@ -40,7 +40,7 @@ namespace MamontEngine::VkPipelines
         void Clear();
 
 
-        VkPipeline BuildPipline(VkDevice inDevice, uint32_t attachmentCount = 1);
+        VkPipeline BuildPipline(VkDevice inDevice, uint32_t attachmentCount = 1, VkRenderPass inRenderPass = VK_NULL_HANDLE);
 
 
     //private:

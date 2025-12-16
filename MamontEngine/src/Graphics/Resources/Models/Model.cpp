@@ -131,28 +131,22 @@ namespace MamontEngine
 
     MeshModel::~MeshModel()
     {
-        vkDeviceWaitIdle(LogicalDevice::GetDevice());
+        const VkDevice device = LogicalDevice::GetDevice();
+        vkDeviceWaitIdle(device);
+
         Buffer.IndexBuffer.Destroy();
         Buffer.VertexBuffer.Destroy();
+        DescriptorPool.DestroyPools(device);
 
         Clear();
     }
 
     void MeshModel::Clear()
     {
-        const VkDevice device = LogicalDevice::GetDevice();
-        /*for (const auto &sampler : m_Samplers)
-        {
-            vkDestroySampler(device, sampler, nullptr);
-        }*/
-        DescriptorPool.DestroyPools(device);
-
-        // m_Samplers.clear();
-
-        /*for (auto& texture : m_Textures)
+        for (auto& texture : m_Textures)
         {
             texture.Destroy();
-        }*/
+        }
 
         m_Textures.clear();
         m_Nodes.clear();
@@ -415,6 +409,11 @@ namespace MamontEngine
                               materialResources.MetalRoughTexture.Sampler,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            Writer.WriteImage(3,
+                              materialResources.NormalTexture.ImageView,
+                              materialResources.NormalTexture.Sampler,
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             Writer.UpdateSet(device, newMaterial->MaterialSet);
 
             void *data = &newMaterial->Constants;
@@ -426,13 +425,12 @@ namespace MamontEngine
 
         const Texture whiteTexture = CreateWhiteTexture();
 
-        const auto getMaterialResources = [&]()
+        const auto getDefaultMaterialResources = [&]()
         {
             Material::MaterialResources materialResources{};
             materialResources.ColorTexture             = whiteTexture;
-            materialResources.ColorTexture.Sampler     = m_ContextDevice.DefaultSamplerLinear;
             materialResources.MetalRoughTexture        = whiteTexture;
-            materialResources.MetalRoughTexture.Sampler = m_ContextDevice.DefaultSamplerLinear;
+            materialResources.NormalTexture        = whiteTexture;
             return materialResources;
         };
 
@@ -444,7 +442,7 @@ namespace MamontEngine
             constants.ColorFactors                        = glm::vec4(1.0f);
             constants.MetalicFactor                       = 0.0f;
             constants.RoughFactor                         = 1.0f;
-            Material::MaterialResources materialResources = getMaterialResources();
+            Material::MaterialResources materialResources = getDefaultMaterialResources();
             auto                        material          = writerMaterial(EMaterialPass::MAIN_COLOR, materialResources, DescriptorPool, constants);
             m_Materials.push_back(std::move(material));
             return;
@@ -460,7 +458,7 @@ namespace MamontEngine
 
             const EMaterialPass passType = mat.alphaMode == fastgltf::AlphaMode::Blend ? EMaterialPass::TRANSPARENT : EMaterialPass::MAIN_COLOR;
 
-            Material::MaterialResources materialResources = getMaterialResources();
+            Material::MaterialResources materialResources = getDefaultMaterialResources();
 
             if (mat.pbrData.baseColorTexture.has_value())
             {
@@ -477,6 +475,13 @@ namespace MamontEngine
 
                 materialResources.MetalRoughTexture         = m_Textures[img];
                 materialResources.MetalRoughTexture.Sampler = sampler >= inSamplers.size() ? inSamplers[0] : inSamplers[sampler];
+            }
+            if (mat.normalTexture.has_value())
+            {
+                const auto textureIndex                 = inFileAsset.textures[mat.normalTexture.value().textureIndex].imageIndex.value();
+                const auto samplerIndex                 = inFileAsset.textures[mat.normalTexture.value().textureIndex].samplerIndex.value();
+                materialResources.NormalTexture         = m_Textures[mat.normalTexture.value().textureIndex];
+                materialResources.NormalTexture.Sampler = samplerIndex >= inSamplers.size() ? inSamplers[0] : inSamplers[samplerIndex];
             }
 
             auto newMat  = writerMaterial(passType, materialResources, DescriptorPool, constants);

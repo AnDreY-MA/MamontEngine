@@ -55,9 +55,10 @@ namespace MamontEngine
         const auto meshes = m_Registry.view<MeshComponent, TransformComponent>();
         for (const auto &&[entity, meshComponent, transform] : meshes.each())
         {
-            if (meshComponent.Mesh)
+            if (meshComponent.Mesh && transform.IsDirty)
             {
                 meshComponent.Mesh->UpdateTransform(transform.GetTransform(), transform.Translation, transform.Rotation, transform.Scale);
+                transform.IsDirty = false;
             }
 
             if (meshComponent.Dirty == true)

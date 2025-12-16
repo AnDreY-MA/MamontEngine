@@ -24,5 +24,7 @@ namespace MamontEngine
 
             return glm::translate(glm::mat4(1.0f), Translation) * rotation * glm::scale(glm::mat4(1.0f), Scale);
         }
+
+        bool IsDirty{true};
 	};
 }

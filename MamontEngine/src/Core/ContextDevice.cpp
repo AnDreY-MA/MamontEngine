@@ -15,7 +15,7 @@
 
 namespace MamontEngine
 {
-    constexpr bool bUseValidationLayers = false;
+    constexpr bool bUseValidationLayers = true;
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL DetailedDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      severity,
                                                                 VkDebugUtilsMessageTypeFlagsEXT             type,
@@ -226,6 +226,8 @@ namespace MamontEngine
 
         m_SkyboxTexture = LoadCubeMapTexture(DEFAULT_ASSETS_DIRECTORY + "Textures/cubemap_vulkan.ktx", VK_FORMAT_R8G8B8A8_UNORM);
 
+        m_BRDFUTTexture = GenerateBRDFLUT();
+
         InitSceneBuffers();
 
         InitDescriptors();
@@ -243,6 +245,8 @@ namespace MamontEngine
         ImmediateContext::DestroyImmediateContext();
         
         m_SkyboxTexture.Destroy();
+        m_BRDFUTTexture.Destroy();
+        m_PrefilteredCubeTexture.Destroy();
         DestroyImage(CascadeDepthImage.Image);
         vkDestroySampler(LogicalDevice::GetDevice(), CascadeDepthImage.Sampler, nullptr);
         vkDestroySurfaceKHR(Instance, Surface, nullptr);
@@ -522,6 +526,8 @@ namespace MamontEngine
             builder.AddBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             builder.AddBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             builder.AddBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            builder.AddBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            builder.AddBinding(6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             GPUSceneDataDescriptorLayout = builder.Build(device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
         }
 
@@ -548,6 +554,20 @@ namespace MamontEngine
             writer.WriteImage(4, m_SkyboxTexture.ImageView, m_SkyboxTexture.Sampler, 
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            writer.WriteImage(
+                    5, m_BRDFUTTexture.ImageView, m_BRDFUTTexture.Sampler, 
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            if (m_PrefilteredCubeTexture.Image != VK_NULL_HANDLE && m_PrefilteredCubeTexture.Sampler != VK_NULL_HANDLE)
+            {
+                writer.WriteImage(6,
+                              m_PrefilteredCubeTexture.ImageView,
+                              m_PrefilteredCubeTexture.Sampler,
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            }
+            
+            
             writer.UpdateSet(device, globalDescriptor);
 
             std::cerr << "globalDescriptor: " << globalDescriptor << std::endl;
@@ -565,22 +585,6 @@ namespace MamontEngine
         {
             GetFrameAt(i).FrameDescriptors.DestroyPools(device);
         }
-    }
-
-    void VkContextDevice::InitSamples()
-    {
-        VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-
-        sampl.magFilter       = VK_FILTER_NEAREST;
-        sampl.minFilter       = VK_FILTER_NEAREST;
-        const VkDevice device = LogicalDevice::GetDevice();
-
-        vkCreateSampler(device, &sampl, nullptr, &DefaultSamplerNearest);
-
-        sampl.magFilter = VK_FILTER_LINEAR;
-        sampl.minFilter = VK_FILTER_LINEAR;
-
-        vkCreateSampler(device, &sampl, nullptr, &DefaultSamplerLinear);
     }
 
     void VkContextDevice::InitSwapchain(const VkExtent2D &inWindowExtent)
@@ -701,6 +705,15 @@ namespace MamontEngine
 
             VK_CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &CascadeDepthImage.Sampler));
         }
+    }
+
+    void VkContextDevice::CreatePrefilteredCubeTexture(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &&inDrawSkyboxFunc)
+    {
+        m_PrefilteredCubeTexture = GeneratePrefilteredCube(vertexAddress, inDrawSkyboxFunc, m_SkyboxTexture);
+        const VkDevice device    = LogicalDevice::GetDevice();
+
+        vkDeviceWaitIdle(device);
+        InitDescriptors();
     }
 
     void VkContextDevice::InitTracyContext()

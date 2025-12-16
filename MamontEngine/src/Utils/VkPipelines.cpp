@@ -69,6 +69,7 @@ namespace MamontEngine::VkPipelines
 
     void PipelineBuilder::SetCullMode(VkCullModeFlags inCullMode, VkFrontFace inFrontFace)
     {
+        m_Rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
         m_Rasterizer.cullMode = inCullMode;
         m_Rasterizer.frontFace = inFrontFace;
     }
@@ -184,7 +185,7 @@ namespace MamontEngine::VkPipelines
 
         m_ShaderStages.clear();
     }
-    VkPipeline PipelineBuilder::BuildPipline(VkDevice inDevice, uint32_t attachmentCount)
+    VkPipeline PipelineBuilder::BuildPipline(VkDevice inDevice, uint32_t attachmentCount, VkRenderPass inRenderPass)
     {
         constexpr VkPipelineViewportStateCreateInfo viewportState = {
             .sType                             = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
@@ -193,8 +194,7 @@ namespace MamontEngine::VkPipelines
             .scissorCount  = 1
         };
 
-        const VkPipelineColorBlendStateCreateInfo colorBlending = {
-            .sType                               = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_ADVANCED_STATE_CREATE_INFO_EXT,
+        const VkPipelineColorBlendStateCreateInfo colorBlending = {.sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
             .pNext                               = nullptr,
             .logicOpEnable                       = VK_FALSE,
             .logicOp                             = VK_LOGIC_OP_COPY,
@@ -214,6 +214,7 @@ namespace MamontEngine::VkPipelines
         pipelineInfo.pColorBlendState             = &colorBlending;
         pipelineInfo.pDepthStencilState           = &m_DepthStencil;
         pipelineInfo.layout                       = m_PipelineLayout;
+        pipelineInfo.renderPass                   = inRenderPass;
 
         const VkPipelineDynamicStateCreateInfo dynamicInfo = {
             .sType              = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,

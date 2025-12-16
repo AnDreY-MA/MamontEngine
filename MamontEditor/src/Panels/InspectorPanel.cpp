@@ -151,11 +151,15 @@ namespace MamontEditor
                                                         [](MamontEngine::TransformComponent &component, entt::entity entity) 
             {
                 //MUI::BeginProperties();
-                MUI::DrawVec3Control("Translation", component.Translation);
-                auto rotation = glm::degrees(component.Rotation);
-                MUI::DrawVec3Control("Rotation", rotation);
-                component.Rotation = glm::radians(rotation);
-                MUI::DrawVec3Control("Scale", component.Scale, 1.f);
+                auto       rotation  = glm::degrees(component.Rotation);
+                const bool isChanged = MUI::DrawVec3Control("Translation", component.Translation) || MUI::DrawVec3Control("Rotation", rotation) ||
+                                       MUI::DrawVec3Control("Scale", component.Scale, 1.f);
+                if (isChanged)
+                {
+                    component.Rotation = glm::radians(rotation);
+                    component.IsDirty  = true;
+                }
+
                 //MUI::EndProperties();
             });
 

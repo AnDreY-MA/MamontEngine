@@ -126,19 +126,21 @@ namespace MamontEngine
     {
         if (m_IsInitialized)
         {
-            m_Log.release();
+            m_Log.reset();
             const VkDevice device = LogicalDevice::GetDevice();
             vkDeviceWaitIdle(device);
             
             m_GuiLayer->Deactivate();
+            m_GuiLayer.reset();
             
             m_Renderer->Clear();
+            m_Scene.reset();
             
             m_MainDeletionQueue.Flush();
 
             m_ContextDevice->Swapchain.Destroy(device);
 
-            m_ContextDevice.release();
+            m_ContextDevice.reset();
             //~ContextDevice
 
             //m_Window->Close();
@@ -149,18 +151,7 @@ namespace MamontEngine
 
     void MEngine::InitDefaultData()
     {
-        m_ContextDevice->InitSamples();
-
         m_ContextDevice->InitDefaultImages();
-
-
-        m_MainDeletionQueue.PushFunction(
-                [&]()
-                {
-                    const VkDevice device = LogicalDevice::GetDevice();
-                    vkDestroySampler(device, m_ContextDevice->DefaultSamplerNearest, nullptr);
-                    vkDestroySampler(device, m_ContextDevice->DefaultSamplerLinear, nullptr);
-                });
     }
     
     void MEngine::InitScene()

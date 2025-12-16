@@ -51,6 +51,7 @@ namespace MamontEditor
         AddPanel<StatisticsPanel>();
         AddPanel<LogPanel>();
         AddPanel<SceneSettingsPanel>();
+        //AddPanel<ViewportPanel>();
     }
 
     void Editor::Deactivate()

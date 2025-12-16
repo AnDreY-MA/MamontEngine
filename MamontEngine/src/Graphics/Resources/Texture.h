@@ -17,8 +17,12 @@ namespace MamontEngine
 
         void Destroy();
 
-        void Create(const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, 
-            const bool inIsMipMapped = false, uint32_t arrayLayers = 1, VkImageCreateFlags inCreateFlags = 0);
+        void Create(const VkExtent3D  &inSize,
+                    VkFormat           inFormat,
+                    VkImageUsageFlags  inUsage,
+                    const bool         inIsMipMapped = false,
+                    uint32_t           arrayLayers   = 1,
+                    VkImageCreateFlags inCreateFlags = 0);
     };
 
     Texture LoadCubeMapTexture(const std::string &inFileName, VkFormat inFormat);
@@ -28,5 +32,10 @@ namespace MamontEngine
 
 
     Texture CreateErrorTexture();
+
+    Texture
+    GeneratePrefilteredCube(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &inDrawSkyboxFunc, const Texture &inEnvironmentTexture);
+
+    Texture GenerateBRDFLUT();
 
 } // namespace MamontEngine

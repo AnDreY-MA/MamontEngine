@@ -1,7 +1,7 @@
-#pragma once 
+#pragma once
 
-#include "ECS/Components/MeshComponent.h"
 #include <Core/Camera.h>
+#include "ECS/Components/MeshComponent.h"
 
 #include <Graphics/Vulkan/Pipelines/RenderPipeline.h>
 
@@ -13,22 +13,22 @@ namespace MamontEngine
         glm::mat4 Proj{glm::mat4(0.f)};
         glm::mat4 Viewproj{glm::mat4(0.f)};
         glm::vec3 LightDirection{glm::vec3(0.4f)};
+        glm::vec3 SunLightPosition{glm::vec3(0.0)};
     };
 
-	class SceneRenderer
-	{
+    class SceneRenderer
+    {
     public:
         explicit SceneRenderer(const std::shared_ptr<Camera> &inCamera);
 
         ~SceneRenderer();
 
-        void Render(VkCommandBuffer  inCmd,
-                    VkDescriptorSet  globalDescriptor);
-        void RenderShadow(VkCommandBuffer  inCmd,
-                          VkDescriptorSet  globalDescriptor,
+        void Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor);
+        void RenderShadow(VkCommandBuffer     inCmd,
+                          VkDescriptorSet     globalDescriptor,
                           const glm::mat4    &inViewProjection,
                           const PipelineData &inPipelineData,
-                          uint32_t         cascadeIndex);
+                          uint32_t            cascadeIndex);
 
         void RenderPicking(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, VkPipeline inPipeline, VkPipelineLayout inLayout);
 
@@ -40,14 +40,11 @@ namespace MamontEngine
 
         void Clear();
 
-        void RemoveMeshComponent(MeshComponent& inMeshComponent)
+        void RemoveMeshComponent(MeshComponent &inMeshComponent)
         {
             m_MeshComponents.erase(std::remove_if(m_MeshComponents.begin(),
                                                   m_MeshComponents.end(),
-                                                  [&inMeshComponent](const MeshComponent &comp)
-                                                  {
-                                                      return comp.Mesh == inMeshComponent.Mesh;
-                                                  }),
+                                                  [&inMeshComponent](const MeshComponent &comp) { return comp.Mesh == inMeshComponent.Mesh; }),
                                    m_MeshComponents.end());
         }
 
@@ -61,12 +58,12 @@ namespace MamontEngine
         {
             return m_SceneData;
         }
-        const CascadeData& GetCascadeData() const
+        const CascadeData &GetCascadeData() const
         {
             return m_CascadeData;
         }
 
-        const Camera* GetCamera() const
+        const Camera *GetCamera() const
         {
             return m_Camera.get();
         }
@@ -76,26 +73,25 @@ namespace MamontEngine
             m_DrawContext.Clear();
         }
 
-        glm::vec3& CascadeLightPosition()
+        glm::vec3 &CascadeLightPosition()
         {
             return m_LightPosition;
         }
 
-        void SetCascadeLightPosition(const glm::vec3& inPos)
+        void SetCascadeLightPosition(const glm::vec3 &inPos)
         {
             m_LightPosition = inPos;
         }
         glm::vec3 m_LightPosition{glm::vec3(1.f)};
 
-	private:
-        std::vector<MeshComponent>  m_MeshComponents;
-        std::shared_ptr<Camera>     m_Camera;
+    private:
+        std::vector<MeshComponent> m_MeshComponents;
+        std::shared_ptr<Camera>    m_Camera;
         DrawContext                m_DrawContext;
 
         GPUSceneData m_SceneData;
         CascadeData  m_CascadeData;
+    };
 
+} // namespace MamontEngine
 
-	};
-
-}

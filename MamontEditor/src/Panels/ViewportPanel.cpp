@@ -28,7 +28,7 @@ namespace MamontEditor
         auto &ContextDevice = MamontEngine::MEngine::Get().GetContextDevice();
         if (OnBegin(flags))
         {
-            ImGui::Image((ImTextureRef)ContextDevice.DrawImageDescriptors, ImGui::GetContentRegionAvail());
+            ImGui::Image(ContextDevice.GetCurrentFrame().ViewportDescriptor, ImGui::GetContentRegionAvail());
             //ImGui::Image(ContextDevice.Image.DrawImage.ImTextID.GetTexID(), ImGui::GetContentRegionAvail());
         }
 

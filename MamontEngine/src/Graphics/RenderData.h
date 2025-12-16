@@ -73,6 +73,6 @@ namespace MamontEngine
         glm::mat4            InverseViewMatrix{glm::mat4(0.f)};
         glm::vec3 LightDirection{glm::vec3()};
         float                _pad;
-        int32_t              Color{1};
+        glm::vec3              Color{glm::vec3(1.0)};
     };
 }

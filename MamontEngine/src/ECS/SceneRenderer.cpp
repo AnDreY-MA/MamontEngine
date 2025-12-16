@@ -1,15 +1,15 @@
 ﻿#include "SceneRenderer.h"
 #include <glm/gtx/transform.hpp>
+#include "Core/Log.h"
 #include "Graphics/Resources/Models/Model.h"
 #include "Utils/Profile.h"
-#include "Core/Log.h"
-#include "Utils/VkInitializers.h"
 #include "Utils/VkImages.h"
+#include "Utils/VkInitializers.h"
 #include "Utils/VkPipelines.h"
 
 namespace MamontEngine
 {
-    static bool     is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
+    static bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
     {
         constexpr std::array<glm::vec3, 8> corners{
                 glm::vec3{1, 1, 1},
@@ -47,16 +47,14 @@ namespace MamontEngine
         return true;
     }
 
-    SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera) 
-        : m_Camera(inCamera)
+    SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera) : m_Camera(inCamera)
     {
         constexpr float angle  = glm::radians(360.0f);
-        constexpr float  radius = 20.0f;
-        m_LightPosition = glm::vec3(-2.f, 2.f, 0.f);
-
+        constexpr float radius = 20.0f;
+        m_LightPosition        = glm::vec3(-2.f, 2.f, 0.f);
     }
-    
-    SceneRenderer::~SceneRenderer() 
+
+    SceneRenderer::~SceneRenderer()
     {
         Clear();
     }
@@ -91,8 +89,8 @@ namespace MamontEngine
             }
         }
 
-        PipelineData*        lastPipeline = nullptr;
-        const Material       *lastMaterial     = nullptr;
+        PipelineData   *lastPipeline = nullptr;
+        const Material *lastMaterial = nullptr;
 
         const auto draw = [&](const RenderObject &r)
         {
@@ -124,17 +122,16 @@ namespace MamontEngine
             }
 
             const GPUDrawPushConstants push_constants{
-                .WorldMatrix = r.Transform, 
-                .VertexBuffer = r.VertexBufferAddress, 
-                //.CascadeIndex = cascadeIndex
+                    .WorldMatrix  = r.Transform,
+                    .VertexBuffer = r.VertexBufferAddress,
+                    //.CascadeIndex = cascadeIndex
             };
 
-            constexpr uint32_t         constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
+            constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
             vkCmdPushConstants(
                     inCmd, r.Material->Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
 
             vkCmdDrawIndexed(inCmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
-
         };
 
 
@@ -148,14 +145,14 @@ namespace MamontEngine
             draw(m_DrawContext.TransparentSurfaces[r]);
         }
 
-        //m_DrawContext.Clear();
+        // m_DrawContext.Clear();
     }
 
-    void SceneRenderer::RenderShadow(VkCommandBuffer            inCmd,
-                                     VkDescriptorSet            globalDescriptor,
-                                     const glm::mat4           &inViewProjection,
-                                     const PipelineData   &inPipelineData,
-                                     uint32_t                   cascadeIndex)
+    void SceneRenderer::RenderShadow(VkCommandBuffer     inCmd,
+                                     VkDescriptorSet     globalDescriptor,
+                                     const glm::mat4    &inViewProjection,
+                                     const PipelineData &inPipelineData,
+                                     uint32_t            cascadeIndex)
     {
         PROFILE_ZONE("SceneRenderer::RenderShadow");
         std::vector<uint32_t> opaque_draws;
@@ -169,11 +166,11 @@ namespace MamontEngine
             }*/
             opaque_draws.push_back(i);
         }
-        
+
         vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineData.Pipeline);
 
         vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineData.Layout, 0, 1, &globalDescriptor, 0, nullptr);
-        
+
         const auto draw = [&](const RenderObject &r)
         {
             vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineData.Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
@@ -183,19 +180,12 @@ namespace MamontEngine
 
             vkCmdBindIndexBuffer(inCmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-            const GPUDrawPushConstants push_constants {
-                .WorldMatrix = r.Transform, 
-                .VertexBuffer = r.VertexBufferAddress, 
-                .CascadeIndex = cascadeIndex
-            };
+            const GPUDrawPushConstants push_constants{.WorldMatrix = r.Transform, .VertexBuffer = r.VertexBufferAddress, .CascadeIndex = cascadeIndex};
 
             constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
-            vkCmdPushConstants(inCmd, inPipelineData.Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                               0, constantsSize,
-                               &push_constants);
+            vkCmdPushConstants(inCmd, inPipelineData.Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
 
             vkCmdDrawIndexed(inCmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
-
         };
 
         for (const auto &r : opaque_draws)
@@ -206,23 +196,19 @@ namespace MamontEngine
 
     void SceneRenderer::RenderPicking(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, VkPipeline inPipeline, VkPipelineLayout inLayout)
     {
-        uint64_t   idRenderObject{1};
+        uint64_t               idRenderObject{1};
         constexpr VkDeviceSize offsets[1] = {0};
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipeline);
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inLayout, 0, 1, &globalDescriptor, 0, nullptr);
 
-        const auto draw = [&](const RenderObject& r) -> void
+        const auto draw = [&](const RenderObject &r) -> void
         {
             vkCmdBindVertexBuffers(cmd, 0, 1, &r.VertexBuffer, offsets);
 
             vkCmdBindIndexBuffer(cmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-            const GPUDrawPushConstants pushConstants{
-                    .WorldMatrix = r.Transform, 
-                    .VertexBuffer = r.VertexBufferAddress, 
-                    .ObjectID = (uint64_t)r.Id
-            };
+            const GPUDrawPushConstants pushConstants{.WorldMatrix = r.Transform, .VertexBuffer = r.VertexBufferAddress, .ObjectID = (uint64_t)r.Id};
 
             constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
             vkCmdPushConstants(cmd, inLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &pushConstants);
@@ -232,7 +218,7 @@ namespace MamontEngine
             ++idRenderObject;
         };
 
-        for (const auto& object : m_DrawContext.OpaqueSurfaces)
+        for (const auto &object : m_DrawContext.OpaqueSurfaces)
         {
             draw(object);
         }
@@ -269,7 +255,7 @@ namespace MamontEngine
 
         m_CascadeData.InverseViewMatrix = glm::inverse(view);
         m_CascadeData.LightDirection    = lightDir;
-        m_CascadeData.Color             = 0;
+        m_CascadeData.Color             = glm::vec3(1.0);
 
         for (const auto &mesh : m_MeshComponents)
         {
@@ -283,10 +269,11 @@ namespace MamontEngine
     void SceneRenderer::UpdateLight(float inDeltaTime)
     {
         static float angle = 0.f;
-        angle += inDeltaTime * 0.5f; 
-        const float radius = 5.f;
-        m_LightPosition    = glm::vec3(cos(angle) * radius, radius, sin(angle) * radius);
-        //m_LightPosition.y  = 3.f;
+        angle += inDeltaTime * 0.5f;
+        const float radius           = 5.f;
+        m_LightPosition              = glm::vec3(cos(angle) * radius, radius, sin(angle) * radius);
+        m_SceneData.SunLightPosition = m_LightPosition;
+        // m_LightPosition.y  = 3.f;
     }
 
     void SceneRenderer::UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades)
@@ -296,7 +283,7 @@ namespace MamontEngine
         const float nearClip{m_Camera->GetNearClip()};
         const float farClip{m_Camera->GetFarClip()};
         const float clipRange{farClip - nearClip};
-        
+
         const float minZ = nearClip;
         const float maxZ = nearClip + clipRange;
 
@@ -305,10 +292,10 @@ namespace MamontEngine
 
         constexpr float cascadeSplitLambda{0.95f};
 
-        for (size_t i{ 0 }; i < CASCADECOUNT; i++)
+        for (size_t i{0}; i < CASCADECOUNT; i++)
         {
             const float p       = (i + 1) / static_cast<float>(CASCADECOUNT);
-            const float log = minZ * std::pow(ratio, p);
+            const float log     = minZ * std::pow(ratio, p);
             const float uniform = minZ + range * p;
             const float d       = cascadeSplitLambda * (log - uniform) + uniform;
             cascadeSplits[i]    = (d - nearClip) / clipRange;
@@ -317,7 +304,7 @@ namespace MamontEngine
         float lastSplitDist = 0.f;
         for (size_t i = 0; i < CASCADECOUNT; i++)
         {
-            float splitDist = cascadeSplits[i];
+            float     splitDist         = cascadeSplits[i];
             glm::vec3 frustumCorners[8] = {
                     glm::vec3(-1.0f, 1.0f, 0.0f),
                     glm::vec3(1.0f, 1.0f, 0.0f),
@@ -338,7 +325,7 @@ namespace MamontEngine
 
             for (uint32_t j = 0; j < 4; j++)
             {
-                const glm::vec3 dist = frustumCorners[j + 4] - frustumCorners[j];
+                const glm::vec3 dist  = frustumCorners[j + 4] - frustumCorners[j];
                 frustumCorners[j + 4] = frustumCorners[j] + (dist * splitDist);
                 frustumCorners[j]     = frustumCorners[j] + (dist * lastSplitDist);
             }
@@ -361,10 +348,9 @@ namespace MamontEngine
             const glm::vec3 maxExtents = glm::vec3(radius);
             const glm::vec3 minExtents = -maxExtents;
 
-            const glm::vec3 lightDirection = glm::normalize(-m_LightPosition);
-            const glm::mat4       lightViewMatrix = glm::lookAt(frustumCenter - lightDirection * -minExtents.z, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
-            const glm::mat4 lightOrthoMatrix =
-                    glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.f, maxExtents.z - minExtents.z);
+            const glm::vec3 lightDirection   = glm::normalize(-m_LightPosition);
+            const glm::mat4 lightViewMatrix  = glm::lookAt(frustumCenter - lightDirection * -minExtents.z, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
+            const glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.f, maxExtents.z - minExtents.z);
 
             outCascades[i].SplitDepth        = (m_Camera->GetNearClip() + splitDist * clipRange) * -1.f;
             outCascades[i].ViewProjectMatrix = lightOrthoMatrix * lightViewMatrix;
@@ -373,8 +359,9 @@ namespace MamontEngine
         }
     }
 
-    void SceneRenderer::SubmitMesh(const MeshComponent& inMesh)
+    void SceneRenderer::SubmitMesh(const MeshComponent &inMesh)
     {
         m_MeshComponents.push_back(inMesh);
     }
-}
+} // namespace MamontEngine
+

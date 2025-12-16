@@ -36,8 +36,6 @@ namespace MamontEngine
 
         void DestroyImage(const AllocatedImage &inImage) const;
 
-        void InitSamples();
-
         void InitShadowImages();
 
         void ResizeSwapchain(const VkExtent2D &inWindowExtent);
@@ -92,9 +90,6 @@ namespace MamontEngine
 
         MSwapchain Swapchain;
 
-        VkSampler DefaultSamplerLinear{VK_NULL_HANDLE};
-        VkSampler DefaultSamplerNearest{VK_NULL_HANDLE};
-
         DescriptorAllocatorGrowable GlobalDescriptorAllocator;
         VkDescriptorSet             DrawImageDescriptors{VK_NULL_HANDLE};
 
@@ -104,6 +99,8 @@ namespace MamontEngine
 
         RenderPipeline *RenderPipeline;
         void            InitDescriptors();
+
+        void CreatePrefilteredCubeTexture(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &&inDrawSkyboxFunc);
 
     private:
 #pragma region Initialize functions
@@ -142,6 +139,8 @@ namespace MamontEngine
         VkQueue  m_GraphicsQueue{VK_NULL_HANDLE};
         uint32_t m_GraphicsQueueFamily{0};
         Texture  m_SkyboxTexture;
+        Texture  m_BRDFUTTexture;
+        Texture  m_PrefilteredCubeTexture;
 
         struct TracyInfo
         {

@@ -26,6 +26,7 @@ namespace MamontEngine
         {
             Texture   ColorTexture;
             Texture   MetalRoughTexture;
+            Texture   NormalTexture;
         } Resources;
 
         struct MaterialConstants

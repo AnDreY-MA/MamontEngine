@@ -37,6 +37,27 @@ namespace MamontEngine
         m_SceneRenderer = std::make_shared<SceneRenderer>(inMainCamera);
         const std::string cubePath = DEFAULT_ASSETS_DIRECTORY + "cube.glb";
         m_Skybox                   = std::make_unique<MeshModel>(m_DeviceContext, 0, cubePath);
+
+        VkDeviceAddress vertexAddress{0};
+        {
+            DrawContext skyboxContext;
+            m_Skybox->Draw(skyboxContext);
+            const RenderObject &object = skyboxContext.OpaqueSurfaces[0];
+            vertexAddress = object.VertexBufferAddress;
+        }
+
+        m_DeviceContext.CreatePrefilteredCubeTexture(vertexAddress, [&](VkCommandBuffer cmd) {
+                    DrawContext skyboxContext;
+                    m_Skybox->Draw(skyboxContext);
+                    const RenderObject &object = skyboxContext.OpaqueSurfaces[0];
+
+                    constexpr VkDeviceSize offsets[1] = {0};
+                    vkCmdBindVertexBuffers(cmd, 0, 1, &object.VertexBuffer, offsets);
+
+                    vkCmdBindIndexBuffer(cmd, object.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+                    vkCmdDrawIndexed(cmd, object.IndexCount, 1, object.FirstIndex, 0, 0);
+            });
     }
 
     void Renderer::InitImGuiRenderer()

@@ -28,4 +28,36 @@ namespace MamontEngine::Utils
                                    VK_IMAGE_TILING_OPTIMAL,
                                    VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
+
+    uint32_t GetMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound)
+    {
+        VkPhysicalDeviceMemoryProperties memoryProperties{};
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+
+        for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++)
+        {
+            if ((typeBits & 1) == 1)
+            {
+                if ((memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+                {
+                    if (memTypeFound)
+                    {
+                        *memTypeFound = true;
+                    }
+                    return i;
+                }
+            }
+            typeBits >>= 1;
+        }
+
+        if (memTypeFound)
+        {
+            *memTypeFound = false;
+            return 0;
+        }
+        else
+        {
+            throw std::runtime_error("Could not find a matching memory type");
+        }
+    }
 }
