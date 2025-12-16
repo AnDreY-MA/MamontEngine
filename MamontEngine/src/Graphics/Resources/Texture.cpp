@@ -19,14 +19,14 @@
 
 namespace MamontEngine
 {
-    void Texture::Load(void *inData, const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped)
+    void Texture::Load(void *inData, const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped, VkSampler inSampler)
     {
         const size_t    dataSize     = inSize.depth * inSize.width * inSize.height * 4;
         AllocatedBuffer uploadbuffer = CreateStagingBuffer(dataSize);
 
         memcpy(uploadbuffer.Info.pMappedData, inData, dataSize);
 
-        Create(inSize, inFormat, inUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, inIsMipMapped);
+        Create(inSize, inFormat, inUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, inIsMipMapped, 1, 0, inSampler);
 
         const auto &contextDevice = MEngine::Get().GetContextDevice();
         ImmediateContext::ImmediateSubmit(
@@ -84,7 +84,8 @@ namespace MamontEngine
                          VkImageUsageFlags  inUsage,
                          const bool         inIsMipMapped,
                          uint32_t           arrayLayers,
-                         VkImageCreateFlags inCreateFlags)
+                         VkImageCreateFlags inCreateFlags,
+                         VkSampler          inSampler)
     {
         ImageFormat           = inFormat;
         ImageExtent           = inSize;
@@ -123,10 +124,13 @@ namespace MamontEngine
 
         VK_CHECK(vkCreateImageView(device, &view_info, nullptr, &ImageView));
 
-        VkSamplerCreateInfo sampl = {
-                .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr, .magFilter = VK_FILTER_LINEAR, .minFilter = VK_FILTER_LINEAR};
+        if (inSampler == VK_NULL_HANDLE)
+        {
+            VkSamplerCreateInfo sampl = {
+                    .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr, .magFilter = VK_FILTER_LINEAR, .minFilter = VK_FILTER_LINEAR};
 
-        vkCreateSampler(device, &sampl, nullptr, &Sampler);
+            vkCreateSampler(device, &sampl, nullptr, &Sampler);
+        }
     }
 
     Texture LoadCubeMapTexture(const std::string &inFileName, VkFormat inFormat)

@@ -12,9 +12,11 @@
 #include "ktx.h"
 #include "ktxvulkan.h"
 
-namespace MamontEngine
+namespace
 {
-    static VkFilter extract_filter(fastgltf::Filter filter)
+    using namespace MamontEngine;
+
+    VkFilter extract_filter(fastgltf::Filter filter)
     {
         switch (filter)
         {
@@ -33,7 +35,7 @@ namespace MamontEngine
         }
     }
 
-    static VkSamplerMipmapMode extract_mipmap_mode(fastgltf::Filter filter)
+    VkSamplerMipmapMode extract_mipmap_mode(fastgltf::Filter filter)
     {
         switch (filter)
         {
@@ -48,28 +50,11 @@ namespace MamontEngine
         }
     }
 
-    static std::optional<Texture> load_image(const fastgltf::Asset &asset, const fastgltf::Image &image, VkSampler inSampler)
+    std::optional<Texture> load_image(const fastgltf::Asset &asset, const fastgltf::Image &image, VkSampler inSampler = VK_NULL_HANDLE)
     {
         Texture newTexture{};
 
         int width, height, nrChannels;
-
-        auto process_pixels = [&](unsigned char *data) -> bool
-        {
-            if (!data)
-                return false;
-            const VkExtent3D imagesize{(uint32_t)width, (uint32_t)height, 1u};
-
-            newTexture.Load(data,
-                            imagesize,
-                            VK_FORMAT_R16G16B16A16_SFLOAT,
-                            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                            true);
-
-            stbi_image_free(data);
-
-            return newTexture.Image != VK_NULL_HANDLE;
-        };
 
         std::visit(
                 fastgltf::visitor{
@@ -77,16 +62,39 @@ namespace MamontEngine
                         [&](const fastgltf::sources::URI &filePath)
                         {
                             assert(filePath.fileByteOffset == 0);
+                            assert(filePath.uri.isLocalPath());
 
                             const std::string path(filePath.uri.path().begin(), filePath.uri.path().end());
                             unsigned char    *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
-                            process_pixels(data);
+                            if (data)
+                            {
+                                const VkExtent3D imagesize{.width = (uint32_t)width, .height = (uint32_t)height, .depth = 1};
+
+                                newTexture.Load(data,
+                                                imagesize,
+                                                VK_FORMAT_R8G8B8A8_UNORM,
+                                                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                                                false,
+                                                inSampler);
+                                stbi_image_free(data);
+                            }
                         },
                         [&](const fastgltf::sources::Vector &vector)
                         {
                             unsigned char *data =
                                     stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
-                            process_pixels(data);
+                            if (data)
+                            {
+                                const VkExtent3D imagesize{.width = (uint32_t)width, .height = (uint32_t)height, .depth = 1};
+
+                                newTexture.Load(data,
+                                                imagesize,
+                                                VK_FORMAT_R8G8B8A8_UNORM,
+                                                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                                                false,
+                                                inSampler);
+                                stbi_image_free(data);
+                            }
                         },
                         [&](const fastgltf::sources::BufferView &view)
                         {
@@ -94,7 +102,7 @@ namespace MamontEngine
                             const auto &buffer     = asset.buffers[bufferView.bufferIndex];
 
                             std::visit(fastgltf::visitor{[](auto &arg) {},
-                                                         [&](fastgltf::sources::Vector &vector)
+                                                         [&](const fastgltf::sources::Vector &vector)
                                                          {
                                                              unsigned char *data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
                                                                                                          static_cast<int>(bufferView.byteLength),
@@ -102,7 +110,18 @@ namespace MamontEngine
                                                                                                          &height,
                                                                                                          &nrChannels,
                                                                                                          4);
-                                                             process_pixels(data);
+                                                             if (data)
+                                                             {
+                                                                 const VkExtent3D imagesize{.width = (uint32_t)width, .height = (uint32_t)height, .depth = 1};
+
+                                                                 newTexture.Load(data,
+                                                                                 imagesize,
+                                                                                 VK_FORMAT_R8G8B8A8_UNORM,
+                                                                                 VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                                                                                 false,
+                                                                                 inSampler);
+                                                                 stbi_image_free(data);
+                                                             }
                                                          }},
                                        buffer.data);
                         },
@@ -111,15 +130,18 @@ namespace MamontEngine
 
         if (newTexture.Image == VK_NULL_HANDLE)
         {
-            Log::Warn("Load Image(): image = NULL");
+            Log::Warn("newTexture.Image is NULL");
             return {};
         }
-
-        newTexture.Sampler = inSampler;
-
-        return newTexture;
+        else
+        {
+            return newTexture;
+        }
     }
+}
 
+namespace MamontEngine
+{
     MeshModel::MeshModel(const VkContextDevice &inDevice, UID inID) : m_ContextDevice(inDevice), ID(inID)
     {
     }
@@ -281,8 +303,8 @@ namespace MamontEngine
         const fastgltf::Asset gltf = std::move(loadResult.get());
 
         std::array<DescriptorAllocatorGrowable::PoolSizeRatio, 3> sizes = {
-                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3},
-                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6},
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}};
         const VkDevice device = LogicalDevice::GetDevice();
         DescriptorPool.Init(device, std::max<size_t>(1, gltf.materials.size()), sizes);
@@ -301,28 +323,25 @@ namespace MamontEngine
 
     std::vector<VkSampler> MeshModel::LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers)
     {
-        VkSamplerCreateInfo sampl = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr, .minLod = 0, .maxLod = VK_LOD_CLAMP_NONE};
+        VkSamplerCreateInfo sampl = {
+            .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr, 
+            .magFilter = VK_FILTER_LINEAR, .minFilter = VK_FILTER_LINEAR,
+            .minLod = 0, .maxLod = VK_LOD_CLAMP_NONE};
+        sampl.mipmapMode          = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
         std::vector<VkSampler> modelSamplers;
         modelSamplers.reserve(samplers.size() + 1);
 
-        if (modelSamplers.empty())
         {
-            VkSampler sampler;
-            sampl.magFilter = VK_FILTER_LINEAR;
-            sampl.minFilter = VK_FILTER_LINEAR;
-
-            vkCreateSampler(inDevice, &sampl, nullptr, &sampler);
-            modelSamplers.push_back(sampler);
-            return modelSamplers;
+            VkSampler defaultSampler = VK_NULL_HANDLE;
+            vkCreateSampler(inDevice, &sampl, nullptr, &defaultSampler);
+            modelSamplers.push_back(defaultSampler);
         }
-
 
         for (const fastgltf::Sampler &sampler : samplers)
         {
             sampl.magFilter = extract_filter(sampler.magFilter.value_or(fastgltf::Filter::Nearest));
             sampl.minFilter = extract_filter(sampler.minFilter.value_or(fastgltf::Filter::Nearest));
-
             sampl.mipmapMode = extract_mipmap_mode(sampler.minFilter.value_or(fastgltf::Filter::Nearest));
 
             VkSampler newSampler;
@@ -336,25 +355,22 @@ namespace MamontEngine
 
     void MeshModel::LoadImages(const fastgltf::Asset &inFileAsset, const std::vector<VkSampler> &inSamplers)
     {
-        m_Textures.reserve(inFileAsset.images.size());
-        int samplerIndex = 0;
+        m_Textures.reserve(inFileAsset.images.size()+1);
         for (const fastgltf::Image &image : inFileAsset.images)
         {
-            VkSampler sampler = samplerIndex < inSamplers.size() && inSamplers[samplerIndex] != VK_NULL_HANDLE ? inSamplers[samplerIndex] : inSamplers.front();
-
-            const std::optional<Texture> img = load_image(inFileAsset, image, sampler);
+            const std::optional<Texture> img = load_image(inFileAsset, image);
 
             if (img.has_value())
             {
+                Log::Info("Loaded texture: {}", image.name.c_str());
                 m_Textures.push_back(*img);
             }
             else
             {
                 const Texture errorTexture = CreateErrorTexture();
                 m_Textures.push_back(errorTexture);
-                fmt::println("gltf failed to load texture: {}", image.name);
+                Log::Warn("gltf failed to load texture: {}", image.name);
             }
-            samplerIndex++;
         }
     }
 
@@ -370,12 +386,8 @@ namespace MamontEngine
 
         constexpr size_t materialConstSize   = sizeof(Material::MaterialConstants);
 
-        size_t alignedMaterialSize = materialConstSize;
-        if (minAlignment > 0)
-        {
-            alignedMaterialSize = (materialConstSize + minAlignment - 1) & ~(minAlignment - 1);
-        }
-
+        size_t alignedMaterialSize = minAlignment > 0 ? (materialConstSize + minAlignment - 1) & ~(minAlignment - 1) : materialConstSize;
+       
         const size_t numMaterials    = std::max(size_t(1), inFileAsset.materials.size());
         const size_t totalBufferSize = numMaterials * alignedMaterialSize;
 
@@ -414,6 +426,16 @@ namespace MamontEngine
                               materialResources.NormalTexture.Sampler,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            Writer.WriteImage(4,
+                              materialResources.EmissiveTexture.ImageView,
+                              materialResources.EmissiveTexture.Sampler,
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            Writer.WriteImage(5,
+                              materialResources.OcclusionTexture.ImageView,
+                              materialResources.OcclusionTexture.Sampler,
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             Writer.UpdateSet(device, newMaterial->MaterialSet);
 
             void *data = &newMaterial->Constants;
@@ -431,6 +453,8 @@ namespace MamontEngine
             materialResources.ColorTexture             = whiteTexture;
             materialResources.MetalRoughTexture        = whiteTexture;
             materialResources.NormalTexture        = whiteTexture;
+            materialResources.EmissiveTexture          = whiteTexture;
+            materialResources.OcclusionTexture = whiteTexture;
             return materialResources;
         };
 
@@ -463,25 +487,40 @@ namespace MamontEngine
             if (mat.pbrData.baseColorTexture.has_value())
             {
                 const size_t img     = inFileAsset.textures[mat.pbrData.baseColorTexture.value().textureIndex].imageIndex.value();
-                const size_t sampler = inFileAsset.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
+                const size_t sampler = inFileAsset.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value() + 1;
 
                 materialResources.ColorTexture         = m_Textures[img];
-                materialResources.ColorTexture.Sampler = sampler >= inSamplers.size() ? inSamplers[0] : inSamplers[sampler];
+                materialResources.ColorTexture.Sampler = inSamplers[sampler];
             }
             if (mat.pbrData.metallicRoughnessTexture.has_value())
             {
                 const size_t img     = inFileAsset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].imageIndex.value();
-                const size_t sampler = inFileAsset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].samplerIndex.value();
+                const size_t sampler = inFileAsset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].samplerIndex.value() + 1;
 
                 materialResources.MetalRoughTexture         = m_Textures[img];
-                materialResources.MetalRoughTexture.Sampler = sampler >= inSamplers.size() ? inSamplers[0] : inSamplers[sampler];
+                materialResources.MetalRoughTexture.Sampler = inSamplers[sampler];
             }
             if (mat.normalTexture.has_value())
             {
                 const auto textureIndex                 = inFileAsset.textures[mat.normalTexture.value().textureIndex].imageIndex.value();
-                const auto samplerIndex                 = inFileAsset.textures[mat.normalTexture.value().textureIndex].samplerIndex.value();
+                const auto samplerIndex                 = inFileAsset.textures[mat.normalTexture.value().textureIndex].samplerIndex.value() + 1;
                 materialResources.NormalTexture         = m_Textures[mat.normalTexture.value().textureIndex];
-                materialResources.NormalTexture.Sampler = samplerIndex >= inSamplers.size() ? inSamplers[0] : inSamplers[samplerIndex];
+                materialResources.NormalTexture.Sampler = inSamplers[samplerIndex];
+            }
+            
+            if (mat.emissiveTexture.has_value())
+            {
+                const auto textureIndex                   = inFileAsset.textures[mat.emissiveTexture.value().textureIndex].imageIndex.value();
+                const auto samplerIndex                   = inFileAsset.textures[mat.emissiveTexture.value().textureIndex].samplerIndex.value() + 1;
+                materialResources.EmissiveTexture         = m_Textures[mat.emissiveTexture.value().textureIndex];
+                materialResources.EmissiveTexture.Sampler = inSamplers[samplerIndex];
+            }
+            if (mat.occlusionTexture.has_value())
+            {
+                const auto textureIndex                   = inFileAsset.textures[mat.occlusionTexture.value().textureIndex].imageIndex.value();
+                const auto samplerIndex                   = inFileAsset.textures[mat.occlusionTexture.value().textureIndex].samplerIndex.value() + 1;
+                materialResources.OcclusionTexture         = m_Textures[mat.occlusionTexture.value().textureIndex];
+                materialResources.OcclusionTexture.Sampler = inSamplers[samplerIndex];
             }
 
             auto newMat  = writerMaterial(passType, materialResources, DescriptorPool, constants);
@@ -516,20 +555,6 @@ namespace MamontEngine
                 localBounds.Expand(prim->Bound);
             }
 
-            /*std::visit(fastgltf::visitor{[&](const fastgltf::Node::TransformMatrix &matrix) { memcpy(&newNode->Matrix, matrix.data(), sizeof(matrix)); },
-                                         [&](const fastgltf::Node::TRS &transform)
-                                         {
-                                             const glm::vec3 tl(transform.translation[0], transform.translation[1], transform.translation[2]);
-                                             const glm::quat rot(transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]);
-                                             const glm::vec3 sc(transform.scale[0], transform.scale[1], transform.scale[2]);
-
-                                             const glm::mat4 tm = glm::translate(glm::mat4(1.f), tl);
-                                             const glm::mat4 rm = glm::toMat4(rot);
-                                             const glm::mat4 sm = glm::scale(glm::mat4(1.f), sc);
-
-                                             newNode->Matrix = tm * rm * sm;
-                                         }},
-                       node.transform);*/
             std::visit(fastgltf::visitor{[&](const fastgltf::Node::TransformMatrix &matrix) { memcpy(&newNode->Matrix, matrix.data(), sizeof(matrix)); },
                                          [&](const fastgltf::Node::TRS &transform)
                                          {

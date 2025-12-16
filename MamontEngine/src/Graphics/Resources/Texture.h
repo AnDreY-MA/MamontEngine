@@ -13,7 +13,12 @@ namespace MamontEngine
         VkFormat          ImageFormat;
         VkDeviceMemory    DeviceMemory{VK_NULL_HANDLE};
 
-        void Load(void *inData, const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false);
+        void Load(void             *inData,
+                  const VkExtent3D &inSize,
+                  VkFormat          inFormat,
+                  VkImageUsageFlags inUsage,
+                  const bool        inIsMipMapped = false,
+                  VkSampler         inSampler     = VK_NULL_HANDLE);
 
         void Destroy();
 
@@ -22,7 +27,7 @@ namespace MamontEngine
                     VkImageUsageFlags  inUsage,
                     const bool         inIsMipMapped = false,
                     uint32_t           arrayLayers   = 1,
-                    VkImageCreateFlags inCreateFlags = 0);
+                    VkImageCreateFlags inCreateFlags = 0, VkSampler inSampler = VK_NULL_HANDLE);
     };
 
     Texture LoadCubeMapTexture(const std::string &inFileName, VkFormat inFormat);
