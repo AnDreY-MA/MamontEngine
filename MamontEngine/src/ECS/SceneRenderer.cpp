@@ -61,6 +61,11 @@ namespace MamontEngine
 
     void SceneRenderer::Clear()
     {
+        for (auto& component : m_MeshComponents)
+        {
+            component.Mesh.reset();
+        }
+
         m_MeshComponents.clear();
     }
 

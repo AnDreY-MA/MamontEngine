@@ -23,13 +23,16 @@ namespace MamontEngine
 {
     const std::string RootDirectories = PROJECT_ROOT_DIR;
 
-    Renderer::Renderer(VkContextDevice &inDeviceContext, const std::shared_ptr<WindowCore> &inWindow) : m_DeviceContext(inDeviceContext), m_Window(inWindow)
+    Renderer::Renderer(VkContextDevice &inDeviceContext, const std::shared_ptr<WindowCore> &inWindow) 
+        : m_DeviceContext(inDeviceContext), m_Window(inWindow)
     {
     }
 
-    void Renderer::Clear()
+    Renderer::~Renderer()
     {
-        m_SceneRenderer->Clear();
+        DestroyPipelines();
+        m_SceneRenderer.reset();
+        m_Skybox.reset();
     }
 
     void Renderer::InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera)
@@ -494,8 +497,9 @@ namespace MamontEngine
 
     void Renderer::DestroyPipelines()
     {
-        m_RenderPipeline.release();
-        m_PickingPipeline.release();
+        m_RenderPipeline.reset();
+        m_PickingPipeline.reset();
+        m_CascadePipeline.reset();
     }
 
     uint64_t Renderer::TryPickObject(const glm::vec2 &inMousePos)

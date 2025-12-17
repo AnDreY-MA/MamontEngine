@@ -10,11 +10,6 @@
 #include "ImGuiLayer.h"
 #include "Core/Log.h"
 
-struct MPipeline
-{
-    VkPipeline Pipeline;
-};
-
 namespace MamontEngine
 {
     class Scene;
@@ -80,9 +75,6 @@ namespace MamontEngine
         void InitScene();
         void UpdateScene(float inDeltaTime);
 
-        VkFormat FindDepthFormat() const;
-        VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
-
     private:
         bool       m_IsInitialized{false};
         bool       m_StopRendering{false};
@@ -104,6 +96,5 @@ namespace MamontEngine
         SDL_Event* m_InputEvent;
 
         std::shared_ptr<Camera> m_MainCamera;
-	
     };
 }

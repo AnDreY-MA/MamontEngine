@@ -34,6 +34,3 @@
 [submodule "MamontEngine/vendor/nlohmann_json"]
 	path = MamontEngine/vendor/nlohmann_json
 	url = https://github.com/nlohmann/json.git
-[submodule "MamontEngine/vendor/tracy"]
-	path = MamontEngine/vendor/tracy
-	url = https://github.com/wolfpld/tracy.git

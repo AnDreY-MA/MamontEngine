@@ -59,12 +59,9 @@ namespace MamontEngine
         bool      bQuit{false};
 
         tracy::SetThreadName("Main Thread");
-        //FrameMarkStart("MainLoop");
 
         while (!bQuit)
         {
-            //const auto start = std::chrono::high_resolution_clock::now();
-
             while (SDL_PollEvent(&event) != 0)
             { 
                 if (event.type == SDL_EVENT_QUIT)
@@ -88,9 +85,6 @@ namespace MamontEngine
             if (m_Renderer->IsResizeRequested())
             {
                 m_Renderer->ResizeSwapchain();
-                //bResize = false;
-               /* std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-                continue;*/
             }
 
             if (!m_Renderer->IsResizeRequested())
@@ -109,17 +103,8 @@ namespace MamontEngine
 
                 UpdateScene(deltaTime);
                 m_Renderer->Render();
-                //Draw();
             }
-
-            /*const auto end     = std::chrono::high_resolution_clock::now();
-            const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-
-            stats.FrameTime = elapsed.count() / 1000.f;*/
-
         }
-        //FrameMarkEnd("MainLoop");
-
     }
 
     void MEngine::Cleanup()
@@ -129,14 +114,14 @@ namespace MamontEngine
             m_Log.reset();
             const VkDevice device = LogicalDevice::GetDevice();
             vkDeviceWaitIdle(device);
-            
+            m_MainDeletionQueue.Flush();
+
             m_GuiLayer->Deactivate();
             m_GuiLayer.reset();
             
-            m_Renderer->Clear();
+            m_Renderer.reset();
             m_Scene.reset();
             
-            m_MainDeletionQueue.Flush();
 
             m_ContextDevice->Swapchain.Destroy(device);
 
@@ -170,40 +155,9 @@ namespace MamontEngine
 
     }
     
-    VkFormat MEngine::FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const
-    {
-        for (const VkFormat format : candidates)
-        {
-            VkFormatProperties props;
-            vkGetPhysicalDeviceFormatProperties(PhysicalDevice::GetDevice(), format, &props);
-
-            if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
-            {
-                return format;
-            }
-            else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
-            {
-                return format;
-            }
-        }
-
-        throw std::runtime_error("failed to find supported format!");
-    }
-
-    VkFormat MEngine::FindDepthFormat() const
-    {
-        return FindSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-                                   VK_IMAGE_TILING_OPTIMAL,
-                                   VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-    }
-
     void MEngine::InitPipelines()
     {
         m_Renderer->InitPipelines();
-
-        m_MainDeletionQueue.PushFunction([=]() { 
-            m_Renderer->DestroyPipelines();
-            });
     }
     
     void MEngine::InitImgui()

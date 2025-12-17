@@ -24,7 +24,7 @@ namespace MamontEngine
 	{
     public:
         Renderer(VkContextDevice &inDeviceContext, const std::shared_ptr<WindowCore>& inWindow);
-        ~Renderer() = default;
+        ~Renderer();
 
         void InitSceneRenderer(const std::shared_ptr<Camera>& inMainCamera);
         void InitImGuiRenderer();
@@ -42,8 +42,6 @@ namespace MamontEngine
         void UpdateSceneRenderer(float inDeltaTime);
 
         void ResizeSwapchain();
-
-        void Clear();
 
         inline bool IsStopRendering() const
         {

@@ -38,7 +38,6 @@ namespace MamontEngine
 
         void UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades);
 
-        void Clear();
 
         void RemoveMeshComponent(MeshComponent &inMeshComponent)
         {
@@ -83,6 +82,10 @@ namespace MamontEngine
             m_LightPosition = inPos;
         }
         glm::vec3 m_LightPosition{glm::vec3(1.f)};
+
+private:
+        void Clear();
+
 
     private:
         std::vector<MeshComponent> m_MeshComponents;

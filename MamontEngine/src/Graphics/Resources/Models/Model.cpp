@@ -159,6 +159,8 @@ namespace MamontEngine
         Buffer.IndexBuffer.Destroy();
         Buffer.VertexBuffer.Destroy();
         DescriptorPool.DestroyPools(device);
+        std::cerr << "Material buffer: " << MaterialDataBuffer.Buffer << std::endl;
+        MaterialDataBuffer.Destroy();
 
         Clear();
     }
@@ -175,7 +177,6 @@ namespace MamontEngine
         m_Materials.clear();
         m_Meshes.clear();
 
-        MaterialDataBuffer.Destroy();
     }
 
     void MeshModel::Draw(DrawContext &inContext)
