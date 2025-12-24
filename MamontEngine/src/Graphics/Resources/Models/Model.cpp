@@ -71,40 +71,40 @@ namespace
                                 const VkExtent3D imagesize{.width = (uint32_t)width, .height = (uint32_t)height, .depth = 1};
 
                                 newTexture.Load(data,
-                                                imagesize,
-                                                VK_FORMAT_R8G8B8A8_UNORM,
-                                                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                                                false,
-                                                inSampler);
+                                imagesize,
+                                VK_FORMAT_R8G8B8A8_UNORM,
+                                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                                false,
+                                inSampler);
                                 stbi_image_free(data);
                             }
                         },
-                        [&](const fastgltf::sources::Vector &vector)
+                        [&](const fastgltf::sources::Vector& vector)
                         {
-                            unsigned char *data =
-                                    stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
+                            unsigned char* data =
+                                stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
                             if (data)
                             {
-                                const VkExtent3D imagesize{.width = (uint32_t)width, .height = (uint32_t)height, .depth = 1};
+                                const VkExtent3D imagesize{ .width = (uint32_t)width, .height = (uint32_t)height, .depth = 1 };
 
                                 newTexture.Load(data,
-                                                imagesize,
-                                                VK_FORMAT_R8G8B8A8_UNORM,
-                                                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                                                false,
-                                                inSampler);
+                                    imagesize,
+                                    VK_FORMAT_R8G8B8A8_UNORM,
+                                    VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                                    false,
+                                    inSampler);
                                 stbi_image_free(data);
                             }
                         },
-                        [&](const fastgltf::sources::BufferView &view)
+                        [&](const fastgltf::sources::BufferView& view)
                         {
-                            const auto &bufferView = asset.bufferViews[view.bufferViewIndex];
-                            const auto &buffer     = asset.buffers[bufferView.bufferIndex];
+                            const auto& bufferView = asset.bufferViews[view.bufferViewIndex];
+                            const auto& buffer = asset.buffers[bufferView.bufferIndex];
 
-                            std::visit(fastgltf::visitor{[](auto &arg) {},
-                                                         [&](const fastgltf::sources::Vector &vector)
+                            std::visit(fastgltf::visitor{ [](auto& arg) {},
+                                                         [&](const fastgltf::sources::Vector& vector)
                                                          {
-                                                             unsigned char *data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
+                                                             unsigned char* data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
                                                                                                          static_cast<int>(bufferView.byteLength),
                                                                                                          &width,
                                                                                                          &height,
@@ -122,54 +122,70 @@ namespace
                                                                                  inSampler);
                                                                  stbi_image_free(data);
                                                              }
-                                                         }},
-                                       buffer.data);
+                                                         } },
+                                buffer.data);
                         },
                 },
                 image.data);
 
-        if (newTexture.Image == VK_NULL_HANDLE)
-        {
-            Log::Warn("newTexture.Image is NULL");
-            return {};
-        }
-        else
-        {
-            return newTexture;
-        }
+                if (newTexture.Image == VK_NULL_HANDLE)
+                {
+                    Log::Warn("newTexture.Image is NULL");
+                    return {};
+                }
+                else
+                {
+                    return newTexture;
+                }
     }
 }
 
 namespace MamontEngine
 {
-    MeshModel::MeshModel(const VkContextDevice &inDevice, UID inID) : m_ContextDevice(inDevice), ID(inID)
+    MeshModel::MeshModel(const VkContextDevice& inDevice, UID inID) : m_ContextDevice(inDevice), ID(inID)
     {
     }
 
-    MeshModel::MeshModel(const VkContextDevice &inDevice, UID inID, std::string_view filePath) : m_ContextDevice(inDevice), ID(inID)
+    MeshModel::MeshModel(const VkContextDevice& inDevice, UID inID, std::string_view filePath) : m_ContextDevice(inDevice), ID(inID)
     {
         Load(filePath);
+        Log::Info("Loaded Model ID: {}", static_cast<uint64_t>(ID));
     }
 
     MeshModel::~MeshModel()
     {
-        const VkDevice device = LogicalDevice::GetDevice();
-        vkDeviceWaitIdle(device);
+        VkDevice device = LogicalDevice::GetDevice();
+        if (device == VK_NULL_HANDLE)
+        {
+            fmt::println("!!!!!VKDEVICE IS NOT VALID!!!!!!!");
+        }
+        //vkDeviceWaitIdle(device);
+        for (auto &material : m_Materials)
+        {
+            material->MaterialSet = VK_NULL_HANDLE;
+        }
+
+        Clear();
 
         Buffer.IndexBuffer.Destroy();
         Buffer.VertexBuffer.Destroy();
+
+        DescriptorPool.ClearPools(device);
         DescriptorPool.DestroyPools(device);
-        std::cerr << "Material buffer: " << MaterialDataBuffer.Buffer << std::endl;
         MaterialDataBuffer.Destroy();
 
-        Clear();
     }
 
     void MeshModel::Clear()
     {
-        for (auto& texture : m_Textures)
+        for (auto &texture : m_Textures)
         {
             texture.Destroy();
+        }
+
+        for (auto& node : m_Nodes)
+        {
+            node->Mesh.reset();
         }
 
         m_Textures.clear();
@@ -209,8 +225,8 @@ namespace MamontEngine
                                         primitive->StartIndex,
                                         Buffer.IndexBuffer.Buffer,
                                         Buffer.VertexBuffer.Buffer,
-                                        material.get(),
-                                        primitive->Bound,
+                                        material,
+                                        Bound,
                                         nodeMatrix,
                                         Buffer.VertexBufferAddress, ID);
 
@@ -224,7 +240,7 @@ namespace MamontEngine
             {
                 if (childNode)
                 {
-                    collect(childNode.get(), inContext);
+                    collect(childNode, inContext);
                 }
             }
         });
@@ -252,22 +268,8 @@ namespace MamontEngine
 
             node->CurrentMatrix = parentMatrix * node->Matrix;
 
-            AABB localBounds;
-            localBounds.Reset();
-
-            if (node->Mesh)
-            {
-                for (const auto &prim : node->Mesh->Primitives)
-                {
-                    localBounds.Expand(prim->Bound.Min);
-                    localBounds.Expand(prim->Bound.Max);
-                }
-            }
-
-            node->WorldBounds = localBounds.Transform(node->CurrentMatrix);
-
             for (auto &child : node->Children)
-                updateNode(child.get(), node->CurrentMatrix);
+                updateNode(child, node->CurrentMatrix);
         };
 
         for (auto &root : m_Nodes)
@@ -534,66 +536,51 @@ namespace MamontEngine
     void MeshModel::LoadNodes(const fastgltf::Asset &inFileAsset)
     {
         const size_t                       sizeNodes{inFileAsset.nodes.size()};
-        std::vector<std::shared_ptr<Node>> nodes;
-        nodes.reserve(sizeNodes);
+        //std::vector<std::shared_ptr<Node>> nodes;
+        m_Nodes.reserve(sizeNodes);
 
         for (const fastgltf::Node &node : inFileAsset.nodes)
         {
-            auto newNode  = std::make_shared<Node>();
+            auto newNode  = std::make_unique<Node>();
             newNode->Name = node.name;
             fmt::println("NewNode name: {}", node.name);
-
 
             if (node.meshIndex.has_value())
             {
                 newNode->Mesh = m_Meshes[*node.meshIndex];
             }
 
-            AABB localBounds;
-
-            for (const auto &prim : newNode->Mesh->Primitives)
-            {
-                localBounds.Expand(prim->Bound);
-            }
 
             std::visit(fastgltf::visitor{[&](const fastgltf::Node::TransformMatrix &matrix) { memcpy(&newNode->Matrix, matrix.data(), sizeof(matrix)); },
                                          [&](const fastgltf::Node::TRS &transform)
                                          {
-                                             newNode->Translation = glm::vec3(transform.translation[0], transform.translation[1], transform.translation[2]);
-                                             newNode->Rotation    = glm::vec3(0);
-                                             newNode->Scale       = glm::vec3(transform.scale[0], transform.scale[1], transform.scale[2]);
+                                             newNode->Transform.Position = glm::vec3(transform.translation[0], transform.translation[1], transform.translation[2]);
+                                             newNode->Transform.Rotation = glm::vec3(0);
+                                             newNode->Transform.Scale    = glm::vec3(transform.scale[0], transform.scale[1], transform.scale[2]);
 
-                                             glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), newNode->Translation);
+                                             glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), newNode->Transform.Position);
                                              glm::quat rotation(transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]);
                                              glm::mat4 rotationMat = glm::toMat4(rotation);
-                                             glm::mat4 scaleMat    = glm::scale(glm::mat4(1.0f), newNode->Scale);
+                                             glm::mat4 scaleMat    = glm::scale(glm::mat4(1.0f), newNode->Transform.Scale);
 
                                              newNode->Matrix = translationMat * rotationMat * scaleMat;
                                          }},
                        node.transform);
 
-            newNode->WorldBounds = localBounds;
+            //newNode->WorldBounds = localBounds;
 
-            nodes.push_back(std::move(newNode));
+            m_Nodes.push_back(std::move(newNode));
         }
 
         for (size_t i = 0; i < sizeNodes; ++i)
         {
             const fastgltf::Node &gltfNode    = inFileAsset.nodes[i];
-            auto                 &currentNode = nodes[i];
+            auto                 &currentNode = m_Nodes[i];
 
             for (const auto &child : gltfNode.children)
             {
-                nodes[i]->Children.push_back(nodes[child]);
-                nodes[child]->Parent = currentNode;
-            }
-        }
-
-        for (const auto &node : nodes)
-        {
-            if (node->Parent.expired())
-            {
-                m_Nodes.push_back(node);
+                m_Nodes[i]->Children.push_back(m_Nodes[child].get());
+                m_Nodes[child]->Parent = currentNode.get();
             }
         }
     }
@@ -676,14 +663,14 @@ namespace MamontEngine
 
                 if (p.materialIndex.has_value())
                 {
-                    newPrimitive->Material = m_Materials[p.materialIndex.value()];
+                    newPrimitive->Material = m_Materials[p.materialIndex.value()].get();
                 }
                 else
                 {
-                    newPrimitive->Material = m_Materials[0];
+                    newPrimitive->Material = m_Materials[0].get();
                 }
 
-                glm::vec3 minpos = vertices[initial_vtx].Position;
+                /*glm::vec3 minpos = vertices[initial_vtx].Position;
                 glm::vec3 maxpos = vertices[initial_vtx].Position;
                 for (size_t i = initial_vtx; i < vertices.size(); ++i)
                 {
@@ -691,15 +678,23 @@ namespace MamontEngine
                     maxpos = glm::max(maxpos, vertices[i].Position);
                 }
 
-                newPrimitive->Bound = AABB(minpos, maxpos);
-                /*newPrimitive->Bound.Origin     = (maxpos + minpos) / 2.f;
-                newPrimitive->Bound.Extents    = (maxpos - minpos) / 2.f;
-                newPrimitive->Bound.SpherRadius = glm::length(maxpos - newPrimitive->Bound.Extents);*/
+                newPrimitive->Bound = AABB(minpos, maxpos);*/
 
                 newmesh->Primitives.push_back(std::move(newPrimitive));
             }
             m_Meshes.push_back(newmesh);
         }
+
+        glm::vec3 minpos = vertices[0].Position;
+        glm::vec3 maxpos = vertices[0].Position;
+        for (size_t i = 0; i < vertices.size(); ++i)
+        {
+            minpos = glm::min(minpos, vertices[i].Position);
+            maxpos = glm::max(maxpos, vertices[i].Position);
+        }
+
+        Bound = AABB(minpos, maxpos);
+
         Buffer.Create(indices, vertices);
     }
 } // namespace MamontEngine

@@ -42,17 +42,6 @@ namespace MamontEditor
             constexpr ImGuiTableFlags tableFlags = ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_BordersInner | ImGuiTableFlags_ScrollY;
             const float               lineHeight = ImGui::GetTextLineHeight();
 
-            /*if (ImGui::Button("ContextWindow"))
-            {
-                ImGui::OpenPopup("ContextWindow");
-            }
-
-            if (ImGui::BeginPopup("ContextWindow"))
-            {
-                DrawContextMenu();
-                ImGui::EndPopup();
-            }*/
-
             if (ImGui::BeginPopupContextWindow("ContextWindow",
                                                ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_NoOpenOverExistingPopup))
             {
@@ -88,7 +77,6 @@ namespace MamontEditor
                 ImGui::EndPopup();
             }
 
-            //fmt::println("SceneHierachy, Hovered: {}", ImGui::IsWindowHovered());
             m_IsHovered = ImGui::IsWindowHovered();
 
             OnEnd();
@@ -108,10 +96,8 @@ namespace MamontEditor
         flags |= ImGuiTreeNodeFlags_OpenOnArrow;
         flags |= ImGuiTreeNodeFlags_SpanFullWidth;
         flags |= ImGuiTreeNodeFlags_FramePadding;
-        //flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
         const bool opened = ImGui::TreeNodeEx(reinterpret_cast<void *>(static_cast<uint64_t>(inEntity.GetID())), flags, tag.c_str());
-
 
         if (ImGui::IsItemClicked())
         {

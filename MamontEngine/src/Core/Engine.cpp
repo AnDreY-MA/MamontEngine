@@ -44,8 +44,6 @@ namespace MamontEngine
 
         InitImgui();
 
-        InitDefaultData();
-
         InitScene();
 
         m_MainCamera->SetVelocity(glm::vec3(0.f));
@@ -112,19 +110,19 @@ namespace MamontEngine
         if (m_IsInitialized)
         {
             m_Log.reset();
-            const VkDevice device = LogicalDevice::GetDevice();
+            VkDevice& device = LogicalDevice::GetDevice();
             vkDeviceWaitIdle(device);
             m_MainDeletionQueue.Flush();
+
+            m_Renderer.reset();
 
             m_GuiLayer->Deactivate();
             m_GuiLayer.reset();
             
-            m_Renderer.reset();
             m_Scene.reset();
             
-
-            m_ContextDevice->Swapchain.Destroy(device);
-
+            //m_ContextDevice->Swapchain.Destroy(device);
+            m_Window.reset();
             m_ContextDevice.reset();
             //~ContextDevice
 
@@ -134,17 +132,12 @@ namespace MamontEngine
         loadedEngine = nullptr;
     }
 
-    void MEngine::InitDefaultData()
-    {
-        m_ContextDevice->InitDefaultImages();
-    }
-    
     void MEngine::InitScene()
     {
         m_MainCamera    = std::make_shared<Camera>();
         m_Renderer->InitSceneRenderer(m_MainCamera);
         m_Scene = std::make_shared<Scene>(m_Renderer->GetSceneRenderer());
-        m_Scene->Init(*m_ContextDevice);
+        m_Scene->Init();
     }
 
     void MEngine::UpdateScene(float inDeltaTime)
@@ -177,7 +170,5 @@ namespace MamontEngine
     void MEngine::PushGuiLayer(ImGuiLayer *inLayer)
     {
         m_GuiLayer = std::unique_ptr<ImGuiLayer>(inLayer);
-        
     }
-    
 }

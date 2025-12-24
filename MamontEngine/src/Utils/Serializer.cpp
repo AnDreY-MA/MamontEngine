@@ -137,9 +137,9 @@ namespace MamontEngine
 
                 const TransformComponent transformData = DeserializeTransform(jsonComponent); 
                 auto& trasnform = entity.GetComponent<TransformComponent>();
-                trasnform.Translation                  = transformData.Translation;
-                trasnform.Rotation                     = transformData.Rotation;
-                trasnform.Scale                        = transformData.Scale;
+                trasnform.Transform.Position           = transformData.Transform.Position;
+                trasnform.Transform.Rotation           = transformData.Transform.Rotation;
+                trasnform.Transform.Scale              = transformData.Transform.Scale;
 
                 const auto meshPath = DeserializeMesh(jsonComponent);
                 if (meshPath != "")
@@ -154,9 +154,12 @@ namespace MamontEngine
 
     nlohmann::json Serializer::SerializeTransform(const TransformComponent &inTransformComponent)
     {
-        return {{JSON_TRANSFORM_TRANSLATION, {inTransformComponent.Translation.x, inTransformComponent.Translation.y, inTransformComponent.Translation.z}},
-                {JSON_TRANSFORM_ROTATION, {inTransformComponent.Rotation.x, inTransformComponent.Rotation.y, inTransformComponent.Rotation.z}},
-                {JSON_TRANSFORM_SCALE, {inTransformComponent.Scale.x, inTransformComponent.Scale.y, inTransformComponent.Scale.z}}};
+        return {{JSON_TRANSFORM_TRANSLATION,
+                 {inTransformComponent.Transform.Position.x, inTransformComponent.Transform.Position.y, inTransformComponent.Transform.Position.z}},
+                {JSON_TRANSFORM_ROTATION,
+                 {inTransformComponent.Transform.Rotation.x, inTransformComponent.Transform.Rotation.y, inTransformComponent.Transform.Rotation.z}},
+                {JSON_TRANSFORM_SCALE,
+                 {inTransformComponent.Transform.Scale.x, inTransformComponent.Transform.Scale.y, inTransformComponent.Transform.Scale.z}}};
     }
     
     std::string Serializer::DeserializeTag(const nlohmann::json &inJson)
@@ -200,17 +203,17 @@ namespace MamontEngine
         if (transforCol.contains(JSON_TRANSFORM_TRANSLATION))
         {
             const auto &pos       = transforCol[JSON_TRANSFORM_TRANSLATION];
-            transform.Translation = {(float)pos[0], (float)pos[1], (float)pos[2]};
+            transform.Transform.Position= {(float)pos[0], (float)pos[1], (float)pos[2]};
         }
         if (transforCol.contains(JSON_TRANSFORM_ROTATION))
         {
             const auto &rot    = transforCol[JSON_TRANSFORM_ROTATION];
-            transform.Rotation = {(float)rot[0], (float)rot[1], (float)rot[2]};
+            transform.Transform.Rotation = {(float)rot[0], (float)rot[1], (float)rot[2]};
         }
         if (transforCol.contains(JSON_TRANSFORM_SCALE))
         {
             const auto &scale = transforCol[JSON_TRANSFORM_SCALE];
-            transform.Scale = {(float)scale[0], (float)scale[1], (float)scale[2]};
+            transform.Transform.Scale = {(float)scale[0], (float)scale[1], (float)scale[2]};
         }
 
         return transform;

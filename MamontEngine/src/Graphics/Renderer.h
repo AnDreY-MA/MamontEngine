@@ -86,14 +86,13 @@ namespace MamontEngine
 	private:
         VkContextDevice &m_DeviceContext;
 
-        std::unique_ptr<RenderPipeline> m_RenderPipeline;
-
         std::shared_ptr<SceneRenderer> m_SceneRenderer;
 
         std::unique_ptr<ImGuiRenderer> m_ImGuiRenderer;
 
         std::shared_ptr<WindowCore> m_Window;
 
+        std::shared_ptr<RenderPipeline> m_RenderPipeline;
         std::unique_ptr<PipelineData> m_CascadePipeline;
         std::unique_ptr<PipelineData> m_PickingPipeline;
 

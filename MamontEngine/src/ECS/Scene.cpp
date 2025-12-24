@@ -22,7 +22,7 @@ namespace MamontEngine
         Clear();
     }
 
-    void Scene::Init(VkContextDevice &inContextDevice)
+    void Scene::Init()
     {
         Load();
     }
@@ -57,7 +57,8 @@ namespace MamontEngine
         {
             if (meshComponent.Mesh && transform.IsDirty)
             {
-                meshComponent.Mesh->UpdateTransform(transform.GetTransform(), transform.Translation, transform.Rotation, transform.Scale);
+                meshComponent.Mesh->UpdateTransform(
+                        transform.Transform.Matrix(), transform.Transform.Position, transform.Transform.Rotation, transform.Transform.Scale);
                 transform.IsDirty = false;
             }
 

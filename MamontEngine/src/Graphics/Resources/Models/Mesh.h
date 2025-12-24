@@ -2,6 +2,7 @@
 
 #include "Graphics/Resources/Material.h"
 #include "AABB.h"
+#include "Math/Transform.h"
 
 namespace MamontEngine
 {
@@ -32,9 +33,7 @@ namespace MamontEngine
         uint32_t StartIndex{0};
         uint32_t Count{0};
 
-        AABB Bound;
-
-        std::shared_ptr<Material> Material;
+        Material* Material;
     };
 
     struct NewMesh
@@ -46,17 +45,13 @@ namespace MamontEngine
 
     struct Node
     {
-        std::weak_ptr<Node> Parent;
-        std::vector<std::shared_ptr<Node>> Children;
+        Node* Parent;
+        std::vector<Node*>        Children;
         std::shared_ptr<NewMesh> Mesh;
 
         glm::mat4 Matrix;
         glm::mat4 CurrentMatrix{glm::mat4(1.f)};
-        glm::vec3 Translation{0.f};
-        glm::vec3 Rotation{0.f};
-        glm::vec3 Scale{1.f};
-
-        AABB WorldBounds;
+        Transform Transform;
 
         std::string Name;
 

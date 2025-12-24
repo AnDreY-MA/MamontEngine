@@ -21,3 +21,4 @@ layout(set = 1, binding = 5) uniform sampler2D occlusionMap;
 layout(set = 0, binding = 4) uniform samplerCube samplerCubeMap;
 layout(set = 0, binding = 5) uniform sampler2D samplerBRDFLUT;
 layout(set = 0, binding = 6) uniform samplerCube samplerPrefilteredMap;
+layout(set = 0, binding = 7) uniform samplerCube irradianceMap;

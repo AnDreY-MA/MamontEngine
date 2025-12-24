@@ -35,9 +35,9 @@ namespace MamontEditor
             return m_SeletctedEntity;
         }
 
-        MamontEngine::Scene* GetSceneContext()
+        std::shared_ptr<MamontEngine::Scene>& GetSceneContext()
         {
-            return m_Scene != nullptr ? m_Scene.get() : nullptr;
+            return m_Scene;
         }
 
     private:

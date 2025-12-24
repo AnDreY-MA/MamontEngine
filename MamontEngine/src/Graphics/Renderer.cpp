@@ -30,9 +30,9 @@ namespace MamontEngine
 
     Renderer::~Renderer()
     {
-        DestroyPipelines();
-        m_SceneRenderer.reset();
         m_Skybox.reset();
+        m_SceneRenderer.reset();
+        DestroyPipelines();
     }
 
     void Renderer::InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera)
@@ -72,16 +72,16 @@ namespace MamontEngine
     {
         const VkDevice device = LogicalDevice::GetDevice();
 
-        const std::pair<VkFormat, VkFormat> inImageFormats{m_DeviceContext.Image.DrawImage.ImageFormat, m_DeviceContext.Image.DepthImage.ImageFormat};
+        const std::pair<VkFormat, VkFormat> inImageFormats{m_DeviceContext.DrawImage.ImageFormat, m_DeviceContext.DepthImage.ImageFormat};
 
         fmt::println("DrawImage.ImageFormat: {}", string_VkFormat(inImageFormats.first));
         fmt::println("DepthImage.ImageFormat: {}", string_VkFormat(inImageFormats.second));
 
         std::array<VkDescriptorSetLayout, 2> laouts{m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
 
-        m_RenderPipeline = std::make_unique<RenderPipeline>(device, laouts, inImageFormats);
+        m_RenderPipeline = std::make_shared<RenderPipeline>(device, laouts, inImageFormats);
 
-        m_DeviceContext.RenderPipeline = m_RenderPipeline.get();
+        m_DeviceContext.RenderPipeline = m_RenderPipeline;
 
         InitPickPipepline();
 
@@ -152,7 +152,7 @@ namespace MamontEngine
         pipelineBuilder.m_Rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 
         pipelineBuilder.SetColorAttachmentFormat(m_DeviceContext.PickingImages[0].ImageFormat);
-        pipelineBuilder.SetDepthFormat(m_DeviceContext.Image.DepthImage.ImageFormat);
+        pipelineBuilder.SetDepthFormat(m_DeviceContext.DepthImage.ImageFormat);
 
         VkPipeline pickingPipeline = pipelineBuilder.BuildPipline(device, 1);
         m_PickingPipeline          = std::make_unique<PipelineData>(pickingPipeline, pickingLayout);
@@ -177,8 +177,6 @@ namespace MamontEngine
         VK_CHECK_MESSAGE(vkWaitForFences(device, 1, &currentFrame.RenderFence, VK_TRUE, UINT64_MAX), "Wait FENCE");
         VK_CHECK(vkResetFences(device, 1, &currentFrame.RenderFence));
 
-        currentFrame.Deleteions.Flush();
-
         const auto [resultAcquire, swapchainImageIndex] = m_DeviceContext.Swapchain.AcquireImage(device, currentFrame.SwapchainSemaphore);
         if (resultAcquire == VK_ERROR_OUT_OF_DATE_KHR || resultAcquire == VK_SUBOPTIMAL_KHR)
         {
@@ -197,19 +195,19 @@ namespace MamontEngine
         const VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
-        VkUtil::transition_image(cmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        VkUtil::transition_image(cmd, m_DeviceContext.Image.DepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        VkUtil::transition_image(cmd, m_DeviceContext.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VkUtil::transition_image(cmd, m_DeviceContext.DepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
         DrawMain(cmd);
 
-        VkUtil::transition_image(cmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        VkUtil::transition_image(cmd, m_DeviceContext.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
         VkImage currentSwapchainImage = m_DeviceContext.Swapchain.GetImageAt(swapchainImageIndex);
         VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-        VkUtil::copy_image_to_image(cmd, m_DeviceContext.Image.DrawImage.Image, currentSwapchainImage, m_DrawExtent, m_DeviceContext.Swapchain.GetExtent());
+        VkUtil::copy_image_to_image(cmd, m_DeviceContext.DrawImage.Image, currentSwapchainImage, m_DrawExtent, m_DeviceContext.Swapchain.GetExtent());
 
-        VkUtil::transition_image(cmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VkUtil::transition_image(cmd, m_DeviceContext.DrawImage.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
@@ -281,15 +279,11 @@ namespace MamontEngine
 
         const VkExtent2D &extent = m_Window->GetExtent();
 
-        /*VkUtil::transition_image(
-                inCmd, m_DeviceContext.Image.DrawImage.Image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        VkUtil::transition_image(
-                inCmd, m_DeviceContext.Image.DepthImage.Image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);*/
-        VkClearValue                    clearColor      = {.color = {0.0f, 0.0f, 0.0f, 0.0f}};
-        VkClearValue                    clearDepth      = {.depthStencil = {1.0f, 0}};
-        const VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(m_DeviceContext.Image.DrawImage.ImageView, &clearColor);
-        VkRenderingAttachmentInfo       depthAttachment = vkinit::depth_attachment_info(m_DeviceContext.Image.DepthImage.ImageView);
-        depthAttachment.clearValue.depthStencil         = {1.f, 0};
+        constexpr VkClearValue                    clearColor      = {.color = {0.0f, 0.0f, 0.0f, 0.0f}};
+        constexpr VkClearValue           clearDepth      = {.depthStencil = {1.0f, 0}};
+        const VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(m_DeviceContext.DrawImage.ImageView, &clearColor);
+        VkRenderingAttachmentInfo       depthAttachment = vkinit::depth_attachment_info(m_DeviceContext.DepthImage.ImageView);
+        depthAttachment.clearValue                   = clearDepth;
 
         const VkRenderingInfo renderInfo = vkinit::rendering_info(extent, &colorAttachment, &depthAttachment);
 
@@ -336,7 +330,7 @@ namespace MamontEngine
 
         for (size_t i = 0; i < CASCADECOUNT; i++)
         {
-            VkUtil::transition_image(inCmd, m_DeviceContext.CascadeDepthImage.Image.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+            VkUtil::transition_image(inCmd, m_DeviceContext.CascadeDepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
             const VkImageView cascadeDepth = m_DeviceContext.Cascades[i].View;
             if (cascadeDepth == VK_NULL_HANDLE)
@@ -361,7 +355,7 @@ namespace MamontEngine
 
             vkCmdEndRendering(inCmd);
             VkUtil::transition_image(inCmd,
-                                     m_DeviceContext.CascadeDepthImage.Image.Image,
+                                     m_DeviceContext.CascadeDepthImage.Image,
                                      VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
                                      VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
         }
@@ -418,7 +412,7 @@ namespace MamontEngine
                 vkinit::attachment_info(m_DeviceContext.PickingImages[inCurrentSwapchainIndex].ImageView, clearValues.data());
 
         const VkRenderingAttachmentInfo depthAttachment =
-                vkinit::depth_attachment_info(m_DeviceContext.Image.DepthImage.ImageView, VK_ATTACHMENT_LOAD_OP_CLEAR, 0.f);
+                vkinit::depth_attachment_info(m_DeviceContext.DepthImage.ImageView, VK_ATTACHMENT_LOAD_OP_CLEAR, 0.f);
         const VkExtent2D extent = m_Window->GetExtent();
 
         const VkRenderingInfo renderInfo = vkinit::rendering_info(extent, &colorAttachment, &depthAttachment);
@@ -497,6 +491,7 @@ namespace MamontEngine
 
     void Renderer::DestroyPipelines()
     {
+        m_DeviceContext.RenderPipeline.reset();
         m_RenderPipeline.reset();
         m_PickingPipeline.reset();
         m_CascadePipeline.reset();
@@ -598,7 +593,7 @@ namespace MamontEngine
         pipelineBuilder.SetShaders(cascadeShadowShader, cascadeFragmentShadowShader);
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
         pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
-        pipelineBuilder.SetDepthFormat(m_DeviceContext.CascadeDepthImage.Image.ImageFormat);
+        pipelineBuilder.SetDepthFormat(m_DeviceContext.CascadeDepthImage.ImageFormat);
         pipelineBuilder.SetMultisamplingNone();
         pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
         pipelineBuilder.DisableBlending();
@@ -631,4 +626,3 @@ namespace MamontEngine
     }
 
 } // namespace MamontEngine
-////////////////

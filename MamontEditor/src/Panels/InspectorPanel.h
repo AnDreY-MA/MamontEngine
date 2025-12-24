@@ -9,7 +9,7 @@ namespace MamontEditor
 	{
     public:
         explicit InspectorPanel();
-        ~InspectorPanel() = default;
+        ~InspectorPanel();
 
         virtual void GuiRender() override;
 
@@ -23,7 +23,7 @@ namespace MamontEditor
 
     private:
         MamontEngine::Entity m_Selected;
-        MamontEngine::Scene *m_SceneContext{nullptr};
+        std::shared_ptr<MamontEngine::Scene> m_SceneContext;
 	};
 
     

@@ -13,7 +13,8 @@ file(GLOB_RECURSE Materials "src/Graphics/Resources/*.h" "src/Graphics/Resources
 file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.hpp" "src/Utils/*.cpp")
 file(GLOB_RECURSE ECS "src/ECS/*.h" "src/ECS/*.hpp" "src/ECS/*.cpp")
 file(GLOB_RECURSE UI "src/UI/*.h" "src/UI/*.hpp" "src/UI/*.cpp")
-set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Devices} ${Materials} ${Utils} ${ECS} ${UI})
+file(GLOB_RECURSE Math "src/Math/*.h" "src/Math/*.hpp" "src/Math/*.cpp")
+set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Devices} ${Materials} ${Utils} ${ECS} ${UI} ${Math})
 
 # Add library
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
@@ -34,6 +35,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
   "GLM_FORCE_DEPTH_ZERO_TO_ONE"
   "GLM_ENABLE_EXPERIMENTAL"
   "$<$<CONFIG:Debug>:TRACY_ENABLE>"
+  "$<$<CONFIG:Release>:TRACY_ENABLE>"
 )
 
 # Compiler-specific flags
@@ -111,10 +113,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC imgui)
 add_subdirectory("vendor/ktx")
 target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
 
-
-#include_directories("vendor/ktx/include")
-#include_directories("vendor/ktx/other_include")
-
 #fast gltf
 add_subdirectory("vendor/fastgltf")
 target_link_libraries(${PROJECT_NAME} PUBLIC fastgltf::fastgltf)
@@ -142,7 +140,6 @@ target_compile_definitions(ImGuizmo PRIVATE
 
 target_link_libraries(ImGuizmo PUBLIC imgui)
 
-# Ñâÿçûâàåì ñ îñíîâíûì ïðîåêòîì
 target_link_libraries(${PROJECT_NAME} PUBLIC ImGuizmo)
 
 # PCH

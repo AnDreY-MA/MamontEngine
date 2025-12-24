@@ -128,7 +128,7 @@ VkPresentInfoKHR MamontEngine::vkinit::present_info(const VkSwapchainKHR *swapch
 
 //> color_info
 VkRenderingAttachmentInfo
-MamontEngine::vkinit::attachment_info(VkImageView view, VkClearValue *clear, VkImageLayout layout /*= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL*/)
+MamontEngine::vkinit::attachment_info(VkImageView view, const VkClearValue *clear, VkImageLayout layout /*= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL*/)
 {
     VkRenderingAttachmentInfo colorAttachment{};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;

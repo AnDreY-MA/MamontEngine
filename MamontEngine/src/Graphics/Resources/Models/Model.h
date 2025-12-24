@@ -62,9 +62,8 @@ namespace MamontEngine
     private:
         const VkContextDevice &m_ContextDevice;
 
-        std::vector<std::shared_ptr<Node>>         m_Nodes;
+        std::vector<std::unique_ptr<Node>>         m_Nodes;
         std::vector<Texture>               m_Textures;
-        //std::vector<Texture>                       m_Textures;
         std::vector<std::shared_ptr<Material>> m_Materials;
         std::vector<std::shared_ptr<NewMesh>>      m_Meshes;
 
@@ -72,6 +71,8 @@ namespace MamontEngine
         AllocatedBuffer             MaterialDataBuffer;
 
         MeshBuffer Buffer;
+
+        AABB Bound;
 
         std::filesystem::path pathFile;
 

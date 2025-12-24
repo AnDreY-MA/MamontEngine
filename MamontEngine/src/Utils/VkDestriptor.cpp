@@ -46,7 +46,7 @@ namespace MamontEngine
         const uint32_t initSize = inInitialSets != 0 ? inInitialSets : 1;
         m_Ratios.assign(inPoolRatios.begin(), inPoolRatios.end());
 
-        VkDescriptorPool newPool = CreatePool(inDevice, initSize, inPoolRatios);
+        const VkDescriptorPool newPool = CreatePool(inDevice, initSize, inPoolRatios);
         m_SetsPerPool            = initSize * 1.5;
         m_ReadyPools.push_back(newPool);
     }
@@ -108,6 +108,7 @@ namespace MamontEngine
         }
 
         m_FullPools.push_back(poolToUse);
+        std::cerr << "Allocate descritporSet: " << newDescriptors << std::endl;
         return newDescriptors;
     }
 
@@ -150,6 +151,8 @@ namespace MamontEngine
 
         VkDescriptorPool newPool;
         vkCreateDescriptorPool(inDevice, &poolInfo, nullptr, &newPool);
+        std::cerr << "Create DescriptorPool: " << newPool << std::endl;
+
         return newPool;
     }
 

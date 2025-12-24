@@ -2,7 +2,7 @@
 
 namespace MamontEngine
 {
-    struct AllocatedImage
+    /*struct AllocatedImage
     {
         VkImage       Image{VK_NULL_HANDLE};
         VkImageView   ImageView{VK_NULL_HANDLE};
@@ -18,7 +18,5 @@ namespace MamontEngine
     {
         AllocatedImage DrawImage;
         AllocatedImage DepthImage;
-        AllocatedImage ResolveImage;
-        AllocatedImage UIDrawImage;
-    };
+    };*/
 }

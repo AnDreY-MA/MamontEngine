@@ -24,17 +24,7 @@ namespace MamontEngine
 
         ~VkContextDevice();
 
-        // void PrepareFrame();
-
         void DestroyFrameData();
-
-        AllocatedImage
-        CreateImage(const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped = false, uint32_t arrayLayers = 1) const;
-        AllocatedImage CreateImage(void *inData, const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const;
-
-        void InitDefaultImages();
-
-        void DestroyImage(const AllocatedImage &inImage) const;
 
         void InitShadowImages();
 
@@ -76,15 +66,13 @@ namespace MamontEngine
 
         std::vector<VkSemaphore> RenderCopleteSemaphores{};
 
-        Image Image;
+        Texture DrawImage;
+        Texture DepthImage;
+        //Image Image;
 
-        std::vector<AllocatedImage> PickingImages;
+        std::vector<Texture> PickingImages;
 
-        struct DepthImage
-        {
-            AllocatedImage Image;
-            VkSampler      Sampler;
-        } CascadeDepthImage;
+        Texture CascadeDepthImage;
 
         std::array<Cascade, CASCADECOUNT> Cascades{};
 
@@ -97,7 +85,7 @@ namespace MamontEngine
         VkDescriptorSetLayout RenderDescriptorLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
 
-        RenderPipeline *RenderPipeline;
+        std::shared_ptr<RenderPipeline> RenderPipeline;
         void            InitDescriptors();
 
         void CreatePrefilteredCubeTexture(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &&inDrawSkyboxFunc);
@@ -119,7 +107,7 @@ namespace MamontEngine
 #pragma endregion
 
 #pragma region Destroy functions
-        void DestroyImages() const;
+        void DestroyImages();
 
         void DestroyCommands();
 
@@ -141,6 +129,7 @@ namespace MamontEngine
         Texture  m_SkyboxTexture;
         Texture  m_BRDFUTTexture;
         Texture  m_PrefilteredCubeTexture;
+        Texture  m_IrradianceTexture;
 
         struct TracyInfo
         {

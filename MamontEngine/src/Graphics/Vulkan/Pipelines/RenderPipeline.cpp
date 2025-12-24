@@ -78,12 +78,20 @@ namespace MamontEngine
         std::cerr << "OpaquePipeline->Pipeline: " << OpaquePipeline->Pipeline << std::endl;
         std::cerr << "OpaquePipeline->Pipeline, newLayout: " << newLayout << std::endl;
 
-        //Transparent
-        pipelineBuilder.EnableBlendingAdditive();
-        //pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
-        TransparentPipeline          = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), newLayout);
-        std::cerr << "TransparentPipeline->Pipeline: " << TransparentPipeline->Pipeline << std::endl;
+        //Transparent
+        {
+            VkPipelineLayout transparentLayout;
+            VK_CHECK(vkCreatePipelineLayout(inDevice, &mesh_layout_info, nullptr, &transparentLayout));
+            pipelineBuilder.SetLayout(transparentLayout);
+            pipelineBuilder.EnableBlendingAdditive();
+            // pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
+
+            TransparentPipeline = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), transparentLayout);
+            std::cerr << "TransparentPipeline->Pipeline: " << TransparentPipeline->Pipeline << std::endl;
+            std::cerr << "TransparentPipeline->Pipeline, layout: " << TransparentPipeline->Layout << std::endl;
+        }
+        
 
         vkDestroyShaderModule(inDevice, meshFragShader, nullptr);
         vkDestroyShaderModule(inDevice, meshVertexShader, nullptr);
@@ -91,6 +99,12 @@ namespace MamontEngine
         //Skybox
 
        {
+            const VkPipelineLayoutCreateInfo skyboxlayoutInfo =
+                    vkinit::pipeline_layout_create_info(inDescriptorLayouts.size(), inDescriptorLayouts.data(), &matrixRange, 1);
+
+            VkPipelineLayout skyboxLayout;
+            VK_CHECK(vkCreatePipelineLayout(inDevice, &skyboxlayoutInfo, nullptr, &skyboxLayout));
+
             const std::string skyboxPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/skybox.frag.spv";
 
             VkShaderModule skyboxFragShader;
@@ -111,7 +125,7 @@ namespace MamontEngine
             pipelineBuilder.EnableDepthTest(VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL);
             pipelineBuilder.DisableBlending();
 
-            SkyboxPipline = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), newLayout);
+            SkyboxPipline = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), skyboxLayout);
 
             vkDestroyShaderModule(inDevice, skyboxFragShader, nullptr);
             vkDestroyShaderModule(inDevice, skyboxVertexShader, nullptr);
@@ -124,6 +138,7 @@ namespace MamontEngine
         OpaquePipeline.reset();
         TransparentPipeline.reset();
         SkyboxPipline.reset();
+
     }
     
 } // namespace MamontEngine

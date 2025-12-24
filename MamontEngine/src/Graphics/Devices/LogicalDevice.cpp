@@ -6,7 +6,7 @@ namespace LogicalDevice
 {
     VkDevice g_Device{VK_NULL_HANDLE};
 
-    VkDevice GetDevice()
+    VkDevice& GetDevice()
     {
         return g_Device;
     }
@@ -18,11 +18,8 @@ namespace LogicalDevice
 
     void DestroyDevice()
     {
-        if (g_Device != VK_NULL_HANDLE)
-        {
-            vkDestroyDevice(g_Device, nullptr);
-        }
+        fmt::println("LOGICAL DEVICE: Destroy");
+        vkDestroyDevice(g_Device, nullptr);
     }
-
 }
 }

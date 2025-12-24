@@ -204,7 +204,6 @@ namespace MamontEngine
         const vkb::Device vkbDevice = deviceBuilder.build().value();
 
         LogicalDevice::InitDevice(vkbDevice.device);
-        // m_PhysicalDevice = std::make_unique<PhysicalDevice>(physicalDevice.physical_device);
         PhysicalDevice::Init(physicalDevice.physical_device);
 
         m_GraphicsQueue       = vkbDevice.get_queue(vkb::QueueType::graphics).value();
@@ -237,18 +236,15 @@ namespace MamontEngine
 
     VkContextDevice::~VkContextDevice()
     {
-        for (auto &frame : m_Frames)
-        {
-            frame.Deleteions.Flush();
-        }
-
-        ImmediateContext::DestroyImmediateContext();
-        
         m_SkyboxTexture.Destroy();
         m_BRDFUTTexture.Destroy();
         m_PrefilteredCubeTexture.Destroy();
-        DestroyImage(CascadeDepthImage.Image);
-        vkDestroySampler(LogicalDevice::GetDevice(), CascadeDepthImage.Sampler, nullptr);
+        m_IrradianceTexture.Destroy();
+
+        VkDevice device = LogicalDevice::GetDevice();
+        Swapchain.Destroy(device);
+        ImmediateContext::DestroyImmediateContext();
+        
         vkDestroySurfaceKHR(Instance, Surface, nullptr);
 
         Allocator::Destroy();
@@ -277,100 +273,6 @@ namespace MamontEngine
             tracy::DestroyVkContext(GetFrameAt(i).TracyContext);
         }
 #endif
-    }
-
-    AllocatedImage
-    VkContextDevice::CreateImage(const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped, uint32_t arrayLayers) const
-    {
-        AllocatedImage newImage{};
-        newImage.ImageFormat  = inFormat;
-        newImage.ImageExtent  = inSize;
-        const VkDevice device = LogicalDevice::GetDevice();
-
-        VkImageCreateInfo img_info = vkinit::image_create_info(inFormat, inUsage, inSize, arrayLayers);
-        if (inIsMipMapped)
-        {
-            img_info.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(inSize.width, inSize.height)))) + 1;
-        }
-
-        constexpr auto allocinfo =
-                VmaAllocationCreateInfo{.usage = VMA_MEMORY_USAGE_GPU_ONLY, .requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)};
-
-        VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &img_info, &allocinfo, &newImage.Image, &newImage.Allocation, &newImage.Info));
-
-        const VkImageAspectFlags aspectFlag =
-                (inFormat == VK_FORMAT_D32_SFLOAT || inFormat == VK_FORMAT_D24_UNORM_S8_UINT) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-
-        const VkImageViewType viewType = arrayLayers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
-
-        uint32_t mipLevels = inIsMipMapped ? img_info.mipLevels : 1;
-
-        if (mipLevels == 0)
-        {
-            mipLevels = 1;
-        }
-
-        const VkImageViewCreateInfo view_info = vkinit::imageviewCreateInfo(inFormat, newImage.Image, aspectFlag, mipLevels, arrayLayers, viewType);
-
-        VK_CHECK(vkCreateImageView(device, &view_info, nullptr, &newImage.ImageView));
-
-        return newImage;
-    }
-
-    AllocatedImage
-    VkContextDevice::CreateImage(void *inData, const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped) const
-    {
-        const size_t    data_size    = inSize.depth * inSize.width * inSize.height * 4;
-        AllocatedBuffer uploadbuffer = CreateStagingBuffer(data_size);
-        // uploadbuffer.Create(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-        memcpy(uploadbuffer.Info.pMappedData, inData, data_size);
-
-        AllocatedImage new_image = CreateImage(inSize, inFormat, inUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, inIsMipMapped);
-
-        ImmediateContext::ImmediateSubmit(
-                [&](VkCommandBuffer cmd)
-                {
-                    VkUtil::transition_image(cmd, new_image.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-                    VkBufferImageCopy copyRegion = {};
-                    copyRegion.bufferOffset      = 0;
-                    copyRegion.bufferRowLength   = 0;
-                    copyRegion.bufferImageHeight = 0;
-
-                    copyRegion.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-                    copyRegion.imageSubresource.mipLevel       = 0;
-                    copyRegion.imageSubresource.baseArrayLayer = 0;
-                    copyRegion.imageSubresource.layerCount     = 1;
-                    copyRegion.imageExtent                     = inSize;
-
-                    vkCmdCopyBufferToImage(cmd, uploadbuffer.Buffer, new_image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
-
-                    if (inIsMipMapped)
-                    {
-                        VkUtil::generate_mipmaps(cmd, new_image.Image, VkExtent2D{new_image.ImageExtent.width, new_image.ImageExtent.height});
-                    }
-                    else
-                    {
-                        VkUtil::transition_image(cmd, new_image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                    }
-                });
-
-        uploadbuffer.Destroy();
-
-        // std::cerr << "NewImage: " << new_image.Image << std::endl;
-
-        return new_image;
-    }
-
-    void VkContextDevice::InitDefaultImages()
-    {
-    }
-
-    void VkContextDevice::DestroyImage(const AllocatedImage &inImage) const
-    {
-        vkDestroyImageView(LogicalDevice::GetDevice(), inImage.ImageView, nullptr);
-        vmaDestroyImage(Allocator::GetAllocator(), inImage.Image, inImage.Allocation);
     }
 
     void VkContextDevice::InitCommands()
@@ -517,7 +419,7 @@ namespace MamontEngine
 
         {
             DescriptorWriter writer;
-            writer.WriteImage(0, Image.DrawImage.ImageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+            writer.WriteImage(0, DrawImage.ImageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
             writer.UpdateSet(device, DrawImageDescriptors);
         }
 
@@ -530,6 +432,7 @@ namespace MamontEngine
             builder.AddBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            builder.AddBinding(7, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             GPUSceneDataDescriptorLayout = builder.Build(device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
         }
 
@@ -547,7 +450,7 @@ namespace MamontEngine
             globalDescriptor       = GlobalDescriptorAllocator.Allocate(device, GPUSceneDataDescriptorLayout);
             writer.WriteBuffer(0, frame.SceneDataBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             writer.WriteImage(1,
-                              CascadeDepthImage.Image.ImageView,
+                              CascadeDepthImage.ImageView,
                               CascadeDepthImage.Sampler,
                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -568,6 +471,14 @@ namespace MamontEngine
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             }
+            if (m_IrradianceTexture.Image != VK_NULL_HANDLE && m_IrradianceTexture.Sampler != VK_NULL_HANDLE)
+            {
+                writer.WriteImage(7,
+                                  m_IrradianceTexture.ImageView,
+                                  m_IrradianceTexture.Sampler,
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            }
             
             
             writer.UpdateSet(device, globalDescriptor);
@@ -578,14 +489,18 @@ namespace MamontEngine
 
     void VkContextDevice::DestroyDescriptors()
     {
-        const VkDevice device = LogicalDevice::GetDevice();
+        VkDevice device = LogicalDevice::GetDevice();
 
         vkDestroyDescriptorSetLayout(device, DrawImageDescriptorLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, GPUSceneDataDescriptorLayout, nullptr);
 
-        for (size_t i = 0; i < FRAME_OVERLAP; ++i)
+        DrawImageDescriptors = VK_NULL_HANDLE;
+
+        for (auto& frame : m_Frames)
         {
-            GetFrameAt(i).FrameDescriptors.DestroyPools(device);
+            frame.GlobalDescriptor = VK_NULL_HANDLE;
+            frame.ViewportDescriptor = VK_NULL_HANDLE;
+            frame.FrameDescriptors.DestroyPools(device);
         }
     }
 
@@ -600,16 +515,16 @@ namespace MamontEngine
         const VkExtent3D extent{Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
 
         constexpr VkImageUsageFlags drawImageUsages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-        Image.DrawImage                             = CreateImage(extent, Swapchain.GetImageFormat() /*VK_FORMAT_B8G8R8A8_UNORM*/, drawImageUsages, true);
+        DrawImage.Create(extent, Swapchain.GetImageFormat() /*VK_FORMAT_B8G8R8A8_UNORM*/, drawImageUsages, true);
 
-        std::cerr << "Image.DrawImage Image:" << Image.DrawImage.Image << std::endl;
-        std::cerr << "Image.DrawImage ImageView:" << Image.DrawImage.ImageView << std::endl;
+        std::cerr << "Image.DrawImage Image:" << DrawImage.Image << std::endl;
+        std::cerr << "Image.DrawImage ImageView:" << DrawImage.ImageView << std::endl;
 
         constexpr VkImageUsageFlags depthImageUsages = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        Image.DepthImage = CreateImage(extent, Utils::FindDepthFormat(PhysicalDevice::GetDevice()) /*VK_FORMAT_D32_SFLOAT*/, depthImageUsages, false);
+        DepthImage.Create(extent, Utils::FindDepthFormat(PhysicalDevice::GetDevice()) /*VK_FORMAT_D32_SFLOAT*/, depthImageUsages, false);
 
-        std::cerr << "Image.DepthImage Image:" << Image.DepthImage.Image << std::endl;
-        std::cerr << "Image.DepthImage ImageView:" << Image.DepthImage.ImageView << std::endl;
+        std::cerr << "Image.DepthImage Image:" << DepthImage.Image << std::endl;
+        std::cerr << "Image.DepthImage ImageView:" << DepthImage.ImageView << std::endl;
 
         {
             const VkExtent3D extent = {Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
@@ -617,7 +532,7 @@ namespace MamontEngine
             PickingImages.resize(Swapchain.GetImages().size());
             for (auto &image : PickingImages)
             {
-                image = CreateImage(
+                image.Create(
                         extent, VK_FORMAT_R32G32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
                 std::cerr << "PickingImages Image:" << image.Image << std::endl;
@@ -634,8 +549,7 @@ namespace MamontEngine
 
         vkDeviceWaitIdle(device);
 
-        DestroyImage(Image.DrawImage);
-        DestroyImage(Image.DepthImage);
+        DestroyImages();
 
         Swapchain.ReCreate(*this, inWindowExtent);
 
@@ -661,27 +575,27 @@ namespace MamontEngine
         VK_CHECK(vmaCreateImage(Allocator::GetAllocator(),
                                 &imageInfo,
                                 &allocinfo,
-                                &CascadeDepthImage.Image.Image,
-                                &CascadeDepthImage.Image.Allocation,
-                                &CascadeDepthImage.Image.Info));
+                                &CascadeDepthImage.Image,
+                                &CascadeDepthImage.Allocation,
+                                &CascadeDepthImage.Info));
 
-        CascadeDepthImage.Image.ImageExtent = shadowImageExtent;
-        CascadeDepthImage.Image.ImageFormat = depthFormat;
+        CascadeDepthImage.ImageExtent = shadowImageExtent;
+        CascadeDepthImage.ImageFormat = depthFormat;
 
         {
             auto imageViewInfo = vkinit::imageviewCreateInfo(
-                    depthFormat, CascadeDepthImage.Image.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, CASCADECOUNT, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
+                    depthFormat, CascadeDepthImage.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, CASCADECOUNT, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
 
-            VK_CHECK(vkCreateImageView(device, &imageViewInfo, nullptr, &CascadeDepthImage.Image.ImageView));
+            VK_CHECK(vkCreateImageView(device, &imageViewInfo, nullptr, &CascadeDepthImage.ImageView));
         }
 
-        std::cerr << "Shadow Image:" << CascadeDepthImage.Image.Image << std::endl;
-        std::cerr << "Shadow ImageView:" << CascadeDepthImage.Image.ImageView << std::endl;
+        std::cerr << "Shadow Image:" << CascadeDepthImage.Image << std::endl;
+        std::cerr << "Shadow ImageView:" << CascadeDepthImage.ImageView << std::endl;
 
         for (size_t i = 0; i < CASCADECOUNT; i++)
         {
             auto layerViewInfo =
-                    vkinit::imageviewCreateInfo(depthFormat, CascadeDepthImage.Image.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
+                    vkinit::imageviewCreateInfo(depthFormat, CascadeDepthImage.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
 
             layerViewInfo.subresourceRange.baseArrayLayer = static_cast<uint32_t>(i);
             layerViewInfo.subresourceRange.layerCount     = 1;
@@ -692,7 +606,7 @@ namespace MamontEngine
 
         // Cascade Sampler
         {
-            VkSamplerCreateInfo samplerInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .maxAnisotropy = 1.f};
+            VkSamplerCreateInfo samplerInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr};
             samplerInfo.magFilter     = VK_FILTER_LINEAR;
             samplerInfo.minFilter     = VK_FILTER_LINEAR;
             samplerInfo.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
@@ -712,9 +626,8 @@ namespace MamontEngine
     void VkContextDevice::CreatePrefilteredCubeTexture(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &&inDrawSkyboxFunc)
     {
         m_PrefilteredCubeTexture = GeneratePrefilteredCube(vertexAddress, inDrawSkyboxFunc, m_SkyboxTexture);
-        const VkDevice device    = LogicalDevice::GetDevice();
-
-        vkDeviceWaitIdle(device);
+        m_IrradianceTexture = GenerateIrradianceTexture(vertexAddress, inDrawSkyboxFunc, m_SkyboxTexture);
+        
         InitDescriptors();
     }
 
@@ -739,18 +652,16 @@ namespace MamontEngine
 #endif
     }
 
-    void VkContextDevice::DestroyImages() const
+    void VkContextDevice::DestroyImages()
     {
-        DestroyImage(Image.DrawImage);
-
-        DestroyImage(Image.DepthImage);
+        DrawImage.Destroy();
+        DepthImage.Destroy();
 
         for (auto &pickImage : PickingImages)
         {
-            DestroyImage(pickImage);
+            pickImage.Destroy();
         }
-        // PickingImages.clear();
-        // DestroyImage(ShadowDepthImage);
+        CascadeDepthImage.Destroy();
     }
 
     FrameData &VkContextDevice::GetCurrentFrame()

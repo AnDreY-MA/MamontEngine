@@ -86,9 +86,21 @@ uint GetCascadeIndex()
   return cascadeIndex;
 }
 
+vec3 CalculalteNormal()
+{
+    const vec3 tangentNormal = texture(normalMap, inUV).zyx * 2.0 - 1.0;
+    const vec3 N = normalize(inNormal);
+    const vec3 T = normalize(inTangent.xyz);
+    const vec3 B = normalize(cross(N, T));
+    const mat3 TBN = mat3(T, B, N);
+
+    return normalize(TBN * tangentNormal);
+}
+
 void main()
 {
-  const vec3 N = normalize(inNormal);
+  const vec3 N = inNormal;
+  //normalize(inNormal);
   //GetNormal(normalMap, inNormal, inUV, inPos);
   const vec3 L = normalize(-directionLight.lightDirection);
   const vec3 V = normalize(-inViewPos);
@@ -123,6 +135,7 @@ void main()
   PBRData pbrData;
   pbrData.dotNV = dotNV;
   pbrData.alphaRoughness = alphaRoughness;
+  pbrData.albedo = albedo;
   pbrData.reflectance0 = specularEnviromentR0;
   pbrData.reflectance90 = specularEnviromentR90;
   pbrData.diffuseColor = diffuseColor;
@@ -145,7 +158,7 @@ void main()
 
   //lightColor += prefilteredColor;
 
-  const vec3 ibl = GetIBLContribution(pbrData, N, R, directionLight.color, samplerBRDFLUT, samplerPrefilteredMap, samplerCubeMap);
+  const vec3 ibl = GetIBLContribution(pbrData, N, R, directionLight.color, samplerBRDFLUT, samplerPrefilteredMap, irradianceMap);
 
   lightColor += ibl;
 

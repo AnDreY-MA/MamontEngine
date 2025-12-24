@@ -31,7 +31,7 @@ namespace MamontEditor
             return GetPanel<SceneHierarchyPanel>()->GetSelectedEntity();
         }
 
-		MamontEngine::Scene* GetSceneContext()
+		std::shared_ptr<MamontEngine::Scene>& GetSceneContext()
 		{
             return GetPanel<SceneHierarchyPanel>()->GetSceneContext();
 		}

@@ -20,6 +20,10 @@ namespace MamontEditor
     {
         
     }
+    InspectorPanel::~InspectorPanel()
+    {
+        m_SceneContext.reset();
+    }
 
     void InspectorPanel::GuiRender()
     {
@@ -88,8 +92,6 @@ namespace MamontEditor
             if (removeComponent)
             {
                 inScene->RemoveComponent<T>(inEntity);
-                //inEntity.RemoveComponent<T>(inEntity);
-                //inRegistry.remove<T>(inEntity);
             }
         }
     }
@@ -145,18 +147,19 @@ namespace MamontEditor
         ImGui::Text(idStr.c_str());
 
         DrawComponent<TransformComponent>("Transform Component",
-                                                        m_SceneContext,
+                                                        m_SceneContext.get(),
                                                         m_SceneContext->GetRegistry(),
                                                         inEntity,
                                                         [](MamontEngine::TransformComponent &component, entt::entity entity) 
             {
                 //MUI::BeginProperties();
-                auto       rotation  = glm::degrees(component.Rotation);
-                const bool isChanged = MUI::DrawVec3Control("Translation", component.Translation) || MUI::DrawVec3Control("Rotation", rotation) ||
-                                       MUI::DrawVec3Control("Scale", component.Scale, 1.f);
+                auto       rotation  = glm::degrees(component.Transform.Rotation);
+                const bool isChanged = MUI::DrawVec3Control("Translation", component.Transform.Position) || 
+                                       MUI::DrawVec3Control("Rotation", rotation) ||
+                                       MUI::DrawVec3Control("Scale", component.Transform.Scale, 1.f);
                 if (isChanged)
                 {
-                    component.Rotation = glm::radians(rotation);
+                    component.Transform.Rotation = glm::radians(rotation);
                     component.IsDirty  = true;
                 }
 
@@ -164,7 +167,7 @@ namespace MamontEditor
             });
 
         DrawComponent<MeshComponent>("Mesh Component",
-                                     m_SceneContext,
+                                     m_SceneContext.get(),
                                      m_SceneContext->GetRegistry(),
                                      inEntity,
                                      [&](MeshComponent &component, entt::entity entity)
@@ -192,7 +195,7 @@ namespace MamontEditor
 
                                                  if (isSelected)
                                                  {
-                                                     ImGui::SetItemDefaultFocus();
+                                                     //ImGui::SetItemDefaultFocus();
                                                  }
                                              }
                                              ImGui::EndCombo();

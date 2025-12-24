@@ -66,8 +66,6 @@ namespace MamontEngine
         }
 
     private:
-        void InitDefaultData();
-
         void InitPipelines();
 
         void InitImgui();

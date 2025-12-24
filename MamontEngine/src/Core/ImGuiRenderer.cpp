@@ -60,7 +60,9 @@ namespace MamontEngine
 
     ImGuiRenderer::~ImGuiRenderer()
     {
-        vkDestroyDescriptorPool(LogicalDevice::GetDevice(), m_DescriptorPool, nullptr);
+        VkDevice device = LogicalDevice::GetDevice();
+        vkResetDescriptorPool(device, m_DescriptorPool, 0);
+        vkDestroyDescriptorPool(device, m_DescriptorPool, nullptr);
     }
 
     void ImGuiRenderer::Draw(VkCommandBuffer inCmd, VkImageView inTargetImageView, const VkExtent2D &inRenderExtent)

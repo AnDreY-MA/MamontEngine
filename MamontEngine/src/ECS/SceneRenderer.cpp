@@ -9,42 +9,45 @@
 
 namespace MamontEngine
 {
-    static bool is_visible(const RenderObject &obj, const glm::mat4 &viewproj)
+    namespace
     {
-        constexpr std::array<glm::vec3, 8> corners{
-                glm::vec3{1, 1, 1},
-                glm::vec3{1, 1, -1},
-                glm::vec3{1, -1, 1},
-                glm::vec3{1, -1, -1},
-                glm::vec3{-1, 1, 1},
-                glm::vec3{-1, 1, -1},
-                glm::vec3{-1, -1, 1},
-                glm::vec3{-1, -1, -1},
-        };
-
-        const glm::mat4 matrix = viewproj * obj.Transform;
-
-        glm::vec3 min = {1.5, 1.5, 1.5};
-        glm::vec3 max = {-1.5, -1.5, -1.5};
-
-        for (int c = 0; c < 8; c++)
+        bool IsVisible(const AABB &bound, const glm::mat4 inTrasnform, const glm::mat4 &viewproj)
         {
-            glm::vec4 v = matrix * glm::vec4(obj.Bound.Center() + (corners[c] * obj.Bound.Extent()), 1.f);
+            constexpr std::array<glm::vec3, 8> corners{
+                    glm::vec3{1, 1, 1},
+                    glm::vec3{1, 1, -1},
+                    glm::vec3{1, -1, 1},
+                    glm::vec3{1, -1, -1},
+                    glm::vec3{-1, 1, 1},
+                    glm::vec3{-1, 1, -1},
+                    glm::vec3{-1, -1, 1},
+                    glm::vec3{-1, -1, -1},
+            };
 
-            v.x = v.x / v.w;
-            v.y = v.y / v.w;
-            v.z = v.z / v.w;
+            const glm::mat4 matrix = viewproj * inTrasnform;
 
-            min = glm::min(glm::vec3{v.x, v.y, v.z}, min);
-            max = glm::max(glm::vec3{v.x, v.y, v.z}, max);
+            glm::vec3 min = {1.5, 1.5, 1.5};
+            glm::vec3 max = {-1.5, -1.5, -1.5};
+
+            for (int c = 0; c < 8; c++)
+            {
+                glm::vec4 v = matrix * glm::vec4(bound.Center() + (corners[c] * bound.Extent()), 1.f);
+
+                v.x = v.x / v.w;
+                v.y = v.y / v.w;
+                v.z = v.z / v.w;
+
+                min = glm::min(glm::vec3{v.x, v.y, v.z}, min);
+                max = glm::max(glm::vec3{v.x, v.y, v.z}, max);
+            }
+
+            if (min.z > 1.f || max.z < 0.f || min.x > 1.f || max.x < -1.f || min.y > 1.f || max.y < -1.f)
+            {
+                return false;
+            }
+
+            return true;
         }
-
-        if (min.z > 1.f || max.z < 0.f || min.x > 1.f || max.x < -1.f || min.y > 1.f || max.y < -1.f)
-        {
-            return false;
-        }
-
-        return true;
     }
 
     SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera) : m_Camera(inCamera)
@@ -77,7 +80,7 @@ namespace MamontEngine
 
         for (size_t i = 0; i < m_DrawContext.OpaqueSurfaces.size(); i++)
         {
-            if (is_visible(m_DrawContext.OpaqueSurfaces[i], m_SceneData.Viewproj))
+            if (IsVisible(m_DrawContext.OpaqueSurfaces[i].Bound, m_DrawContext.OpaqueSurfaces[i].Transform, m_SceneData.Viewproj))
             {
                 opaque_draws.push_back(i);
             }
@@ -88,33 +91,20 @@ namespace MamontEngine
 
         for (size_t i = 0; i < m_DrawContext.TransparentSurfaces.size(); i++)
         {
-            if (is_visible(m_DrawContext.TransparentSurfaces[i], m_SceneData.Viewproj))
+            if (IsVisible(m_DrawContext.OpaqueSurfaces[i].Bound, m_DrawContext.OpaqueSurfaces[i].Transform, m_SceneData.Viewproj))
             {
                 transp_draws.push_back(i);
             }
         }
 
-        PipelineData   *lastPipeline = nullptr;
-        const Material *lastMaterial = nullptr;
 
         const auto draw = [&](const RenderObject &r)
         {
-            if (r.Material != lastMaterial)
-            {
-                lastMaterial = r.Material;
-                if (r.Material->Pipeline.get() != lastPipeline)
-                {
-                    lastPipeline = r.Material->Pipeline.get();
-                    vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Pipeline);
+            vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Pipeline);
 
-                    vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
-                }
+            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
 
-                if (r.Material->MaterialSet != VK_NULL_HANDLE && r.Material->Pipeline->Layout != VK_NULL_HANDLE)
-                {
-                    vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
-                }
-            }
+            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
 
             constexpr VkDeviceSize offsets[1] = {0};
             if (r.VertexBuffer != VK_NULL_HANDLE)
@@ -165,11 +155,11 @@ namespace MamontEngine
 
         for (size_t i = 0; i < m_DrawContext.OpaqueSurfaces.size(); i++)
         {
-            /*if (is_visible(m_DrawContext.OpaqueSurfaces[i], inViewProjection))
+            if (IsVisible(m_DrawContext.OpaqueSurfaces[i].Bound, m_DrawContext.OpaqueSurfaces[i].Transform, inViewProjection))
             {
                 opaque_draws.push_back(i);
-            }*/
-            opaque_draws.push_back(i);
+            }
+            //opaque_draws.push_back(i);
         }
 
         vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineData.Pipeline);
@@ -310,7 +300,7 @@ namespace MamontEngine
         for (size_t i = 0; i < CASCADECOUNT; i++)
         {
             float     splitDist         = cascadeSplits[i];
-            glm::vec3 frustumCorners[8] = {
+            std::array<glm::vec3, 8> frustumCorners = {
                     glm::vec3(-1.0f, 1.0f, 0.0f),
                     glm::vec3(1.0f, 1.0f, 0.0f),
                     glm::vec3(1.0f, -1.0f, 0.0f),

@@ -25,7 +25,7 @@ namespace MamontEngine::vkinit
                                   const uint32_t        waitSemaphoreCount,
                                   const uint32_t       *pImageIndices);
 
-    VkRenderingAttachmentInfo attachment_info(VkImageView view, VkClearValue *clear, VkImageLayout layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    VkRenderingAttachmentInfo attachment_info(VkImageView view, const VkClearValue *clear, VkImageLayout layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
     VkRenderingAttachmentInfo depth_attachment_info(VkImageView        view,
                                                     VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,

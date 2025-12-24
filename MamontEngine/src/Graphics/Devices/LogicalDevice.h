@@ -5,12 +5,10 @@ namespace MamontEngine
 namespace LogicalDevice
 {
 
-  VkDevice GetDevice();
+  VkDevice& GetDevice();
 
   void InitDevice(VkDevice inDevice);
 
   void DestroyDevice();
-
 }
-
 }

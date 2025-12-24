@@ -25,6 +25,7 @@ namespace MamontEditor
 
     Editor::~Editor()
     {
+        s_Instance = nullptr;
         m_Panels.clear();
     }
 
@@ -146,7 +147,7 @@ namespace MamontEditor
 
         const uint64_t pickID = MEngine::Get().TryPickObject({inMousePostion.x, inMousePostion.y});
 
-        auto* Scene = GetSceneContext();
+        auto &Scene = GetSceneContext();
         if (pickID != 0)
         {
             GetPanel<SceneHierarchyPanel>()->SelectEntity(Scene->GetEntity(pickID));

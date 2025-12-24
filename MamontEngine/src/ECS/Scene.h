@@ -19,7 +19,7 @@ namespace MamontEngine
 
         ~Scene();
 
-        void Init(VkContextDevice& inContextDevice);
+        void Init();
 
 		void Save();
         void Load();

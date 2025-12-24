@@ -11,6 +11,7 @@ struct PBRData
   float dotVH;
   float roughness;
   float alphaRoughness;
+  vec3 albedo;
   vec3 reflectance0;
   vec3 reflectance90;
   vec3 diffuseColor;
@@ -75,9 +76,9 @@ float GeometricOcclusion(float dotNL, float dotNV, float roughness)
   return attenuationL * attenuationV;
 }
 
-vec3 SpecularReflection(vec3 reflect0, vec3 reflect90, float dotVH)
+vec3 SpecularReflection(PBRData pbrData)
 {
-  return reflect0 + (reflect90 - reflect0) * pow(clamp(1.0 - dotVH, 0.0, 1.0), 5.0);
+  return pbrData.reflectance0 + (pbrData.reflectance90 - pbrData.reflectance0) * pow(clamp(1.0 - pbrData.dotNV, 0.0, 1.0), 5.0);
 }
 
 vec3 Fresnel_Schlick(float cosTheta, vec3 F0)
@@ -117,11 +118,11 @@ vec3 SpecularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, float metallic, float
 
 vec3 GetIBLContribution(PBRData pbrData, vec3 n, vec3 r, vec3 skyColor, sampler2D samplerBRDFLUT, samplerCube prefilteredMap, samplerCube irradianceMap)
 {
-  const vec3 F = Fresnel_Schlick(max(pbrData.dotNV, 0.0), pbrData.F0);
+  const vec3 F = Fresnel_Schlick(pbrData.dotNV, pbrData.F0);
 
   const float lod = pbrData.roughness * 9.0;
 
-  const vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrData.dotNV, pbrData.roughness))).rgb;
+  const vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrData.dotNV, 1.0 - pbrData.roughness))).rgb;
   const vec3 diffuseLight = texture(irradianceMap, n).rgb;
   const vec3 specularLight = textureLod(prefilteredMap, r, lod).rgb;
 
@@ -176,7 +177,7 @@ vec3 GetLightContribution(PBRData pbrData, vec3 n, vec3 v, vec3 l, vec3 color)
   pbrData.dotNH = clamp(dot(n, h), 0.0, 1.0);
   pbrData.dotVH = clamp(dot(v, h), 0.0, 1.0);
 
-  const vec3 F = SpecularReflection(pbrData.reflectance0, pbrData.reflectance90, pbrData.dotVH);
+  const vec3 F = SpecularReflection(pbrData);
   const float G = GeometricOcclusion(pbrData.dotNL, pbrData.dotNV, pbrData.alphaRoughness);
   const float D = MicrofaceDistribution(pbrData);
 

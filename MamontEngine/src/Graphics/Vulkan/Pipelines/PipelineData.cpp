@@ -11,16 +11,9 @@ namespace MamontEngine
 
     PipelineData::~PipelineData()
     {
-        const VkDevice device = LogicalDevice::GetDevice();
-        vkDeviceWaitIdle(device);
+        const VkDevice& device = LogicalDevice::GetDevice();
 
-        if (Layout != VK_NULL_HANDLE)
-        {
-            vkDestroyPipelineLayout(device, Layout, nullptr);
-        }
-        if (Pipeline != VK_NULL_HANDLE)
-        {
-            vkDestroyPipeline(device, Pipeline, nullptr);
-        }
+        vkDestroyPipelineLayout(device, Layout, nullptr);
+        vkDestroyPipeline(device, Pipeline, nullptr);
     }
 }

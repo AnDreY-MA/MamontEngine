@@ -2,7 +2,7 @@
 
 namespace MamontEngine
 {
-    struct PipelineData
+    struct PipelineData : public NonCopyable
     {
         PipelineData(VkPipeline inPipeline, VkPipelineLayout inLayout);
         ~PipelineData();

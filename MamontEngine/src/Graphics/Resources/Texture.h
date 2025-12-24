@@ -40,6 +40,8 @@ namespace MamontEngine
 
     Texture
     GeneratePrefilteredCube(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &inDrawSkyboxFunc, const Texture &inEnvironmentTexture);
+    Texture
+    GenerateIrradianceTexture(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &inDrawSkyboxFunc, const Texture &inEnvironmentTexture);
 
     Texture GenerateBRDFLUT();
 
