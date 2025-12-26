@@ -279,8 +279,8 @@ namespace MamontEngine
     {
         Texture        newTexture{};
         const uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
-
         const uint32_t                magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+
         std::array<uint32_t, 16 * 16> pixels{}; // for 16x16 checkerboard texture
         for (int x = 0; x < 16; x++)
         {

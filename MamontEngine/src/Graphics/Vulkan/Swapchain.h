@@ -9,11 +9,11 @@ namespace MamontEngine
 	class MSwapchain
 	{
     public:
-        void Init(VkContextDevice &inDevice, const VkExtent2D& inExtent);
+        void Init(const VkSurfaceKHR inSurface, const VkExtent2D &inExtent);
 
-        void Create(const VkContextDevice &inDevice, const VkExtent2D &inExtent);
+        void Create(const VkSurfaceKHR inSurface, const VkExtent2D &inExtent);
 
-        void ReCreate(const VkContextDevice &inDevice, const VkExtent2D &inExtent);
+        void ReCreate(const VkSurfaceKHR inSurface, const VkExtent2D &inExtent);
 
         std::pair<VkResult, uint32_t> AcquireImage(VkDevice inDevice, VkSemaphore inSemaphore);
 

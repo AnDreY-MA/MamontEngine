@@ -149,7 +149,6 @@ namespace MamontEngine
     MeshModel::MeshModel(const VkContextDevice& inDevice, UID inID, std::string_view filePath) : m_ContextDevice(inDevice), ID(inID)
     {
         Load(filePath);
-        Log::Info("Loaded Model ID: {}", static_cast<uint64_t>(ID));
     }
 
     MeshModel::~MeshModel()
@@ -550,24 +549,23 @@ namespace MamontEngine
                 newNode->Mesh = m_Meshes[*node.meshIndex];
             }
 
-
-            std::visit(fastgltf::visitor{[&](const fastgltf::Node::TransformMatrix &matrix) { memcpy(&newNode->Matrix, matrix.data(), sizeof(matrix)); },
+            std::visit(fastgltf::visitor{[&](const fastgltf::Node::TransformMatrix &matrix) { 
+                memcpy(&newNode->Matrix, matrix.data(), sizeof(matrix)); 
+            },
                                          [&](const fastgltf::Node::TRS &transform)
                                          {
                                              newNode->Transform.Position = glm::vec3(transform.translation[0], transform.translation[1], transform.translation[2]);
                                              newNode->Transform.Rotation = glm::vec3(0);
                                              newNode->Transform.Scale    = glm::vec3(transform.scale[0], transform.scale[1], transform.scale[2]);
 
-                                             glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), newNode->Transform.Position);
-                                             glm::quat rotation(transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]);
-                                             glm::mat4 rotationMat = glm::toMat4(rotation);
-                                             glm::mat4 scaleMat    = glm::scale(glm::mat4(1.0f), newNode->Transform.Scale);
+                                             const glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), newNode->Transform.Position);
+                                             const glm::quat rotation(transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]);
+                                             const glm::mat4 rotationMat = glm::toMat4(rotation);
+                                             const glm::mat4 scaleMat    = glm::scale(glm::mat4(1.0f), newNode->Transform.Scale);
 
                                              newNode->Matrix = translationMat * rotationMat * scaleMat;
                                          }},
                        node.transform);
-
-            //newNode->WorldBounds = localBounds;
 
             m_Nodes.push_back(std::move(newNode));
         }

@@ -10,14 +10,14 @@
 
 namespace MamontEngine
 {
-    void MSwapchain::Init(VkContextDevice &inDevice, const VkExtent2D &inExtent)
+    void MSwapchain::Init(const VkSurfaceKHR inSurface, const VkExtent2D &inExtent)
     {
-        Create(inDevice, inExtent);
+        Create(inSurface, inExtent);
     }
 
-    void MSwapchain::Create(const VkContextDevice &inDevice, const VkExtent2D &inExtent)
+    void MSwapchain::Create(const VkSurfaceKHR inSurface, const VkExtent2D &inExtent)
     {
-        vkb::SwapchainBuilder swapchainBuilder{PhysicalDevice::GetDevice(), LogicalDevice::GetDevice(), inDevice.Surface};
+        vkb::SwapchainBuilder swapchainBuilder{PhysicalDevice::GetDevice(), LogicalDevice::GetDevice(), inSurface};
         m_SwapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM; /*VK_FORMAT_R16G16B16A16_SFLOAT*/
         /*VK_FORMAT_B8G8R8A8_UNORM*/
         //Utils::FindSupportedFormat(PhysicalDevice::GetDevice());
@@ -41,13 +41,13 @@ namespace MamontEngine
         m_SwapchainImageViews       = m_vkbSwapchain.get_image_views().value();
     }
 
-    void MSwapchain::ReCreate(const VkContextDevice &inDevice, const VkExtent2D &inExtent)
+    void MSwapchain::ReCreate(const VkSurfaceKHR inSurface, const VkExtent2D &inExtent)
     {
         const VkDevice device = LogicalDevice::GetDevice();
 
         Destroy(device);
 
-        Create(inDevice, inExtent);
+        Create(inSurface, inExtent);
     }
 
     std::pair<VkResult, uint32_t> MSwapchain::AcquireImage(VkDevice inDevice, VkSemaphore inSemaphore)

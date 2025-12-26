@@ -58,9 +58,11 @@ namespace MamontEngine
             return m_GraphicsQueueFamily;
         }
 
-        VkInstance               Instance{VK_NULL_HANDLE};
-        VkDebugUtilsMessengerEXT DebugMessenger{VK_NULL_HANDLE};
-        VkSurfaceKHR             Surface{VK_NULL_HANDLE};
+        VkInstance GetInstance() const
+        {
+            return Instance;
+        }
+
 
         VkFence TransferFence{VK_NULL_HANDLE};
 
@@ -123,6 +125,10 @@ namespace MamontEngine
     private:
         std::array<FrameData, FRAME_OVERLAP> m_Frames{};
         size_t                               m_FrameNumber{0};
+
+        VkInstance               Instance{VK_NULL_HANDLE};
+        VkDebugUtilsMessengerEXT DebugMessenger{VK_NULL_HANDLE};
+        VkSurfaceKHR             Surface{VK_NULL_HANDLE};
 
         VkQueue  m_GraphicsQueue{VK_NULL_HANDLE};
         uint32_t m_GraphicsQueueFamily{0};

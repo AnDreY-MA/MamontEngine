@@ -15,7 +15,7 @@
 
 namespace MamontEngine
 {
-    constexpr bool bUseValidationLayers = true;
+    constexpr bool bUseValidationLayers = false;
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL DetailedDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      severity,
                                                                 VkDebugUtilsMessageTypeFlagsEXT             type,
@@ -506,7 +506,7 @@ namespace MamontEngine
 
     void VkContextDevice::InitSwapchain(const VkExtent2D &inWindowExtent)
     {
-        Swapchain.Init(*this, inWindowExtent);
+        Swapchain.Init(Surface, inWindowExtent);
         InitImage();
     }
 
@@ -551,7 +551,7 @@ namespace MamontEngine
 
         DestroyImages();
 
-        Swapchain.ReCreate(*this, inWindowExtent);
+        Swapchain.ReCreate(Surface, inWindowExtent);
 
         InitImage();
 

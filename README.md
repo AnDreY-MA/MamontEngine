@@ -8,6 +8,7 @@
 - ECS Integration
 - Save/Load scene
 - Cascade Shadow Mapping
+- Physically Based Rendering
 
 ## Dependencies
 - Vulkan SDK (1.4)

@@ -1,7 +1,7 @@
 #pragma once 
 
 #include "Graphics/Resources/Material.h"
-#include "AABB.h"
+#include "Math/AABB.h"
 #include "Math/Transform.h"
 
 namespace MamontEngine

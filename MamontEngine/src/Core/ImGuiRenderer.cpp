@@ -37,7 +37,7 @@ namespace MamontEngine
         // outPoolResult = imguiPool;
 
         ImGui_ImplVulkan_InitInfo initInfo = {};
-        initInfo.Instance                  = inContextDevice.Instance;
+        initInfo.Instance                  = inContextDevice.GetInstance();
         initInfo.PhysicalDevice            = PhysicalDevice::GetDevice();
         initInfo.Device                    = device;
         initInfo.QueueFamily               = inContextDevice.GetGraphicsQueueFamily();
