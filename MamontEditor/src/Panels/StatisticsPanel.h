@@ -11,10 +11,6 @@ namespace MamontEditor
 
         ~StatisticsPanel() = default;
 
-		virtual void Deactivate() override;
-
-        virtual void Init() override;
-
         virtual void GuiRender() override;
 
         virtual bool IsHovered() const override;

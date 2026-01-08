@@ -13,6 +13,7 @@ namespace MamontEngine
         VkFormat          ImageFormat;
         VkDeviceMemory    DeviceMemory{VK_NULL_HANDLE};
 
+
         void Load(void             *inData,
                   const VkExtent3D &inSize,
                   VkFormat          inFormat,
@@ -28,6 +29,14 @@ namespace MamontEngine
                     const bool         inIsMipMapped = false,
                     uint32_t           arrayLayers   = 1,
                     VkImageCreateFlags inCreateFlags = 0, VkSampler inSampler = VK_NULL_HANDLE);
+
+        VkDescriptorImageInfo GetDescriptorInfo() const
+        {
+            const VkDescriptorImageInfo info {
+                .sampler = Sampler, .imageView = ImageView, .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+
+            return info;
+        }
     };
 
     Texture LoadCubeMapTexture(const std::string &inFileName, VkFormat inFormat);

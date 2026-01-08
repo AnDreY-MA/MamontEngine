@@ -13,7 +13,8 @@
 #include "Utils/Profile.h"
 #include "vulkan/vk_enum_string_helper.h"
 #include "Graphics/Vulkan/ImmediateContext.h"
-
+#include "Graphics/Resources/Models/Model.h"
+#include <execution>
 #include "Core/Log.h"
 #include "Graphics/Devices/LogicalDevice.h"
 // #define VMA_IMPLEMENTATION
@@ -35,11 +36,11 @@ namespace MamontEngine
         DestroyPipelines();
     }
 
-    void Renderer::InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera)
+    void Renderer::InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera, const std::shared_ptr<Scene> &inScene)
     {
-        m_SceneRenderer = std::make_shared<SceneRenderer>(inMainCamera);
+        m_SceneRenderer = std::make_shared<SceneRenderer>(inMainCamera, inScene);
         const std::string cubePath = DEFAULT_ASSETS_DIRECTORY + "cube.glb";
-        m_Skybox                   = std::make_unique<MeshModel>(m_DeviceContext, 0, cubePath);
+        m_Skybox                   = std::make_unique<MeshModel>(0, cubePath);
 
         VkDeviceAddress vertexAddress{0};
         {
@@ -321,8 +322,11 @@ namespace MamontEngine
 
     void Renderer::RenderCascadeShadow(VkCommandBuffer inCmd)
     {
+        IsActiveCascade = m_SceneRenderer->HasDirectionLight();
+
         if (!IsActiveCascade)
             return;
+        
         const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
         PROFILE_VK_ZONE(currentFrame.TracyContext, inCmd, "Render Cascade Shadow");
 

@@ -3,8 +3,8 @@
 #include <entt/entt.hpp>
 #include "Core/UID.h"
 #include "Core/Camera.h"
-#include "ECS/SceneRenderer.h"
 #include "Utils/Serializer.h"
+#include "ECS/Components/MeshComponent.h"
 
 namespace MamontEngine
 {
@@ -14,8 +14,8 @@ namespace MamontEngine
 	class Scene
 	{
     public:
-        Scene() = default;
-        explicit Scene(const std::shared_ptr<SceneRenderer> &inSceneRenderer);
+        //Scene() = default;
+        explicit Scene();
 
         ~Scene();
 
@@ -47,17 +47,6 @@ namespace MamontEngine
         {
             return m_Registry;
         }
-
-		const GPUSceneData& GetViewSceneData() const
-        {
-            return m_SceneRenderer->GetGPUSceneData();
-		}
-
-		const std::shared_ptr<SceneRenderer>& GetSceneRenderer() const
-		{
-            return m_SceneRenderer;
-		}
-
 		Entity GetEntity(UID Id);
         const Entity& GetEntity(UID Id) const;
 
@@ -68,8 +57,6 @@ namespace MamontEngine
 
 	private:
         entt::registry m_Registry;
-
-		std::shared_ptr<SceneRenderer> m_SceneRenderer;
 
 		std::unordered_map<UID, Entity> m_Entities;
 

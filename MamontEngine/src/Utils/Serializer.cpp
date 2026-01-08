@@ -144,7 +144,7 @@ namespace MamontEngine
                 const auto meshPath = DeserializeMesh(jsonComponent);
                 if (meshPath != "")
                 {
-                    auto model = std::make_shared<MeshModel>(contextDevice, id, meshPath);
+                    auto model = std::make_shared<MeshModel>(id, meshPath);
                     entity.AddComponent<MeshComponent>(std::move(model));
                 }
 
@@ -203,7 +203,7 @@ namespace MamontEngine
         if (transforCol.contains(JSON_TRANSFORM_TRANSLATION))
         {
             const auto &pos       = transforCol[JSON_TRANSFORM_TRANSLATION];
-            transform.Transform.Position= {(float)pos[0], (float)pos[1], (float)pos[2]};
+            transform.Transform.Position = {(float)pos[0], (float)pos[1], (float)pos[2]};
         }
         if (transforCol.contains(JSON_TRANSFORM_ROTATION))
         {

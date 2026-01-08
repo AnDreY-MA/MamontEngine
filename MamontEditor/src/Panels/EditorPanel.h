@@ -11,9 +11,6 @@ namespace MamontEditor
         explicit EditorPanel(const std::string &inName = "EditorPanel");
         virtual ~EditorPanel() = default;
 
-        virtual void Init() {};
-        virtual void Deactivate() {};
-
         virtual void GuiRender() {};
 
         virtual bool IsHovered() const

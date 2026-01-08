@@ -22,7 +22,6 @@ namespace MamontEngine
                                                                 const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
                                                                 void                                       *pUserData)
     {
-
         std::cerr << "\n=== VALIDATION LAYER ===" << std::endl;
         std::cerr << "Severity: ";
         switch (severity)

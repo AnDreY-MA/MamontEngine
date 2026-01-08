@@ -3,6 +3,7 @@
 #include "ECS/Scene.h"
 #include "entt/entt.hpp"
 #include "Components/IDComponent.h"
+//#include "rttr/registration.h"
 
 namespace MamontEngine
 {
@@ -14,7 +15,6 @@ namespace MamontEngine
         Entity(entt::entity inHandle, Scene *scene);
 
         static Entity NullEntity;
-
 
         template <typename T, typename... Args>
         T& AddComponent(Args&&... args)
@@ -28,6 +28,7 @@ namespace MamontEngine
         {
             return m_Scene->m_Registry.get<T>(m_EntityHandle);
         }
+
         template <typename T>
         const T &GetComponent() const
         {
@@ -37,21 +38,14 @@ namespace MamontEngine
         template <typename T>
         bool HasComponent()
         {
-            //auto id = m_Scene->m_Registry.try_get<T>();
             return m_Scene->m_Registry.any_of<T>(m_EntityHandle);
         }
 
         template<typename T>
         void RemoveComponent()
         {
-            //m_Scene->RemoveComponent<T>(this);
             m_Scene->m_Registry.remove<T>(m_EntityHandle);
         }
-
-        /*void RemoveComponent()
-        {
-            m_Scene->DestroyEntity(*this);
-        }*/
 
         UID GetID() const
         {
@@ -63,7 +57,7 @@ namespace MamontEngine
             return m_EntityHandle != entt::null;
         }
 
-        operator entt::entity() const
+        operator entt::entity() const 
         {
             return m_EntityHandle;
         }
@@ -81,5 +75,8 @@ namespace MamontEngine
 	private:
         entt::entity m_EntityHandle{entt::null};
         Scene *m_Scene{nullptr};
+
+        //RTTR_ENABLE()
+
 	};
 }

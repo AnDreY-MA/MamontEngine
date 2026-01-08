@@ -10,10 +10,6 @@ namespace MamontEditor
 
     }
 
-    void StatisticsPanel::Init()
-    {
-    }
-
     void StatisticsPanel::GuiRender()
     {
         if (OnBegin())
@@ -33,8 +29,5 @@ namespace MamontEditor
     bool StatisticsPanel::IsHovered() const
     {
         return m_IsHovered;
-    }
-    void StatisticsPanel::Deactivate()
-    {
     }
 } // namespace MamontEditor

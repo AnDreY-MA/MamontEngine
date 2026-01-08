@@ -7,14 +7,38 @@
 #include "Graphics/Resources/Models/Model.h"
 #include "Core/ContextDevice.h"
 #include "Core/Log.h"
-#include "Graphics/Resources/Models/Model.h"
+#include <execution>
+#include <entt/core/hashed_string.hpp>
+#include "entt/meta/meta.hpp"
+#include "Utils/Reflection.h"
+
+/*META_INIT(glm);
+
+IMPLEMENT_META_INIT(glm)
+{
+    META_TYPE(glm::vec3);
+}
+FINISH_REFLECT()*/
+
 
 namespace MamontEngine
 {
-    Scene::Scene(const std::shared_ptr<SceneRenderer> &inSceneRenderer) 
-        : m_SceneRenderer(inSceneRenderer)
+    Scene::Scene() 
     {
-        
+        using hs = entt::hashed_string;
+        entt::meta_factory<MeshModel>{}
+        .type(hs{"Model"}, "Model").base<Asset>();
+        entt::meta_factory<Transform>
+        {}.type(hs{"Transform"}, "Transform");
+
+
+        entt::meta_factory<TransformComponent>{}
+                .type(hs{"TransformComponent "}, "Transform Component ")
+                .data<&TransformComponent::Transform>(hs{"Transform"}, "Transform");
+
+       entt::meta_factory<MeshComponent>{}
+           .type(hs{"MeshComponent"}, "Mesh component")
+           .data<&MeshComponent::Mesh>(hs{"Model"}, "Model");
     }
 
     Scene::~Scene()
@@ -55,17 +79,11 @@ namespace MamontEngine
         const auto meshes = m_Registry.view<MeshComponent, TransformComponent>();
         for (const auto &&[entity, meshComponent, transform] : meshes.each())
         {
-            if (meshComponent.Mesh && transform.IsDirty)
+            if (meshComponent.Mesh)
             {
                 meshComponent.Mesh->UpdateTransform(
-                        transform.Transform.Matrix(), transform.Transform.Position, transform.Transform.Rotation, transform.Transform.Scale);
-                transform.IsDirty = false;
-            }
-
-            if (meshComponent.Dirty == true)
-            {
-                m_SceneRenderer->SubmitMesh(meshComponent);
-                meshComponent.Dirty = false;
+                        transform.Matrix());
+                //transform.IsDirty = false;
             }
         }
     }
@@ -126,8 +144,6 @@ namespace MamontEngine
     template<>
     void Scene::RemoveComponent<MeshComponent>(Entity inEntity)
     {
-        MeshComponent component = inEntity.GetComponent<MeshComponent>();
-        m_SceneRenderer->RemoveMeshComponent(component);
         m_Registry.remove<MeshComponent>(inEntity);
     }
 

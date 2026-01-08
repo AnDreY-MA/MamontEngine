@@ -1,28 +1,30 @@
 #pragma once
 
+#include "Graphics/Resources/Asset.h"
 #include "Graphics/Resources/Material.h"
 #include "Graphics/Resources/Models/Mesh.h"
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/parser.hpp>
-#include "Core/ContextDevice.h"
 #include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/Buffers/MeshBuffer.h"
+#include "Utils/VkDestriptor.h"
 
 namespace MamontEngine
 {
-	class MeshModel
-	{
+	class MeshModel : public Asset
+	{ 
     public:
-        explicit MeshModel(const VkContextDevice &inDevice, UID inID);
-        explicit MeshModel(const VkContextDevice &inDevice, UID inID, std::string_view filePath);
+        MeshModel() = default;
+        explicit MeshModel(UID inID);
+        explicit MeshModel(UID inID, std::string_view filePath);
         
         ~MeshModel();
 
-        void Load(std::string_view filePath);
+        virtual void Load(std::string_view filePath) override;
         
         void Draw(DrawContext &inContext);
 
-        void UpdateTransform(const glm::mat4 &inTransform, const glm::vec3 &inLocation, const glm::vec3 &inRotation, const glm::vec3 &inScale);
+        void UpdateTransform(const glm::mat4 &inTransform);
 
         const size_t GetSizeMaterials() const
         {
@@ -35,11 +37,6 @@ namespace MamontEngine
         const size_t GetSizeNodes() const
         {
             return m_Nodes.size();
-        }
-
-        const std::string GetPathFile() const
-        {
-            return pathFile.string();
         }
 
         Material* GetMaterial(size_t index) const
@@ -60,9 +57,7 @@ namespace MamontEngine
         void Clear();
 
     private:
-        const VkContextDevice &m_ContextDevice;
-
-        std::vector<std::unique_ptr<Node>>         m_Nodes;
+        std::vector<Node*>                          m_Nodes;
         std::vector<Texture>               m_Textures;
         std::vector<std::shared_ptr<Material>> m_Materials;
         std::vector<std::shared_ptr<NewMesh>>      m_Meshes;
@@ -73,8 +68,5 @@ namespace MamontEngine
         MeshBuffer Buffer;
 
         AABB Bound;
-
-        std::filesystem::path pathFile;
-
 	};
 }

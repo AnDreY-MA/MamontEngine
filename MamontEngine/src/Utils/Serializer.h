@@ -6,6 +6,7 @@
 namespace MamontEngine
 {
     struct TransformComponent;
+    struct DirectionLightComponent;
     class Scene;
     class UID;
 
@@ -21,6 +22,7 @@ namespace MamontEngine
 
     private:
         static nlohmann::json SerializeTransform(const TransformComponent &inTransformComponent);
+        static nlohmann::json SerializeLightComponent(const DirectionLightComponent &inTransformComponent);
 
         static std::string DeserializeTag(const nlohmann::json& inJson);
 

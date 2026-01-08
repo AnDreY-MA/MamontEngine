@@ -5,6 +5,8 @@
 
 namespace MamontEditor
 {
+    class SceneRenderer;
+
 	class SceneSettingsPanel final : public EditorPanel
 	{
     public:
@@ -12,14 +14,10 @@ namespace MamontEditor
 
         ~SceneSettingsPanel() = default;
 
-        virtual void Deactivate() override;
-
-        virtual void Init() override;
-
         virtual void GuiRender() override;
 
     private:
-        std::shared_ptr<MamontEngine::SceneRenderer> m_SceneRenderer;
+
 
 	};
 }

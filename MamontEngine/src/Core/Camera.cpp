@@ -29,9 +29,6 @@ namespace MamontEngine
         const float dy = inMotion.yrel * m_MouseSensitivity;
         m_Pitch -= dy;
         m_Yaw += dx;
-
-       /* const float pitchLimit = glm::radians(89.0f);
-        m_Pitch                = glm::clamp(m_Pitch, -pitchLimit, pitchLimit);*/
     }
     
     void Camera::ProccessEvent(SDL_Event &inEvent)
@@ -115,7 +112,6 @@ namespace MamontEngine
             }
         }
 
-        
     }
 
     void Camera::Update(float inDeltaTime)
@@ -128,7 +124,6 @@ namespace MamontEngine
     {
         m_AspectRatio = (float)inWindowExtent.width / (float)inWindowExtent.height;
         m_Projection  = glm::perspective(glm::radians(m_FOV), m_AspectRatio, m_NearClip, m_FarClip);
-        //m_Projection = glm::perspective(glm::radians(m_FOV), m_AspectRatio, m_FarClip, m_NearClip);
         m_Projection[1][1] *= -1;
 
     }

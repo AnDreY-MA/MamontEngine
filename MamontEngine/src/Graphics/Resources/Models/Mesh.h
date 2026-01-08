@@ -45,6 +45,9 @@ namespace MamontEngine
 
     struct Node
     {
+        Node()  = default;
+        ~Node() = default;
+
         Node* Parent;
         std::vector<Node*>        Children;
         std::shared_ptr<NewMesh> Mesh;
@@ -54,19 +57,5 @@ namespace MamontEngine
         Transform Transform;
 
         std::string Name;
-
-        /*void UpdateTransform(const glm::mat4 parent)
-        {
-
-        }*/
-
-        /*~Node()
-        {
-            for (auto& child : Children)
-            {
-                delete child;
-            }
-        }*/
-
     };
 }

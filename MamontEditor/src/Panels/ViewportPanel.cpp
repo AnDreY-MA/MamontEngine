@@ -3,21 +3,14 @@
 #include "imgui/imgui_internal.h"
 #include "Core/Engine.h"
 #include "Core/ContextDevice.h"
+#include <Graphics/Devices/LogicalDevice.h>
 
 namespace MamontEditor
 {
-    ViewportPanel::ViewportPanel(const std::string &inName) : EditorPanel(inName)
+    ViewportPanel::ViewportPanel(const std::string &inName) 
+        : EditorPanel(inName)
     {
-
-    }
-
-    void ViewportPanel::Deactivate()
-    {
-    }
-
-    void ViewportPanel::Init()
-    {
-
+        
     }
 
     void ViewportPanel::GuiRender()

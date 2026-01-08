@@ -37,3 +37,6 @@
 [submodule "MamontEngine/vendor/tracy"]
 	path = MamontEngine/vendor/tracy
 	url = https://github.com/wolfpld/tracy.git
+[submodule "MamontEngine/vendor/rttr"]
+	path = MamontEngine/vendor/rttr
+	url = https://github.com/rttrorg/rttr.git

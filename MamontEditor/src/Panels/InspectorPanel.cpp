@@ -9,16 +9,151 @@
 #include "Graphics/Resources/Models/Model.h"
 #include "Core/Engine.h"
 #include "EditorUtils/EditorUtils.h"
+#include <ECS/Components/DirectionLightComponent.h>
+#include <ECS/Components/Component.h>
+#include <entt/core/hashed_string.hpp>
+
+const std::string RootDirectories = PROJECT_ROOT_DIR;
+const std::string AssetsPath      = RootDirectories + "/MamontEngine/assets";
+
+namespace
+{
+    void InspectProperty(entt::registry &reg, entt::meta_any &property, entt::meta_data &propertyMeta, const entt::id_type propertyID);
+
+    void InspectComponent(entt::registry& registry, entt::entity owner, entt::meta_any& data)
+    {
+        using namespace MamontEngine;
+        if (!data)
+        {
+            Log::Warn("InspectComponent: invalid data");
+            return;
+        }
+
+        const auto dataType = data.type();
+
+        constexpr ImGuiTreeNodeFlags TREE_FLAGS = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
+                                                  ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding;
+
+        const bool menuOpen = ImGui::CollapsingHeader(dataType.name(), TREE_FLAGS);
+        if (!menuOpen)
+            return;
+
+        const std::string id = std::to_string(dataType.id()).append("Component");
+        ImGui::PushID(id.c_str());
+        ImGui::Indent(10.f);
+
+        for (auto &&[proprtyId, propertyMetaData] : data.type().data())
+        {
+            auto instance = propertyMetaData.get(data);
+            
+            InspectProperty(registry, instance, propertyMetaData, proprtyId);
+            propertyMetaData.set(data, instance);
+        }
+
+        ImGui::Unindent(10);
+        ImGui::PopID();
+    }
+
+    void InspectProperty(entt::registry &reg, entt::meta_any &property, entt::meta_data &propertyMeta, const entt::id_type propertyID)
+    {
+        using namespace MamontEngine;
+        const auto type = propertyMeta.type();
+
+        const char *label = propertyMeta.name() ? propertyMeta.name() : std::string{propertyMeta.type().info().name()}.data();
+
+        ImGui::PushID((std::string(label) + "prop").c_str());
+
+        ImGui::Indent(10);
+
+        if (type.is_class())
+        {
+            if (type.info() == entt::type_id<Transform>())
+            {
+                Transform* transform = property.try_cast<Transform>();
+
+                MUI::DrawVec3Control("Position", transform->Position);
+                MUI::DrawVec3Control("Rotation", transform->Rotation);
+                MUI::DrawVec3Control("Scale", transform->Scale, 1.f);
+            }
+        }
+
+        if (type.is_pointer_like())
+        {
+            if (entt::meta_any ref = *property; ref)
+            {
+                if (auto asset = ref.try_cast<Asset>(); asset)
+                {
+                    const std::string selectedString = asset->GetPathFile();
+                    if (ImGui::BeginCombo("##File", selectedString.c_str()))
+                    {
+                        constexpr auto                 extensionFile = ".glb";
+                        const std::vector<std::string> files         = MamontEditor::ScanFolder(AssetsPath, extensionFile);
+                        for (const auto &file : files)
+                        {
+                            const std::string fullPath   = AssetsPath + "/" + file;
+                            const bool        isSelected = (asset->GetPathFile() == fullPath);
+
+                            if (ImGui::Selectable(file.c_str(), isSelected))
+                            {
+                                asset->Load(fullPath);
+                            }
+
+                            if (isSelected)
+                            {
+                                ImGui::SetItemDefaultFocus();
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }   
+                    if (auto model = static_cast<MeshModel*>(asset); model)
+                    {
+                        if (ImGui::TreeNodeEx("Materials"))
+                        {
+                            for (size_t i{0}; i < model->GetSizeMaterials(); i++)
+                            {
+                                auto material = model->GetMaterial(i);
+                                if (!material)
+                                    return;
+
+                                if (ImGui::TreeNode(fmt::format("{}", material->Name).c_str()))
+                                {
+                                    if (ImGui::ColorEdit4("Base Color", &material->Constants.ColorFactors[0]))
+                                        material->IsDity = true;
+                                    if (ImGui::DragFloat("Metallic", &material->Constants.MetalicFactor, 0.01f, 0.f, 1.f))
+                                    {
+                                        material->IsDity = true;
+                                    }
+                                    if (ImGui::DragFloat("Roughness", &material->Constants.RoughFactor, 0.01f, 0.f, 1.f))
+                                    {
+                                        material->IsDity = true;
+                                    }
+
+                                    ImGui::TreePop();
+                                }
+                            }
+
+                            ImGui::TreePop();
+                        }
+                    }
+                
+                }
+                
+            }
+        }
+
+        ImGui::Unindent(10);
+        ImGui::Separator();
+
+        ImGui::PopID();
+    }
+}
 
 namespace MamontEditor
 {
-    const std::string RootDirectories = PROJECT_ROOT_DIR;
-    const std::string AssetsPath      = RootDirectories + "/MamontEngine/assets";
-
     InspectorPanel::InspectorPanel() : 
         EditorPanel("Inspector")
     {
-        
+
     }
     InspectorPanel::~InspectorPanel()
     {
@@ -114,16 +249,16 @@ namespace MamontEditor
         }
     }
 
-    void InspectorPanel::DrawComponents(MamontEngine::Entity inEntity)
+    void InspectorPanel::DrawComponents(MamontEngine::Entity entity)
     {
         using namespace MamontEngine;
-        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 1.75f);
-     
-        if (inEntity.HasComponent<TagComponent>())
-        {
-            auto &tagComponent = inEntity.GetComponent<TagComponent>();
-            MUI::InputText("##Tag", &tagComponent.Tag, 100, ImGuiInputTextFlags_EnterReturnsTrue);
 
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 1.75f);
+
+        if (entity.HasComponent<TagComponent>())
+        {
+            auto &tagComponent = entity.GetComponent<TagComponent>();
+            MUI::InputText("##Tag", &tagComponent.Tag, 100, ImGuiInputTextFlags_EnterReturnsTrue);
         }
 
         ImGui::PopItemWidth();
@@ -137,107 +272,27 @@ namespace MamontEditor
         if (ImGui::BeginPopup("Add Component"))
         {
             DrawAddComponent<MeshComponent>(m_SceneContext->GetRegistry(), m_Selected, "Mesh Component");
+            DrawAddComponent<DirectionLightComponent>(m_SceneContext->GetRegistry(), m_Selected, "Direction Light Component");
 
             ImGui::EndPopup();
         }
 
         ImGui::SameLine();
 
-        const auto idStr = fmt::format("UUID: {}", (uint64_t)inEntity.GetID());
-        ImGui::Text(idStr.c_str());
+        auto &registry = m_SceneContext->GetRegistry();
+        for (auto &&[id, storage] : registry.storage())
+        {
+            if (!storage.contains(m_Selected))
+                continue;
 
-        DrawComponent<TransformComponent>("Transform Component",
-                                                        m_SceneContext.get(),
-                                                        m_SceneContext->GetRegistry(),
-                                                        inEntity,
-                                                        [](MamontEngine::TransformComponent &component, entt::entity entity) 
-            {
-                //MUI::BeginProperties();
-                auto       rotation  = glm::degrees(component.Transform.Rotation);
-                const bool isChanged = MUI::DrawVec3Control("Translation", component.Transform.Position) || 
-                                       MUI::DrawVec3Control("Rotation", rotation) ||
-                                       MUI::DrawVec3Control("Scale", component.Transform.Scale, 1.f);
-                if (isChanged)
-                {
-                    component.Transform.Rotation = glm::radians(rotation);
-                    component.IsDirty  = true;
-                }
+            auto componentMeta = entt::resolve(storage.type());
+            if (!componentMeta)
+                continue;
 
-                //MUI::EndProperties();
-            });
+            entt::meta_any metaProp = componentMeta.from_void(storage.value(m_Selected));
 
-        DrawComponent<MeshComponent>("Mesh Component",
-                                     m_SceneContext.get(),
-                                     m_SceneContext->GetRegistry(),
-                                     inEntity,
-                                     [&](MeshComponent &component, entt::entity entity)
-                                     {
-                                         // MUI::BeginProperties();
-                                         ImGui::Text("Meshes count: %i", component.Mesh->GetSizeMeshes());
-
-                                         const std::string selectedString = component.Mesh != nullptr ? component.Mesh->GetPathFile() : "";
-                                         if (ImGui::BeginCombo("##File", selectedString.c_str()))
-                                         {
-                                             constexpr auto                 extensionFile = ".glb";
-                                             const std::vector<std::string> files         = ScanFolder(AssetsPath, extensionFile);
-                                             for (size_t index = 0; index < files.size(); ++index)
-                                             {
-                                                 const auto       &file       = files[index];
-                                                 const std::string fullPath   = AssetsPath + "/" + file;
-                                                 const bool        isSelected = (component.Mesh != nullptr && component.Mesh->GetPathFile() == fullPath);
-
-                                                 if (ImGui::Selectable(file.c_str(), isSelected))
-                                                 {
-                                                     auto newModel = std::make_shared<MeshModel>(MEngine::Get().GetContextDevice(), inEntity.GetID(), fullPath);
-                                                     m_SceneContext->RemoveComponent<MeshComponent>(inEntity);
-                                                     inEntity.AddComponent<MeshComponent>(newModel);
-                                                 }
-
-                                                 if (isSelected)
-                                                 {
-                                                     //ImGui::SetItemDefaultFocus();
-                                                 }
-                                             }
-                                             ImGui::EndCombo();
-                                         }
-
-                                         if (component.Mesh)
-                                         {
-                                             if (ImGui::TreeNodeEx("Materials"))
-                                             {
-                                                 for (size_t i{0}; i < component.Mesh->GetSizeMaterials(); i++)
-                                                 {
-                                                     auto material = component.Mesh->GetMaterial(i);
-                                                     if (!material)
-                                                         return;
-
-                                                     if (ImGui::TreeNode(fmt::format("{}", material->Name).c_str()))
-                                                     {
-                                                         if (ImGui::ColorEdit4("Base Color", &material->Constants.ColorFactors[0]))
-                                                             material->IsDity = true;
-                                                         if(ImGui::DragFloat("Metallic", &material->Constants.MetalicFactor, 0.01f, 0.f, 1.f))
-                                                         {
-                                                             material->IsDity = true;
-                                                         }
-                                                         if (ImGui::DragFloat("Roughness", &material->Constants.RoughFactor, 0.01f, 0.f, 1.f))
-                                                         {
-                                                             material->IsDity = true;
-                                                         }
-
-
-                                                         ImGui::TreePop();
-                                                     }
-                                                 }
-
-                                                 ImGui::TreePop();
-                                             }
-                                             
-                                         }
-
-
-                                         // MUI::EndProperties();
-                                          });
-
+            InspectComponent(registry, m_Selected, metaProp);
+        }
     }
     
 } // namespace MamontEditor

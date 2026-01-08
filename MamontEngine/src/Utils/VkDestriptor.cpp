@@ -172,6 +172,19 @@ namespace MamontEngine
 
         Writes.push_back(write);
     }
+    void DescriptorWriter::WriteImage(const int inBinding, const VkDescriptorImageInfo descriptorInfo, const VkDescriptorType inType)
+    {
+        VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+
+        write.dstBinding      = inBinding;
+        write.dstSet          = VK_NULL_HANDLE;
+        write.descriptorCount = 1;
+        write.descriptorType  = inType;
+        write.pImageInfo      = &descriptorInfo;
+
+        Writes.push_back(write);
+    }
+
     void DescriptorWriter::WriteBuffer(const int inBinding, VkBuffer& inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType)
     {
         const VkDescriptorBufferInfo &info = BufferInfos.emplace_back(VkDescriptorBufferInfo{.buffer = inBuffer, .offset = inOffset, .range = inSize});

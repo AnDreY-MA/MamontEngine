@@ -1,7 +1,7 @@
-#pragma once 
+#pragma once
 
-#include "Graphics/Vulkan/Image.h"
 #include "Graphics/Resources/Texture.h"
+#include "Graphics/Vulkan/Image.h"
 
 namespace MamontEngine
 {
@@ -18,17 +18,17 @@ namespace MamontEngine
     {
         std::shared_ptr<PipelineData> Pipeline;
         VkDescriptorSet               MaterialSet{VK_NULL_HANDLE};
-        EMaterialPass PassType{EMaterialPass::MAIN_COLOR};
+        EMaterialPass                 PassType{EMaterialPass::MAIN_COLOR};
 
         std::string Name{std::string("Empty Material")};
 
         struct MaterialResources
         {
-            Texture   ColorTexture;
-            Texture   MetalRoughTexture;
-            Texture   NormalTexture;
-            Texture   EmissiveTexture;
-            Texture   OcclusionTexture;
+            Texture ColorTexture;
+            Texture MetalRoughTexture;
+            Texture NormalTexture;
+            Texture EmissiveTexture;
+            Texture OcclusionTexture;
         } Resources;
 
         struct MaterialConstants
@@ -42,9 +42,9 @@ namespace MamontEngine
             float _pad1{0.f};
         } Constants;
 
-        size_t BufferOffset{0}; 
+        size_t BufferOffset{0};
 
-        bool IsDity{false};
-
+        bool IsDity{true};
     };
-}
+} // namespace MamontEngine
+

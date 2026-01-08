@@ -10,6 +10,8 @@ namespace MamontEngine
     class ImGuiRenderer;
     struct DrawContext;
     class Camera;
+    class Scene;
+    class MeshModel;
 
     struct RenderStats
     {
@@ -26,7 +28,7 @@ namespace MamontEngine
         Renderer(VkContextDevice &inDeviceContext, const std::shared_ptr<WindowCore>& inWindow);
         ~Renderer();
 
-        void InitSceneRenderer(const std::shared_ptr<Camera>& inMainCamera);
+        void InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera, const std::shared_ptr<Scene> &inScene);
         void InitImGuiRenderer();
 
         void InitPipelines();
@@ -60,7 +62,7 @@ namespace MamontEngine
 
         DrawContext &GetDrawContext();
 
-        const std::shared_ptr<SceneRenderer>& GetSceneRenderer() const
+        std::shared_ptr<SceneRenderer>& GetSceneRenderer()
         {
             return m_SceneRenderer;
         }

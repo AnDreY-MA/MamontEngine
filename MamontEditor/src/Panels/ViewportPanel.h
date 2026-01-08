@@ -12,12 +12,12 @@ namespace MamontEditor
 
         ~ViewportPanel() = default;
 
-        virtual void Deactivate() override;
-
-        virtual void Init() override;
-
         virtual void GuiRender() override;
 
         virtual bool IsHovered() const override;
+
+    private:
+        VkDescriptorSet m_TextureDescriptor{VK_NULL_HANDLE};
+        VkSampler       m_TextureSampler{VK_NULL_HANDLE};
     };
 } // namespace MamontEditor

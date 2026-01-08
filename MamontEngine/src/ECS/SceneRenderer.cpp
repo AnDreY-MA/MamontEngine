@@ -6,6 +6,10 @@
 #include "Utils/VkImages.h"
 #include "Utils/VkInitializers.h"
 #include "Utils/VkPipelines.h"
+#include "ECS/Scene.h"
+#include "ECS/Components/DirectionLightComponent.h"
+#include "ECS/Components/TransformComponent.h"
+
 
 namespace MamontEngine
 {
@@ -50,7 +54,8 @@ namespace MamontEngine
         }
     }
 
-    SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera) : m_Camera(inCamera)
+    SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera, const std::shared_ptr<Scene> &inScene) 
+        : m_Camera(inCamera), m_Scene(inScene)
     {
         constexpr float angle  = glm::radians(360.0f);
         constexpr float radius = 20.0f;
@@ -64,12 +69,12 @@ namespace MamontEngine
 
     void SceneRenderer::Clear()
     {
-        for (auto& component : m_MeshComponents)
+        /*for (auto& component : m_MeshComponents)
         {
             component.Mesh.reset();
         }
 
-        m_MeshComponents.clear();
+        m_MeshComponents.clear();*/
     }
 
     void SceneRenderer::Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor)
@@ -228,35 +233,50 @@ namespace MamontEngine
 
         UpdateLight(inDeltaTime);
 
+        const auto& sceneRegistry = m_Scene->GetRegistry();
+
         glm::vec3 lightDir = -m_LightPosition;
-        if (glm::length(lightDir) < 1e-6f)
-        {
-            lightDir = glm::vec3(0.0f, -1.0f, 0.0f);
-        }
-        else
-        {
-            lightDir = glm::normalize(lightDir);
-        }
+                    lightDir = glm::normalize(lightDir);
+
 
         m_SceneData.View           = view;
         m_SceneData.Proj           = projection;
         m_SceneData.Viewproj       = projection * view;
-        m_SceneData.LightDirection = lightDir;
 
-        for (size_t i = 0; i < CASCADECOUNT; i++)
         {
-            m_CascadeData.Splits[i] = inCascades[i].SplitDepth;
+            const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent>();
+            m_HasDirectionLight            = !viewDirectionLight.empty();
         }
 
-        m_CascadeData.InverseViewMatrix = glm::inverse(view);
-        m_CascadeData.LightDirection    = lightDir;
-        m_CascadeData.Color             = glm::vec3(1.0);
-
-        for (const auto &mesh : m_MeshComponents)
+        if (m_HasDirectionLight)
         {
-            if (mesh.Mesh != nullptr)
+            const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent, TransformComponent>();
+
+            viewDirectionLight.each([&](const auto& ligth, const auto& transform) { 
+                m_CascadeData.Color        = ligth.Color;
+                const glm::vec3 lightDirection   = glm::normalize(-transform.Transform.Position);
+                m_SceneData.LightDirection   = lightDirection;
+                m_SceneData.SunLightPosition     = transform.Transform.Position;
+                m_CascadeData.LightDirection = lightDirection;
+               // m_LightPosition                = transform.Transform.Position;
+            });
+            for (size_t i = 0; i < CASCADECOUNT; i++)
             {
-                mesh.Mesh->Draw(m_DrawContext);
+                m_CascadeData.Splits[i] = inCascades[i].SplitDepth;
+            }
+
+            m_CascadeData.InverseViewMatrix = glm::inverse(view);
+        }
+
+        
+        //m_CascadeData.LightDirection    = lightDir;
+
+        const auto meshes = sceneRegistry.view<MeshComponent>();
+        for (const auto&& [entity, meshComponent] : meshes.each())
+        {
+            if (meshComponent.Mesh != nullptr)
+            {
+                meshComponent.Mesh->Draw(m_DrawContext);
             }
         }
     }
@@ -267,7 +287,7 @@ namespace MamontEngine
         angle += inDeltaTime * 0.5f;
         const float radius           = 5.f;
         m_LightPosition              = glm::vec3(cos(angle) * radius, radius, sin(angle) * radius);
-        m_SceneData.SunLightPosition = m_LightPosition;
+        //m_SceneData.SunLightPosition = m_LightPosition;
         // m_LightPosition.y  = 3.f;
     }
 
@@ -343,7 +363,7 @@ namespace MamontEngine
             const glm::vec3 maxExtents = glm::vec3(radius);
             const glm::vec3 minExtents = -maxExtents;
 
-            const glm::vec3 lightDirection   = glm::normalize(-m_LightPosition);
+            const glm::vec3 lightDirection   = m_SceneData.LightDirection;
             const glm::mat4 lightViewMatrix  = glm::lookAt(frustumCenter - lightDirection * -minExtents.z, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
             const glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.f, maxExtents.z - minExtents.z);
 
@@ -354,9 +374,9 @@ namespace MamontEngine
         }
     }
 
-    void SceneRenderer::SubmitMesh(const MeshComponent &inMesh)
+    /*void SceneRenderer::SubmitMesh(const MeshComponent &inMesh)
     {
         m_MeshComponents.push_back(inMesh);
-    }
+    }*/
 } // namespace MamontEngine
 

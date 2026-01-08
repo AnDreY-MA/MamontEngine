@@ -4,12 +4,12 @@
 #include "ImGuiRenderer.h"
 
 #include "ECS/Entity.h"
-#include <ECS/Components/MeshComponent.h>
 
 #include "Utils/Profile.h"
 #include "tracy/public/TracyClient.cpp"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Devices/PhysicalDevice.h"
+#include "ECS/Components/TransformComponent.h"
 
 namespace MamontEngine
 {
@@ -18,7 +18,6 @@ namespace MamontEngine
     MEngine       &MEngine::Get()
     {
         return *loadedEngine;
-#include "ECS/Scene.h"
     }
 
     const std::string RootDirectories = PROJECT_ROOT_DIR;
@@ -135,9 +134,10 @@ namespace MamontEngine
     void MEngine::InitScene()
     {
         m_MainCamera    = std::make_shared<Camera>();
-        m_Renderer->InitSceneRenderer(m_MainCamera);
-        m_Scene = std::make_shared<Scene>(m_Renderer->GetSceneRenderer());
+        m_Scene = std::make_shared<Scene>();
         m_Scene->Init();
+        m_Renderer->InitSceneRenderer(m_MainCamera, m_Scene);
+
     }
 
     void MEngine::UpdateScene(float inDeltaTime)

@@ -13,19 +13,6 @@ namespace MamontEditor
     SceneHierarchyPanel::SceneHierarchyPanel(const std::string &inName) 
         : EditorPanel(inName)
     {
-        Init();
-    }
-
-    void SceneHierarchyPanel::Deactivate()
-    {
-        m_Scene.reset();
-    }
-
-    void SceneHierarchyPanel::Init()
-    {
-        // m_Scene = MamontEngine::MEngine::Get().GetScene();
-
-        // fmt::println("SceneHierarchy inintialized, scene = {}", m_Scene != nullptr ? m_Scene.use_count() : 0);
     }
 
     void SceneHierarchyPanel::GuiRender()
@@ -33,8 +20,7 @@ namespace MamontEditor
         if (m_Scene == nullptr)
         {
             m_Scene = MamontEngine::MEngine::Get().GetScene();
-            if (m_Scene == nullptr)
-                nullptr;
+            return;
         }
 
         if (OnBegin(ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar))
@@ -148,7 +134,7 @@ namespace MamontEditor
         if (ImGui::MenuItem(inNameItem.data()))
         {
             auto              newEntity          = m_Scene->CreateEntity(inNameItem);
-            auto              newModel     = std::make_shared<MamontEngine::MeshModel>(inContexDevice, newEntity.GetID(), inPath);
+            auto              newModel     = std::make_shared<MamontEngine::MeshModel>(newEntity.GetID(), inPath);
             newEntity.AddComponent<MamontEngine::MeshComponent>(std::move(newModel));
         }
     }

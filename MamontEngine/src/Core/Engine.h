@@ -37,6 +37,10 @@ namespace MamontEngine
         {
             return *m_ContextDevice;
         }
+        const VkContextDevice &GetContextDevice() const 
+        {
+            return *m_ContextDevice;
+        }
 
         const RenderStats& GetStats() const
         {
@@ -47,6 +51,12 @@ namespace MamontEngine
         {
             return m_Scene;
         }
+
+        std::shared_ptr<SceneRenderer>& GetSceneRenderer()
+        {
+            return m_Renderer->GetSceneRenderer();
+        }
+        
 
         const WindowCore* GetMainWindow() const
         {

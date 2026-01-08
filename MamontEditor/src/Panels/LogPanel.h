@@ -13,23 +13,9 @@ namespace MamontEditor
 
         ~LogPanel() = default;
 
-        virtual void Deactivate() override;
-
-        virtual void Init() override;
-
         virtual void GuiRender() override;
 
         virtual bool IsHovered() const override;
-
-        //void AddLog(std::string_view fmt, ...) IM_FMTARGS(2);
-
-    private:
-        /*void Clear()
-        {
-            m_TextBuffer.clear();
-            m_LineOffsets.clear();
-            m_LineOffsets.push_back(0);
-        }*/
 
     private:
         ImGuiTextFilter m_TextFilter;

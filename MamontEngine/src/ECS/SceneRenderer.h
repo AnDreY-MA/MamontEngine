@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Core/Camera.h>
-#include "ECS/Components/MeshComponent.h"
 
 #include <Graphics/Vulkan/Pipelines/RenderPipeline.h>
 
@@ -16,10 +15,12 @@ namespace MamontEngine
         glm::vec3 SunLightPosition{glm::vec3(0.0)};
     };
 
+    class Scene;
+
     class SceneRenderer
     {
     public:
-        explicit SceneRenderer(const std::shared_ptr<Camera> &inCamera);
+        explicit SceneRenderer(const std::shared_ptr<Camera> &inCamera, const std::shared_ptr<Scene>& inScene);
 
         ~SceneRenderer();
 
@@ -37,17 +38,6 @@ namespace MamontEngine
         void UpdateLight(float inDeltaTime);
 
         void UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades);
-
-
-        void RemoveMeshComponent(MeshComponent &inMeshComponent)
-        {
-            m_MeshComponents.erase(std::remove_if(m_MeshComponents.begin(),
-                                                  m_MeshComponents.end(),
-                                                  [&inMeshComponent](const MeshComponent &comp) { return comp.Mesh == inMeshComponent.Mesh; }),
-                                   m_MeshComponents.end());
-        }
-
-        void SubmitMesh(const MeshComponent &inMesh);
 
         GPUSceneData &GetGPUSceneData()
         {
@@ -81,6 +71,11 @@ namespace MamontEngine
         {
             m_LightPosition = inPos;
         }
+
+        const bool HasDirectionLight() const
+        {
+            return m_HasDirectionLight;
+        }
         glm::vec3 m_LightPosition{glm::vec3(1.f)};
 
 private:
@@ -88,12 +83,14 @@ private:
 
 
     private:
-        std::vector<MeshComponent> m_MeshComponents;
+        std::shared_ptr<Scene>     m_Scene;
         std::shared_ptr<Camera>    m_Camera;
         DrawContext                m_DrawContext;
 
         GPUSceneData m_SceneData;
         CascadeData  m_CascadeData;
+
+        bool m_HasDirectionLight{false};
     };
 
 } // namespace MamontEngine

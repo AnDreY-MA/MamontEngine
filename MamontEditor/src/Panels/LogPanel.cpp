@@ -6,18 +6,9 @@ namespace MamontEditor
     LogPanel::LogPanel(const std::string &inName) 
         : EditorPanel(inName)
     {
-        //Clear();
     }
 
-    void LogPanel::Init()
-    {
-    }
 
-    void LogPanel::Deactivate()
-    {
-        //Clear();
-    }
-    
     void LogPanel::GuiRender()
     {
         if (!OnBegin())
@@ -49,7 +40,7 @@ namespace MamontEditor
 
         constexpr ImVec2 sizeLogBar{ImVec2(0, 0)};
 
-        if (ImGui::BeginChild("##Log", sizeLogBar, ImGuiChildFlags_Borders, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar))
+        if (ImGui::BeginChild("##Log", sizeLogBar, ImGuiChildFlags_Borders, ImGuiWindowFlags_AlwaysVerticalScrollbar))
         {
             if (clear)
             {

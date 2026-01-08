@@ -12,9 +12,10 @@ file(GLOB_RECURSE Devices "src/Graphics/Devices/*.h" "src/Graphics/Devices/*.hpp
 file(GLOB_RECURSE Materials "src/Graphics/Resources/*.h" "src/Graphics/Resources/*.hpp" "src/Graphics/Resources/*.cpp")
 file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.hpp" "src/Utils/*.cpp")
 file(GLOB_RECURSE ECS "src/ECS/*.h" "src/ECS/*.hpp" "src/ECS/*.cpp")
+file(GLOB_RECURSE ECSComps "src/ECS/Components/*.h" "src/ECS/Components/*.hpp" "src/ECS/Components/*.cpp")
 file(GLOB_RECURSE UI "src/UI/*.h" "src/UI/*.hpp" "src/UI/*.cpp")
 file(GLOB_RECURSE Math "src/Math/*.h" "src/Math/*.hpp" "src/Math/*.cpp")
-set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Devices} ${Materials} ${Utils} ${ECS} ${UI} ${Math})
+set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Devices} ${Materials} ${Utils} ${ECS} ${UI} ${Math} ${ECSComps})
 
 # Add library
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
@@ -85,6 +86,7 @@ add_subdirectory("vendor/vma" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/entt" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/nlohmann_json" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/tracy" EXCLUDE_FROM_ALL)
+#add_subdirectory("vendor/rttr" EXCLUDE_FROM_ALL)
 
 include_directories(${PROJECT_NAME} tracy/public)
 
@@ -120,6 +122,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC fastgltf::fastgltf)
 #stb
 add_subdirectory("vendor/stb")
 target_link_libraries(${PROJECT_NAME} PUBLIC stb::image)
+
+
+
+
 
 add_library(ImGuizmo STATIC 
     vendor/ImGuizmo/ImGuizmo.cpp 
