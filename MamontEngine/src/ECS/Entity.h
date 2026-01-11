@@ -3,7 +3,8 @@
 #include "ECS/Scene.h"
 #include "entt/entt.hpp"
 #include "Components/IDComponent.h"
-//#include "rttr/registration.h"
+#include "ECS/Components/DirectionLightComponent.h"
+
 
 namespace MamontEngine
 {
@@ -12,6 +13,7 @@ namespace MamontEngine
     public:
         Entity() = default;
         Entity(const Entity &other) = default;
+        Entity(entt::entity inHandle);
         Entity(entt::entity inHandle, Scene *scene);
 
         static Entity NullEntity;

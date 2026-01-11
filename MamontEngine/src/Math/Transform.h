@@ -1,7 +1,16 @@
 #pragma once
 
+#include <cereal/cereal.hpp>
+
+#include <cereal/types/vector.hpp>
+
+
+
+
 namespace MamontEngine
 {
+    
+
     constexpr glm::vec3 FORWARD_VECTOR = glm::vec3(1.f, 0.f, 0.f);
     constexpr glm::vec3 UP_VECTOR = glm::vec3(0.f, 1.f, 0.f);
     constexpr glm::vec3 RIGHT_VECTOR = glm::vec3(0.f, 0.f, 1.f);
@@ -34,4 +43,6 @@ namespace MamontEngine
             return Position != other.Position && Rotation != other.Rotation && Scale != other.Scale;
         }
 	};
+
+
 }

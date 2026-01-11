@@ -3,233 +3,50 @@
 #include "ECS/Components/TagComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MeshComponent.h"
+#include "ECS/Components/DirectionLightComponent.h"
 #include "Graphics/Resources/Models/Model.h"
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
 #include <fstream>
-
 #include "Core/Engine.h"
+#include "Core/Log.h"
+#include <cereal/cereal.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 namespace MamontEngine
 {
-#if defined(MM_RELEASE)
-    constexpr std::string JSON_ENTITIES = "Entities";
-    constexpr std::string JSON_COMPONENTS = "Components";
-    constexpr std::string JSON_MESH = "Mesh";
-    constexpr std::string JSON_TRANSFORM = "Transform";
-    constexpr std::string JSON_TRANSFORM_TRANSLATION = "position";
-    constexpr std::string JSON_TRANSFORM_ROTATION = "rotation";
-    constexpr std::string JSON_TRANSFORM_SCALE = "scale";
-    constexpr std::string JSON_TAG = "Tag";
-#else
-    const std::string     JSON_ENTITIES              = "Entities";
-    const std::string     JSON_COMPONENTS            = "Components";
-    const std::string     JSON_MESH                  = "Mesh";
-    const std::string     JSON_TRANSFORM             = "Transform";
-    const std::string     JSON_TRANSFORM_TRANSLATION = "position";
-    const std::string     JSON_TRANSFORM_ROTATION    = "rotation";
-    const std::string     JSON_TRANSFORM_SCALE       = "scale";
-    const std::string     JSON_TAG                   = "Tag";
-#endif
-    
-    bool Serializer::SaveToFile(const entt::registry &registry, const std::string &filename)
-    {
-        try
-        {
-            nlohmann::json sceneJson = SaveScene(registry);
-            std::ofstream file(filename);
-            file << sceneJson.dump(4);
-            return true;
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << "Failed to save scene: " << e.what() << std::endl;
+namespace Serializer
+{
+	bool SaveScene(Scene *inScene, std::string_view inFile)
+	{
+        auto &registry = inScene->GetRegistry();
+
+		std::fstream file{inFile.data(), file.binary | file.trunc | file.out};
+		if (!file.is_open())
+		{
+            Log::Error("Cannot open file: {}", inFile.data());
             return false;
-        }
-    }
-
-    bool Serializer::LoadFromFile(Scene *inScene, const std::string &filename)
-    {
-        try
-        {
-            std::ifstream file(filename);
-            if (!file.is_open())
-            {
-                fmt::println("File: {} is not open", filename);
-                return false;
-            }
-
-            nlohmann::json sceneJson;
-            file >> sceneJson;
-
-            LoadScene(sceneJson, inScene);
-            return true;
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << "Failed to load scene: " << e.what() << std::endl;
-            return false;
-        }
-    }
-
-
-    nlohmann::json Serializer::SaveScene(const entt::registry &inRegistry)
-    {
-        nlohmann::json sceneJson;
-        sceneJson[JSON_ENTITIES] = nlohmann::json::array();
-        fmt::println("Serializer::SaveScene");
-        auto view = inRegistry.view<entt::entity>();
-        for (const auto& entity : view)
-        {
-            nlohmann::json entityJson;
-            if (inRegistry.all_of<IDComponent>(entity))
-            {
-                const auto IdComponent = inRegistry.try_get<IDComponent>(entity);
-                entityJson[JSON_COMPONENTS]["ID"] = (uint64_t)IdComponent->ID;
-            }
-            if (inRegistry.all_of<TagComponent>(entity))
-            {
-                const auto tagComponent = inRegistry.try_get<TagComponent>(entity);
-                entityJson[JSON_COMPONENTS]["Tag"] = tagComponent->Tag.c_str();
-
-            }
-            if (inRegistry.all_of<TransformComponent>(entity))
-            {
-                const auto transform = inRegistry.try_get<TransformComponent>(entity);
-                entityJson[JSON_COMPONENTS][JSON_TRANSFORM] = SerializeTransform(*transform);
-            }
-            if (inRegistry.all_of<MeshComponent>(entity))
-            {
-                const auto meshComponent                  = inRegistry.try_get<MeshComponent>(entity);
-                entityJson[JSON_COMPONENTS][JSON_MESH] = meshComponent->Mesh->GetPathFile();
-            }
-
-            sceneJson[JSON_ENTITIES].push_back(entityJson);
-        }
-
-        return sceneJson;
+		}
         
-    }
+		cereal::BinaryOutputArchive serializer{file};
 
-    void Serializer::LoadScene(const nlohmann::json &inJsonFile, Scene *inScene)
-    {
-        if (!inJsonFile.contains(JSON_ENTITIES))
-        {
-            fmt::println("Json file not contains entities");
-            return;
-        }
+		//serializer(*inScene);
+        //entt::snapshot{registry}.get<entt::entity>(serializer).get<IDComponent>(serializer).get<TagComponent>(serializer);
 
-        const auto& contextDevice = MEngine::Get().GetContextDevice();
+		
+		file.close();
 
-        const auto &entities = inJsonFile[JSON_ENTITIES];
-        fmt::println("Json file size - {}", entities.size());
+		return true;
+	}
 
-        for (const auto &entityJson : entities)
-        {
-            if (entityJson.contains(JSON_COMPONENTS))
-            {
-                const auto& jsonComponent = entityJson[JSON_COMPONENTS];
-                fmt::println("jsonComponent size: {}", jsonComponent.size());
+	bool LoadScene(Scene *inScene, std::string_view inFile)
+	{
 
-                const auto  id            = DeserializeID(jsonComponent);
-                const std::string  tag           = DeserializeTag(jsonComponent);
-                auto entity = inScene->CreateEntity(id, tag);
+		return false;
+	}
 
-                const TransformComponent transformData = DeserializeTransform(jsonComponent); 
-                auto& trasnform = entity.GetComponent<TransformComponent>();
-                trasnform.Transform.Position           = transformData.Transform.Position;
-                trasnform.Transform.Rotation           = transformData.Transform.Rotation;
-                trasnform.Transform.Scale              = transformData.Transform.Scale;
-
-                const auto meshPath = DeserializeMesh(jsonComponent);
-                if (meshPath != "")
-                {
-                    auto model = std::make_shared<MeshModel>(id, meshPath);
-                    entity.AddComponent<MeshComponent>(std::move(model));
-                }
-
-            }
-        }
-    }
-
-    nlohmann::json Serializer::SerializeTransform(const TransformComponent &inTransformComponent)
-    {
-        return {{JSON_TRANSFORM_TRANSLATION,
-                 {inTransformComponent.Transform.Position.x, inTransformComponent.Transform.Position.y, inTransformComponent.Transform.Position.z}},
-                {JSON_TRANSFORM_ROTATION,
-                 {inTransformComponent.Transform.Rotation.x, inTransformComponent.Transform.Rotation.y, inTransformComponent.Transform.Rotation.z}},
-                {JSON_TRANSFORM_SCALE,
-                 {inTransformComponent.Transform.Scale.x, inTransformComponent.Transform.Scale.y, inTransformComponent.Transform.Scale.z}}};
-    }
-    
-    std::string Serializer::DeserializeTag(const nlohmann::json &inJson)
-    {
-        std::string tag = std::string("");
-
-        if (!inJson.contains(JSON_TAG))
-        {
-            fmt::println("jsonFile don't contains tag");
-            return tag;
-        }
-
-        tag = inJson[JSON_TAG];
-
-        return tag;
-    }
-    
-    UID Serializer::DeserializeID(const nlohmann::json &inJson)
-    {
-        if (!inJson.contains("ID"))
-        {
-            return {};
-        }
-
-        UID Id{static_cast<uint64_t>(inJson["ID"])};
-
-        return Id;
-    }
-
-    TransformComponent Serializer::DeserializeTransform(const nlohmann::json &inJson)
-    {
-        TransformComponent transform;
-        if (!inJson.contains(JSON_TRANSFORM))
-        {
-            fmt::println("Json don't contains transform");
-            return transform;
-        }
-
-        const auto& transforCol = inJson[JSON_TRANSFORM];
-
-        if (transforCol.contains(JSON_TRANSFORM_TRANSLATION))
-        {
-            const auto &pos       = transforCol[JSON_TRANSFORM_TRANSLATION];
-            transform.Transform.Position = {(float)pos[0], (float)pos[1], (float)pos[2]};
-        }
-        if (transforCol.contains(JSON_TRANSFORM_ROTATION))
-        {
-            const auto &rot    = transforCol[JSON_TRANSFORM_ROTATION];
-            transform.Transform.Rotation = {(float)rot[0], (float)rot[1], (float)rot[2]};
-        }
-        if (transforCol.contains(JSON_TRANSFORM_SCALE))
-        {
-            const auto &scale = transforCol[JSON_TRANSFORM_SCALE];
-            transform.Transform.Scale = {(float)scale[0], (float)scale[1], (float)scale[2]};
-        }
-
-        return transform;
-
-    }
-
-    std::string Serializer::DeserializeMesh(const nlohmann::json &inJson)
-    {
-        std::string mesmPath = std::string("");
-        if (!inJson.contains(JSON_MESH))
-        {
-            return mesmPath;
-        }
-        mesmPath = inJson[JSON_MESH];
-
-        return mesmPath;
-    }
+} // namespace Serializer
 
 }

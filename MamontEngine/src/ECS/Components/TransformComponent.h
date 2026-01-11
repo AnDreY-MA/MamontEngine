@@ -7,22 +7,31 @@
 #include "Utils/MetaReflection.h"
 #include "Graphics/Resources/Models/Model.h"
 
+#include <cereal/cereal.hpp>
+
 namespace MamontEngine
 {
-	struct TransformComponent : public Component
-	{
-        TransformComponent();
+    struct TransformComponent
+    {
+        TransformComponent()                                = default;
+        TransformComponent(const TransformComponent &other) = default;
 
-        glm::mat4 Matrix() const 
+        glm::mat4 Matrix() const
         {
             return Transform.Matrix();
         }
-        
+
         Transform Transform;
 
         bool IsDirty{true};
 
-     private:
-        //REFLECT()
-	};
+    private:
+        friend class cereal::access;
+
+        template <class Archive>
+        void serialize(Archive& ar)
+        {
+            ar(Transform.Position, Transform.Rotation, Transform.Scale);
+        }
+    };
 }

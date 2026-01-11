@@ -144,6 +144,33 @@ float MicrofaceDistribution(PBRData pbrData)
   return roughnessSq / (PI * f * f);
 }
 
+float D_GGX(float NoH, float alpha)
+{
+  float a2 = alpha * alpha;
+  float d = (NoH * NoH) * (a2 - 1.0) + 1.0;
+  return a2 / (PI * d * d);
+}
+
+float G_SchlickGGX(float NoV, float k)
+{
+  return NoV / (NoV * (1.0 - k) + k);
+}
+float G_Smith(float NoV, float NoL, float roughness)
+{
+  float r = roughness + 1.0;
+  float k = (r * r) / 8.0;
+  return G_SchlickGGX(NoV, k) * G_SchlickGGX(NoL, k);
+}
+
+vec3 BRDF_Specular(PBRData pbrData, vec3 F0)
+{
+  float D = D_GGX(pbrData.dotNH, pbrData.alphaRoughness);
+  float G = G_Smith(pbrData.dotNV, pbrData.dotNL, pbrData.roughness);
+  vec3 F = Fresnel_Schlick(pbrData.dotVH, F0);
+
+  return (D * G * F) / max(4.0 * pbrData.dotNV * pbrData.dotNL, 0.001);
+}
+
 vec3 GetNormal(sampler2D normalMap, vec3 normal, vec2 uv, vec3 position)
 {
   const vec4 texel = texture(normalMap, uv);

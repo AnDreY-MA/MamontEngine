@@ -4,6 +4,9 @@ namespace MamontEngine
 {
     struct Texture
     {
+        Texture() = default;
+        ~Texture() = default;
+
         VkImage           Image{VK_NULL_HANDLE};
         VkImageView       ImageView{VK_NULL_HANDLE};
         VkSampler         Sampler{VK_NULL_HANDLE};
@@ -12,7 +15,6 @@ namespace MamontEngine
         VkExtent3D        ImageExtent{0, 0, 0};
         VkFormat          ImageFormat;
         VkDeviceMemory    DeviceMemory{VK_NULL_HANDLE};
-
 
         void Load(void             *inData,
                   const VkExtent3D &inSize,

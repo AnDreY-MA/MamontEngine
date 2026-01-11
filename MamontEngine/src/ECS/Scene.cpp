@@ -1,8 +1,10 @@
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
+#include "Utils/Serialization.h"
 #include "ECS/Components/TagComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MeshComponent.h"
+#include "ECS/Components/DirectionLightComponent.h"
 #include "Graphics/Resources/Models/Mesh.h"
 #include "Graphics/Resources/Models/Model.h"
 #include "Core/ContextDevice.h"
@@ -11,6 +13,12 @@
 #include <entt/core/hashed_string.hpp>
 #include "entt/meta/meta.hpp"
 #include "Utils/Reflection.h"
+#include <fstream>
+#include <ostream>
+#include <cereal/cereal.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 /*META_INIT(glm);
 
@@ -39,6 +47,12 @@ namespace MamontEngine
        entt::meta_factory<MeshComponent>{}
            .type(hs{"MeshComponent"}, "Mesh component")
            .data<&MeshComponent::Mesh>(hs{"Model"}, "Model");
+
+        entt::meta_factory<DirectionLightComponent>{}
+               .type(hs{"DirectionLightComponent"}, "Direction Light Component")
+               .base<LightComponent>()
+               .data<&DirectionLightComponent::Color>(hs{"Color"}, "Color")
+               .data<&DirectionLightComponent::Intensity>(hs{"Intensity"}, "Intensity");
     }
 
     Scene::~Scene()
@@ -53,25 +67,68 @@ namespace MamontEngine
 
     void Scene::Clear()
     {
-        for (auto& [id, entity] : m_Entities)
-        {
-            RemoveComponent<MeshComponent>(entity);
-        }
+
         m_Registry.clear();
-        m_Entities.clear();
     }
 
     void Scene::Save()
     {
-        const std::string fileScene = DEFAULT_ASSETS_DIRECTORY + "Scenes/Scene.json";
-        Serializer::SaveToFile(m_Registry, fileScene);
+        const std::string fileScene = DEFAULT_ASSETS_DIRECTORY + "Scenes/Scene.sasset";
+        const bool result = Save(fileScene);
+
+        Log::Info("Saved scene is {}", result ? "Success" : "Failed");
+    }
+
+    bool Scene::Save(std::string_view inFile)
+    {
+        std::ofstream file(inFile.data(), std::ios::binary);
+        if (!file.is_open())
+        {
+            Log::Error("Cannot open file: {}", inFile.data());
+            return false;
+        }
+
+        cereal::BinaryOutputArchive serializer(file);
+
+        entt::snapshot{m_Registry}.get<entt::entity>(serializer).get<IDComponent>(serializer).get<TagComponent>(serializer).get<TransformComponent>(serializer)
+            .get<MeshComponent>(serializer).get<DirectionLightComponent>(serializer);
+
+        file.close();
+
+        return true;
     }
 
     void Scene::Load()
     {
         Clear();
-        const std::string fileScene = DEFAULT_ASSETS_DIRECTORY + "Scenes/Scene.json";
-        Serializer::LoadFromFile(this, fileScene);
+        const std::string fileScene = DEFAULT_ASSETS_DIRECTORY + "Scenes/Scene.sasset";
+        const bool result = Load(fileScene);
+
+        Log::Info("Load Scene is {}", result ? "Success" : "Failed");
+    }
+
+    bool Scene::Load(std::string_view inFile)
+    {
+        std::ifstream file(inFile.data(), std::ios::binary);
+        if (!file.is_open())
+        {
+            Log::Error("Cannot open file: {}", inFile.data());
+            return false;
+        }
+
+        cereal::BinaryInputArchive serializer(file);
+
+        entt::snapshot_loader{m_Registry}
+                .get<entt::entity>(serializer)
+                .get<IDComponent>(serializer)
+                .get<TagComponent>(serializer)
+                .get<TransformComponent>(serializer)
+                .get<MeshComponent>(serializer)
+                .get<DirectionLightComponent>(serializer);
+
+        file.close();
+
+        return true;
     }
 
     void Scene::Update()
@@ -104,7 +161,6 @@ namespace MamontEngine
 
         RemoveComponent<MeshComponent>(inEntity);
 
-        m_Entities.erase(inEntity.GetID());
         m_Registry.destroy(inEntity);
 
     }
@@ -121,8 +177,6 @@ namespace MamontEngine
         entity.AddComponent<TagComponent>(inName.empty() ? "Enity" : inName);
         entity.AddComponent<TransformComponent>();
 
-        m_Entities.emplace(inId, entity);
-
         Log::Info("Created entity {}", inName);
 
         return entity;
@@ -130,15 +184,19 @@ namespace MamontEngine
     
     Entity Scene::GetEntity(UID Id)
     {
-        if (auto it = m_Entities.find(Id); it != m_Entities.end())
-            return it->second;
+        const auto &view = m_Registry.view<IDComponent>();
+        view.each(
+                [&](entt::entity entity, const IDComponent &id)
+                {
+                    if (id.ID == Id)
+                    {
+                        return Entity{entity, this};
+                    }
+                });
+
+        Log::Warn("Entity not found");
         return {};
-    }
-    const Entity& Scene::GetEntity(UID Id) const
-    {
-        if (auto it = m_Entities.find(Id); it != m_Entities.end())
-            return it->second;
-        return {};
+
     }
 
     template<>

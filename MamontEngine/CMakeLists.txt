@@ -84,13 +84,12 @@ add_subdirectory("vendor/sdl" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/fmt" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/vma" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/entt" EXCLUDE_FROM_ALL)
-add_subdirectory("vendor/nlohmann_json" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/tracy" EXCLUDE_FROM_ALL)
 #add_subdirectory("vendor/rttr" EXCLUDE_FROM_ALL)
 
 include_directories(${PROJECT_NAME} tracy/public)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GPUOpen::VulkanMemoryAllocator EnTT::EnTT glm::glm nlohmann_json::nlohmann_json Tracy::TracyClient)
+target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GPUOpen::VulkanMemoryAllocator EnTT::EnTT glm::glm Tracy::TracyClient)
 
 #target_compile_definitions(${PROJECT_NAME} PRIVATE TRACY_PROTOCOL=74)
 #if(TRACY_ENABLE_VULKAN)
@@ -123,9 +122,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC fastgltf::fastgltf)
 add_subdirectory("vendor/stb")
 target_link_libraries(${PROJECT_NAME} PUBLIC stb::image)
 
-
-
-
+#cereal
+if(NOT TARGET cereal)
+    add_subdirectory("vendor/cereal")
+    target_link_libraries(${PROJECT_NAME} PUBLIC cereal::cereal)
+endif()
 
 add_library(ImGuizmo STATIC 
     vendor/ImGuizmo/ImGuizmo.cpp 

@@ -3,7 +3,5 @@
 
 namespace MamontEngine
 {
-    TransformComponent::TransformComponent()
-    {
-    }
+
 }

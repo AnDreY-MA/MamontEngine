@@ -29,14 +29,19 @@ namespace MamontEngine
             return glm::vec4(R, G, B, A);
         }
 
+        glm::vec3 ToVector3() const
+        {
+            return glm::vec3(R, G, B);
+        }
+
         float *Data()
         {
             return Componnts;
         }
 
-        static constexpr Color WHITE(1.0f, 1.0f, 1.0f);
-        static constexpr Color BLACK(0.0f, 0.0f, 0.0f);
-        static constexpr Color GRAY(0.0f, 0.0f, 0.0f);
+        static const Color WHITE;
+        static const Color BLACK;
+        static const Color GRAY;
 
 	};
 }

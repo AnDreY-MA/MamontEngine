@@ -12,6 +12,7 @@
 #include "ktx.h"
 #include "ktxvulkan.h"
 #include "Core/ContextDevice.h"
+#include <vk_mem_alloc.h>
 
 namespace
 {
@@ -69,7 +70,7 @@ namespace
                             unsigned char    *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
                             if (data)
                             {
-                                const VkExtent3D imagesize{.width = (uint32_t)width, .height = (uint32_t)height, .depth = 1};
+                                const VkExtent3D imagesize{.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height), .depth = 1};
 
                                 newTexture.Load(data,
                                                 imagesize,
@@ -86,7 +87,7 @@ namespace
                                     stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
                             if (data)
                             {
-                                const VkExtent3D imagesize{.width = (uint32_t)width, .height = (uint32_t)height, .depth = 1};
+                                const VkExtent3D imagesize{.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height), .depth = 1};
 
                                 newTexture.Load(data,
                                                 imagesize,
@@ -113,7 +114,9 @@ namespace
                                                                                                          4);
                                                              if (data)
                                                              {
-                                                                 const VkExtent3D imagesize{.width = (uint32_t)width, .height = (uint32_t)height, .depth = 1};
+                                                                 const VkExtent3D imagesize{.width  = static_cast<uint32_t>(width),
+                                                                                            .height = static_cast<uint32_t>(height),
+                                                                                            .depth  = 1};
 
                                                                  newTexture.Load(data,
                                                                                  imagesize,
@@ -138,6 +141,7 @@ namespace
         {
             return newTexture;
         }
+        
     }
 } // namespace
 
@@ -197,7 +201,7 @@ namespace MamontEngine
             if (!material || !material->IsDity)
                 continue;
 
-            MaterialDataBuffer.Copy(&material->Constants, sizeof(Material::MaterialConstants), material->BufferOffset);
+            MaterialDataBuffer.Copy(&material->Constants, sizeof(Material::MaterialConstants), MaterialDataBuffer.Info.offset);
 
             material->IsDity = false;
         }
@@ -218,12 +222,10 @@ namespace MamontEngine
                 const auto        &material = primitive->Material;
                 const RenderObject def(primitive->Count,
                                         primitive->StartIndex,
-                                        Buffer.IndexBuffer.Buffer,
-                                        Buffer.VertexBuffer.Buffer,
+                                        Buffer,
                                         material,
                                         Bound,
-                                        nodeMatrix,
-                                        Buffer.VertexBufferAddress, ID);
+                                        nodeMatrix, ID);
 
                 if (material->PassType == EMaterialPass::TRANSPARENT)
                     inContext.TransparentSurfaces.push_back(def);
@@ -267,7 +269,7 @@ namespace MamontEngine
     {
         Clear();
 
-        fmt::println("Loading GLTF: {}", filePath);
+        Log::Info("Model, Loading file: {}", filePath);
 
         fastgltf::Parser parser{};
 
@@ -307,7 +309,6 @@ namespace MamontEngine
         LoadNodes(gltf);
 
         m_FilePath = filePath;
-
     }
 
     std::vector<VkSampler> MeshModel::LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers)
@@ -384,6 +385,7 @@ namespace MamontEngine
 
         MaterialDataBuffer.Create(totalBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
+
         int              dataIndex = 0;
         DescriptorWriter Writer;
 
@@ -400,7 +402,7 @@ namespace MamontEngine
                     pass == EMaterialPass::TRANSPARENT ? contextDevice.RenderPipeline->TransparentPipeline : contextDevice.RenderPipeline->OpaquePipeline;
             newMaterial->MaterialSet  = descriptorAllocator.Allocate(device, contextDevice.RenderDescriptorLayout);
             newMaterial->Constants    = constants;
-            newMaterial->BufferOffset = dataIndex * alignedMaterialSize;
+            MaterialDataBuffer.Info.offset = dataIndex * alignedMaterialSize;
 
             Writer.Clear();
             Writer.WriteBuffer(0, MaterialDataBuffer.Buffer, materialConstSize, newMaterial->BufferOffset, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -504,6 +506,7 @@ namespace MamontEngine
             auto newMat  = writerMaterial(passType, materialResources, DescriptorPool, constants);
             newMat->Name = mat.name;
             m_Materials.push_back(std::move(newMat));
+            
         }
 
     }

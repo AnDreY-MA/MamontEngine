@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cereal/cereal.hpp>
+
 namespace MamontEngine
 {
 	struct TagComponent
@@ -12,5 +14,15 @@ namespace MamontEngine
         }
         std::string Tag;
 
+    private:
+        friend class cereal::access;
+
+        template <typename Archive>
+        void serialize(Archive &ar)
+        {
+            ar(cereal::make_nvp("Name", Tag));
+        }
 	};
+
+    
 }

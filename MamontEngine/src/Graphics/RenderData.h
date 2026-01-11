@@ -3,6 +3,7 @@
 #include "Graphics/Resources/Models/Mesh.h"
 #include <bitset>
 #include "Core/UID.h"
+#include "Graphics/Vulkan/Buffers/MeshBuffer.h"
 
 namespace MamontEngine
 {
@@ -15,35 +16,29 @@ namespace MamontEngine
 
         RenderObject(uint32_t InIndexCount,
                      uint32_t InFirstIndex,
-                     const VkBuffer InIndexBuffer,
-                     const VkBuffer  inVertexBuffer,
+                     MeshBuffer InMeshBuffer,
 
                      const Material *InMaterial,
                      AABB inBound,
                      glm::mat4       InTransform,
-                     VkDeviceAddress InVertexBufferAdders, UID id)
+                     UID id)
             : IndexCount(InIndexCount)
-            , FirstIndex(InFirstIndex)
-            , IndexBuffer(InIndexBuffer)
-            , VertexBuffer(inVertexBuffer)
+            , FirstIndex(InFirstIndex), MeshBuffer(InMeshBuffer)
             , Material(InMaterial)
             , Bound(inBound)
             , Transform(InTransform)
-            , VertexBufferAddress(InVertexBufferAdders)
             , Id(id)
         {
         }
 
         uint32_t IndexCount;
         uint32_t FirstIndex;
-        const VkBuffer IndexBuffer;
-        const VkBuffer VertexBuffer;
+        const MeshBuffer     MeshBuffer;
 
 		const Material *Material;
         AABB            Bound;
 
 		glm::mat4 Transform;
-        VkDeviceAddress VertexBufferAddress;
 
         UID Id;
 	};
@@ -74,5 +69,6 @@ namespace MamontEngine
         glm::vec3 LightDirection{glm::vec3()};
         float                _pad;
         glm::vec3              Color{glm::vec3(1.0)};
+        bool                 IsActive{false};
     };
 }

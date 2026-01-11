@@ -15,7 +15,7 @@
 
 namespace MamontEngine
 {
-    constexpr bool bUseValidationLayers = false;
+    constexpr bool bUseValidationLayers = true;
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL DetailedDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      severity,
                                                                 VkDebugUtilsMessageTypeFlagsEXT             type,

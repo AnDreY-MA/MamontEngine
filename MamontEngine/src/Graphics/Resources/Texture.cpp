@@ -119,11 +119,6 @@ namespace MamontEngine
 
         uint32_t mipLevels = inIsMipMapped ? (img_info.mipLevels > 1 ? img_info.mipLevels : 1) : 1;
 
-        /*if (mipLevels == 0)
-        {
-            mipLevels = 1;
-        }*/
-
         const VkImageViewCreateInfo view_info = vkinit::imageviewCreateInfo(inFormat, Image, aspectFlag, mipLevels, arrayLayers, viewType);
 
         VK_CHECK(vkCreateImageView(device, &view_info, nullptr, &ImageView));

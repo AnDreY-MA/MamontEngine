@@ -12,6 +12,7 @@
 #include <ECS/Components/DirectionLightComponent.h>
 #include <ECS/Components/Component.h>
 #include <entt/core/hashed_string.hpp>
+#include "Math/Color.h"
 
 const std::string RootDirectories = PROJECT_ROOT_DIR;
 const std::string AssetsPath      = RootDirectories + "/MamontEngine/assets";
@@ -75,37 +76,58 @@ namespace
                 MUI::DrawVec3Control("Rotation", transform->Rotation);
                 MUI::DrawVec3Control("Scale", transform->Scale, 1.f);
             }
+
+            if (type.info() == entt::type_id<Color>())
+            {
+                if (auto color = property.try_cast<Color>())
+                {
+                    ImGui::ColorEdit4(label, color->Data());
+                }
+            }
+        }
+
+        if (type.info() == entt::type_id<float>())
+        {
+            // ImGui::Text(type.info().name().data());
+            auto value = property.try_cast<float>();
+            if (value)
+            {
+                ImGui::DragFloat("Value", value, 0.01f, 0.f);
+            }
         }
 
         if (type.is_pointer_like())
         {
             if (entt::meta_any ref = *property; ref)
             {
-                if (auto asset = ref.try_cast<Asset>(); asset)
+                auto asset = ref.try_cast<Asset>();
+
+                const std::string selectedString = asset != nullptr ? asset->GetPathFile() : "empty";
+                if (ImGui::BeginCombo("##File", selectedString.c_str()))
                 {
-                    const std::string selectedString = asset->GetPathFile();
-                    if (ImGui::BeginCombo("##File", selectedString.c_str()))
+                    constexpr auto                 extensionFile = ".glb";
+                    const std::vector<std::string> files         = MamontEditor::ScanFolder(AssetsPath, extensionFile);
+                    for (const auto &file : files)
                     {
-                        constexpr auto                 extensionFile = ".glb";
-                        const std::vector<std::string> files         = MamontEditor::ScanFolder(AssetsPath, extensionFile);
-                        for (const auto &file : files)
+                        const std::string fullPath   = AssetsPath + "/" + file;
+                        const bool        isSelected = (selectedString == fullPath);
+
+                        if (ImGui::Selectable(file.c_str(), isSelected))
                         {
-                            const std::string fullPath   = AssetsPath + "/" + file;
-                            const bool        isSelected = (asset->GetPathFile() == fullPath);
-
-                            if (ImGui::Selectable(file.c_str(), isSelected))
-                            {
-                                asset->Load(fullPath);
-                            }
-
-                            if (isSelected)
-                            {
-                                ImGui::SetItemDefaultFocus();
-                            }
+                            asset->Load(fullPath);
                         }
-                        ImGui::EndCombo();
-                    }   
-                    if (auto model = static_cast<MeshModel*>(asset); model)
+
+                        if (isSelected)
+                        {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }   
+                
+                if (asset)
+                {
+                    if (auto model = static_cast<MeshModel *>(asset); model)
                     {
                         if (ImGui::TreeNodeEx("Materials"))
                         {
@@ -135,7 +157,6 @@ namespace
                             ImGui::TreePop();
                         }
                     }
-                
                 }
                 
             }

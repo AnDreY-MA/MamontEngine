@@ -5,6 +5,8 @@
 #include "Core/Camera.h"
 #include "Utils/Serializer.h"
 #include "ECS/Components/MeshComponent.h"
+#include <cereal/cereal.hpp>
+#include <cereal/archives/portable_binary.hpp>
 
 namespace MamontEngine
 {
@@ -12,57 +14,69 @@ namespace MamontEngine
     struct VkContextDevice;
 
 	class Scene
-	{
+    {
     public:
-        //Scene() = default;
+        // Scene() = default;
         explicit Scene();
 
         ~Scene();
 
         void Init();
 
-		void Save();
+        void Save();
         void Load();
 
-		Entity CreateEntity(std::string_view inName = std::string_view());
+        Entity CreateEntity(std::string_view inName = std::string_view());
 
-		void Update();
+        void Update();
 
-		template<typename T>
+        template <typename T>
         void RemoveComponent(Entity inEntity)
-		{
+        {
             m_Registry.remove<T>(inEntity);
-		}
-		template<>
-		void RemoveComponent<MeshComponent>(Entity inEntity);
-		
-        void   DestroyEntity(Entity inEntity);
+        }
+        template <>
+        void RemoveComponent<MeshComponent>(Entity inEntity);
 
-		entt::registry& GetRegistry()
-		{
-            return m_Registry;
-		}
+        void DestroyEntity(Entity inEntity);
 
-		const entt::registry &GetRegistry() const
+        entt::registry &GetRegistry()
         {
             return m_Registry;
         }
-		Entity GetEntity(UID Id);
-        const Entity& GetEntity(UID Id) const;
 
-	private:
-		Entity CreateEntity(UID inId, std::string_view inName);
+        const entt::registry &GetRegistry() const
+        {
+            return m_Registry;
+        }
+        Entity        GetEntity(UID Id);
 
-		void Clear();
+    private:
+        Entity CreateEntity(UID inId, std::string_view inName);
 
-	private:
+        void Clear();
+
+        bool Save(std::string_view inFile);
+
+        bool Load(std::string_view inFile);
+
+    private:
         entt::registry m_Registry;
 
-		std::unordered_map<UID, Entity> m_Entities;
-
-		friend class Entity;
+        friend class Entity;
         friend class SceneHierarchyPanel;
-        friend class Serializer;
+
+        template <typename Archive>
+        friend void save(Archive &archive, const Scene &scene)
+        {
+        }
+
+        template <typename Archive>
+        friend void load(Archive& archive, Scene& scene)
+        {
+
+        }
+    
 	};
 
 } // namespace MamontEngine

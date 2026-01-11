@@ -112,18 +112,17 @@ namespace MamontEngine
             vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
 
             constexpr VkDeviceSize offsets[1] = {0};
-            if (r.VertexBuffer != VK_NULL_HANDLE)
+            if (r.MeshBuffer.VertexBuffer.Buffer != VK_NULL_HANDLE)
             {
-                vkCmdBindVertexBuffers(inCmd, 0, 1, &r.VertexBuffer, offsets);
+                vkCmdBindVertexBuffers(inCmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
             }
-            if (r.IndexBuffer != VK_NULL_HANDLE)
+            if (r.MeshBuffer.IndexBuffer.Buffer != VK_NULL_HANDLE)
             {
-                vkCmdBindIndexBuffer(inCmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+                vkCmdBindIndexBuffer(inCmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
             }
 
             const GPUDrawPushConstants push_constants{
-                    .WorldMatrix  = r.Transform,
-                    .VertexBuffer = r.VertexBufferAddress,
+                    .WorldMatrix  = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBufferAddress,
                     //.CascadeIndex = cascadeIndex
             };
 
@@ -176,11 +175,12 @@ namespace MamontEngine
             vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipelineData.Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
 
             constexpr VkDeviceSize offsets[1] = {0};
-            vkCmdBindVertexBuffers(inCmd, 0, 1, &r.VertexBuffer, offsets);
+            vkCmdBindVertexBuffers(inCmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
 
-            vkCmdBindIndexBuffer(inCmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(inCmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            const GPUDrawPushConstants push_constants{.WorldMatrix = r.Transform, .VertexBuffer = r.VertexBufferAddress, .CascadeIndex = cascadeIndex};
+            const GPUDrawPushConstants push_constants{
+                    .WorldMatrix = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBufferAddress, .CascadeIndex = cascadeIndex};
 
             constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
             vkCmdPushConstants(inCmd, inPipelineData.Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
@@ -204,11 +204,11 @@ namespace MamontEngine
 
         const auto draw = [&](const RenderObject &r) -> void
         {
-            vkCmdBindVertexBuffers(cmd, 0, 1, &r.VertexBuffer, offsets);
+            vkCmdBindVertexBuffers(cmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
 
-            vkCmdBindIndexBuffer(cmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(cmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            const GPUDrawPushConstants pushConstants{.WorldMatrix = r.Transform, .VertexBuffer = r.VertexBufferAddress, .ObjectID = (uint64_t)r.Id};
+            const GPUDrawPushConstants pushConstants{.WorldMatrix = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBufferAddress, .ObjectID = (uint64_t)r.Id};
 
             constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
             vkCmdPushConstants(cmd, inLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &pushConstants);
@@ -253,10 +253,10 @@ namespace MamontEngine
             const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent, TransformComponent>();
 
             viewDirectionLight.each([&](const auto& ligth, const auto& transform) { 
-                m_CascadeData.Color        = ligth.Color;
-                const glm::vec3 lightDirection   = glm::normalize(-transform.Transform.Position);
+                m_CascadeData.Color        = ligth.GetColor();
+                        const glm::vec3 lightDirection = glm::normalize(-transform.Transform.Position);
                 m_SceneData.LightDirection   = lightDirection;
-                m_SceneData.SunLightPosition     = transform.Transform.Position;
+                m_SceneData.SunLightPosition   = transform.Transform.Position;
                 m_CascadeData.LightDirection = lightDirection;
                // m_LightPosition                = transform.Transform.Position;
             });
@@ -267,9 +267,15 @@ namespace MamontEngine
 
             m_CascadeData.InverseViewMatrix = glm::inverse(view);
         }
+        else
+        {
+            m_CascadeData.Color = glm::vec3(0.3f, 0.3f, 0.3f);
+            m_SceneData.LightDirection   = glm::vec3(.0f);
+            m_SceneData.SunLightPosition = glm::vec3(.0f);
+            m_CascadeData.LightDirection = glm::vec3(.0f);
+        }
 
-        
-        //m_CascadeData.LightDirection    = lightDir;
+        m_CascadeData.IsActive = m_HasDirectionLight;
 
         const auto meshes = sceneRegistry.view<MeshComponent>();
         for (const auto&& [entity, meshComponent] : meshes.each())

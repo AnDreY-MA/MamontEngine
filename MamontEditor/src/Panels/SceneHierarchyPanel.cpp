@@ -37,16 +37,17 @@ namespace MamontEditor
 
 
             ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
-            const auto &view = m_Scene->GetRegistry().view<MamontEngine::IDComponent>();
-            view.each(
-                    [&](entt::entity handle, const MamontEngine::IDComponent &idComponent)
-                    {
-                        const MamontEngine::Entity &entity = m_Scene->GetEntity(idComponent.ID);
-                        if (entity)
-                        {
-                            DrawEntityNode(entity);
-                        }
-                    });
+            const auto &registry = m_Scene->GetRegistry();
+
+            for (auto [handle] : registry.storage<entt::entity>()->each())
+            {
+                if (registry.valid(handle))
+                {
+                    const MamontEngine::Entity entity{handle, m_Scene.get()};
+                    DrawEntityNode(entity);
+                }
+            }
+
             ImGui::PopStyleVar();
 
             if (ImGui::BeginPopup("Properties", ImGuiPopupFlags_MouseButtonRight))

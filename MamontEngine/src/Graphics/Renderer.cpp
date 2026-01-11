@@ -47,7 +47,7 @@ namespace MamontEngine
             DrawContext skyboxContext;
             m_Skybox->Draw(skyboxContext);
             const RenderObject &object = skyboxContext.OpaqueSurfaces[0];
-            vertexAddress = object.VertexBufferAddress;
+            vertexAddress = object.MeshBuffer.VertexBufferAddress;
         }
 
         m_DeviceContext.CreatePrefilteredCubeTexture(vertexAddress, [&](VkCommandBuffer cmd) {
@@ -56,9 +56,9 @@ namespace MamontEngine
                     const RenderObject &object = skyboxContext.OpaqueSurfaces[0];
 
                     constexpr VkDeviceSize offsets[1] = {0};
-                    vkCmdBindVertexBuffers(cmd, 0, 1, &object.VertexBuffer, offsets);
+                    vkCmdBindVertexBuffers(cmd, 0, 1, &object.MeshBuffer.VertexBuffer.Buffer, offsets);
 
-                    vkCmdBindIndexBuffer(cmd, object.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+                    vkCmdBindIndexBuffer(cmd, object.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
                     vkCmdDrawIndexed(cmd, object.IndexCount, 1, object.FirstIndex, 0, 0);
             });
@@ -388,13 +388,13 @@ namespace MamontEngine
                                 nullptr);
 
         constexpr VkDeviceSize offsets[1] = {0};
-        vkCmdBindVertexBuffers(inCmd, 0, 1, &object.VertexBuffer, offsets);
+        vkCmdBindVertexBuffers(inCmd, 0, 1, &object.MeshBuffer.VertexBuffer.Buffer, offsets);
 
-        vkCmdBindIndexBuffer(inCmd, object.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer(inCmd, object.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
         const GPUDrawPushConstants push_constants{
                 .WorldMatrix = glm::mat4(1.f), 
-                .VertexBuffer = object.VertexBufferAddress,
+                .VertexBuffer = object.MeshBuffer.VertexBufferAddress,
         };
 
         constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};

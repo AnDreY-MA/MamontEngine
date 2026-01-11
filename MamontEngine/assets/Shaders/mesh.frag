@@ -24,6 +24,7 @@ layout(set = 0, binding = 2) uniform DirectionLightUBO {
   vec3 lightDirection;
   float _pad;
   vec3 color;
+  bool IsActive;
 } directionLight;
 
 const mat4 biasMat = mat4(
@@ -88,13 +89,13 @@ uint GetCascadeIndex()
 
 vec3 CalculalteNormal()
 {
-    const vec3 tangentNormal = texture(normalMap, inUV).zyx * 2.0 - 1.0;
-    const vec3 N = normalize(inNormal);
-    const vec3 T = normalize(inTangent.xyz);
-    const vec3 B = normalize(cross(N, T));
-    const mat3 TBN = mat3(T, B, N);
+  const vec3 tangentNormal = texture(normalMap, inUV).zyx * 2.0 - 1.0;
+  const vec3 N = normalize(inNormal);
+  const vec3 T = normalize(inTangent.xyz);
+  const vec3 B = normalize(cross(N, T));
+  const mat3 TBN = mat3(T, B, N);
 
-    return normalize(TBN * tangentNormal);
+  return normalize(TBN * tangentNormal);
 }
 
 void main()
@@ -104,7 +105,7 @@ void main()
   //GetNormal(normalMap, inNormal, inUV, inPos);
   const vec3 L = normalize(-directionLight.lightDirection);
   const vec3 V = normalize(-inViewPos);
-  const vec3 H = normalize(L + V);
+  const vec3 H = normalize(V + L);
   const vec3 R = reflect(-V, N);
 
   const float dotNL = clamp(dot(N, L), 0.001, 1.0);
@@ -112,19 +113,19 @@ void main()
   const float dotNH = clamp(dot(N, H), 0.0, 1.0);
   const float dotVH = clamp(dot(V, H), 0.0, 1.0);
 
-  const vec4 textureColor = texture(colorMap, inUV);
+  const vec4 baseColorTexture = texture(colorMap, inUV);
+  const vec3 albedo = srgbToLinear(baseColorTexture.rgb * materialData.colorFactors.rgb * inColor.rgb);
 
-  const vec4 baseColor = textureColor * materialData.colorFactors * inColor;
+  const vec4 baseColor = baseColorTexture * materialData.colorFactors * inColor;
 
   const vec4 metallicRoughness = texture(metalRoughTex, inUV);
   const float metallic = metallicRoughness.b * materialData.metallicFactor;
   const float roughness = clamp(metallicRoughness.g * materialData.roughnessFactor, 0.05, 1.0);
   const float alphaRoughness = roughness * roughness;
 
-  const vec3 albedo = baseColor.rgb;
   const vec3 F0 = mix(vec3(0.04), albedo, metallic);
 
-  const vec3 specularColor = mix(F0, baseColor.rgb, metallic);
+  const vec3 specularColor = mix(F0, albedo, metallic);
 
   const float reflectance = max(max(specularColor.r, specularColor.g), specularColor.b);
   const float reflectance90 = clamp(reflectance * 25.0, 0.0, 1.0);
@@ -152,20 +153,25 @@ void main()
   vec3 lightColor = vec3(0.0);
 
   // Sun Light
+  if(directionLight.IsActive)
   {
     lightColor += GetLightContribution(pbrData, N, V, -directionLight.lightDirection, directionLight.color) * shadow;
   }
 
+  if(directionLight.IsActive)
+  {
+      const vec3 ibl = GetIBLContribution(pbrData, N, R, directionLight.color, samplerBRDFLUT, samplerPrefilteredMap, irradianceMap);
+
+      lightColor += ibl;
+  }
   //lightColor += prefilteredColor;
 
-  const vec3 ibl = GetIBLContribution(pbrData, N, R, directionLight.color, samplerBRDFLUT, samplerPrefilteredMap, irradianceMap);
-
-  lightColor += ibl;
+  
 
   const vec3 gamma = vec3(1.0f / GAMMA);
   vec3 finalColor = lightColor;
-  finalColor = Tonemap(finalColor, EXPOSURE);
-  finalColor = pow(finalColor, gamma);
+  finalColor = Tonemap(finalColor);
+  //finalColor = pow(finalColor, gamma);
 
   outFragColor = vec4(finalColor, baseColor.a);
 }
