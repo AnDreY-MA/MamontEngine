@@ -123,6 +123,7 @@ namespace MamontEditor
             DrawItemAddPrimitives("Cone", "D:/Repos/MamontEngine/MamontEngine/assets/cone.glb", contextDevice);
             DrawItemAddPrimitives("Cylinder", "D:/Repos/MamontEngine/MamontEngine/assets/cylinder.glb", contextDevice);
             DrawItemAddPrimitives("Plane", "D:/Repos/MamontEngine/MamontEngine/assets/plane.glb", contextDevice);
+            DrawItemAddPrimitives("Monkies", "D:/Repos/MamontEngine/MamontEngine/assets/monkeyHD.glb", contextDevice);
 
             ImGui::EndMenu();
         }

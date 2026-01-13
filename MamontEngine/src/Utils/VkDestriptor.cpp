@@ -44,10 +44,12 @@ namespace MamontEngine
     void DescriptorAllocatorGrowable::Init(VkDevice inDevice, const uint32_t inInitialSets, const std::span<PoolSizeRatio> inPoolRatios)
     {
         const uint32_t initSize = inInitialSets != 0 ? inInitialSets : 1;
+        m_Ratios.reserve(inPoolRatios.size());
         m_Ratios.assign(inPoolRatios.begin(), inPoolRatios.end());
 
         const VkDescriptorPool newPool = CreatePool(inDevice, initSize, inPoolRatios);
         m_SetsPerPool            = initSize * 1.5;
+        m_ReadyPools.reserve(1);
         m_ReadyPools.push_back(newPool);
     }
 
@@ -174,13 +176,29 @@ namespace MamontEngine
     }
     void DescriptorWriter::WriteImage(const int inBinding, const VkDescriptorImageInfo descriptorInfo, const VkDescriptorType inType)
     {
+        const auto& info = ImageInfos.emplace_back(descriptorInfo);
         VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 
         write.dstBinding      = inBinding;
         write.dstSet          = VK_NULL_HANDLE;
         write.descriptorCount = 1;
         write.descriptorType  = inType;
-        write.pImageInfo      = &descriptorInfo;
+        write.pImageInfo      = &info;
+
+        Writes.push_back(write);
+    }
+
+    void DescriptorWriter::WriteBuffer(const int inBinding, VkDescriptorBufferInfo descriptorInfo, VkDescriptorType inType)
+    {
+        const VkDescriptorBufferInfo &info = BufferInfos.emplace_back(descriptorInfo);
+
+        VkWriteDescriptorSet write = {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+
+        write.dstBinding      = inBinding;
+        write.dstSet          = VK_NULL_HANDLE;
+        write.descriptorCount = 1;
+        write.descriptorType  = inType;
+        write.pBufferInfo     = &info;
 
         Writes.push_back(write);
     }
@@ -202,9 +220,7 @@ namespace MamontEngine
 
     void DescriptorWriter::Clear()
     {
-        ImageInfos.clear();
         Writes.clear();
-        BufferInfos.clear();
     }
     void DescriptorWriter::UpdateSet(const VkDevice inDevice, VkDescriptorSet& inSet)
     {

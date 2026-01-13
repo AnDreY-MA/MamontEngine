@@ -5,13 +5,13 @@
 #include "Core/Engine.h"
 #include "Core/Log.h"
 #include "Graphics/Devices/LogicalDevice.h"
-#include "Graphics/Devices/PhysicalDevice.h"
 #include "Graphics/Resources/Texture.h"
 #include "Graphics/Vulkan/Allocator.h"
 #include "Utils/Utilities.h"
 #include "ktx.h"
 #include "ktxvulkan.h"
 #include "Core/ContextDevice.h"
+#include "Graphics/Resources/MaterialAllocator.h"
 #include <vk_mem_alloc.h>
 
 namespace
@@ -52,9 +52,9 @@ namespace
         }
     }
 
-    std::optional<Texture> load_image(const fastgltf::Asset &asset, const fastgltf::Image &image, VkSampler inSampler = VK_NULL_HANDLE)
+    std::shared_ptr<Texture> load_image(const fastgltf::Asset &asset, const fastgltf::Image &image, VkSampler inSampler = VK_NULL_HANDLE)
     {
-        Texture newTexture{};
+        auto newTexture = std::make_shared<Texture>();
 
         int width, height, nrChannels;
 
@@ -72,7 +72,7 @@ namespace
                             {
                                 const VkExtent3D imagesize{.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height), .depth = 1};
 
-                                newTexture.Load(data,
+                                newTexture->Load(data,
                                                 imagesize,
                                                 VK_FORMAT_R8G8B8A8_UNORM,
                                                 VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -89,7 +89,7 @@ namespace
                             {
                                 const VkExtent3D imagesize{.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height), .depth = 1};
 
-                                newTexture.Load(data,
+                                newTexture->Load(data,
                                                 imagesize,
                                                 VK_FORMAT_R8G8B8A8_UNORM,
                                                 VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -118,7 +118,7 @@ namespace
                                                                                             .height = static_cast<uint32_t>(height),
                                                                                             .depth  = 1};
 
-                                                                 newTexture.Load(data,
+                                                                 newTexture->Load(data,
                                                                                  imagesize,
                                                                                  VK_FORMAT_R8G8B8A8_UNORM,
                                                                                  VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -132,7 +132,7 @@ namespace
                 },
                 image.data);
 
-        if (newTexture.Image == VK_NULL_HANDLE)
+        if (newTexture->Image == VK_NULL_HANDLE)
         {
             Log::Warn("newTexture.Image is NULL");
             return {};
@@ -163,33 +163,30 @@ namespace MamontEngine
         for (auto &material : m_Materials)
         {
             material->MaterialSet = VK_NULL_HANDLE;
+            MaterialAllocator::Free(material.get());
         }
 
         Clear();
 
         Buffer.IndexBuffer.Destroy();
         Buffer.VertexBuffer.Destroy();
-
-        DescriptorPool.ClearPools(device);
-        DescriptorPool.DestroyPools(device);
-        MaterialDataBuffer.Destroy();
     }
 
     void MeshModel::Clear()
     {
-        for (auto &texture : m_Textures)
-        {
-            texture.Destroy();
-        }
-
         for (auto &node : m_Nodes)
         {
             node->Mesh.reset();
             delete node;
         }
-
-        m_Textures.clear();
         m_Nodes.clear();
+
+        for (auto &texture : m_Textures)
+        {
+            texture->Destroy();
+        }
+        m_Textures.clear();
+        
         m_Materials.clear();
         m_Meshes.clear();
     }
@@ -201,7 +198,7 @@ namespace MamontEngine
             if (!material || !material->IsDity)
                 continue;
 
-            MaterialDataBuffer.Copy(&material->Constants, sizeof(Material::MaterialConstants), MaterialDataBuffer.Info.offset);
+            MaterialAllocator::Update(&material->Constants, material->BufferOffset);
 
             material->IsDity = false;
         }
@@ -294,12 +291,7 @@ namespace MamontEngine
 
         const fastgltf::Asset gltf = std::move(loadResult.get());
 
-        std::array<DescriptorAllocatorGrowable::PoolSizeRatio, 3> sizes = {
-                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6},
-                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
-                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}};
         const VkDevice device = LogicalDevice::GetDevice();
-        DescriptorPool.Init(device, std::max<size_t>(1, gltf.materials.size()), sizes);
 
         std::vector<VkSampler> samplers = LoadSamplers(device, gltf.samplers);
         LoadImages(gltf, samplers);
@@ -322,13 +314,8 @@ namespace MamontEngine
         sampl.mipmapMode          = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
         std::vector<VkSampler> modelSamplers;
-        modelSamplers.reserve(samplers.size() + 1);
-
-        {
-            VkSampler defaultSampler = VK_NULL_HANDLE;
-            vkCreateSampler(inDevice, &sampl, nullptr, &defaultSampler);
-            modelSamplers.push_back(defaultSampler);
-        }
+        const auto             size = samplers.size();
+        modelSamplers.reserve(size != 0 ? size : 1);
 
         for (const fastgltf::Sampler &sampler : samplers)
         {
@@ -342,115 +329,50 @@ namespace MamontEngine
             modelSamplers.push_back(newSampler);
         }
 
+        VkSampler defaultSampler = VK_NULL_HANDLE;
+        vkCreateSampler(inDevice, &sampl, nullptr, &defaultSampler);
+        modelSamplers.push_back(defaultSampler);
+
         return modelSamplers;
     }
 
     void MeshModel::LoadImages(const fastgltf::Asset &inFileAsset, const std::vector<VkSampler> &inSamplers)
     {
-        m_Textures.reserve(inFileAsset.images.size() + 1);
+        const auto size = inFileAsset.images.size();
+        m_Textures.reserve(size != 0 ? size : 1);
+
         for (const fastgltf::Image &image : inFileAsset.images)
         {
-            const std::optional<Texture> img = load_image(inFileAsset, image);
+            const auto texture = load_image(inFileAsset, image);
 
-            if (img.has_value())
+            if (texture)
             {
                 Log::Info("Loaded texture: {}", image.name.c_str());
-                m_Textures.push_back(*img);
+                m_Textures.push_back(texture);
             }
             else
             {
-                const Texture errorTexture = CreateErrorTexture();
-                m_Textures.push_back(errorTexture);
                 Log::Warn("gltf failed to load texture: {}", image.name);
             }
         }
+
+        m_Textures.push_back(CreateWhiteTexture());
     }
 
     void MeshModel::LoadMaterials(const fastgltf::Asset &inFileAsset, const std::vector<VkSampler> &inSamplers)
     {
         m_Materials.reserve(inFileAsset.materials.size());
 
-        const VkDevice device = LogicalDevice::GetDevice();
-
-        VkPhysicalDeviceProperties properties;
-        vkGetPhysicalDeviceProperties(PhysicalDevice::GetDevice(), &properties);
-        const size_t minAlignment = properties.limits.minUniformBufferOffsetAlignment;
-
-        constexpr size_t materialConstSize = sizeof(Material::MaterialConstants);
-
-        const size_t alignedMaterialSize = minAlignment > 0 ? (materialConstSize + minAlignment - 1) & ~(minAlignment - 1) : materialConstSize;
-
-        const size_t numMaterials    = std::max(size_t(1), inFileAsset.materials.size());
-        const size_t totalBufferSize = numMaterials * alignedMaterialSize;
-
-        MaterialDataBuffer.Create(totalBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-
-        int              dataIndex = 0;
-        DescriptorWriter Writer;
-
-        const auto &contextDevice = MEngine::Get().GetContextDevice();
-
-        const auto writerMaterial = [&](const EMaterialPass                pass,
-                                        Material::MaterialResources        materialResources,
-                                        DescriptorAllocatorGrowable       &descriptorAllocator,
-                                        const Material::MaterialConstants &constants)
-        {
-            auto newMaterial      = std::make_shared<Material>();
-            newMaterial->PassType = pass;
-            newMaterial->Pipeline =
-                    pass == EMaterialPass::TRANSPARENT ? contextDevice.RenderPipeline->TransparentPipeline : contextDevice.RenderPipeline->OpaquePipeline;
-            newMaterial->MaterialSet  = descriptorAllocator.Allocate(device, contextDevice.RenderDescriptorLayout);
-            newMaterial->Constants    = constants;
-            MaterialDataBuffer.Info.offset = dataIndex * alignedMaterialSize;
-
-            Writer.Clear();
-            Writer.WriteBuffer(0, MaterialDataBuffer.Buffer, materialConstSize, newMaterial->BufferOffset, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            Writer.WriteImage(1, materialResources.ColorTexture.GetDescriptorInfo(),
-                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            Writer.WriteImage(2, materialResources.MetalRoughTexture.GetDescriptorInfo(),
-                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            Writer.WriteImage(3, materialResources.NormalTexture.GetDescriptorInfo(),
-                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            Writer.WriteImage(4, materialResources.EmissiveTexture.GetDescriptorInfo(),
-                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            Writer.WriteImage(5, materialResources.OcclusionTexture.GetDescriptorInfo(),
-                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            Writer.UpdateSet(device, newMaterial->MaterialSet);
-
-            // void *data = &newMaterial->Constants;
-            // MaterialDataBuffer.Copy(data, materialConstSize, newMaterial->BufferOffset);
-            dataIndex++;
-
-            return newMaterial;
-        };
-
-        const Texture whiteTexture = CreateWhiteTexture();
-
         const auto getDefaultMaterialResources = [&]()
         {
             Material::MaterialResources materialResources{};
-            materialResources.ColorTexture      = whiteTexture;
-            materialResources.MetalRoughTexture = whiteTexture;
-            materialResources.NormalTexture     = whiteTexture;
-            materialResources.EmissiveTexture   = whiteTexture;
-            materialResources.OcclusionTexture  = whiteTexture;
+            materialResources.ColorTexture      = m_Textures[0];
+            materialResources.MetalRoughTexture = m_Textures[0];
+            materialResources.NormalTexture     = m_Textures[0];
+            materialResources.EmissiveTexture   = m_Textures[0];
+            materialResources.OcclusionTexture  = m_Textures[0];
             return materialResources;
         };
-
-        if (inFileAsset.materials.size() == 0)
-        {
-            // Create Empty Material
-            fmt::println("Materials is empty");
-            Material::MaterialConstants constants{};
-            constants.ColorFactors                        = glm::vec4(1.0f);
-            constants.MetalicFactor                       = 0.0f;
-            constants.RoughFactor                         = 1.0f;
-            Material::MaterialResources materialResources = getDefaultMaterialResources();
-            auto                        material          = writerMaterial(EMaterialPass::MAIN_COLOR, materialResources, DescriptorPool, constants);
-            m_Materials.push_back(std::move(material));
-            return;
-        }
 
         for (const fastgltf::Material &mat : inFileAsset.materials)
         {
@@ -467,54 +389,54 @@ namespace MamontEngine
             if (mat.pbrData.baseColorTexture.has_value())
             {
                 const size_t img     = inFileAsset.textures[mat.pbrData.baseColorTexture.value().textureIndex].imageIndex.value();
-                const size_t sampler = inFileAsset.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value() + 1;
+                const size_t sampler = inFileAsset.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
 
                 materialResources.ColorTexture         = m_Textures[img];
-                materialResources.ColorTexture.Sampler = inSamplers[sampler];
+                materialResources.ColorTexture->Sampler = inSamplers[sampler];
             }
+
             if (mat.pbrData.metallicRoughnessTexture.has_value())
             {
                 const size_t img     = inFileAsset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].imageIndex.value();
-                const size_t sampler = inFileAsset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].samplerIndex.value() + 1;
+                const size_t sampler = inFileAsset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].samplerIndex.value();
 
                 materialResources.MetalRoughTexture         = m_Textures[img];
-                materialResources.MetalRoughTexture.Sampler = inSamplers[sampler];
+                materialResources.MetalRoughTexture->Sampler = inSamplers[sampler];
             }
+
             if (mat.normalTexture.has_value())
             {
-                const auto textureIndex                 = inFileAsset.textures[mat.normalTexture.value().textureIndex].imageIndex.value();
-                const auto samplerIndex                 = inFileAsset.textures[mat.normalTexture.value().textureIndex].samplerIndex.value() + 1;
-                materialResources.NormalTexture         = m_Textures[mat.normalTexture.value().textureIndex];
-                materialResources.NormalTexture.Sampler = inSamplers[samplerIndex];
+                const auto textureIndex                  = inFileAsset.textures[mat.normalTexture.value().textureIndex].imageIndex.value();
+                const auto samplerIndex                  = inFileAsset.textures[mat.normalTexture.value().textureIndex].samplerIndex.value();
+                materialResources.NormalTexture          = m_Textures[textureIndex];
+                materialResources.NormalTexture->Sampler = inSamplers[samplerIndex];
             }
 
             if (mat.emissiveTexture.has_value())
             {
-                const auto textureIndex                   = inFileAsset.textures[mat.emissiveTexture.value().textureIndex].imageIndex.value();
-                const auto samplerIndex                   = inFileAsset.textures[mat.emissiveTexture.value().textureIndex].samplerIndex.value() + 1;
-                materialResources.EmissiveTexture         = m_Textures[mat.emissiveTexture.value().textureIndex];
-                materialResources.EmissiveTexture.Sampler = inSamplers[samplerIndex];
+                const auto textureIndex                    = inFileAsset.textures[mat.emissiveTexture.value().textureIndex].imageIndex.value();
+                const auto samplerIndex                    = inFileAsset.textures[mat.emissiveTexture.value().textureIndex].samplerIndex.value();
+                materialResources.EmissiveTexture          = m_Textures[textureIndex];
+                materialResources.EmissiveTexture->Sampler = inSamplers[samplerIndex];
             }
+
             if (mat.occlusionTexture.has_value())
             {
-                const auto textureIndex                    = inFileAsset.textures[mat.occlusionTexture.value().textureIndex].imageIndex.value();
-                const auto samplerIndex                    = inFileAsset.textures[mat.occlusionTexture.value().textureIndex].samplerIndex.value() + 1;
-                materialResources.OcclusionTexture         = m_Textures[mat.occlusionTexture.value().textureIndex];
-                materialResources.OcclusionTexture.Sampler = inSamplers[samplerIndex];
+                const auto textureIndex                     = inFileAsset.textures[mat.occlusionTexture.value().textureIndex].imageIndex.value();
+                const auto samplerIndex                     = inFileAsset.textures[mat.occlusionTexture.value().textureIndex].samplerIndex.value();
+                materialResources.OcclusionTexture          = m_Textures[textureIndex];
+                materialResources.OcclusionTexture->Sampler = inSamplers[samplerIndex];
             }
 
-            auto newMat  = writerMaterial(passType, materialResources, DescriptorPool, constants);
+            auto newMat = std::shared_ptr<Material>(MaterialAllocator::AllocateMaterial(passType, materialResources, constants));
             newMat->Name = mat.name;
-            m_Materials.push_back(std::move(newMat));
-            
+            m_Materials.push_back(newMat);
         }
-
     }
 
     void MeshModel::LoadNodes(const fastgltf::Asset &inFileAsset)
     {
         const size_t sizeNodes{inFileAsset.nodes.size()};
-        // std::vector<std::shared_ptr<Node>> nodes;
         m_Nodes.reserve(sizeNodes);
 
         for (const fastgltf::Node &node : inFileAsset.nodes)

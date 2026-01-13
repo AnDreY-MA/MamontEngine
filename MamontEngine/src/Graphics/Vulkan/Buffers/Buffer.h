@@ -8,10 +8,6 @@ namespace MamontEngine
         VmaAllocation     Allocation{VK_NULL_HANDLE};
         VmaAllocationInfo Info;
 
-        VkDescriptorBufferInfo DescriptorInfo;
-
-        VkDeviceSize Offset{0};
-
         void Create(const size_t inAllocSize, const VkBufferUsageFlags inUsage, const VmaMemoryUsage inMemoryUsage);
 
         void Destroy();
@@ -27,10 +23,9 @@ namespace MamontEngine
             return Buffer != VK_NULL_HANDLE;
         }
 
-        VkDescriptorBufferInfo GetDescriptorInfo() const
+        VkDescriptorBufferInfo GetDescriptorInfo(size_t inOffset = 0) const
         {
-            const VkDescriptorBufferInfo info{
-                .buffer = Buffer, .offset = Offset, .range = Info.size
+            const VkDescriptorBufferInfo info{.buffer = Buffer, .offset = inOffset, .range = Info.size
             };
 
             return info;

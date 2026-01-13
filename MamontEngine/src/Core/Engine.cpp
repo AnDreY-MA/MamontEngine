@@ -1,15 +1,17 @@
 #include "Engine.h"
+#include <thread>
 
 #include "Graphics/Vulkan/Swapchain.h"
 #include "ImGuiRenderer.h"
 
 #include "ECS/Entity.h"
 
-#include "Utils/Profile.h"
-#include "tracy/public/TracyClient.cpp"
+#include "ECS/Components/TransformComponent.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Devices/PhysicalDevice.h"
-#include "ECS/Components/TransformComponent.h"
+#include "Utils/Profile.h"
+#include "tracy/public/TracyClient.cpp"
+#include "Graphics/Resources/MaterialAllocator.h"
 
 namespace MamontEngine
 {
@@ -26,8 +28,7 @@ namespace MamontEngine
     {
         assert(loadedEngine == nullptr);
         loadedEngine = this;
-
-        m_Log = std::make_unique<Log>();
+        m_Log        = std::make_unique<Log>();
 
         m_Window = std::make_shared<WindowCore>();
 
@@ -35,18 +36,18 @@ namespace MamontEngine
 
         m_Renderer = std::make_unique<Renderer>(*m_ContextDevice.get(), m_Window);
 
-        m_MainDeletionQueue.PushFunction([&]() { 
-            m_ContextDevice->DestroyFrameData(); 
-        });
+        m_MainDeletionQueue.PushFunction([&]() { m_ContextDevice->DestroyFrameData(); });
 
-        InitPipelines();    
+        InitPipelines();
 
         InitImgui();
+
+        MaterialAllocator::Init();
 
         InitScene();
 
         m_MainCamera->SetVelocity(glm::vec3(0.f));
-        //m_MainCamera->SetPosition(glm::vec3(1, 1, 0));
+        // m_MainCamera->SetPosition(glm::vec3(1, 1, 0));
         m_IsInitialized = true;
     }
 
@@ -60,12 +61,12 @@ namespace MamontEngine
         while (!bQuit)
         {
             while (SDL_PollEvent(&event) != 0)
-            { 
+            {
                 if (event.type == SDL_EVENT_QUIT)
                     bQuit = true;
 
                 ImGui_ImplSDL3_ProcessEvent(&event);
-                
+
                 m_Renderer->UpdateWindowEvent(event.window.type);
 
                 m_MainCamera->ProccessEvent(event);
@@ -109,7 +110,7 @@ namespace MamontEngine
         if (m_IsInitialized)
         {
             m_Log.reset();
-            VkDevice& device = LogicalDevice::GetDevice();
+            VkDevice &device = LogicalDevice::GetDevice();
             vkDeviceWaitIdle(device);
             m_MainDeletionQueue.Flush();
 
@@ -117,15 +118,17 @@ namespace MamontEngine
 
             m_GuiLayer->Deactivate();
             m_GuiLayer.reset();
-            
+
             m_Scene.reset();
-            
-            //m_ContextDevice->Swapchain.Destroy(device);
+
+            MaterialAllocator::Destroy();
+
+            // m_ContextDevice->Swapchain.Destroy(device);
             m_Window.reset();
             m_ContextDevice.reset();
             //~ContextDevice
 
-            //m_Window->Close();
+            // m_Window->Close();
         }
 
         loadedEngine = nullptr;
@@ -133,11 +136,10 @@ namespace MamontEngine
 
     void MEngine::InitScene()
     {
-        m_MainCamera    = std::make_shared<Camera>();
-        m_Scene = std::make_shared<Scene>();
+        m_MainCamera = std::make_shared<Camera>();
+        m_Scene      = std::make_shared<Scene>();
         m_Scene->Init();
         m_Renderer->InitSceneRenderer(m_MainCamera, m_Scene);
-
     }
 
     void MEngine::UpdateScene(float inDeltaTime)
@@ -145,30 +147,25 @@ namespace MamontEngine
         m_MainCamera->Update(inDeltaTime);
         m_Scene->Update();
         m_Renderer->UpdateSceneRenderer(inDeltaTime);
-
     }
-    
+
     void MEngine::InitPipelines()
     {
         m_Renderer->InitPipelines();
     }
-    
+
     void MEngine::InitImgui()
-    {   
+    {
         m_GuiLayer->Init();
 
         m_Renderer->InitImGuiRenderer();
 
-        m_MainDeletionQueue.PushFunction(
-                [=]()
-                {
-                    ImGui_ImplVulkan_Shutdown();
-                });
-
+        m_MainDeletionQueue.PushFunction([=]() { ImGui_ImplVulkan_Shutdown(); });
     }
 
     void MEngine::PushGuiLayer(ImGuiLayer *inLayer)
     {
         m_GuiLayer = std::unique_ptr<ImGuiLayer>(inLayer);
     }
-}
+} // namespace MamontEngine
+

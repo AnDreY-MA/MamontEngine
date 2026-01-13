@@ -9,6 +9,12 @@
 #define SHADOW_MAP_CASCADE_COUNT 4
 //#define ambient 0.3
 
+layout(set = 0, binding = 1) uniform sampler2DArray shadowMap;
+layout(set = 0, binding = 4) uniform samplerCube samplerCubeMap;
+layout(set = 0, binding = 5) uniform sampler2D samplerBRDFLUT;
+layout(set = 0, binding = 6) uniform samplerCube samplerPrefilteredMap;
+layout(set = 0, binding = 7) uniform samplerCube irradianceMap;
+
 layout(location = 0) in vec3 inPos;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inUV;

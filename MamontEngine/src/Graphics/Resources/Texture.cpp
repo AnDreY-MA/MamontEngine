@@ -262,11 +262,11 @@ namespace MamontEngine
         return newTexture;
     }
 
-    Texture CreateWhiteTexture()
+    std::shared_ptr<Texture> CreateWhiteTexture()
     {
-        Texture        newTexture{};
+        std::shared_ptr<Texture> newTexture = std::make_shared<Texture>();
         const uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
-        newTexture.Load((void *)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, true);
+        newTexture->Load((void *)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, true);
         return newTexture;
     }
 

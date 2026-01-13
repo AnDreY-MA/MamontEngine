@@ -12,6 +12,7 @@
 #include "tracy/TracyVulkan.hpp"
 #include "vulkan/vk_enum_string_helper.h"
 #include "Graphics/Vulkan/ImmediateContext.h"
+#include "Core/Log.h"
 
 namespace MamontEngine
 {
@@ -231,10 +232,14 @@ namespace MamontEngine
         InitDescriptors();
 
         InitTracyContext();
+
+        //MaterialAllocator::Init();
     }
 
     VkContextDevice::~VkContextDevice()
     {
+        //MaterialAllocator::Destroy();
+
         m_SkyboxTexture.Destroy();
         m_BRDFUTTexture.Destroy();
         m_PrefilteredCubeTexture.Destroy();

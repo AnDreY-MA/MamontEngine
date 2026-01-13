@@ -44,7 +44,7 @@ namespace MamontEngine
     Texture LoadCubeMapTexture(const std::string &inFileName, VkFormat inFormat);
 
 
-    Texture CreateWhiteTexture();
+    std::shared_ptr<Texture> CreateWhiteTexture();
 
 
     Texture CreateErrorTexture();

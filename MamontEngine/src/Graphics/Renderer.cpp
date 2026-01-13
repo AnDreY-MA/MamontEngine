@@ -297,7 +297,7 @@ namespace MamontEngine
 
         {
             PROFILE_VK_ZONE(currentFrame.TracyContext, inCmd, "Scene Render");
-            m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor);
+            m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, m_RenderPipeline->OpaquePipeline.get(), m_RenderPipeline->TransparentPipeline.get());
         }
         vkCmdEndRendering(inCmd);
 
@@ -399,7 +399,7 @@ namespace MamontEngine
 
         constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
         vkCmdPushConstants(
-                inCmd, object.Material->Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
+                inCmd, m_RenderPipeline->SkyboxPipline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
 
         vkCmdDrawIndexed(inCmd, object.IndexCount, 1, object.FirstIndex, 0, 0);
     }

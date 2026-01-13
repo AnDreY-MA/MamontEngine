@@ -9,6 +9,7 @@
 #include "ECS/Scene.h"
 #include "ECS/Components/DirectionLightComponent.h"
 #include "ECS/Components/TransformComponent.h"
+#include "Graphics/Resources/MaterialAllocator.h"
 
 
 namespace MamontEngine
@@ -77,9 +78,13 @@ namespace MamontEngine
         m_MeshComponents.clear();*/
     }
 
-    void SceneRenderer::Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor)
+    void SceneRenderer::Render(VkCommandBuffer     inCmd,
+                               VkDescriptorSet     globalDescriptor,
+                               const PipelineData *inOpaquePipeline,
+                               const PipelineData *inTransperentPipeline)
     {
         PROFILE_ZONE("SceneRenderer::Render");
+
         std::vector<uint32_t> opaque_draws;
         opaque_draws.reserve(m_DrawContext.OpaqueSurfaces.size());
 
@@ -96,20 +101,20 @@ namespace MamontEngine
 
         for (size_t i = 0; i < m_DrawContext.TransparentSurfaces.size(); i++)
         {
-            if (IsVisible(m_DrawContext.OpaqueSurfaces[i].Bound, m_DrawContext.OpaqueSurfaces[i].Transform, m_SceneData.Viewproj))
+            if (IsVisible(m_DrawContext.TransparentSurfaces[i].Bound, m_DrawContext.TransparentSurfaces[i].Transform, m_SceneData.Viewproj))
             {
                 transp_draws.push_back(i);
             }
         }
 
+        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inOpaquePipeline->Pipeline);
+
+        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inOpaquePipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
+
 
         const auto draw = [&](const RenderObject &r)
         {
-            vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Pipeline);
-
-            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
-
-            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, r.Material->Pipeline->Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
+            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inOpaquePipeline->Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
 
             constexpr VkDeviceSize offsets[1] = {0};
             if (r.MeshBuffer.VertexBuffer.Buffer != VK_NULL_HANDLE)
@@ -127,8 +132,8 @@ namespace MamontEngine
             };
 
             constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
-            vkCmdPushConstants(
-                    inCmd, r.Material->Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
+            vkCmdPushConstants(inCmd, 
+                inOpaquePipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
 
             vkCmdDrawIndexed(inCmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
         };
@@ -139,10 +144,10 @@ namespace MamontEngine
             draw(m_DrawContext.OpaqueSurfaces[r]);
         }
 
-        for (const auto &r : transp_draws)
+        /*for (const auto &r : transp_draws)
         {
             draw(m_DrawContext.TransparentSurfaces[r]);
-        }
+        }*/
 
         // m_DrawContext.Clear();
     }
@@ -235,10 +240,6 @@ namespace MamontEngine
 
         const auto& sceneRegistry = m_Scene->GetRegistry();
 
-        glm::vec3 lightDir = -m_LightPosition;
-                    lightDir = glm::normalize(lightDir);
-
-
         m_SceneData.View           = view;
         m_SceneData.Proj           = projection;
         m_SceneData.Viewproj       = projection * view;
@@ -254,11 +255,10 @@ namespace MamontEngine
 
             viewDirectionLight.each([&](const auto& ligth, const auto& transform) { 
                 m_CascadeData.Color        = ligth.GetColor();
-                        const glm::vec3 lightDirection = glm::normalize(-transform.Transform.Position);
+                const glm::vec3 lightDirection = glm::normalize(-transform.Transform.Position);
                 m_SceneData.LightDirection   = lightDirection;
                 m_SceneData.SunLightPosition   = transform.Transform.Position;
                 m_CascadeData.LightDirection = lightDirection;
-               // m_LightPosition                = transform.Transform.Position;
             });
             for (size_t i = 0; i < CASCADECOUNT; i++)
             {

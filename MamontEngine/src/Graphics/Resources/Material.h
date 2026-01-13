@@ -2,11 +2,10 @@
 
 #include "Graphics/Resources/Texture.h"
 #include "Graphics/Vulkan/Image.h"
+#include "Graphics/Resources/Materials/MaterialData.h"
 
 namespace MamontEngine
 {
-    struct PipelineData;
-
     enum class EMaterialPass : uint8_t
     {
         MAIN_COLOR = 0,
@@ -14,9 +13,15 @@ namespace MamontEngine
         OTHER
     };
 
-    struct Material
+    struct Material : public NonCopyable
     {
-        std::shared_ptr<PipelineData> Pipeline;
+        Material() = default;
+        ~Material();
+
+        Material(Material &&other);
+
+        Material &operator=(Material &&other);
+
         VkDescriptorSet               MaterialSet{VK_NULL_HANDLE};
         EMaterialPass                 PassType{EMaterialPass::MAIN_COLOR};
 
@@ -24,17 +29,16 @@ namespace MamontEngine
 
         struct MaterialResources
         {
-            Texture ColorTexture;
-            Texture MetalRoughTexture;
-            Texture NormalTexture;
-            Texture EmissiveTexture;
-            Texture OcclusionTexture;
+            std::shared_ptr<Texture> ColorTexture;
+            std::shared_ptr<Texture> MetalRoughTexture;
+            std::shared_ptr<Texture> NormalTexture;
+            std::shared_ptr<Texture> EmissiveTexture;
+            std::shared_ptr<Texture> OcclusionTexture;
         } Resources;
 
         struct MaterialConstants
         {
             glm::vec4 ColorFactors = glm::vec4(1.0f);
-
             float MetalicFactor{0.f};
             float RoughFactor{0.f};
 
@@ -42,9 +46,12 @@ namespace MamontEngine
             float _pad1{0.f};
         } Constants;
 
+        uint32_t Index{0};
         size_t BufferOffset{0};
 
         bool IsDity{true};
+
+        void Swap(Material &other);
     };
 } // namespace MamontEngine
 

@@ -58,12 +58,9 @@ namespace MamontEngine
 
     private:
         std::vector<Node*>                          m_Nodes;
-        std::vector<Texture>               m_Textures;
+        std::vector<std::shared_ptr<Texture>>      m_Textures;
         std::vector<std::shared_ptr<Material>> m_Materials;
         std::vector<std::shared_ptr<NewMesh>>      m_Meshes;
-
-        DescriptorAllocatorGrowable DescriptorPool;
-        AllocatedBuffer             MaterialDataBuffer;
 
         MeshBuffer Buffer;
 

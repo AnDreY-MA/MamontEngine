@@ -62,7 +62,7 @@ namespace MamontEngine
 
     void Scene::Init()
     {
-        Load();
+        //Load();
     }
 
     void Scene::Clear()
