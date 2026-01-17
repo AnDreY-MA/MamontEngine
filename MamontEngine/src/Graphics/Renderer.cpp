@@ -1,7 +1,7 @@
 ﻿#include "Renderer.h"
 #include "Core/ContextDevice.h"
 
-#include "Core/ImGuiRenderer.h"
+#include "Graphics/ImGuiRenderer.h"
 #include "Utils/VkImages.h"
 #include "Utils/VkInitializers.h"
 #include "Utils/VkPipelines.h"
@@ -27,6 +27,7 @@ namespace MamontEngine
     Renderer::Renderer(VkContextDevice &inDeviceContext, const std::shared_ptr<WindowCore> &inWindow) 
         : m_DeviceContext(inDeviceContext), m_Window(inWindow)
     {
+        InitPipelines();
     }
 
     Renderer::~Renderer()
@@ -332,17 +333,12 @@ namespace MamontEngine
 
         constexpr VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION, .height = SHADOWMAP_DIMENSION};
 
-        for (size_t i = 0; i < CASCADECOUNT; i++)
+        uint32_t cascadeIndex{0};
+        for (const auto& cascade : m_DeviceContext.Cascades)
         {
             VkUtil::transition_image(inCmd, m_DeviceContext.CascadeDepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-            const VkImageView cascadeDepth = m_DeviceContext.Cascades[i].View;
-            if (cascadeDepth == VK_NULL_HANDLE)
-            {
-                fmt::println("cascadeDepth is Null");
-                continue;
-            }
-            VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(cascadeDepth);
+            VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(cascade.View);
             depthAttachment.clearValue.depthStencil   = {1.f, 0};
             depthAttachment.loadOp                    = VK_ATTACHMENT_LOAD_OP_CLEAR;
             depthAttachment.storeOp                   = VK_ATTACHMENT_STORE_OP_STORE;
@@ -354,14 +350,14 @@ namespace MamontEngine
             SetViewportScissor(inCmd, cascadeExtent);
             vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Pipeline);
 
-            m_SceneRenderer->RenderShadow(
-                    inCmd, currentFrame.GlobalDescriptor, m_DeviceContext.Cascades[i].ViewProjectMatrix, *m_CascadePipeline, static_cast<uint32_t>(i));
+            m_SceneRenderer->RenderShadow(inCmd, currentFrame.GlobalDescriptor, cascade.ViewProjectMatrix, *m_CascadePipeline, cascadeIndex);
 
             vkCmdEndRendering(inCmd);
             VkUtil::transition_image(inCmd,
                                      m_DeviceContext.CascadeDepthImage.Image,
                                      VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
                                      VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+            ++cascadeIndex;
         }
     }
 
@@ -488,8 +484,6 @@ namespace MamontEngine
 
     void Renderer::UpdateSceneRenderer(float inDeltaTime)
     {
-        m_SceneRenderer->UpdateCascades(m_DeviceContext.Cascades);
-
         m_SceneRenderer->Update(m_Window->GetExtent(), m_DeviceContext.Cascades, inDeltaTime);
     }
 

@@ -13,15 +13,12 @@
 #include <unordered_set>
 #include <cstdint>
 #include <functional>
-#include <deque>
 #include <queue>
 #include <span>
 #include <chrono>
-#include <thread>
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
-#include <VkBootstrap.h>
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>

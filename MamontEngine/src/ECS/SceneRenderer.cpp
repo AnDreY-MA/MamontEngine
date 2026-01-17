@@ -9,7 +9,6 @@
 #include "ECS/Scene.h"
 #include "ECS/Components/DirectionLightComponent.h"
 #include "ECS/Components/TransformComponent.h"
-#include "Graphics/Resources/MaterialAllocator.h"
 
 
 namespace MamontEngine
@@ -60,7 +59,6 @@ namespace MamontEngine
     {
         constexpr float angle  = glm::radians(360.0f);
         constexpr float radius = 20.0f;
-        m_LightPosition        = glm::vec3(-2.f, 2.f, 0.f);
     }
 
     SceneRenderer::~SceneRenderer()
@@ -229,14 +227,14 @@ namespace MamontEngine
         }
     }
 
-    void SceneRenderer::Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades, float inDeltaTime)
+    void SceneRenderer::Update(const VkExtent2D &inWindowExtent, std::array<Cascade, CASCADECOUNT> &inCascades, float inDeltaTime)
     {
+        UpdateCascades(inCascades);
+
         const glm::mat4 &view = m_Camera->GetViewMatrix();
 
         m_Camera->UpdateProjection(inWindowExtent);
         const glm::mat4 &projection = m_Camera->GetProjection();
-
-        UpdateLight(inDeltaTime);
 
         const auto& sceneRegistry = m_Scene->GetRegistry();
 
@@ -287,18 +285,11 @@ namespace MamontEngine
         }
     }
 
-    void SceneRenderer::UpdateLight(float inDeltaTime)
-    {
-        static float angle = 0.f;
-        angle += inDeltaTime * 0.5f;
-        const float radius           = 5.f;
-        m_LightPosition              = glm::vec3(cos(angle) * radius, radius, sin(angle) * radius);
-        //m_SceneData.SunLightPosition = m_LightPosition;
-        // m_LightPosition.y  = 3.f;
-    }
-
     void SceneRenderer::UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades)
     {
+        if (!m_CascadeData.IsActive)
+            return;
+
         std::array<float, CASCADECOUNT> cascadeSplits{};
 
         const float nearClip{m_Camera->GetNearClip()};

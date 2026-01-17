@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <cereal/cereal.hpp>
 
 namespace MamontEngine
 {
@@ -24,5 +25,19 @@ namespace MamontEngine
 	protected:
         std::filesystem::path m_FilePath;
         std::string           m_Name{std::string("")};
+
+	private:
+        friend class cereal::access;
+
+        template <typename Archive>
+        friend void save(Archive &ar, const Asset& asset)
+        {
+
+        }
+        template <typename Archive>
+        friend void load(Archive &ar, Asset &asset)
+        {
+
+        }
 	};
 }

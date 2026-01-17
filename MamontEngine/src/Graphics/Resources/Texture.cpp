@@ -132,9 +132,8 @@ namespace MamontEngine
         }
     }
 
-    Texture LoadCubeMapTexture(const std::string &inFileName, VkFormat inFormat)
+    Texture* LoadCubeMapTexture(const std::string &inFileName, VkFormat inFormat)
     {
-
         ktxTexture *cubeMapTexture = nullptr;
 
         auto result = ktxTexture_CreateFromNamedFile(inFileName.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &cubeMapTexture);
@@ -157,12 +156,12 @@ namespace MamontEngine
         AllocatedBuffer uploadBuffer = CreateStagingBuffer(ktxTextureSize);
         memcpy(uploadBuffer.Info.pMappedData, ktxTextureData, ktxTextureSize);
 
-        Texture newTexture{};
+        Texture* newTexture = new Texture();
 
         // Create CubeMapTexture
         {
-            newTexture.ImageFormat = inFormat;
-            newTexture.ImageExtent = extentSize;
+            newTexture->ImageFormat = inFormat;
+            newTexture->ImageExtent = extentSize;
 
             VkImageCreateInfo imgInfo = vkinit::image_create_info(inFormat, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, extentSize, 6);
             imgInfo.mipLevels         = mipLevels;
@@ -171,12 +170,12 @@ namespace MamontEngine
             constexpr VmaAllocationCreateInfo allocInfo = {.usage         = VMA_MEMORY_USAGE_GPU_ONLY,
                                                            .requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)};
 
-            VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &imgInfo, &allocInfo, &newTexture.Image, &newTexture.Allocation, &newTexture.Info));
+            VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &imgInfo, &allocInfo, &newTexture->Image, &newTexture->Allocation, &newTexture->Info));
 
             VkImageViewCreateInfo viewInfo =
-                    vkinit::imageviewCreateInfo(inFormat, newTexture.Image, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, 6, VK_IMAGE_VIEW_TYPE_CUBE);
+                    vkinit::imageviewCreateInfo(inFormat, newTexture->Image, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, 6, VK_IMAGE_VIEW_TYPE_CUBE);
 
-            VK_CHECK(vkCreateImageView(LogicalDevice::GetDevice(), &viewInfo, nullptr, &newTexture.ImageView));
+            VK_CHECK(vkCreateImageView(LogicalDevice::GetDevice(), &viewInfo, nullptr, &newTexture->ImageView));
         }
 
         ImmediateContext::ImmediateSubmit(
@@ -216,17 +215,17 @@ namespace MamontEngine
                         }
                     }
 
-                    VkUtil::transition_image(cmd, newTexture.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, 6);
+                    VkUtil::transition_image(cmd, newTexture->Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, 6);
 
                     vkCmdCopyBufferToImage(cmd,
                                            uploadBuffer.Buffer,
-                                           newTexture.Image,
+                                           newTexture->Image,
                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                            static_cast<uint32_t>(bufferCopyRegions.size()),
                                            bufferCopyRegions.data());
 
                     VkUtil::transition_image(
-                            cmd, newTexture.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels, 6);
+                            cmd, newTexture->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels, 6);
                 });
 
         VkSamplerCreateInfo samplerInfo = {};
@@ -254,7 +253,7 @@ namespace MamontEngine
             samplerInfo.anisotropyEnable = VK_TRUE;
         }
 
-        VK_CHECK(vkCreateSampler(LogicalDevice::GetDevice(), &samplerInfo, nullptr, &newTexture.Sampler));
+        VK_CHECK(vkCreateSampler(LogicalDevice::GetDevice(), &samplerInfo, nullptr, &newTexture->Sampler));
 
         uploadBuffer.Destroy();
         ktxTexture_Destroy(cubeMapTexture);
@@ -270,9 +269,9 @@ namespace MamontEngine
         return newTexture;
     }
 
-    Texture CreateErrorTexture()
+    Texture* CreateErrorTexture()
     {
-        Texture        newTexture{};
+        Texture*        newTexture = new Texture();
         const uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
         const uint32_t                magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
 
@@ -284,11 +283,12 @@ namespace MamontEngine
                 pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
             }
         }
-        newTexture.Load(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+        newTexture->Load(pixels.data(), VkExtent3D{16, 16, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
         return newTexture;
     }
 
-    Texture GeneratePrefilteredCube(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &inDrawSkyboxFunc, const Texture& inEnvironmentTexture)
+    Texture *
+    GeneratePrefilteredCube(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &inDrawSkyboxFunc, const Texture &inEnvironmentTexture)
     {
         const VkDevice       device  = LogicalDevice::GetDevice();
         VkFormat             format  = VK_FORMAT_R16G16B16A16_SFLOAT;
@@ -297,9 +297,9 @@ namespace MamontEngine
         const uint32_t       numMips = static_cast<uint32_t>(floor(log2(dim))) + 1;
         constexpr VkExtent3D extent{.width = dim, .height = dim, .depth = 1};
 
-        Texture newTexture;
-        newTexture.ImageExtent                      = extent;
-        newTexture.ImageFormat                      = format;
+        Texture *newTexture = new Texture();
+        newTexture->ImageExtent                      = extent;
+        newTexture->ImageFormat                      = format;
         VkImageCreateInfo imageInfo                 = vkinit::image_create_info(format, usage, extent);
         imageInfo.mipLevels                         = numMips;
         imageInfo.arrayLayers                       = 6;
@@ -311,13 +311,13 @@ namespace MamontEngine
             .requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
         };
 
-        VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &imageInfo, &allocInfo, &newTexture.Image, &newTexture.Allocation, &newTexture.Info));
+        VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &imageInfo, &allocInfo, &newTexture->Image, &newTexture->Allocation, &newTexture->Info));
 
-        VkImageViewCreateInfo viewCreateInfo       = vkinit::imageviewCreateInfo(format, newTexture.Image, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageViewCreateInfo viewCreateInfo       = vkinit::imageviewCreateInfo(format, newTexture->Image, VK_IMAGE_ASPECT_COLOR_BIT);
         viewCreateInfo.viewType                    = VK_IMAGE_VIEW_TYPE_CUBE;
         viewCreateInfo.subresourceRange.levelCount = numMips;
         viewCreateInfo.subresourceRange.layerCount = 6;
-        VK_CHECK(vkCreateImageView(device, &viewCreateInfo, nullptr, &newTexture.ImageView));
+        VK_CHECK(vkCreateImageView(device, &viewCreateInfo, nullptr, &newTexture->ImageView));
 
         VkSamplerCreateInfo samplerCreateInfo = {
             .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr};
@@ -330,7 +330,7 @@ namespace MamontEngine
         samplerCreateInfo.minLod        = 0.0f;
         samplerCreateInfo.maxLod        = static_cast<float>(numMips);
         samplerCreateInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VK_CHECK(vkCreateSampler(device, &samplerCreateInfo, nullptr, &newTexture.Sampler));
+        VK_CHECK(vkCreateSampler(device, &samplerCreateInfo, nullptr, &newTexture->Sampler));
 
         VkAttachmentDescription attDesc = {};
         // Color attachment
@@ -585,7 +585,7 @@ namespace MamontEngine
                 {
                     vkCmdSetViewport(cmd, 0, 1, &viewport);
                     vkCmdSetScissor(cmd, 0, 1, &scissor);
-                    VkUtil::transition_image(cmd, newTexture.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, numMips, 6);
+                    VkUtil::transition_image(cmd, newTexture->Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, numMips, 6);
 
                     for (uint32_t m = 0; m < numMips; m++)
                     {
@@ -633,7 +633,7 @@ namespace MamontEngine
                             vkCmdCopyImage(cmd,
                                            offscreen.Image,
                                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                           newTexture.Image,
+                                           newTexture->Image,
                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                            1,
                                            &copyRegion);
@@ -643,7 +643,7 @@ namespace MamontEngine
                         }
                     }
 
-                    VkUtil::transition_image(cmd, newTexture.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, numMips, 6);
+                    VkUtil::transition_image(cmd, newTexture->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, numMips, 6);
                 });
 
         vkDestroyRenderPass(device, renderPass, nullptr);
@@ -659,7 +659,7 @@ namespace MamontEngine
         return newTexture;
     }
     
-    Texture GenerateIrradianceTexture(VkDeviceAddress                           vertexAddress,
+    Texture* GenerateIrradianceTexture(VkDeviceAddress                           vertexAddress,
         std::function<void(VkCommandBuffer cmd)>& inDrawSkyboxFunc,
         const Texture& inEnvironmentTexture)
     {
@@ -670,9 +670,9 @@ namespace MamontEngine
         const uint32_t       numMips = static_cast<uint32_t>(floor(log2(dim))) + 1;
         constexpr VkExtent3D extent{.width = dim, .height = dim, .depth = 1};
 
-        Texture newTexture;
-        newTexture.ImageExtent                      = extent;
-        newTexture.ImageFormat                      = format;
+        Texture* newTexture = new Texture();
+        newTexture->ImageExtent                      = extent;
+        newTexture->ImageFormat                      = format;
         VkImageCreateInfo imageInfo                 = vkinit::image_create_info(format, usage, extent);
         imageInfo.mipLevels                         = numMips;
         imageInfo.arrayLayers                       = 6;
@@ -682,13 +682,13 @@ namespace MamontEngine
         constexpr VmaAllocationCreateInfo allocInfo = {.usage         = VMA_MEMORY_USAGE_GPU_ONLY,
                                                        .requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)};
 
-        VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &imageInfo, &allocInfo, &newTexture.Image, &newTexture.Allocation, &newTexture.Info));
+        VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &imageInfo, &allocInfo, &newTexture->Image, &newTexture->Allocation, &newTexture->Info));
 
-        VkImageViewCreateInfo viewCreateInfo       = vkinit::imageviewCreateInfo(format, newTexture.Image, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageViewCreateInfo viewCreateInfo       = vkinit::imageviewCreateInfo(format, newTexture->Image, VK_IMAGE_ASPECT_COLOR_BIT);
         viewCreateInfo.viewType                    = VK_IMAGE_VIEW_TYPE_CUBE;
         viewCreateInfo.subresourceRange.levelCount = numMips;
         viewCreateInfo.subresourceRange.layerCount = 6;
-        VK_CHECK(vkCreateImageView(device, &viewCreateInfo, nullptr, &newTexture.ImageView));
+        VK_CHECK(vkCreateImageView(device, &viewCreateInfo, nullptr, &newTexture->ImageView));
 
         VkSamplerCreateInfo samplerCreateInfo = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr};
         samplerCreateInfo.magFilter           = VK_FILTER_LINEAR;
@@ -700,7 +700,7 @@ namespace MamontEngine
         samplerCreateInfo.minLod              = 0.0f;
         samplerCreateInfo.maxLod              = static_cast<float>(numMips);
         samplerCreateInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VK_CHECK(vkCreateSampler(device, &samplerCreateInfo, nullptr, &newTexture.Sampler));
+        VK_CHECK(vkCreateSampler(device, &samplerCreateInfo, nullptr, &newTexture->Sampler));
 
         VkAttachmentDescription attDesc = {};
         // Color attachment
@@ -951,7 +951,7 @@ namespace MamontEngine
                 {
                     vkCmdSetViewport(cmd, 0, 1, &viewport);
                     vkCmdSetScissor(cmd, 0, 1, &scissor);
-                    VkUtil::transition_image(cmd, newTexture.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, numMips, 6);
+                    VkUtil::transition_image(cmd, newTexture->Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, numMips, 6);
 
                     for (uint32_t m = 0; m < numMips; m++)
                     {
@@ -998,7 +998,7 @@ namespace MamontEngine
                             vkCmdCopyImage(cmd,
                                            offscreen.Image,
                                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                           newTexture.Image,
+                                           newTexture->Image,
                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                            1,
                                            &copyRegion);
@@ -1008,7 +1008,7 @@ namespace MamontEngine
                         }
                     }
 
-                    VkUtil::transition_image(cmd, newTexture.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, numMips, 6);
+                    VkUtil::transition_image(cmd, newTexture->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, numMips, 6);
                 });
 
         vkDestroyRenderPass(device, renderPass, nullptr);
@@ -1023,7 +1023,7 @@ namespace MamontEngine
 
         return newTexture;
     }
-    Texture GenerateBRDFLUT()
+    Texture* GenerateBRDFLUT()
     {
         const VkDevice       device = LogicalDevice::GetDevice();
         VkFormat             format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -1031,25 +1031,25 @@ namespace MamontEngine
         constexpr uint32_t   dim    = 512;
         constexpr VkExtent3D extent{.width = dim, .height = dim, .depth = 1};
 
-        Texture newTexture;
-        newTexture.ImageExtent                      = extent;
-        newTexture.ImageFormat                      = format;
-        VkImageCreateInfo imageCreateInfo           = vkinit::image_create_info(format, usage, newTexture.ImageExtent);
+        Texture* newTexture = new Texture();
+        newTexture->ImageExtent                      = extent;
+        newTexture->ImageFormat                      = format;
+        VkImageCreateInfo imageCreateInfo           = vkinit::image_create_info(format, usage, newTexture->ImageExtent);
         imageCreateInfo.mipLevels                   = 1;
         imageCreateInfo.arrayLayers                 = 1;
         imageCreateInfo.samples                     = VK_SAMPLE_COUNT_1_BIT;
         imageCreateInfo.tiling                      = VK_IMAGE_TILING_OPTIMAL;
         constexpr VmaAllocationCreateInfo allocInfo = {.usage         = VMA_MEMORY_USAGE_GPU_ONLY,
                                                        .requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)};
-        VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &imageCreateInfo, &allocInfo, &newTexture.Image, &newTexture.Allocation, &newTexture.Info));
+        VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &imageCreateInfo, &allocInfo, &newTexture->Image, &newTexture->Allocation, &newTexture->Info));
 
 
         // ImageView
 
-        VkImageViewCreateInfo imageViewInfo       = vkinit::imageviewCreateInfo(format, newTexture.Image, VK_IMAGE_ASPECT_COLOR_BIT);
+        VkImageViewCreateInfo imageViewInfo       = vkinit::imageviewCreateInfo(format, newTexture->Image, VK_IMAGE_ASPECT_COLOR_BIT);
         imageViewInfo.subresourceRange.levelCount = 1;
         imageViewInfo.subresourceRange.layerCount = 1;
-        VK_CHECK(vkCreateImageView(device, &imageViewInfo, nullptr, &newTexture.ImageView));
+        VK_CHECK(vkCreateImageView(device, &imageViewInfo, nullptr, &newTexture->ImageView));
 
         // Sampler
         VkSamplerCreateInfo samplerInfo = {.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
@@ -1062,7 +1062,7 @@ namespace MamontEngine
         samplerInfo.minLod              = 0.0f;
         samplerInfo.maxLod              = 1.0f;
         samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VK_CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &newTexture.Sampler));
+        VK_CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &newTexture->Sampler));
 
 
         VkAttachmentDescription attDesc = {};
@@ -1115,7 +1115,7 @@ namespace MamontEngine
         VkFramebufferCreateInfo frameBufferInfo = {.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, .pNext = nullptr};
         frameBufferInfo.renderPass              = renderPass;
         frameBufferInfo.attachmentCount         = 1;
-        frameBufferInfo.pAttachments            = &newTexture.ImageView;
+        frameBufferInfo.pAttachments            = &newTexture->ImageView;
         frameBufferInfo.width                   = dim;
         frameBufferInfo.height                  = dim;
         frameBufferInfo.layers                  = 1;

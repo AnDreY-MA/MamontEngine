@@ -14,7 +14,8 @@ VkCommandPoolCreateInfo MamontEngine::vkinit::command_pool_create_info(uint32_t 
 }
 
 
-VkCommandBufferAllocateInfo MamontEngine::vkinit::command_buffer_allocate_info(VkCommandPool pool, uint32_t count /*= 1*/)
+VkCommandBufferAllocateInfo
+MamontEngine::vkinit::command_buffer_allocate_info(VkCommandPool pool, uint32_t count /*= 1*/, VkCommandBufferLevel level /*= VK_COMMAND_BUFFER_LEVEL_PRIMARY*/)
 {
     VkCommandBufferAllocateInfo info = {};
     info.sType                       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -22,7 +23,7 @@ VkCommandBufferAllocateInfo MamontEngine::vkinit::command_buffer_allocate_info(V
 
     info.commandPool        = pool;
     info.commandBufferCount = count;
-    info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    info.level              = level;
     return info;
 }
 //< init_cmd

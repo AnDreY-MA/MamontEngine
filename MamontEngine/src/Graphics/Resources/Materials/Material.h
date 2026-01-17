@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Graphics/Resources/Texture.h"
-#include "Graphics/Vulkan/Image.h"
 #include "Graphics/Resources/Materials/MaterialData.h"
 
 namespace MamontEngine

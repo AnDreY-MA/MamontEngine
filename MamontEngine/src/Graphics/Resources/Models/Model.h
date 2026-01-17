@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Graphics/Resources/Asset.h"
-#include "Graphics/Resources/Material.h"
+#include "Graphics/Resources/Materials/Material.h"
 #include "Graphics/Resources/Models/Mesh.h"
 #include <fastgltf/glm_element_traits.hpp>
 #include <fastgltf/parser.hpp>

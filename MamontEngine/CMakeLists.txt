@@ -8,7 +8,6 @@ file(GLOB src "src/*.h" "src/*.cpp" "src/*.hpp")
 file(GLOB_RECURSE Core "src/Core/*.h" "src/Core/*.hpp" "src/Core/*.cpp")
 file(GLOB_RECURSE Renderer "src/Graphics/*.h" "src/Graphics/*.hpp" "src/Graphics/*.cpp")
 file(GLOB_RECURSE Devices "src/Graphics/Devices/*.h" "src/Graphics/Devices/*.hpp" "src/Graphics/Devices/*.cpp")
-#file(GLOB_RECURSE Materials "src/Graphics/Materials/*.h" "src/Graphics/Materials/*.hpp" "src/Graphics/Materials/*.cpp")
 file(GLOB_RECURSE Materials "src/Graphics/Resources/*.h" "src/Graphics/Resources/*.hpp" "src/Graphics/Resources/*.cpp")
 file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.hpp" "src/Utils/*.cpp")
 file(GLOB_RECURSE ECS "src/ECS/*.h" "src/ECS/*.hpp" "src/ECS/*.cpp")
@@ -41,14 +40,14 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 
 # Compiler-specific flags
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE "MM_COMPILER_CLANG")
+  target_compile_definitions(${PROJECT_NAME} PRIVATE "MM_COMPILER_CLANG")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE "MM_COMPILER_GCC")
+  target_compile_definitions(${PROJECT_NAME} PRIVATE "MM_COMPILER_GCC")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE "MM_COMPILER_INTEL")
+  target_compile_definitions(${PROJECT_NAME} PRIVATE "MM_COMPILER_INTEL")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE "MM_COMPILER_MSVC")
-    target_compile_options(${PROJECT_NAME} PRIVATE /std:c++23 /permissive- /W4 /EHsc /MP /bigobj)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE "MM_COMPILER_MSVC")
+  target_compile_options(${PROJECT_NAME} PRIVATE /std:c++23 /permissive- /W4 /EHsc /MP /bigobj)
 endif()
 
 # CPM setup
@@ -59,11 +58,11 @@ include(${CMAKE_SOURCE_DIR}/cpm.cmake)
 
 # Vulkan setup
 if (VULKAN_SDK)
-    set(ENV{VULKAN_SDK} ${VULKAN_SDK})
+  set(ENV{VULKAN_SDK} ${VULKAN_SDK})
 endif()
 find_package(Vulkan REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
-    
+
 # GLSL Compilation
 find_program(GLSL_VALIDATOR glslangValidator HINTS /usr/bin /usr/local/bin $ENV{VULKAN_SDK}/Bin/ $ENV{VULKAN_SDK}/Bin32/)
 file(GLOB_RECURSE GLSL_SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/Shaders/*.frag" "${PROJECT_SOURCE_DIR}/src/Shaders/*.vert" "${PROJECT_SOURCE_DIR}/src/Shaders/*.comp")
@@ -91,20 +90,15 @@ include_directories(${PROJECT_NAME} tracy/public)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GPUOpen::VulkanMemoryAllocator EnTT::EnTT glm::glm Tracy::TracyClient)
 
-#target_compile_definitions(${PROJECT_NAME} PRIVATE TRACY_PROTOCOL=74)
-#if(TRACY_ENABLE_VULKAN)
- #   target_link_libraries(${PROJECT_NAME} PUBLIC Tracy::TracyVulkan)
-#endif()
-
 # imgui
-add_library(imgui STATIC 
-    vendor/imgui/imgui.h 
-    vendor/imgui/imgui.cpp 
-    vendor/imgui/imgui_demo.cpp 
-    vendor/imgui/imgui_draw.cpp 
-    vendor/imgui/imgui_widgets.cpp 
-    vendor/imgui/imgui_tables.cpp 
-    vendor/imgui/backends/imgui_impl_vulkan.cpp 
+add_library(imgui STATIC
+    vendor/imgui/imgui.h
+    vendor/imgui/imgui.cpp
+    vendor/imgui/imgui_demo.cpp
+    vendor/imgui/imgui_draw.cpp
+    vendor/imgui/imgui_widgets.cpp
+    vendor/imgui/imgui_tables.cpp
+    vendor/imgui/backends/imgui_impl_vulkan.cpp
     vendor/imgui/backends/imgui_impl_sdl3.cpp)
 target_include_directories(imgui PUBLIC vendor/imgui)
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
@@ -124,24 +118,24 @@ target_link_libraries(${PROJECT_NAME} PUBLIC stb::image)
 
 #cereal
 if(NOT TARGET cereal)
-    add_subdirectory("vendor/cereal")
-    target_link_libraries(${PROJECT_NAME} PUBLIC cereal::cereal)
+  add_subdirectory("vendor/cereal")
+  target_link_libraries(${PROJECT_NAME} PUBLIC cereal::cereal)
 endif()
 
-add_library(ImGuizmo STATIC 
-    vendor/ImGuizmo/ImGuizmo.cpp 
-    vendor/ImGuizmo/ImSequencer.cpp 
-    vendor/ImGuizmo/GraphEditor.cpp 
-    vendor/ImGuizmo/ImCurveEdit.cpp 
+add_library(ImGuizmo STATIC
+    vendor/ImGuizmo/ImGuizmo.cpp
+    vendor/ImGuizmo/ImSequencer.cpp
+    vendor/ImGuizmo/GraphEditor.cpp
+    vendor/ImGuizmo/ImCurveEdit.cpp
     vendor/ImGuizmo/ImGradient.cpp)
 
 #target_include_directories(ImGuizmo PUBLIC vendor/ImGuizmo)
 #target_link_libraries(${PROJECT_NAME} PUBLIC ImGuizmo)
-target_include_directories(ImGuizmo PUBLIC 
+target_include_directories(ImGuizmo PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
 )
-target_compile_definitions(ImGuizmo PRIVATE 
+target_compile_definitions(ImGuizmo PRIVATE
     IMGUI_DEFINE_MATH_OPERATORS
 )
 

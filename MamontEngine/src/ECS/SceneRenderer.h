@@ -33,9 +33,7 @@ namespace MamontEngine
 
         void RenderPicking(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, VkPipeline inPipeline, VkPipelineLayout inLayout);
 
-        void Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades, float inDeltaTime);
-
-        void UpdateLight(float inDeltaTime);
+        void Update(const VkExtent2D &inWindowExtent, std::array<Cascade, CASCADECOUNT> &inCascades, float inDeltaTime);
 
         void UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades);
 
@@ -62,25 +60,12 @@ namespace MamontEngine
             m_DrawContext.Clear();
         }
 
-        glm::vec3 &CascadeLightPosition()
-        {
-            return m_LightPosition;
-        }
-
-        void SetCascadeLightPosition(const glm::vec3 &inPos)
-        {
-            m_LightPosition = inPos;
-        }
-
         const bool HasDirectionLight() const
         {
             return m_HasDirectionLight;
         }
-        glm::vec3 m_LightPosition{glm::vec3(1.f)};
-
-private:
+    private:
         void Clear();
-
 
     private:
         std::shared_ptr<Scene>     m_Scene;

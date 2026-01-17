@@ -5,7 +5,7 @@
 #include "Window.h"
 #include "ContextDevice.h"
 #include "Graphics/Renderer.h"
-#include "ImGuiRenderer.h"
+#include "Graphics/ImGuiRenderer.h"
 #include <ECS/SceneRenderer.h>
 #include "ImGuiLayer.h"
 #include "Core/Log.h"
@@ -56,7 +56,6 @@ namespace MamontEngine
         {
             return m_Renderer->GetSceneRenderer();
         }
-        
 
         const WindowCore* GetMainWindow() const
         {
@@ -76,11 +75,7 @@ namespace MamontEngine
         }
 
     private:
-        void InitPipelines();
-
         void InitImgui();
-
-        void InitScene();
         void UpdateScene(float inDeltaTime);
 
     private:

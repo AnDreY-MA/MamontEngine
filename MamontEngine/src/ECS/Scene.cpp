@@ -19,6 +19,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include "Graphics/Resources/AssetManager.h"
 
 /*META_INIT(glm);
 
@@ -31,6 +32,7 @@ FINISH_REFLECT()*/
 
 namespace MamontEngine
 {
+     
     Scene::Scene() 
     {
         using hs = entt::hashed_string;
@@ -58,16 +60,11 @@ namespace MamontEngine
     Scene::~Scene()
     {
         Clear();
-    }
 
-    void Scene::Init()
-    {
-        //Load();
     }
 
     void Scene::Clear()
     {
-
         m_Registry.clear();
     }
 
@@ -101,8 +98,9 @@ namespace MamontEngine
     void Scene::Load()
     {
         Clear();
+
         const std::string fileScene = DEFAULT_ASSETS_DIRECTORY + "Scenes/Scene.sasset";
-        const bool result = Load(fileScene);
+        const bool        result    = Load(fileScene);
 
         Log::Info("Load Scene is {}", result ? "Success" : "Failed");
     }
@@ -133,16 +131,16 @@ namespace MamontEngine
 
     void Scene::Update()
     {
-        const auto meshes = m_Registry.view<MeshComponent, TransformComponent>();
-        for (const auto &&[entity, meshComponent, transform] : meshes.each())
+        auto view = m_Registry.view<MeshComponent, TransformComponent>();
+        for (auto &&[entity, meshComponent, transform] : view.each())
         {
             if (meshComponent.Mesh)
             {
-                meshComponent.Mesh->UpdateTransform(
-                        transform.Matrix());
-                //transform.IsDirty = false;
+                meshComponent.Mesh->UpdateTransform(transform.Matrix());
+                // transform.IsDirty = false;
             }
         }
+        
     }
 
     void Scene::DestroyEntity(Entity inEntity)

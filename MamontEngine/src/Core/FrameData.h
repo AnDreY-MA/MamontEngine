@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Utils/VkDestriptor.h"
-#include "Graphics/Vulkan/Image.h"
 #include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/Buffers/Buffer.h"
 #include "tracy/TracyVulkan.hpp"
@@ -40,6 +39,8 @@ namespace MamontEngine
 
         VkCommandPool   CommandPool{VK_NULL_HANDLE};
         VkCommandBuffer MainCommandBuffer{VK_NULL_HANDLE};
+
+        VkCommandBuffer UICommandBuffer{VK_NULL_HANDLE};
 
         DeletionQueue               Deleteions;
         DescriptorAllocatorGrowable FrameDescriptors;

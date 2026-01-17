@@ -8,7 +8,7 @@ namespace ImmediateContext
 {
     struct ImmediateContextData
     {
-        VkCommandPool CommandPool{VK_NULL_HANDLE};
+        VkCommandPool   CommandPool{VK_NULL_HANDLE};
         VkCommandBuffer CommandBuffer{VK_NULL_HANDLE};
         VkFence         Fence{VK_NULL_HANDLE};
         VkQueue         GraphicsQueue{VK_NULL_HANDLE};

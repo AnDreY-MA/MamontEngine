@@ -13,6 +13,7 @@
 #include "vulkan/vk_enum_string_helper.h"
 #include "Graphics/Vulkan/ImmediateContext.h"
 #include "Core/Log.h"
+#include <VkBootstrap.h>
 
 namespace MamontEngine
 {
@@ -223,9 +224,9 @@ namespace MamontEngine
 
         ImmediateContext::InitImmediateContext(m_GraphicsQueue, m_GraphicsQueueFamily);
 
-        m_SkyboxTexture = LoadCubeMapTexture(DEFAULT_ASSETS_DIRECTORY + "Textures/cubemap_vulkan.ktx", VK_FORMAT_R8G8B8A8_UNORM);
+        m_SkyboxTexture = std::unique_ptr<Texture>(LoadCubeMapTexture(DEFAULT_ASSETS_DIRECTORY + "Textures/cubemap_vulkan.ktx", VK_FORMAT_R8G8B8A8_UNORM));
 
-        m_BRDFUTTexture = GenerateBRDFLUT();
+        m_BRDFUTTexture = std::unique_ptr<Texture>(GenerateBRDFLUT());
 
         InitSceneBuffers();
 
@@ -240,10 +241,10 @@ namespace MamontEngine
     {
         //MaterialAllocator::Destroy();
 
-        m_SkyboxTexture.Destroy();
-        m_BRDFUTTexture.Destroy();
-        m_PrefilteredCubeTexture.Destroy();
-        m_IrradianceTexture.Destroy();
+        m_SkyboxTexture->Destroy();
+        m_BRDFUTTexture->Destroy();
+        m_PrefilteredCubeTexture->Destroy();
+        m_IrradianceTexture->Destroy();
 
         VkDevice device = LogicalDevice::GetDevice();
         Swapchain.Destroy(device);
@@ -285,12 +286,16 @@ namespace MamontEngine
                 vkinit::command_pool_create_info(m_GraphicsQueueFamily, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
         const VkDevice device = LogicalDevice::GetDevice();
 
-        for (size_t i = 0; i < FRAME_OVERLAP; ++i)
+        for (auto& frame : m_Frames)
         {
-            VK_CHECK(vkCreateCommandPool(device, &commandPoolInfo, nullptr, &GetFrameAt(i).CommandPool));
+            VK_CHECK(vkCreateCommandPool(device, &commandPoolInfo, nullptr, &frame.CommandPool));
 
-            const VkCommandBufferAllocateInfo cmdAllocInfo = vkinit::command_buffer_allocate_info(GetFrameAt(i).CommandPool, 1);
-            VK_CHECK(vkAllocateCommandBuffers(device, &cmdAllocInfo, &GetFrameAt(i).MainCommandBuffer));
+            const VkCommandBufferAllocateInfo cmdAllocInfo = vkinit::command_buffer_allocate_info(frame.CommandPool, 1);
+            VK_CHECK(vkAllocateCommandBuffers(device, &cmdAllocInfo, &frame.MainCommandBuffer));
+
+            const auto cmdSecondaryAllocInfo = vkinit::command_buffer_allocate_info(frame.CommandPool, 1, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+            VK_CHECK(vkAllocateCommandBuffers(device, &cmdAllocInfo, &frame.UICommandBuffer));
+
         }
 
 #ifdef PROFILING
@@ -341,16 +346,11 @@ namespace MamontEngine
         {
             VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphore));
         }
-
-        VK_CHECK(vkCreateFence(device, &fenceCreateInfo, nullptr, &TransferFence));
-
     }
 
     void VkContextDevice::DestroySyncStructeres()
     {
         const VkDevice device = LogicalDevice::GetDevice();
-
-        vkDestroyFence(device, TransferFence, nullptr);
 
         for (size_t i = 0; i < FRAME_OVERLAP; ++i)
         {
@@ -390,7 +390,7 @@ namespace MamontEngine
     void VkContextDevice::InitDescriptors()
     {
         std::array<DescriptorAllocatorGrowable::PoolSizeRatio, 4> sizes = {
-                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3},
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 6},
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3},
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4}};
@@ -460,26 +460,27 @@ namespace MamontEngine
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             writer.WriteBuffer(2, frame.CascadeDataBuffer.Buffer, cascadeDataSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             writer.WriteBuffer(3, frame.CascadeMatrixBuffer.Buffer, cascadeMatricesSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            writer.WriteImage(4, m_SkyboxTexture.ImageView, m_SkyboxTexture.Sampler, 
+            writer.WriteImage(4, m_SkyboxTexture->ImageView, m_SkyboxTexture->Sampler, 
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            writer.WriteImage(
-                    5, m_BRDFUTTexture.ImageView, m_BRDFUTTexture.Sampler, 
+            writer.WriteImage(5,
+                              m_BRDFUTTexture->ImageView,
+                              m_BRDFUTTexture->Sampler, 
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            if (m_PrefilteredCubeTexture.Image != VK_NULL_HANDLE && m_PrefilteredCubeTexture.Sampler != VK_NULL_HANDLE)
+            if (m_PrefilteredCubeTexture && m_PrefilteredCubeTexture->Image != VK_NULL_HANDLE && m_PrefilteredCubeTexture->Sampler != VK_NULL_HANDLE)
             {
                 writer.WriteImage(6,
-                              m_PrefilteredCubeTexture.ImageView,
-                              m_PrefilteredCubeTexture.Sampler,
+                                  m_PrefilteredCubeTexture->ImageView,
+                                  m_PrefilteredCubeTexture->Sampler,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             }
-            if (m_IrradianceTexture.Image != VK_NULL_HANDLE && m_IrradianceTexture.Sampler != VK_NULL_HANDLE)
+            if (m_IrradianceTexture && m_IrradianceTexture->Image != VK_NULL_HANDLE && m_IrradianceTexture->Sampler != VK_NULL_HANDLE)
             {
                 writer.WriteImage(7,
-                                  m_IrradianceTexture.ImageView,
-                                  m_IrradianceTexture.Sampler,
+                                  m_IrradianceTexture->ImageView,
+                                  m_IrradianceTexture->Sampler,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             }
@@ -629,8 +630,8 @@ namespace MamontEngine
 
     void VkContextDevice::CreatePrefilteredCubeTexture(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &&inDrawSkyboxFunc)
     {
-        m_PrefilteredCubeTexture = GeneratePrefilteredCube(vertexAddress, inDrawSkyboxFunc, m_SkyboxTexture);
-        m_IrradianceTexture = GenerateIrradianceTexture(vertexAddress, inDrawSkyboxFunc, m_SkyboxTexture);
+        m_PrefilteredCubeTexture = std::unique_ptr<Texture>(GeneratePrefilteredCube(vertexAddress, inDrawSkyboxFunc, *m_SkyboxTexture));
+        m_IrradianceTexture      = std::unique_ptr<Texture>(GenerateIrradianceTexture(vertexAddress, inDrawSkyboxFunc, *m_SkyboxTexture));
         
         InitDescriptors();
     }

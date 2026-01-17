@@ -21,8 +21,7 @@ namespace MamontEditor
 
 		virtual void Deactivate() override;
 
-		virtual void Begin() override;
-		virtual void End() override;
+		
 
 		virtual void ImGuiRender() override;
 
@@ -35,6 +34,10 @@ namespace MamontEditor
 		{
             return GetPanel<SceneHierarchyPanel>()->GetSceneContext();
 		}
+
+	protected:
+        virtual void Begin() override;
+        virtual void End() override;
 
     private:
 		

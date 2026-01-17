@@ -63,9 +63,6 @@ namespace MamontEngine
             return Instance;
         }
 
-
-        VkFence TransferFence{VK_NULL_HANDLE};
-
         std::vector<VkSemaphore> RenderCopleteSemaphores{};
 
         Texture DrawImage;
@@ -132,10 +129,10 @@ namespace MamontEngine
 
         VkQueue  m_GraphicsQueue{VK_NULL_HANDLE};
         uint32_t m_GraphicsQueueFamily{0};
-        Texture  m_SkyboxTexture;
-        Texture  m_BRDFUTTexture;
-        Texture  m_PrefilteredCubeTexture;
-        Texture  m_IrradianceTexture;
+        std::unique_ptr<Texture> m_SkyboxTexture;
+        std::unique_ptr<Texture> m_BRDFUTTexture;
+        std::unique_ptr<Texture> m_PrefilteredCubeTexture;
+        std::unique_ptr<Texture> m_IrradianceTexture;
 
         struct TracyInfo
         {

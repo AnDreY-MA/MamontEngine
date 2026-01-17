@@ -1,7 +1,7 @@
 #include "ImGuiRenderer.h"
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_vulkan.h>
-#include "ContextDevice.h"
+#include "Core/ContextDevice.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Devices/PhysicalDevice.h"
 #include "Utils/VkInitializers.h"
@@ -34,7 +34,6 @@ namespace MamontEngine
         VkDevice                         device   = LogicalDevice::GetDevice();
 
         VK_CHECK_MESSAGE(vkCreateDescriptorPool(device, &poolInfo, nullptr, &m_DescriptorPool), "CreateDescPool");
-        // outPoolResult = imguiPool;
 
         ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance                  = inContextDevice.GetInstance();
@@ -54,8 +53,6 @@ namespace MamontEngine
 
         ImGui_ImplSDL3_InitForVulkan(inWindow);
         ImGui_ImplVulkan_Init(&initInfo);
-
-        //vkDestroyDescriptorPool(device, m_DescriptorPool, nullptr);
     }
 
     ImGuiRenderer::~ImGuiRenderer()

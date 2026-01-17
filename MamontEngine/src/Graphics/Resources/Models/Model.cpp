@@ -11,7 +11,7 @@
 #include "ktx.h"
 #include "ktxvulkan.h"
 #include "Core/ContextDevice.h"
-#include "Graphics/Resources/MaterialAllocator.h"
+#include "Graphics/Resources/Materials/MaterialAllocator.h"
 #include <vk_mem_alloc.h>
 
 namespace

@@ -7,6 +7,7 @@
 #include "ECS/Components/MeshComponent.h"
 #include <cereal/cereal.hpp>
 #include <cereal/archives/portable_binary.hpp>
+#include "Core/JobSystem.h"
 
 namespace MamontEngine
 {
@@ -20,8 +21,6 @@ namespace MamontEngine
         explicit Scene();
 
         ~Scene();
-
-        void Init();
 
         void Save();
         void Load();
@@ -62,7 +61,7 @@ namespace MamontEngine
 
     private:
         entt::registry m_Registry;
-
+        JobSystem::Context updateContext;
         friend class Entity;
         friend class SceneHierarchyPanel;
 

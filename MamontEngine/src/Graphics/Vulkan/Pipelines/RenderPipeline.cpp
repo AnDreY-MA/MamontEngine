@@ -36,24 +36,12 @@ namespace MamontEngine
             .size = sizeof(GPUDrawPushConstants)
         };
 
-        //const std::array<VkDescriptorSetLayout, 2> layouts = {inDescriptorLayout, Layout};
-
         const VkPipelineLayoutCreateInfo mesh_layout_info =
                 vkinit::pipeline_layout_create_info(inDescriptorLayouts.size(), inDescriptorLayouts.data(), &matrixRange, 1);
 
         VkPipelineLayout newLayout;
         VK_CHECK(vkCreatePipelineLayout(inDevice, &mesh_layout_info, nullptr, &newLayout));
 
-        /*const std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
-                vkinit::vertex_input_binding_description(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX),
-        };
-        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
-                vkinit::vertex_input_attribute_description(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Position)),
-                vkinit::vertex_input_attribute_description(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Normal)),
-                vkinit::vertex_input_attribute_description(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, UV)),
-                vkinit::vertex_input_attribute_description(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Color)),
-                vkinit::vertex_input_attribute_description(0, 4, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, Tangent)),
-        };*/
         const std::vector<VkVertexInputBindingDescription>  vertexInputBindings{};
         const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes{};
         const VkPipelineVertexInputStateCreateInfo vertexInputInfo =
@@ -85,7 +73,6 @@ namespace MamontEngine
             VK_CHECK(vkCreatePipelineLayout(inDevice, &mesh_layout_info, nullptr, &transparentLayout));
             pipelineBuilder.SetLayout(transparentLayout);
             pipelineBuilder.EnableBlendingAdditive();
-            // pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
             TransparentPipeline = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), transparentLayout);
             std::cerr << "TransparentPipeline->Pipeline: " << TransparentPipeline->Pipeline << std::endl;

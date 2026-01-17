@@ -84,6 +84,10 @@ namespace MamontEditor
 
     void Editor::ImGuiRender()
     {
+        PROFILE_ZONE("Editor render");
+
+        Begin();
+
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         {
             bool panelHovered = false;
@@ -108,6 +112,8 @@ namespace MamontEditor
         {
             panel->GuiRender();
         }
+
+        End();
         
     }
     static bool EnableCascade = true;

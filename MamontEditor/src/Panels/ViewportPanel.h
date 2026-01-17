@@ -2,7 +2,6 @@
 
 #include "EditorPanel.h"
 
-
 namespace MamontEditor
 {
     class ViewportPanel final : public EditorPanel

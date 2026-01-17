@@ -54,7 +54,7 @@ namespace MamontEngine
     private:
         glm::mat4 m_Projection{glm::mat4(1.f)};
 
-        glm::vec3 m_Velocity;
+        glm::vec3 m_Velocity{0.f};
         glm::vec3 m_Position{0.8f, 5.f, 34.f};
         
         float     m_Pitch{0.f};

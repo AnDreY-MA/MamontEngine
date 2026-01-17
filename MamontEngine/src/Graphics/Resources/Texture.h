@@ -41,19 +41,19 @@ namespace MamontEngine
         }
     };
 
-    Texture LoadCubeMapTexture(const std::string &inFileName, VkFormat inFormat);
+    Texture *LoadCubeMapTexture(const std::string &inFileName, VkFormat inFormat);
 
 
     std::shared_ptr<Texture> CreateWhiteTexture();
 
 
-    Texture CreateErrorTexture();
+    Texture* CreateErrorTexture();
 
-    Texture
+    Texture *
     GeneratePrefilteredCube(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &inDrawSkyboxFunc, const Texture &inEnvironmentTexture);
-    Texture
+    Texture *
     GenerateIrradianceTexture(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &inDrawSkyboxFunc, const Texture &inEnvironmentTexture);
 
-    Texture GenerateBRDFLUT();
+    Texture *GenerateBRDFLUT();
 
 } // namespace MamontEngine

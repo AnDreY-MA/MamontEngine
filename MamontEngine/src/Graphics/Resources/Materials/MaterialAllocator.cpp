@@ -1,5 +1,4 @@
-#include "Graphics/Resources/MaterialAllocator.h"
-#include "Graphics/Resources/Material.h"
+#include "Graphics/Resources/Materials/MaterialAllocator.h"
 #include "Utils/VkDestriptor.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Utils/Utilities.h"
@@ -14,7 +13,6 @@ namespace MamontEngine
     {
         DescriptorAllocatorGrowable DescrtiptorAllocator;
         size_t                      AlignedMaterialSize{0};
-        VkDescriptorSet             g_DescriptorSet{VK_NULL_HANDLE};
         AllocatedBuffer g_Buffer;
 
         constexpr size_t g_MaxMaterials = 2 * 1024;
@@ -31,7 +29,6 @@ namespace MamontEngine
                     DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}};
             
             const VkDevice& device = LogicalDevice::GetDevice();
-
             DescrtiptorAllocator.Init(device, 100, sizes);
 
             VkPhysicalDeviceProperties properties;
@@ -49,13 +46,11 @@ namespace MamontEngine
         void Destroy()
         {
             const VkDevice &device = LogicalDevice::GetDevice();
-            g_DescriptorSet        = VK_NULL_HANDLE;
 
             DescrtiptorAllocator.ClearPools(device);
             DescrtiptorAllocator.DestroyPools(device);
 
             g_Buffer.Destroy();
-
         }
 
         Material *AllocateMaterial(const EMaterialPass pass, const Material::MaterialResources &resources, const Material::MaterialConstants &data)

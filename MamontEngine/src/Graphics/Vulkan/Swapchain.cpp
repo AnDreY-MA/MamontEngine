@@ -1,12 +1,11 @@
 ﻿#include "Graphics/Vulkan/Swapchain.h"
 
-#include "Graphics/Vulkan/Image.h"
 #include "Graphics/Vulkan/Allocator.h"
 #include "Core/ContextDevice.h"
 #include "Utils//VkInitializers.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Devices/PhysicalDevice.h"
-//#include "Utils/Utilities.h"
+
 
 namespace MamontEngine
 {
@@ -33,7 +32,6 @@ namespace MamontEngine
         {
             throw std::runtime_error("Result swapchain no has in createSwapchain");
         }
-
         m_vkbSwapchain              = resultSwapchain.value();
         m_SwapchainExtent           = m_vkbSwapchain.extent;
         m_Swapchain                 = m_vkbSwapchain.swapchain;
