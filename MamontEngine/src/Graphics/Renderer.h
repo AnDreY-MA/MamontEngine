@@ -12,6 +12,7 @@ namespace MamontEngine
     class Camera;
     class Scene;
     class MeshModel;
+    class DirectLightPass;
 
     struct RenderStats
     {
@@ -39,28 +40,13 @@ namespace MamontEngine
         void DrawPickingPass(VkCommandBuffer cmd, const uint32_t inCurrentSwapchainIndex);
         uint64_t TryPickObject(const glm::vec2 &inMousePos);
 
-        void UpdateWindowEvent(const SDL_EventType inType);
-
         void UpdateSceneRenderer(float inDeltaTime);
-
-        void ResizeSwapchain();
-
-        inline bool IsStopRendering() const
-        {
-            return m_StopRendering;
-        }
-
-        inline bool IsResizeRequested() const
-        {
-            return m_IsResizeRequested;
-        }
 
         inline const RenderStats& GetStats() const
         {
             return m_Stats;
         }
 
-        DrawContext &GetDrawContext();
 
         std::shared_ptr<SceneRenderer>& GetSceneRenderer()
         {
@@ -72,12 +58,9 @@ namespace MamontEngine
     private:
         void DrawMain(VkCommandBuffer inCmd);
         void DrawGeometry(VkCommandBuffer inCmd);
-        void DrawImGui(VkCommandBuffer inCmd, VkImageView inTargetImageView);
         void DrawSkybox(VkCommandBuffer inCmd);
 
         void RenderCascadeShadow(VkCommandBuffer inCmd);
-
-        void CreateShadowPipeline();
 
         void SetViewportScissor(VkCommandBuffer cmd, const VkExtent2D &inExtent) const;
 
@@ -95,15 +78,13 @@ namespace MamontEngine
         std::shared_ptr<WindowCore> m_Window;
 
         std::shared_ptr<RenderPipeline> m_RenderPipeline;
-        std::unique_ptr<PipelineData> m_CascadePipeline;
         std::unique_ptr<PipelineData> m_PickingPipeline;
+
+        std::unique_ptr<DirectLightPass> m_DirectLightPass;
 
         std::unique_ptr<MeshModel> m_Skybox;
 
         bool IsActiveCascade{true};
-
-        bool m_StopRendering{false};
-        bool m_IsResizeRequested{false};
 
         VkExtent2D m_DrawExtent;
         float      m_RenderScale{1.f};

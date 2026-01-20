@@ -10,7 +10,7 @@ namespace MamontEngine
     class RenderPipeline
     {
     public:
-        RenderPipeline(VkDevice inDevice, const std::span<VkDescriptorSetLayout> inDescriptorLayouts, const std::pair<VkFormat, VkFormat> inImageFormats);
+        RenderPipeline(VkDevice inDevice, std::span<const VkDescriptorSetLayout> inDescriptorLayouts, const std::pair<VkFormat, VkFormat> inImageFormats);
         
         ~RenderPipeline();
 

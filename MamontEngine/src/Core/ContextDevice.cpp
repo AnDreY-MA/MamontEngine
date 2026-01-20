@@ -239,16 +239,25 @@ namespace MamontEngine
 
     VkContextDevice::~VkContextDevice()
     {
-        //MaterialAllocator::Destroy();
+        VkDevice device = LogicalDevice::GetDevice();
 
+       
         m_SkyboxTexture->Destroy();
         m_BRDFUTTexture->Destroy();
         m_PrefilteredCubeTexture->Destroy();
         m_IrradianceTexture->Destroy();
 
-        VkDevice device = LogicalDevice::GetDevice();
         Swapchain.Destroy(device);
         ImmediateContext::DestroyImmediateContext();
+        
+        ///?
+      /*  for (auto &cascade : Cascades)
+        {
+            vkDestroyImageView(device, cascade.View, nullptr);
+        }*/
+        //?
+        GlobalDescriptorAllocator.ClearPools(device);
+        GlobalDescriptorAllocator.DestroyPools(device);
         
         vkDestroySurfaceKHR(Instance, Surface, nullptr);
 
@@ -257,6 +266,49 @@ namespace MamontEngine
         LogicalDevice::DestroyDevice();
         vkb::destroy_debug_utils_messenger(Instance, DebugMessenger);
         vkDestroyInstance(Instance, nullptr);
+    }
+
+    bool VkContextDevice::BeginFrame()
+    {
+        const auto           &currentFrame = GetCurrentFrame();
+        const VkDevice &device       = LogicalDevice::GetDevice();
+
+        VK_CHECK_MESSAGE(vkWaitForFences(device, 1, &currentFrame.RenderFence, VK_TRUE, UINT64_MAX), "Wait FENCE");
+        VK_CHECK(vkResetFences(device, 1, &currentFrame.RenderFence));
+
+        const auto [resultAcquire, swapchainImageIndex] = Swapchain.AcquireImage(device, currentFrame.SwapchainSemaphore);
+        if (resultAcquire == VK_ERROR_OUT_OF_DATE_KHR || resultAcquire == VK_SUBOPTIMAL_KHR)
+        {
+            m_IsResizeRequested = true;
+            return false;
+        }
+
+        return true;
+    }
+
+    bool VkContextDevice::EndFrame(VkCommandBuffer cmd)
+    {
+        const auto                     &currentFrame = GetCurrentFrame();
+        const auto                      swapchainImageIndex = Swapchain.GetCurrentImageIndex();
+
+        const VkCommandBufferSubmitInfo cmdInfo = vkinit::command_buffer_submit_info(cmd);
+        const VkSemaphoreSubmitInfo     waitInfo =
+                vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, currentFrame.SwapchainSemaphore);
+        const VkSemaphoreSubmitInfo signalInfo = vkinit::semaphore_submit_info(0, RenderCopleteSemaphores[swapchainImageIndex]);
+
+        const VkSubmitInfo2 submit = vkinit::submit_info(&cmdInfo, &signalInfo, &waitInfo);
+        VK_CHECK(vkQueueSubmit2(m_GraphicsQueue, 1, &submit, currentFrame.RenderFence));
+
+        const VkResult presentResult = Swapchain.Present(m_GraphicsQueue, &RenderCopleteSemaphores[swapchainImageIndex], swapchainImageIndex);
+
+        if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR)
+        {
+            m_IsResizeRequested = true;
+            return false;
+        }
+
+        IncrementFrameNumber();
+        return true;
     }
 
     void VkContextDevice::DestroyFrameData()
@@ -294,7 +346,7 @@ namespace MamontEngine
             VK_CHECK(vkAllocateCommandBuffers(device, &cmdAllocInfo, &frame.MainCommandBuffer));
 
             const auto cmdSecondaryAllocInfo = vkinit::command_buffer_allocate_info(frame.CommandPool, 1, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-            VK_CHECK(vkAllocateCommandBuffers(device, &cmdAllocInfo, &frame.UICommandBuffer));
+            VK_CHECK(vkAllocateCommandBuffers(device, &cmdSecondaryAllocInfo, &frame.UICommandBuffer));
 
         }
 
@@ -382,8 +434,6 @@ namespace MamontEngine
             GetFrameAt(i).SceneDataBuffer.Destroy();
             GetFrameAt(i).CascadeDataBuffer.Destroy();
             GetFrameAt(i).CascadeMatrixBuffer.Destroy();
-            /*GetFrameAt(i).ShadowMatrixBuffer.Destroy();
-            GetFrameAt(i).ShadowUBOBuffer.Destroy();*/
         }
     }
 
@@ -550,6 +600,9 @@ namespace MamontEngine
 
     void VkContextDevice::ResizeSwapchain(const VkExtent2D &inWindowExtent)
     {
+        if (!m_IsResizeRequested)
+            return;
+
         const VkDevice device = LogicalDevice::GetDevice();
 
         vkDeviceWaitIdle(device);
@@ -561,6 +614,8 @@ namespace MamontEngine
         InitImage();
 
         InitDescriptors();
+
+        m_IsResizeRequested = false;
     }
 
     void VkContextDevice::InitShadowImages()
@@ -596,7 +651,7 @@ namespace MamontEngine
 
         std::cerr << "Shadow Image:" << CascadeDepthImage.Image << std::endl;
         std::cerr << "Shadow ImageView:" << CascadeDepthImage.ImageView << std::endl;
-
+/*
         for (size_t i = 0; i < CASCADECOUNT; i++)
         {
             auto layerViewInfo =
@@ -607,7 +662,7 @@ namespace MamontEngine
 
             VK_CHECK(vkCreateImageView(device, &layerViewInfo, nullptr, &Cascades[i].View));
             std::cerr << "Cascades[" << i << "].View: " << Cascades[i].View << std::endl;
-        }
+        }*/
 
         // Cascade Sampler
         {

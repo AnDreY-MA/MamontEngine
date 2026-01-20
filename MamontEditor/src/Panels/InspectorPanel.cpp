@@ -176,6 +176,7 @@ namespace MamontEditor
     {
 
     }
+    
     InspectorPanel::~InspectorPanel()
     {
         m_SceneContext.reset();
@@ -186,12 +187,15 @@ namespace MamontEditor
         m_Selected = Editor::Get()->GetSelectedEntity();
         m_SceneContext = Editor::Get()->GetSceneContext();
 
-        OnBegin();
+        if (!OnBegin())
+            return;
+
         if (m_Selected)
         {
             DrawComponents(m_Selected);
         }
         m_IsHovered = ImGui::IsWindowHovered();
+
         OnEnd();
     }
 

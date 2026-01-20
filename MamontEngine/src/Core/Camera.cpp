@@ -81,7 +81,7 @@ namespace MamontEngine
 
         if (inEvent.type == SDL_EVENT_MOUSE_WHEEL)
         {
-            m_MovementSpeed += inEvent.wheel.y;
+            m_MovementSpeed += glm::clamp(inEvent.wheel.y, 0.1f, inEvent.wheel.y);
         }
 
         if (inEvent.type == SDL_EVENT_KEY_DOWN)

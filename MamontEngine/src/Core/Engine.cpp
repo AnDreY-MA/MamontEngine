@@ -66,6 +66,8 @@ namespace MamontEngine
     {
         SDL_Event event;
         bool      bQuit{false};
+        bool      isResized{false};
+        bool      isStopRendering{false};
 
         JobSystem::Context eventContext;
 
@@ -80,25 +82,40 @@ namespace MamontEngine
 
                 ImGui_ImplSDL3_ProcessEvent(&event);
 
-                m_Renderer->UpdateWindowEvent(event.window.type);
+                const auto typeEvent = event.window.type;
+
+                if (typeEvent == SDL_EVENT_WINDOW_RESIZED)
+                {
+                    isResized = true;
+                }
+
+                if (typeEvent == SDL_EVENT_WINDOW_MINIMIZED)
+                {
+                    isStopRendering = true;
+                }
+                if (typeEvent == SDL_EVENT_WINDOW_RESTORED)
+                {
+                    isStopRendering = false;
+                }
+
 
                 m_MainCamera->ProccessEvent(event);
 
                 m_InputEvent = &event;
             }
 
-            if (m_Renderer->IsStopRendering())
+            if (isStopRendering)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                 continue;
             }
 
-            if (m_Renderer->IsResizeRequested())
+            if (m_ContextDevice->IsResizeRequest() || isResized)
             {
-                m_Renderer->ResizeSwapchain();
+                m_ContextDevice->ResizeSwapchain(m_Window->Resize());
             }
 
-            if (!m_Renderer->IsResizeRequested())
+            if (!m_ContextDevice->IsResizeRequest())
             {
                 m_GuiLayer->ImGuiRender();
 

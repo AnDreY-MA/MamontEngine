@@ -110,7 +110,7 @@ void main()
   //normalize(inNormal);
   //GetNormal(normalMap, inNormal, inUV, inPos);
   const vec3 L = normalize(-directionLight.lightDirection);
-  const vec3 V = normalize(-inViewPos);
+  const vec3 V = normalize(sceneData.cameraPosition - inPos);
   const vec3 H = normalize(V + L);
   const vec3 R = reflect(-V, N);
 
@@ -118,6 +118,7 @@ void main()
   const float dotNV = clamp(abs(dot(N, V)), 0.001, 1.0);
   const float dotNH = clamp(dot(N, H), 0.0, 1.0);
   const float dotVH = clamp(dot(V, H), 0.0, 1.0);
+  const float dotLH = clamp(dot(L, H), 0.0, 1.0);
 
   const vec4 baseColorTexture = texture(colorMap, inUV);
   const vec3 albedo = srgbToLinear(baseColorTexture.rgb * materialData.colorFactors.rgb * inColor.rgb);
@@ -126,7 +127,7 @@ void main()
 
   const vec4 metallicRoughness = texture(metalRoughTex, inUV);
   const float metallic = metallicRoughness.b * materialData.metallicFactor;
-  const float roughness = clamp(metallicRoughness.g * materialData.roughnessFactor, 0.05, 1.0);
+  const float roughness = clamp(metallicRoughness.g * materialData.roughnessFactor, 0.089, 1.0);
   const float alphaRoughness = roughness * roughness;
 
   const vec3 F0 = mix(vec3(0.04), albedo, metallic);
@@ -138,9 +139,14 @@ void main()
   const vec3 specularEnviromentR0 = specularColor.rgb;
   const vec3 specularEnviromentR90 = vec3(1.0, 1.0, 1.0) * reflectance90;
   const vec3 diffuseColor = albedo * (vec3(1.0) - F0) * (1.0 - metallic);
+  //(1.0 - metallic) * albedo;
+  //albedo * (vec3(1.0) - F0) * (1.0 - metallic);
 
   PBRData pbrData;
+  pbrData.N = N;
+  pbrData.H = H;
   pbrData.dotNV = dotNV;
+  pbrData.dotLH = dotLH;
   pbrData.alphaRoughness = alphaRoughness;
   pbrData.albedo = albedo;
   pbrData.reflectance0 = specularEnviromentR0;
@@ -159,20 +165,18 @@ void main()
   vec3 lightColor = vec3(0.0);
 
   // Sun Light
-  if(directionLight.IsActive)
+  if (directionLight.IsActive)
   {
     lightColor += GetLightContribution(pbrData, N, V, -directionLight.lightDirection, directionLight.color) * shadow;
   }
 
-  if(directionLight.IsActive)
+  if (directionLight.IsActive)
   {
-      const vec3 ibl = GetIBLContribution(pbrData, N, R, directionLight.color, samplerBRDFLUT, samplerPrefilteredMap, irradianceMap);
+    const vec3 ibl = GetIBLContribution(pbrData, N, R, directionLight.color, samplerBRDFLUT, samplerPrefilteredMap, irradianceMap);
 
-      lightColor += ibl;
+    lightColor += ibl;
   }
   //lightColor += prefilteredColor;
-
-  
 
   const vec3 gamma = vec3(1.0f / GAMMA);
   vec3 finalColor = lightColor;

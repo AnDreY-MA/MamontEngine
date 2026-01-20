@@ -11,7 +11,7 @@
 
 namespace MamontEngine
 {
-    ImGuiRenderer::ImGuiRenderer(const VkContextDevice &inContextDevice, SDL_Window *inWindow, VkFormat inColorFormat)
+    ImGuiRenderer::ImGuiRenderer(const VkContextDevice &inContextDevice, SDL_Window *inWindow, VkFormat inColorFormat) : m_ColorFormat(inColorFormat)
     {
         constexpr VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
                                                       {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
@@ -64,16 +64,51 @@ namespace MamontEngine
 
     void ImGuiRenderer::Draw(VkCommandBuffer inCmd, VkImageView inTargetImageView, const VkExtent2D &inRenderExtent)
     {
-        PROFILE_ZONE("ImGuiRenderer::Draw");
+        PROFILE_ZONE("Render ImGui");
+
+        VkCommandBufferInheritanceRenderingInfo inheritanceDynamicInfo{};
+        inheritanceDynamicInfo.sType                   = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO;
+        inheritanceDynamicInfo.colorAttachmentCount    = 1;
+        inheritanceDynamicInfo.pColorAttachmentFormats = &m_ColorFormat;
+        inheritanceDynamicInfo.viewMask                = 0;
+        inheritanceDynamicInfo.rasterizationSamples    = VK_SAMPLE_COUNT_1_BIT;
+
+        const VkCommandBufferInheritanceInfo inheritanceInfo = {
+                .sType       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+                .pNext       = &inheritanceDynamicInfo,
+                .renderPass  = VK_NULL_HANDLE, 
+                .subpass     = 0,              
+                .framebuffer = VK_NULL_HANDLE, 
+        };
+
+        VkCommandBufferBeginInfo cmdSecondaryBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        cmdSecondaryBeginInfo.pInheritanceInfo         = &inheritanceInfo;
+
+        VK_CHECK(vkBeginCommandBuffer(inCmd, &cmdSecondaryBeginInfo));
 
         const VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(inTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         const VkRenderingInfo           renderInfo      = vkinit::rendering_info(inRenderExtent, &colorAttachment, nullptr);
 
         vkCmdBeginRendering(inCmd, &renderInfo);
 
+        const VkViewport viewport = {.x        = 0.0f,
+                                     .y        = 0.0f,
+                                     .width    = static_cast<float>(inRenderExtent.width),
+                                     .height   = static_cast<float>(inRenderExtent.height),
+                                     .minDepth = 0.0f,
+                                     .maxDepth = 1.0f};
+
+        const VkRect2D scissor = {.offset = {0, 0}, .extent = inRenderExtent};
+
+        vkCmdSetViewport(inCmd, 0, 1, &viewport);
+        vkCmdSetScissor(inCmd, 0, 1, &scissor);
+
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), inCmd);
 
         vkCmdEndRendering(inCmd);
+
+        VK_CHECK(vkEndCommandBuffer(inCmd));
+
     }
 
 } // namespace MamontEngine

@@ -29,6 +29,11 @@ namespace MamontEngine
             m_Position = inPosition;
         }
 
+        glm::vec3 GetPosition() const
+        {
+            return m_Position;
+        }
+
         float GetNearClip() const noexcept
         {
             return m_NearClip;

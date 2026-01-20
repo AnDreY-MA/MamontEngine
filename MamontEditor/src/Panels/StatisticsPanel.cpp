@@ -22,10 +22,10 @@ namespace MamontEditor
 
             m_IsHovered = ImGui::IsWindowHovered();
 
-
             OnEnd();
         }
     }
+
     bool StatisticsPanel::IsHovered() const
     {
         return m_IsHovered;

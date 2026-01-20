@@ -12,7 +12,7 @@
 namespace MamontEngine
 {
     RenderPipeline::RenderPipeline(VkDevice                              inDevice,
-                                   const std::span<VkDescriptorSetLayout> inDescriptorLayouts,
+                                   std::span<const VkDescriptorSetLayout> inDescriptorLayouts,
                                    const std::pair<VkFormat, VkFormat>   inImageFormats)
     {
         const std::string meshPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/mesh.frag.spv";

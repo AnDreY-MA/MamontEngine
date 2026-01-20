@@ -24,6 +24,10 @@ namespace MamontEngine
 
         ~VkContextDevice();
 
+        bool BeginFrame();
+        
+        bool EndFrame(VkCommandBuffer cmd);
+
         void DestroyFrameData();
 
         void InitShadowImages();
@@ -63,17 +67,19 @@ namespace MamontEngine
             return Instance;
         }
 
+        inline bool IsResizeRequest() const
+        {
+            return m_IsResizeRequested;
+        }
+
         std::vector<VkSemaphore> RenderCopleteSemaphores{};
 
         Texture DrawImage;
         Texture DepthImage;
-        //Image Image;
 
         std::vector<Texture> PickingImages;
 
         Texture CascadeDepthImage;
-
-        std::array<Cascade, CASCADECOUNT> Cascades{};
 
         MSwapchain Swapchain;
 
@@ -133,6 +139,8 @@ namespace MamontEngine
         std::unique_ptr<Texture> m_BRDFUTTexture;
         std::unique_ptr<Texture> m_PrefilteredCubeTexture;
         std::unique_ptr<Texture> m_IrradianceTexture;
+
+        bool m_IsResizeRequested{false};
 
         struct TracyInfo
         {

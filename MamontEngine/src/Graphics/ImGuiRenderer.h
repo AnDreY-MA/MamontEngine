@@ -19,6 +19,7 @@ namespace MamontEngine
 
     private:
         VkDescriptorPool m_DescriptorPool;
+        VkFormat         m_ColorFormat;
 
     };
 }

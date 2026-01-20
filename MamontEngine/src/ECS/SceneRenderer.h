@@ -12,7 +12,7 @@ namespace MamontEngine
         glm::mat4 Proj{glm::mat4(0.f)};
         glm::mat4 Viewproj{glm::mat4(0.f)};
         glm::vec3 LightDirection{glm::vec3(0.4f)};
-        glm::vec3 SunLightPosition{glm::vec3(0.0)};
+        glm::vec3 CameraPosition{glm::vec3(0.0)};
     };
 
     class Scene;
@@ -25,17 +25,10 @@ namespace MamontEngine
         ~SceneRenderer();
 
         void Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const PipelineData *inOpaquePipeline, const PipelineData* inTransperentPipeline);
-        void RenderShadow(VkCommandBuffer     inCmd,
-                          VkDescriptorSet     globalDescriptor,
-                          const glm::mat4    &inViewProjection,
-                          const PipelineData &inPipelineData,
-                          uint32_t            cascadeIndex);
 
         void RenderPicking(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, VkPipeline inPipeline, VkPipelineLayout inLayout);
 
-        void Update(const VkExtent2D &inWindowExtent, std::array<Cascade, CASCADECOUNT> &inCascades, float inDeltaTime);
-
-        void UpdateCascades(std::array<Cascade, CASCADECOUNT> &outCascades);
+        void Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades, float inDeltaTime);
 
         GPUSceneData &GetGPUSceneData()
         {
@@ -53,6 +46,11 @@ namespace MamontEngine
         const Camera *GetCamera() const
         {
             return m_Camera.get();
+        }
+
+        const DrawContext& GetDrawContext() const
+        {
+            return m_DrawContext;
         }
 
         void ClearDrawContext()

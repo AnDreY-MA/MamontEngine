@@ -21,8 +21,6 @@ namespace MamontEditor
 
 		virtual void Deactivate() override;
 
-		
-
 		virtual void ImGuiRender() override;
 
 		MamontEngine::Entity GetSelectedEntity()
