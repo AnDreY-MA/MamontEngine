@@ -146,14 +146,10 @@ namespace MamontEngine
 
             MaterialAllocator::Destroy();
 
-            // m_ContextDevice->Swapchain.Destroy(device);
             m_Window.reset();
             m_ContextDevice.reset();
 
             JobSystem::Release();
-            //~ContextDevice
-
-            // m_Window->Close();
         }
 
         loadedEngine = nullptr;

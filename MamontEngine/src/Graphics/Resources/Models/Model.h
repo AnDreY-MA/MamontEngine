@@ -7,7 +7,6 @@
 #include <fastgltf/parser.hpp>
 #include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/Buffers/MeshBuffer.h"
-#include "Utils/VkDestriptor.h"
 
 namespace MamontEngine
 {

@@ -41,7 +41,7 @@ namespace MamontEngine
 
     ///// DescriptorAllocatorGrowable
 
-    void DescriptorAllocatorGrowable::Init(VkDevice inDevice, const uint32_t inInitialSets, const std::span<PoolSizeRatio> inPoolRatios)
+    void DescriptorAllocatorGrowable::Init(VkDevice inDevice, const uint32_t inInitialSets, std::span<const PoolSizeRatio> inPoolRatios)
     {
         const uint32_t initSize = inInitialSets != 0 ? inInitialSets : 1;
         m_Ratios.reserve(inPoolRatios.size());
@@ -71,13 +71,13 @@ namespace MamontEngine
 
     void DescriptorAllocatorGrowable::DestroyPools(VkDevice inDevice)
     {
-        for (const auto& p : m_ReadyPools)
+        for (auto& p : m_ReadyPools)
         {
             vkDestroyDescriptorPool(inDevice, p, nullptr);
         }
         m_ReadyPools.clear();
 
-        for (const auto &p : m_FullPools)
+        for (auto &p : m_FullPools)
         {
             vkDestroyDescriptorPool(inDevice, p, nullptr);
         }
@@ -109,7 +109,7 @@ namespace MamontEngine
             VK_CHECK(vkAllocateDescriptorSets(inDevice, &allocInfo, &newDescriptors));
         }
 
-        m_FullPools.push_back(poolToUse);
+        m_ReadyPools.push_back(poolToUse);
         std::cerr << "Allocate descritporSet: " << newDescriptors << std::endl;
         return newDescriptors;
     }
@@ -132,7 +132,6 @@ namespace MamontEngine
                 m_SetsPerPool = 4092;
             }
         }
-
         return newPool;
     }
 

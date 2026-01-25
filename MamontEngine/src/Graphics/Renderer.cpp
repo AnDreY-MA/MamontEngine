@@ -118,6 +118,9 @@ namespace MamontEngine
             return;
         }
 
+        std::cerr << "pickingFragShader: " << pickingFragShader << "\n";
+        std::cerr << "pickingVertShader: " << pickingVertShader << "\n";
+
         const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {
                 vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, pickingVertShader),
                 vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, pickingFragShader)};
@@ -224,7 +227,6 @@ namespace MamontEngine
 
         VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-        m_SceneRenderer->ClearDrawContext();
 
         const std::array<VkCommandBuffer, 1> commandBuffers{uiCommandBuffer};
 

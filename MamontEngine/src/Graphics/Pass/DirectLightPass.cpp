@@ -87,6 +87,24 @@ namespace MamontEngine
 
         constexpr VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION, .height = SHADOWMAP_DIMENSION};
 
+        const auto draw = [&](const RenderObject &r, uint32_t cascadeIndex)
+        {
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
+
+            constexpr VkDeviceSize offsets[1] = {0};
+            vkCmdBindVertexBuffers(cmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
+
+            vkCmdBindIndexBuffer(cmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+
+            const GPUDrawPushConstants push_constants{
+                    .WorldMatrix = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBufferAddress, .CascadeIndex = cascadeIndex};
+
+            constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
+            vkCmdPushConstants(cmd, m_CascadePipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
+
+            vkCmdDrawIndexed(cmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
+        };
+
         uint32_t cascadeIndex{0};
         for (const auto &cascade : Cascades)
         {
@@ -117,30 +135,11 @@ namespace MamontEngine
 
             vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
 
-            const auto draw = [&](const RenderObject &r)
-            {
-                vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
-
-                constexpr VkDeviceSize offsets[1] = {0};
-                vkCmdBindVertexBuffers(cmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
-
-                vkCmdBindIndexBuffer(cmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
-
-                const GPUDrawPushConstants push_constants{
-                        .WorldMatrix = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBufferAddress, .CascadeIndex = cascadeIndex};
-
-                constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
-                vkCmdPushConstants(
-                        cmd, m_CascadePipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
-
-                vkCmdDrawIndexed(cmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
-            };
-
             for (const auto &object : inDrawContext.OpaqueSurfaces)
             {
                 if (IsVisible(object.Bound, object.Transform, viewproj))
                 {
-                    draw(object);
+                    draw(object, cascadeIndex);
                 }
             }
 
@@ -178,7 +177,7 @@ namespace MamontEngine
         float lastSplitDist = 0.f;
         for (size_t i = 0; i < CASCADECOUNT; i++)
         {
-            float                    splitDist      = cascadeSplits[i];
+            const float                    splitDist      = cascadeSplits[i];
             std::array<glm::vec3, 8> frustumCorners = {
                     glm::vec3(-1.0f, 1.0f, 0.0f),
                     glm::vec3(1.0f, 1.0f, 0.0f),
@@ -228,7 +227,7 @@ namespace MamontEngine
             Cascades[i].SplitDepth        = (inCamera->GetNearClip() + splitDist * clipRange) * -1.f;
             Cascades[i].ViewProjectMatrix = lightOrthoMatrix * lightViewMatrix;
 
-            lastSplitDist = cascadeSplits[i];
+            lastSplitDist = splitDist;
         }
     }
        
@@ -262,7 +261,6 @@ namespace MamontEngine
         {
             fmt::println("Error when building the triangle fragment shader module");
         }
-
         const std::vector<VkVertexInputBindingDescription>   vertexInputBindings{};
         const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes{};
         const VkPipelineVertexInputStateCreateInfo           vertexInputInfo =

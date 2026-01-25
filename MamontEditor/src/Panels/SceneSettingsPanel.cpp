@@ -17,6 +17,9 @@ namespace MamontEditor
         {
             ImGui::SameLine();
 
+
+            //ImGui::Checkbox()
+
             OnEnd();
         }
     }

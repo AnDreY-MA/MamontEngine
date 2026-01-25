@@ -43,6 +43,8 @@ namespace MamontEngine
 
             float _pad0{0.f};
             float _pad1{0.f};
+
+            int HasNormaMap{0};
         } Constants;
 
         uint32_t Index{0};

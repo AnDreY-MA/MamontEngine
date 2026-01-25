@@ -3,8 +3,10 @@ layout(set = 1, binding = 0) uniform GLTFMaterialData {
   float metallicFactor;
   float roughnessFactor;
 
-  //float pad0;
- // float pad1;
+  float pad0;
+  float pad1;
+
+  uint HasNormalMap;
 
 } materialData;
 

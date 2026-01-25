@@ -2,12 +2,14 @@
 
 #include <filesystem>
 #include <cereal/cereal.hpp>
-
+#include <cereal/archives/portable_binary.hpp>
 namespace MamontEngine
 {
+
 	class Asset
 	{
     public:
+        Asset()          = default;
         virtual ~Asset() = default;
 
 		virtual void Load(std::string_view filePath){}
@@ -29,15 +31,10 @@ namespace MamontEngine
 	private:
         friend class cereal::access;
 
-        template <typename Archive>
-        friend void save(Archive &ar, const Asset& asset)
+        template <class Archive>
+        void serialize(Archive &ar)
         {
-
-        }
-        template <typename Archive>
-        friend void load(Archive &ar, Asset &asset)
-        {
-
+            //ar(cereal::make_nvp("filePath", m_FilePath));
         }
 	};
 }

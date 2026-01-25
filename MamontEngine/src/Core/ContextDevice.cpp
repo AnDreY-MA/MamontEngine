@@ -149,11 +149,15 @@ namespace MamontEngine
 
         constexpr auto deviceFeatures = VkPhysicalDeviceFeatures{.imageCubeArray            = VK_TRUE,
                                                                  .geometryShader            = VK_TRUE,
+                                                                 .sampleRateShading         = VK_TRUE,
                                                                  .multiDrawIndirect         = VK_TRUE,
                                                                  .drawIndirectFirstInstance = VK_TRUE,
+                                                                 
                                                                  .depthClamp                = VK_TRUE,
                                                                  .depthBiasClamp            = VK_TRUE,
-                                                                 .samplerAnisotropy         = VK_TRUE,
+                                                                 .alphaToOne                = VK_TRUE,
+                                                                 .samplerAnisotropy         = VK_TRUE, 
+            
                                                                  .shaderInt64               = VK_TRUE};
 
         constexpr VkPhysicalDeviceVulkan14Features features14 = {.maintenance5 = VK_TRUE, .maintenance6 = VK_TRUE, .pushDescriptor = VK_TRUE};
@@ -241,7 +245,6 @@ namespace MamontEngine
     {
         VkDevice device = LogicalDevice::GetDevice();
 
-       
         m_SkyboxTexture->Destroy();
         m_BRDFUTTexture->Destroy();
         m_PrefilteredCubeTexture->Destroy();
@@ -249,15 +252,6 @@ namespace MamontEngine
 
         Swapchain.Destroy(device);
         ImmediateContext::DestroyImmediateContext();
-        
-        ///?
-      /*  for (auto &cascade : Cascades)
-        {
-            vkDestroyImageView(device, cascade.View, nullptr);
-        }*/
-        //?
-        GlobalDescriptorAllocator.ClearPools(device);
-        GlobalDescriptorAllocator.DestroyPools(device);
         
         vkDestroySurfaceKHR(Instance, Surface, nullptr);
 
@@ -318,11 +312,11 @@ namespace MamontEngine
             frame.Deleteions.Flush();
         }
 
-        DestroyImages();
         DestroyCommands();
         DestroySyncStructeres();
         DestroyDescriptors();
         DestroySceneBuffers();
+        DestroyImages();
 
 #ifdef PROFILING
         for (size_t i{0}; i < FRAME_OVERLAP; ++i)
@@ -490,13 +484,16 @@ namespace MamontEngine
             GPUSceneDataDescriptorLayout = builder.Build(device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
         }
 
+        std::cerr << "GPUSceneDataDescriptorLayout: " << GPUSceneDataDescriptorLayout << std::endl;
+        std::cerr << "RenderDescriptorLayout: " << RenderDescriptorLayout << std::endl;
+        std::cerr << "DrawImageDescriptorLayout: " << DrawImageDescriptorLayout << std::endl;
+
+
         constexpr size_t cascadeDataSize     = sizeof(CascadeData);
         constexpr size_t cascadeMatricesSize = sizeof(glm::mat4) * CASCADECOUNT;
 
         for (auto &frame : m_Frames)
         {
-            /*GetFrameAt(i).FrameDescriptors = DescriptorAllocatorGrowable{};
-            GetFrameAt(i).FrameDescriptors.Init(Device, 1000, frame_sizes);*/
             DescriptorWriter writer;
             writer.Clear();
 
@@ -535,7 +532,6 @@ namespace MamontEngine
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             }
             
-            
             writer.UpdateSet(device, globalDescriptor);
 
             std::cerr << "globalDescriptor: " << globalDescriptor << std::endl;
@@ -544,19 +540,23 @@ namespace MamontEngine
 
     void VkContextDevice::DestroyDescriptors()
     {
-        VkDevice device = LogicalDevice::GetDevice();
+        const VkDevice& device = LogicalDevice::GetDevice();
 
-        vkDestroyDescriptorSetLayout(device, DrawImageDescriptorLayout, nullptr);
-        vkDestroyDescriptorSetLayout(device, GPUSceneDataDescriptorLayout, nullptr);
+        GlobalDescriptorAllocator.DestroyPools(device);
 
         DrawImageDescriptors = VK_NULL_HANDLE;
 
         for (auto& frame : m_Frames)
         {
+            frame.FrameDescriptors.DestroyPools(device);
+
             frame.GlobalDescriptor = VK_NULL_HANDLE;
             frame.ViewportDescriptor = VK_NULL_HANDLE;
-            frame.FrameDescriptors.DestroyPools(device);
         }
+
+        vkDestroyDescriptorSetLayout(device, DrawImageDescriptorLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, RenderDescriptorLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, GPUSceneDataDescriptorLayout, nullptr);
     }
 
     void VkContextDevice::InitSwapchain(const VkExtent2D &inWindowExtent)
@@ -613,6 +613,8 @@ namespace MamontEngine
 
         InitImage();
 
+        DestroyDescriptors();
+
         InitDescriptors();
 
         m_IsResizeRequested = false;
@@ -651,18 +653,6 @@ namespace MamontEngine
 
         std::cerr << "Shadow Image:" << CascadeDepthImage.Image << std::endl;
         std::cerr << "Shadow ImageView:" << CascadeDepthImage.ImageView << std::endl;
-/*
-        for (size_t i = 0; i < CASCADECOUNT; i++)
-        {
-            auto layerViewInfo =
-                    vkinit::imageviewCreateInfo(depthFormat, CascadeDepthImage.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
-
-            layerViewInfo.subresourceRange.baseArrayLayer = static_cast<uint32_t>(i);
-            layerViewInfo.subresourceRange.layerCount     = 1;
-
-            VK_CHECK(vkCreateImageView(device, &layerViewInfo, nullptr, &Cascades[i].View));
-            std::cerr << "Cascades[" << i << "].View: " << Cascades[i].View << std::endl;
-        }*/
 
         // Cascade Sampler
         {
@@ -688,6 +678,7 @@ namespace MamontEngine
         m_PrefilteredCubeTexture = std::unique_ptr<Texture>(GeneratePrefilteredCube(vertexAddress, inDrawSkyboxFunc, *m_SkyboxTexture));
         m_IrradianceTexture      = std::unique_ptr<Texture>(GenerateIrradianceTexture(vertexAddress, inDrawSkyboxFunc, *m_SkyboxTexture));
         
+        DestroyDescriptors();
         InitDescriptors();
     }
 
@@ -736,7 +727,6 @@ namespace MamontEngine
 
     VkFormat VkContextDevice::GetSupportedDepthFormat(bool checkSamplingSupport)
     {
-        // All depth formats may be optional, so we need to find a suitable depth format to use
         constexpr std::array<VkFormat, 5> depthFormats = {
                 VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D16_UNORM};
         for (const auto &format : depthFormats)

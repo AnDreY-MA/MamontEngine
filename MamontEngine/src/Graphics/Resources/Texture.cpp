@@ -543,6 +543,9 @@ namespace MamontEngine
 
         VkPipeline pipeline = pipelineBuilder.BuildPipline(device, 1, renderPass);
 
+        vkDestroyShaderModule(device, prefilterenvmapFragShader, nullptr);
+        vkDestroyShaderModule(device, filtercubeVertexShader, nullptr);
+        
         VkClearValue clearValues[1]{};
         clearValues[0].color = {{0.0f, 0.0f, 0.2f, 0.0f}};
 
@@ -887,8 +890,6 @@ namespace MamontEngine
         pipelineBuilder.m_Multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
         pipelineBuilder.m_Multisampling.flags                = 0;
         pipelineBuilder.SetLayout(pipelineLayout);
-        // pipelineBuilder.AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT);
-        // pipelineBuilder.AddDynamicState(VK_DYNAMIC_STATE_SCISSOR);
         pipelineBuilder.m_Rasterizer.lineWidth = 1.0f;
 
         const std::string prefilterenvmapath = DEFAULT_ASSETS_DIRECTORY + "Shaders/irradiancecube.frag.spv";
@@ -908,6 +909,9 @@ namespace MamontEngine
         pipelineBuilder.SetShaders(filtercubeVertexShader, prefilterenvmapFragShader);
 
         VkPipeline pipeline = pipelineBuilder.BuildPipline(device, 1, renderPass);
+
+        vkDestroyShaderModule(device, prefilterenvmapFragShader, nullptr);
+        vkDestroyShaderModule(device, filtercubeVertexShader, nullptr);
 
         VkClearValue clearValues[1]{};
         clearValues[0].color = {{0.0f, 0.0f, 0.2f, 0.0f}};
@@ -1195,6 +1199,9 @@ namespace MamontEngine
         pipelineBuilder.SetShaders(brdflutVertexShader, brdflutFragShader);
 
         VkPipeline pipeline = pipelineBuilder.BuildPipline(device, 1, renderPass);
+
+        vkDestroyShaderModule(device, brdflutFragShader, nullptr);
+        vkDestroyShaderModule(device, brdflutVertexShader, nullptr);
 
         VkClearValue clearValues[1];
         clearValues[0].color = {{0.f, 0.f, 0.f, 1.0f}};

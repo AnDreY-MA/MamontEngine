@@ -33,7 +33,7 @@ namespace MamontEngine
         uint32_t StartIndex{0};
         uint32_t Count{0};
 
-        Material* Material;
+        uint32_t MaterialIndex;
     };
 
     struct NewMesh

@@ -6,6 +6,7 @@
 #include "Graphics/Vulkan/Buffers/Buffer.h"
 #include "Core/Engine.h"
 #include "Math/Color.h"
+#include <set>
 
 namespace MamontEngine
 {
@@ -23,7 +24,7 @@ namespace MamontEngine
 
         void Init()
         {
-            std::array<DescriptorAllocatorGrowable::PoolSizeRatio, 3> sizes = {
+            constexpr std::array<DescriptorAllocatorGrowable::PoolSizeRatio, 3> sizes = {
                     DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6},
                     DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
                     DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}};

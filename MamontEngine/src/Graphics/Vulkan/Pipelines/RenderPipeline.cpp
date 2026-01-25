@@ -30,6 +30,9 @@ namespace MamontEngine
             fmt::println("Error when building the triangle vertex shader module");
         }
 
+        std::cerr << "meshFragShader: " << meshFragShader << "\n";
+        std::cerr << "meshVertexShader: " << meshVertexShader << "\n";
+
         constexpr VkPushConstantRange matrixRange {
             .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
             .offset = 0, 
@@ -51,7 +54,7 @@ namespace MamontEngine
         pipelineBuilder.SetShaders(meshVertexShader, meshFragShader);
         pipelineBuilder.SetVertexInput(vertexInputInfo);
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-        pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
+        pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_LINE);
         pipelineBuilder.SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
         pipelineBuilder.SetMultisamplingNone();
         pipelineBuilder.DisableBlending();
@@ -106,6 +109,9 @@ namespace MamontEngine
             {
                 fmt::println("Error when building the triangle vertex shader module");
             }
+
+            std::cerr << "skyboxFragShader: " << skyboxFragShader << "\n";
+            std::cerr << "skyboxVertexShader: " << skyboxVertexShader << "\n";
 
             pipelineBuilder.SetShaders(skyboxVertexShader, skyboxFragShader);
             pipelineBuilder.SetCullMode(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);

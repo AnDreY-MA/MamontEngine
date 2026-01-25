@@ -9,7 +9,7 @@
 #include "ECS/Scene.h"
 #include "ECS/Components/DirectionLightComponent.h"
 #include "ECS/Components/TransformComponent.h"
-#include <execution>
+#include <glm/gtx/quaternion.hpp>
 
 namespace MamontEngine
 {
@@ -57,8 +57,7 @@ namespace MamontEngine
     SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera, const std::shared_ptr<Scene> &inScene) 
         : m_Camera(inCamera), m_Scene(inScene)
     {
-        constexpr float angle  = glm::radians(360.0f);
-        constexpr float radius = 20.0f;
+
     }
 
     SceneRenderer::~SceneRenderer()
@@ -98,9 +97,11 @@ namespace MamontEngine
 
         vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inOpaquePipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
 
+        VkDescriptorSet lastMaterial{VK_NULL_HANDLE};
+
         const auto draw = [&](const RenderObject &r)
         {
-            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inOpaquePipeline->Layout, 1, 1, &r.Material->MaterialSet, 0, nullptr);
+            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inOpaquePipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
 
             constexpr VkDeviceSize offsets[1] = {0};
             if (r.MeshBuffer.VertexBuffer.Buffer != VK_NULL_HANDLE)
@@ -179,6 +180,8 @@ namespace MamontEngine
 
     void SceneRenderer::Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades, float inDeltaTime)
     {
+        ClearDrawContext();
+
         const glm::mat4 &view = m_Camera->GetViewMatrix();
 
         m_Camera->UpdateProjection(inWindowExtent);
@@ -201,7 +204,10 @@ namespace MamontEngine
 
             viewDirectionLight.each([&](const auto& ligth, const auto& transform) { 
                 m_CascadeData.Color        = ligth.GetColor();
-                const glm::vec3 lightDirection = glm::normalize(-transform.Transform.Position);
+                const glm::quat rotation  = glm::quat(glm::radians(transform.Transform.Rotation));
+                const glm::vec3 lightDirection = glm::normalize(
+                        rotation * glm::vec3(0.0f, 0.0f, -1.0f)
+                );
                 m_SceneData.LightDirection   = lightDirection;
                 m_CascadeData.LightDirection = lightDirection;
             });
@@ -230,7 +236,6 @@ namespace MamontEngine
             }
         }
     }
-
 
 } // namespace MamontEngine
 

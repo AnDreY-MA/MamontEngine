@@ -83,7 +83,7 @@ namespace MamontEditor
         flags |= ImGuiTreeNodeFlags_OpenOnArrow;
         flags |= ImGuiTreeNodeFlags_SpanFullWidth;
         flags |= ImGuiTreeNodeFlags_FramePadding;
-        flags |= ImGuiTreeNodeFlags_Leaf;
+        //flags |= ImGuiTreeNodeFlags_Leaf;
 
         const bool opened = ImGui::TreeNodeEx(reinterpret_cast<void *>(static_cast<uint64_t>(inEntity.GetID())), flags, tag.c_str());
 

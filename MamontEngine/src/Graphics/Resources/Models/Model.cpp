@@ -158,18 +158,7 @@ namespace MamontEngine
 
     MeshModel::~MeshModel()
     {
-        VkDevice device = LogicalDevice::GetDevice();
-
-        for (auto &material : m_Materials)
-        {
-            material->MaterialSet = VK_NULL_HANDLE;
-            MaterialAllocator::Free(material.get());
-        }
-
         Clear();
-
-        Buffer.IndexBuffer.Destroy();
-        Buffer.VertexBuffer.Destroy();
     }
 
     void MeshModel::Clear()
@@ -186,9 +175,18 @@ namespace MamontEngine
             texture->Destroy();
         }
         m_Textures.clear();
+
+        for (auto &material : m_Materials)
+        {
+            material->MaterialSet = VK_NULL_HANDLE;
+            MaterialAllocator::Free(material.get());
+        }
         
         m_Materials.clear();
         m_Meshes.clear();
+
+        Buffer.IndexBuffer.Destroy();
+        Buffer.VertexBuffer.Destroy();
     }
 
     void MeshModel::Draw(DrawContext &inContext)
@@ -213,14 +211,14 @@ namespace MamontEngine
 
             for (const auto &primitive : node->Mesh->Primitives)
             {
-                if (!primitive || !primitive->Material)
+                if (!primitive || !m_Materials[primitive->MaterialIndex])
                     continue;
 
-                const auto        &material = primitive->Material;
+                const auto        &material = m_Materials[primitive->MaterialIndex];
                 const RenderObject def(primitive->Count,
                                         primitive->StartIndex,
                                         Buffer,
-                                        material,
+                                        material->MaterialSet,
                                         Bound,
                                         nodeMatrix, ID);
 
@@ -376,7 +374,7 @@ namespace MamontEngine
 
         for (const fastgltf::Material &mat : inFileAsset.materials)
         {
-            const Material::MaterialConstants constants = {
+            Material::MaterialConstants constants = {
                     .ColorFactors = glm::vec4(
                             mat.pbrData.baseColorFactor[0], mat.pbrData.baseColorFactor[1], mat.pbrData.baseColorFactor[2], mat.pbrData.baseColorFactor[3]),
                     .MetalicFactor = mat.pbrData.metallicFactor,
@@ -410,6 +408,11 @@ namespace MamontEngine
                 const auto samplerIndex                  = inFileAsset.textures[mat.normalTexture.value().textureIndex].samplerIndex.value();
                 materialResources.NormalTexture          = m_Textures[textureIndex];
                 materialResources.NormalTexture->Sampler = inSamplers[samplerIndex];
+                constants.HasNormaMap                    = 1;
+            }
+            else
+            {
+                constants.HasNormaMap = 0;
             }
 
             if (mat.emissiveTexture.has_value())
@@ -443,7 +446,6 @@ namespace MamontEngine
         {
             auto newNode  = new Node();
             newNode->Name = node.name;
-            fmt::println("NewNode name: {}", node.name);
 
             if (node.meshIndex.has_value())
             {
@@ -491,10 +493,7 @@ namespace MamontEngine
         {
             std::shared_ptr<NewMesh> newmesh = std::make_shared<NewMesh>();
             newmesh->Name                    = mesh.name;
-
-            /*indices.clear();
-            vertices.clear();*/
-
+            newmesh->Primitives.reserve(mesh.primitives.size());
             for (auto &&p : mesh.primitives)
             {
                 std::unique_ptr<Primitive> newPrimitive = std::make_unique<Primitive>();
@@ -561,11 +560,11 @@ namespace MamontEngine
 
                 if (p.materialIndex.has_value())
                 {
-                    newPrimitive->Material = m_Materials[p.materialIndex.value()].get();
+                    newPrimitive->MaterialIndex = static_cast<uint32_t>(p.materialIndex.value());
                 }
                 else
                 {
-                    newPrimitive->Material = m_Materials[0].get();
+                    newPrimitive->MaterialIndex = 0;
                 }
 
                 /*glm::vec3 minpos = vertices[initial_vtx].Position;

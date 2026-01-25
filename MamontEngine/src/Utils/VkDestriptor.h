@@ -22,7 +22,7 @@ namespace MamontEngine
             float Ratio{0.0f};
         };
 
-        void Init(VkDevice inDevice, const uint32_t inInitialSets, const std::span<PoolSizeRatio> inPoolRatios);
+        void Init(VkDevice inDevice, const uint32_t inInitialSets, const std::span<const PoolSizeRatio> inPoolRatios);
         void ClearPools(VkDevice inDevice);
         void DestroyPools(VkDevice inDevice);
 
@@ -30,7 +30,7 @@ namespace MamontEngine
 
     private:
         VkDescriptorPool GetPool(VkDevice inDevice);
-        VkDescriptorPool CreatePool(VkDevice inDevice, const uint32_t inSetCount, const std::span<PoolSizeRatio> inPoolRatios);
+        VkDescriptorPool CreatePool(VkDevice inDevice, const uint32_t inSetCount, std::span<const PoolSizeRatio> inPoolRatios);
 
         std::vector<PoolSizeRatio>    m_Ratios;
         std::vector<VkDescriptorPool> m_FullPools;

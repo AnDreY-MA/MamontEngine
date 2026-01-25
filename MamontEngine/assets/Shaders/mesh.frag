@@ -95,18 +95,39 @@ uint GetCascadeIndex()
 
 vec3 CalculalteNormal()
 {
-  const vec3 tangentNormal = texture(normalMap, inUV).zyx * 2.0 - 1.0;
-  const vec3 N = normalize(inNormal);
-  const vec3 T = normalize(inTangent.xyz);
+   if(!bool(materialData.HasNormalMap))
+   {
+   return inNormal;
+   }
+  const vec4 texel = texture(normalMap, inUV);
+  vec3 tangent_normal = texel.xyz;
+  if(texel.w > 0.999)
+  {
+  tangent_normal = tangent_normal * 2.0 - 1.0;
+  }
+  else
+  {
+    tangent_normal.xy = texel.xw * 2.0 - 1.0;
+    tangent_normal.z = sqrt(1 - dot(tangent_normal.xy, tangent_normal.xy));
+  }
+
+  vec3 q1 = dFdx(inPos);
+  vec3 q2 = dFdx(inPos);
+  vec2 st1 = dFdx(inUV);
+  vec2 st2 = dFdx(inUV);
+
+ const vec3 N = normalize(inNormal);
+  const vec3 T = normalize(q1 * st2.t - q2 * st1.t);
   const vec3 B = normalize(cross(N, T));
   const mat3 TBN = mat3(T, B, N);
 
-  return normalize(TBN * tangentNormal);
+  return normalize(TBN * tangent_normal);
+  //return vec3(1.f);
 }
 
 void main()
 {
-  const vec3 N = inNormal;
+  const vec3 N = CalculalteNormal();
   //normalize(inNormal);
   //GetNormal(normalMap, inNormal, inUV, inPos);
   const vec3 L = normalize(-directionLight.lightDirection);
