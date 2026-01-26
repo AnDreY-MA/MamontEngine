@@ -19,6 +19,7 @@
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Pass/DirectLightPass.h"
 #include "Core/JobSystem.h"
+#include "Graphics/DebugRenderer.h"
 // #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
@@ -36,6 +37,8 @@ namespace MamontEngine
 
         const std::array<VkDescriptorSetLayout, 2> layouts = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
         m_DirectLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
+
+        DebugRenderer::Init();
     }
 
     Renderer::~Renderer()
@@ -43,6 +46,7 @@ namespace MamontEngine
         m_Skybox.reset();
         m_SceneRenderer.reset();
         DestroyPipelines();
+        DebugRenderer::Destroy();
     }
 
     void Renderer::InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera, const std::shared_ptr<Scene> &inScene)
@@ -190,6 +194,8 @@ namespace MamontEngine
         const uint32_t swapchainImageIndex    = m_DeviceContext.Swapchain.GetCurrentImageIndex();
 
         VkCommandBuffer cmd = currentFrame.MainCommandBuffer;
+        UpdateUniformBuffers();
+
 
         VK_CHECK(vkResetCommandBuffer(cmd, 0));
 
@@ -241,7 +247,6 @@ namespace MamontEngine
     {
         PROFILE_VK_ZONE(m_DeviceContext.GetCurrentFrame().TracyContext, inCmd, "Draw Main");
 
-        UpdateUniformBuffers();
 
         RenderCascadeShadow(inCmd);
 
@@ -283,7 +288,7 @@ namespace MamontEngine
 
         {
             PROFILE_VK_ZONE(currentFrame.TracyContext, inCmd, "Scene Render");
-            m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, m_RenderPipeline->OpaquePipeline.get(), m_RenderPipeline->TransparentPipeline.get());
+            m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, m_RenderPipeline.get());
         }
         vkCmdEndRendering(inCmd);
 
@@ -405,6 +410,7 @@ namespace MamontEngine
             const CascadeData &cascadeData = m_SceneRenderer->GetCascadeData();
             currentFrame.CascadeDataBuffer.Copy(&cascadeData);
         }
+
     }
 
     void Renderer::UpdateSceneRenderer(float inDeltaTime)

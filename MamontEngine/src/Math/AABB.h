@@ -21,7 +21,12 @@ namespace MamontEngine
 
         glm::vec3 Extent() const
         {
-            return Max - Min;
+            return (Max - Min) * 0.5f;
+        }
+
+        glm::vec3 Center() const
+        {
+            return (Min + Max) * 0.5f;
         }
 
         void Expand(const AABB &other)
@@ -39,11 +44,6 @@ namespace MamontEngine
         float Radius() const
         {
             return glm::length(Extent()) * 0.5f;
-        }
-
-        glm::vec3 Center() const
-        {
-            return (Min + Max) * 0.5f;
         }
 
         AABB Transform(const glm::mat4 &m) const

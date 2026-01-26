@@ -10,6 +10,7 @@
 #include "ECS/Components/DirectionLightComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include <glm/gtx/quaternion.hpp>
+#include "Graphics/DebugRenderer.h"
 
 namespace MamontEngine
 {
@@ -67,41 +68,25 @@ namespace MamontEngine
 
     void SceneRenderer::Clear()
     {
-        /*for (auto& component : m_MeshComponents)
-        {
-            component.Mesh.reset();
-        }
 
-        m_MeshComponents.clear();*/
     }
 
     void SceneRenderer::Render(VkCommandBuffer     inCmd,
                                VkDescriptorSet     globalDescriptor,
-                               const PipelineData *inOpaquePipeline,
-                               const PipelineData *inTransperentPipeline)
+                               const RenderPipeline* inRenderPipeline)
     {
         PROFILE_ZONE("SceneRenderer::Render");
 
-      /*  std::vector<uint32_t> transp_draws;
-        transp_draws.reserve(m_DrawContext.TransparentSurfaces.size());
+        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inRenderPipeline->OpaquePipeline->Pipeline);
 
-        for (size_t i = 0; i < m_DrawContext.TransparentSurfaces.size(); i++)
-        {
-            if (IsVisible(m_DrawContext.TransparentSurfaces[i].Bound, m_DrawContext.TransparentSurfaces[i].Transform, m_SceneData.Viewproj))
-            {
-                transp_draws.push_back(i);
-            }
-        }*/
+        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inRenderPipeline->OpaquePipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
 
-        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inOpaquePipeline->Pipeline);
-
-        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inOpaquePipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
-
-        VkDescriptorSet lastMaterial{VK_NULL_HANDLE};
+        constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
 
         const auto draw = [&](const RenderObject &r)
         {
-            vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inOpaquePipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
+            vkCmdBindDescriptorSets(
+                    inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inRenderPipeline->OpaquePipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
 
             constexpr VkDeviceSize offsets[1] = {0};
             if (r.MeshBuffer.VertexBuffer.Buffer != VK_NULL_HANDLE)
@@ -118,13 +103,19 @@ namespace MamontEngine
                     //.CascadeIndex = cascadeIndex
             };
 
-            constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
             vkCmdPushConstants(inCmd, 
-                inOpaquePipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
+                inRenderPipeline->OpaquePipeline->Layout,
+                               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                               0,
+                               constantsSize,
+                               &push_constants);
 
             vkCmdDrawIndexed(inCmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
+
+            
         };
 
+        // Opaque Draw
        for (const auto &object : m_DrawContext.OpaqueSurfaces)
        {
             if (IsVisible(object.Bound, object.Transform, m_SceneData.Viewproj))
@@ -133,19 +124,29 @@ namespace MamontEngine
             }
        }
 
-  
+       if (const auto vertexCount = DebugRenderer::GetVertexCount(); vertexCount > 0)
+       {
+           vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inRenderPipeline->DebugDrawPipeline->Pipeline);
+           
+           const auto                 bufferAdress = DebugRenderer::GetVertexBufferAdress();
+           const GPUDrawPushConstants debug_pushconstants{
+                   .WorldMatrix = glm::mat4(1.f), .VertexBuffer = bufferAdress,
+           };
 
-       /* for (const auto &r : opaque_draws)
-        {
-            draw(m_DrawContext.OpaqueSurfaces[r]);
-        }*/
+           vkCmdPushConstants(inCmd,
+                              inRenderPipeline->DebugDrawPipeline->Layout,
+                              VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                              0,
+                              constantsSize,
+                              &debug_pushconstants);
+           vkCmdDraw(inCmd, vertexCount, 1, 0, 0);
+       }
 
         /*for (const auto &r : transp_draws)
         {
             draw(m_DrawContext.TransparentSurfaces[r]);
         }*/
 
-        // m_DrawContext.Clear();
     }
 
     void SceneRenderer::RenderPicking(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, VkPipeline inPipeline, VkPipelineLayout inLayout)
@@ -181,6 +182,7 @@ namespace MamontEngine
     void SceneRenderer::Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades, float inDeltaTime)
     {
         ClearDrawContext();
+        DebugRenderer::ClearVertex();
 
         const glm::mat4 &view = m_Camera->GetViewMatrix();
 
@@ -227,14 +229,17 @@ namespace MamontEngine
 
         m_CascadeData.IsActive = m_HasDirectionLight;
 
-        const auto meshes = sceneRegistry.view<MeshComponent>();
-        for (const auto&& [entity, meshComponent] : meshes.each())
+        const auto meshes = sceneRegistry.view<MeshComponent, TransformComponent>();
+        for (const auto&& [entity, meshComponent, Transform] : meshes.each())
         {
             if (meshComponent.Mesh != nullptr)
             {
                 meshComponent.Mesh->Draw(m_DrawContext);
+                const auto &resultBound = meshComponent.Mesh->GetBound();
+                //DebugRenderer::Draw(resultBound.Transform(Transform.Matrix()));
             }
         }
+        DebugRenderer::Update();
     }
 
 } // namespace MamontEngine

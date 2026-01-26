@@ -30,7 +30,7 @@ namespace MamontEngine
         info.pNext                           = pNext;
 
         info.pBindings    = m_Bindings.data();
-        info.bindingCount = (uint32_t)m_Bindings.size();
+        info.bindingCount = static_cast<uint32_t>(m_Bindings.size());
         info.flags        = flags;
 
         VkDescriptorSetLayout set;
@@ -135,9 +135,10 @@ namespace MamontEngine
         return newPool;
     }
 
-    VkDescriptorPool DescriptorAllocatorGrowable::CreatePool(VkDevice inDevice, const uint32_t inSetCount, const std::span<PoolSizeRatio> inPoolRatios)
+    VkDescriptorPool DescriptorAllocatorGrowable::CreatePool(VkDevice inDevice, const uint32_t inSetCount, std::span<const PoolSizeRatio> inPoolRatios)
     {
         std::vector<VkDescriptorPoolSize> poolSizes;
+        poolSizes.reserve(inPoolRatios.size());
         for (const auto &ratio : inPoolRatios)
         {
             poolSizes.push_back(VkDescriptorPoolSize{.type = ratio.type, .descriptorCount = uint32_t(ratio.Ratio * inSetCount)});
@@ -147,7 +148,7 @@ namespace MamontEngine
         poolInfo.sType                      = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.flags                      = 0;
         poolInfo.maxSets                    = inSetCount;
-        poolInfo.poolSizeCount              = (uint32_t)poolSizes.size();
+        poolInfo.poolSizeCount              = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes                 = poolSizes.data();
 
         VkDescriptorPool newPool;

@@ -163,6 +163,9 @@ namespace MamontEngine
 
     void MeshModel::Clear()
     {
+        const auto &device = LogicalDevice::GetDevice();
+        vkDeviceWaitIdle(device);
+
         for (auto &node : m_Nodes)
         {
             node->Mesh.reset();
@@ -326,10 +329,6 @@ namespace MamontEngine
 
             modelSamplers.push_back(newSampler);
         }
-
-        VkSampler defaultSampler = VK_NULL_HANDLE;
-        vkCreateSampler(inDevice, &sampl, nullptr, &defaultSampler);
-        modelSamplers.push_back(defaultSampler);
 
         return modelSamplers;
     }

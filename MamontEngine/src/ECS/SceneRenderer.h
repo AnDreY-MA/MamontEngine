@@ -24,7 +24,7 @@ namespace MamontEngine
 
         ~SceneRenderer();
 
-        void Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const PipelineData *inOpaquePipeline, const PipelineData* inTransperentPipeline);
+        void Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const RenderPipeline *inRenderPipeline);
 
         void RenderPicking(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, VkPipeline inPipeline, VkPipelineLayout inLayout);
 

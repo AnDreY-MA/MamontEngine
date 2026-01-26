@@ -25,17 +25,10 @@ namespace MamontEngine
         IndexBuffer.Create(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
         AllocatedBuffer staging = CreateStagingBuffer(vertexBufferSize + indexBufferSize);
-        //staging.Create(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
-
-        /*VmaAllocationInfo allocInfo;
-        vmaGetAllocationInfo(Allocator::GetAllocator(), staging.Allocation, &allocInfo);*/
         void *data = staging.Info.pMappedData;
-        // void *data = staging.Allocation->GetMappedData;
 
         memcpy(data, inVertices.data(), vertexBufferSize);
         memcpy((char *)data + vertexBufferSize, inIndices.data(), indexBufferSize);
-
-        const auto &ContextDevice = MEngine::Get().GetContextDevice();
 
         ImmediateContext::ImmediateSubmit(
                 [&](VkCommandBuffer cmd)

@@ -43,6 +43,11 @@ namespace MamontEngine
             return m_Materials.at(index).get();
         }
 
+        const AABB &GetBound() const
+        {
+            return Bound;
+        }
+
         UID ID;
 
     private:

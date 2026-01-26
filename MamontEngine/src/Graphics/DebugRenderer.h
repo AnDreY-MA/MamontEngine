@@ -22,10 +22,18 @@ namespace MamontEngine
 
     namespace DebugRenderer
     {
-        void DrawLine(const glm::vec3 &inStart, const glm::vec3 &inEnd, const Color &inColor, float inWidth = 1.0f);
+        void Init();
+        void Destroy();
+        void Update();
 
-        void Draw(const AABB &inBox, const Color &inColor, float width = 1.0f);
+        void ClearVertex();
+
+        void DrawLine(const glm::vec3 &inStart, const glm::vec3 &inEnd, const Color &inColor = Color::WHITE, float inWidth = .1f);
+
+        void Draw(const AABB &inBox, const Color &inColor = Color::WHITE, float width = .1f);
         
-        void DrawBox(const glm::vec3 &inCenter, const glm::vec3 &inExtent, const glm::vec3 &inRotation, const Color &inColor);
+        VkDeviceAddress GetVertexBufferAdress();
+
+        uint32_t GetVertexCount();
     } // namespace DebugRenderer
 } // namespace MamontEngine

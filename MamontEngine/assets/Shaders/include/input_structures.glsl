@@ -11,7 +11,6 @@ layout(set = 0, binding = 0) uniform SceneData {
   vec3 cameraPosition;
 } sceneData;
 
-//push constants block
 layout(push_constant) uniform constants
 {
   mat4 render_matrix;

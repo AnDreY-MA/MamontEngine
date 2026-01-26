@@ -25,13 +25,11 @@ namespace MamontEngine::VkPipelines
         createInfo.codeSize                 = buffer.size() * sizeof(uint32_t);
         createInfo.pCode                    = reinterpret_cast<const uint32_t *>(buffer.data());
 
-        VkShaderModule shaderModule;
-        if (vkCreateShaderModule(inDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
+        if (vkCreateShaderModule(inDevice, &createInfo, nullptr, outShaderModule) != VK_SUCCESS)
         {
             fmt::println("Create Shader - no success");
             return false;
         }
-        *outShaderModule = shaderModule;
 
         return true;
     }
