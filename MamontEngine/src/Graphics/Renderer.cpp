@@ -187,7 +187,7 @@ namespace MamontEngine
             return;
         }
 
-        auto &currentFrame = m_DeviceContext.GetCurrentFrame();
+        const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
 
         const VkExtent2D& swapchainExtent = m_DeviceContext.Swapchain.GetExtent();
         m_DrawExtent                     = swapchainExtent;
@@ -195,7 +195,6 @@ namespace MamontEngine
 
         VkCommandBuffer cmd = currentFrame.MainCommandBuffer;
         UpdateUniformBuffers();
-
 
         VK_CHECK(vkResetCommandBuffer(cmd, 0));
 
@@ -246,7 +245,6 @@ namespace MamontEngine
     void Renderer::DrawMain(VkCommandBuffer inCmd)
     {
         PROFILE_VK_ZONE(m_DeviceContext.GetCurrentFrame().TracyContext, inCmd, "Draw Main");
-
 
         RenderCascadeShadow(inCmd);
 

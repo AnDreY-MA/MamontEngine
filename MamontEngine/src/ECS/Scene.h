@@ -27,7 +27,10 @@ namespace MamontEngine
 
         Entity CreateEntity(std::string_view inName = std::string_view());
 
-        void Update();
+        void StartScene();
+        void StopScene();
+
+        void Update(const float deltaTime);
 
         template <typename T>
         void RemoveComponent(Entity inEntity)

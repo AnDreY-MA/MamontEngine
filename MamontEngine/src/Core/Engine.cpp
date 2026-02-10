@@ -49,8 +49,12 @@ namespace MamontEngine
                 m_Renderer = std::make_unique<Renderer>(*m_ContextDevice.get(), m_Window);
                 InitImgui();
                 m_Renderer->InitSceneRenderer(m_MainCamera, m_Scene);
-
             });
+
+        JobSystem::Execute(contextJobs,
+                           [this](auto args) { 
+                                m_PhysicsSystem = std::make_unique<HeroPhysics::PhysicsSystem>();
+                           });
         
         JobSystem::Wait(contextJobs);
 
@@ -60,6 +64,7 @@ namespace MamontEngine
             m_ContextDevice->DestroyFrameData(); 
         });
 
+        constexpr uint32_t maxBodiesCount = 0x7fffff;
     }
 
     void MEngine::Run()
@@ -69,12 +74,12 @@ namespace MamontEngine
         bool      isResized{false};
         bool      isStopRendering{false};
 
-        JobSystem::Context eventContext;
-
         PROFILE_SETTHREADNAME("Main Thread");
 
         while (!bQuit)
         {
+            const float deltaTime = ImGui::GetIO().DeltaTime;
+
             while (SDL_PollEvent(&event) != 0)
             {
                 if (event.type == SDL_EVENT_QUIT)
@@ -119,11 +124,12 @@ namespace MamontEngine
             {
                 m_GuiLayer->ImGuiRender();
 
-                const float deltaTime = ImGui::GetIO().DeltaTime;
-
                 UpdateScene(deltaTime);
 
                 m_Renderer->Render();
+
+                m_PhysicsSystem->Update(deltaTime, m_Scene->GetRegistry());
+
             }
         }
     }
@@ -158,7 +164,7 @@ namespace MamontEngine
     void MEngine::UpdateScene(float inDeltaTime)
     {
         m_MainCamera->Update(inDeltaTime);
-        m_Scene->Update();
+        m_Scene->Update(inDeltaTime);
         m_Renderer->UpdateSceneRenderer(inDeltaTime);
     }
 

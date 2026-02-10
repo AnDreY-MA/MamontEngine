@@ -4,6 +4,7 @@
 #include "entt/entt.hpp"
 #include "Components/IDComponent.h"
 #include "ECS/Components/DirectionLightComponent.h"
+#include "ECS/Components/RigidbodyComponent.h"
 
 
 namespace MamontEngine
@@ -77,8 +78,7 @@ namespace MamontEngine
 	private:
         entt::entity m_EntityHandle{entt::null};
         Scene *m_Scene{nullptr};
-
-        //RTTR_ENABLE()
-
 	};
+
+    
 }

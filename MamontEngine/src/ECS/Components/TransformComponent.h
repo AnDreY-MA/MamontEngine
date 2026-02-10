@@ -26,6 +26,9 @@ namespace MamontEngine
         bool IsDirty{true};
 
     private:
+
+        float TestValue = 1.f;
+
         friend class cereal::access;
 
         template <class Archive>
@@ -33,5 +36,7 @@ namespace MamontEngine
         {
             ar(Transform.Position, Transform.Rotation, Transform.Scale);
         }
+
+        REFLECT()
     };
 }

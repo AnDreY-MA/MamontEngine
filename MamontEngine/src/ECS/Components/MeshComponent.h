@@ -3,6 +3,7 @@
 #include "Graphics/Resources/Models/Model.h"
 #include "ECS/Components/Component.h"
 #include <cereal/cereal.hpp>
+#include "Utils/MetaReflection.h"
 
 namespace MamontEngine
 {
@@ -36,5 +37,7 @@ namespace MamontEngine
 
             component.Mesh = std::make_shared<MeshModel>(1, path);
         }
+
+        REFLECT();
 	};
 }

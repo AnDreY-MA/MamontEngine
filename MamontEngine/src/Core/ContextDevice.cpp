@@ -342,6 +342,9 @@ namespace MamontEngine
             const auto cmdSecondaryAllocInfo = vkinit::command_buffer_allocate_info(frame.CommandPool, 1, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
             VK_CHECK(vkAllocateCommandBuffers(device, &cmdSecondaryAllocInfo, &frame.UICommandBuffer));
 
+          /*  const auto cmdBackgroundAllocInfo = vkinit::command_buffer_allocate_info(frame.CommandPool, 2, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+            VK_CHECK(vkAllocateCommandBuffers(device, &cmdBackgroundAllocInfo, &frame.BackgroundBuffer));*/
+
         }
 
 #ifdef PROFILING

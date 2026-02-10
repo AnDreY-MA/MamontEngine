@@ -29,6 +29,12 @@ namespace MamontEngine
             return (Min + Max) * 0.5f;
         }
 
+        inline void Merge(const AABB& other)
+        {
+            Min = glm::min(Min, other.Min);
+            Max = glm::max(Max, other.Max);
+        }
+
         void Expand(const AABB &other)
         {
             Min = glm::min(Min, other.Min);
@@ -44,6 +50,12 @@ namespace MamontEngine
         float Radius() const
         {
             return glm::length(Extent()) * 0.5f;
+        }
+
+        float GetSurfaceArea() const
+        {
+            const glm::vec3 extent{Max - Min};
+            return 2.f * (extent.x * extent.y + extent.y * extent.z + extent.z * extent.x);
         }
 
         AABB Transform(const glm::mat4 &m) const
@@ -66,6 +78,23 @@ namespace MamontEngine
                 result.Expand(world);
             }
             return result;
+        }
+
+        bool TestOverlap(const AABB& other) const
+        {
+            const float d1x = other.Min.x - Max.x;
+            const float d1y = other.Min.y - Max.y;
+            const float d1z = other.Min.z - Max.z;
+
+            const float d2x = Min.x - other.Max.x;
+            const float d2y = Min.y - other.Max.y;
+            const float d2z = Min.z - other.Max.z;
+
+            if (d1x > 0.f || d1y > 0.f || d1z > 0.f) return false;
+            
+            if (d2x > 0.f || d2y > 0.f || d2z > 0.f) return false;
+
+            return true;
         }
 
         bool IntersectsRay(const glm::vec3 &origin, const glm::vec3 &dir, float &outDist) const

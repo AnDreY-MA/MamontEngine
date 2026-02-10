@@ -11,6 +11,7 @@
 #include "ECS/Components/TransformComponent.h"
 #include <glm/gtx/quaternion.hpp>
 #include "Graphics/DebugRenderer.h"
+#include "Physics/Collision/BoxCollision.h"
 
 namespace MamontEngine
 {
@@ -63,12 +64,7 @@ namespace MamontEngine
 
     SceneRenderer::~SceneRenderer()
     {
-        Clear();
-    }
-
-    void SceneRenderer::Clear()
-    {
-
+        m_DrawContext.Clear();
     }
 
     void SceneRenderer::Render(VkCommandBuffer     inCmd,
@@ -181,6 +177,8 @@ namespace MamontEngine
 
     void SceneRenderer::Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades, float inDeltaTime)
     {
+        PROFILE_FUNCTION();
+
         ClearDrawContext();
         DebugRenderer::ClearVertex();
 
@@ -195,6 +193,7 @@ namespace MamontEngine
         m_SceneData.Proj           = projection;
         m_SceneData.Viewproj       = projection * view;
         m_SceneData.CameraPosition = m_Camera->GetPosition();
+
         {
             const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent>();
             m_HasDirectionLight            = !viewDirectionLight.empty();
@@ -206,7 +205,7 @@ namespace MamontEngine
 
             viewDirectionLight.each([&](const auto& ligth, const auto& transform) { 
                 m_CascadeData.Color        = ligth.GetColor();
-                const glm::quat rotation  = glm::quat(glm::radians(transform.Transform.Rotation));
+                const glm::quat rotation       = transform.Transform.Rotation;
                 const glm::vec3 lightDirection = glm::normalize(
                         rotation * glm::vec3(0.0f, 0.0f, -1.0f)
                 );
@@ -235,11 +234,17 @@ namespace MamontEngine
             if (meshComponent.Mesh != nullptr)
             {
                 meshComponent.Mesh->Draw(m_DrawContext);
-                const auto &resultBound = meshComponent.Mesh->GetBound();
-                //DebugRenderer::Draw(resultBound.Transform(Transform.Matrix()));
             }
         }
+
+        const auto viewCollisions = sceneRegistry.view<TransformComponent, HeroPhysics::BoxCollision>();
+        for (auto [entity, transform, collision] : viewCollisions.each())
+        {
+            DebugRenderer::Draw(collision.GetBounds().Transform(transform.Matrix()), Color::GREEN);
+        }
+
         DebugRenderer::Update();
+
     }
 
 } // namespace MamontEngine

@@ -10,9 +10,12 @@
 #include "Core/Engine.h"
 #include "EditorUtils/EditorUtils.h"
 #include <ECS/Components/DirectionLightComponent.h>
+#include <ECS/Components/RigidbodyComponent.h>
 #include <ECS/Components/Component.h>
 #include <entt/core/hashed_string.hpp>
 #include "Math/Color.h"
+#include "Physics/Collision/BoxCollision.h"
+#include "Utils/MetaInspector.h"
 
 const std::string RootDirectories = PROJECT_ROOT_DIR;
 const std::string AssetsPath      = RootDirectories + "/MamontEngine/assets";
@@ -20,6 +23,33 @@ const std::string AssetsPath      = RootDirectories + "/MamontEngine/assets";
 namespace
 {
     void InspectProperty(entt::registry &reg, entt::meta_any &property, entt::meta_data &propertyMeta, const entt::id_type propertyID);
+
+    void InspectType(entt::registry &reg, std::string &name, entt::meta_any &value, entt::meta_data &meta)
+    {
+       if (meta.type().is_pointer_like())
+        {
+           //ImGui::Text("%s", "Pointer type detected NOT IMPLEMENTED YET.....");
+
+            if (entt::meta_any ref = *value; ref)
+            {
+                //ImGui::Text("%s", "Pointer type detected NOT IMPLEMENTED YET.....");
+                InspectType(reg, name, ref, meta);
+                //return;
+            }
+        }
+
+        if (!value.type().func(f_Inspect))
+        {
+            ImGui::Text("No meta inspect function detected\n");
+            return;
+        }
+
+        auto propertyInspected = value.type().func(f_Inspect).invoke(
+                {}, name.c_str(), entt::forward_as_meta(value), meta);
+
+        if (!propertyInspected)
+            ImGui::TextColored(ImVec4(1, 0, 0, 1), "Failed to render type");
+    }
 
     void InspectComponent(entt::registry& registry, entt::entity owner, entt::meta_any& data)
     {
@@ -58,48 +88,25 @@ namespace
     void InspectProperty(entt::registry &reg, entt::meta_any &property, entt::meta_data &propertyMeta, const entt::id_type propertyID)
     {
         using namespace MamontEngine;
-        const auto type = propertyMeta.type();
+
+        const auto propertyType = propertyMeta.type();
 
         const char *label = propertyMeta.name() ? propertyMeta.name() : std::string{propertyMeta.type().info().name()}.data();
+
+        entt::meta_func&& propertyInspectFunction = propertyType.func(f_Inspect);
 
         ImGui::PushID((std::string(label) + "prop").c_str());
 
         ImGui::Indent(10);
 
-        if (type.is_class())
+        auto labelStr = std::string(label);
+        InspectType(reg, labelStr, property, propertyMeta);
+
+        if (propertyType.is_pointer_like())
         {
-            if (type.info() == entt::type_id<Transform>())
+            if (entt::meta_any ref = *property; ref && ref.allow_cast<Asset>())
             {
-                Transform* transform = property.try_cast<Transform>();
-
-                MUI::DrawVec3Control("Position", transform->Position);
-                MUI::DrawVec3Control("Rotation", transform->Rotation);
-                MUI::DrawVec3Control("Scale", transform->Scale, 1.f);
-            }
-
-            if (type.info() == entt::type_id<Color>())
-            {
-                if (auto color = property.try_cast<Color>())
-                {
-                    ImGui::ColorEdit4(label, color->Data());
-                }
-            }
-        }
-
-        if (type.info() == entt::type_id<float>())
-        {
-            // ImGui::Text(type.info().name().data());
-            auto value = property.try_cast<float>();
-            if (value)
-            {
-                ImGui::DragFloat("Value", value, 0.01f, 0.f);
-            }
-        }
-
-        if (type.is_pointer_like())
-        {
-            if (entt::meta_any ref = *property; ref)
-            {
+                
                 auto asset = ref.try_cast<Asset>();
 
                 const std::string selectedString = asset != nullptr ? asset->GetPathFile() : "empty";
@@ -298,6 +305,8 @@ namespace MamontEditor
         {
             DrawAddComponent<MeshComponent>(m_SceneContext->GetRegistry(), m_Selected, "Mesh Component");
             DrawAddComponent<DirectionLightComponent>(m_SceneContext->GetRegistry(), m_Selected, "Direction Light Component");
+            DrawAddComponent<RigidbodyComponent>(m_SceneContext->GetRegistry(), m_Selected, "Rigidbody Component");
+            DrawAddComponent<HeroPhysics::BoxCollision>(m_SceneContext->GetRegistry(), m_Selected, "BoxCollision Component");
 
             ImGui::EndPopup();
         }

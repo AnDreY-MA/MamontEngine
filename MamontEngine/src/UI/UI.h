@@ -25,6 +25,7 @@ namespace MamontEngine
         static void EndPropertyGrid();
         
         static bool DrawVec3Control(std::string_view inLabel, glm::vec3& inValues, float inResetValue = 0.0f);
+        static bool DrawQuatControl(std::string_view inLabel, glm::quat& inValues, float inResetValue = 0.0f);
 
 		static bool InputText(const char            *inLabel,
                               std::string           *str,

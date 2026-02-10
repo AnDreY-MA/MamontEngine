@@ -1,5 +1,6 @@
 #include "ECS/Entity.h"
 #include "ECS/Components/DirectionLightComponent.h"
+#include "Core/Log.h"
 
 namespace MamontEngine
 {

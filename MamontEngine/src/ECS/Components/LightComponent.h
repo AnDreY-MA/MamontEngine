@@ -2,6 +2,7 @@
 
 #include "Math/Color.h"
 #include <cereal/cereal.hpp>
+#include "Utils/MetaReflection.h"
 
 namespace MamontEngine
 {

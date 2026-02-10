@@ -62,8 +62,6 @@ namespace MamontEngine
         {
             return m_HasDirectionLight;
         }
-    private:
-        void Clear();
 
     private:
         std::shared_ptr<Scene>     m_Scene;

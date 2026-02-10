@@ -13,8 +13,9 @@ file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.hpp" "src/Utils/*.cpp")
 file(GLOB_RECURSE ECS "src/ECS/*.h" "src/ECS/*.hpp" "src/ECS/*.cpp")
 file(GLOB_RECURSE ECSComps "src/ECS/Components/*.h" "src/ECS/Components/*.hpp" "src/ECS/Components/*.cpp")
 file(GLOB_RECURSE UI "src/UI/*.h" "src/UI/*.hpp" "src/UI/*.cpp")
+file(GLOB_RECURSE Physics "src/Physics/*.h" "src/Physics/*.hpp" "src/Physics/*.cpp")
 file(GLOB_RECURSE Math "src/Math/*.h" "src/Math/*.hpp" "src/Math/*.cpp")
-set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Devices} ${Materials} ${Utils} ${ECS} ${UI} ${Math} ${ECSComps})
+set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Devices} ${Materials} ${Utils} ${ECS} ${UI} ${Math} ${ECSComps} ${Physics})
 
 # Add library
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})

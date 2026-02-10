@@ -133,7 +133,7 @@ namespace MamontEngine
 
             vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Pipeline);
 
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
+            
 
             for (const auto &object : inDrawContext.OpaqueSurfaces)
             {

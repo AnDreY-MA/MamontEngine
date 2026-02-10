@@ -6,12 +6,13 @@
 #include "Graphics/Devices/PhysicalDevice.h"
 #include "Utils/VkInitializers.h"
 #include "imgui/imgui.h"
-
+#include "Core/Engine.h"
 #include "Utils/Profile.h"
 
 namespace MamontEngine
 {
-    ImGuiRenderer::ImGuiRenderer(const VkContextDevice &inContextDevice, SDL_Window *inWindow, VkFormat inColorFormat) : m_ColorFormat(inColorFormat)
+    ImGuiRenderer::ImGuiRenderer(const VkContextDevice &inContextDevice, SDL_Window *inWindow, VkFormat inColorFormat) 
+        : m_ColorFormat(inColorFormat)
     {
         constexpr VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
                                                       {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
@@ -84,30 +85,33 @@ namespace MamontEngine
         VkCommandBufferBeginInfo cmdSecondaryBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         cmdSecondaryBeginInfo.pInheritanceInfo         = &inheritanceInfo;
 
-        VK_CHECK(vkBeginCommandBuffer(inCmd, &cmdSecondaryBeginInfo));
+        {
+            VK_CHECK(vkBeginCommandBuffer(inCmd, &cmdSecondaryBeginInfo));
+            PROFILE_VK_ZONE(MEngine::Get().GetContextDevice().GetCurrentFrame().TracyContext, inCmd, "Draw ImGui");
 
-        const VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(inTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        const VkRenderingInfo           renderInfo      = vkinit::rendering_info(inRenderExtent, &colorAttachment, nullptr);
+            const VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(inTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            const VkRenderingInfo           renderInfo      = vkinit::rendering_info(inRenderExtent, &colorAttachment, nullptr);
 
-        vkCmdBeginRendering(inCmd, &renderInfo);
+            vkCmdBeginRendering(inCmd, &renderInfo);
 
-        const VkViewport viewport = {.x        = 0.0f,
-                                     .y        = 0.0f,
-                                     .width    = static_cast<float>(inRenderExtent.width),
-                                     .height   = static_cast<float>(inRenderExtent.height),
-                                     .minDepth = 0.0f,
-                                     .maxDepth = 1.0f};
+            const VkViewport viewport = {.x        = 0.0f,
+                                         .y        = 0.0f,
+                                         .width    = static_cast<float>(inRenderExtent.width),
+                                         .height   = static_cast<float>(inRenderExtent.height),
+                                         .minDepth = 0.0f,
+                                         .maxDepth = 1.0f};
 
-        const VkRect2D scissor = {.offset = {0, 0}, .extent = inRenderExtent};
+            const VkRect2D scissor = {.offset = {0, 0}, .extent = inRenderExtent};
 
-        vkCmdSetViewport(inCmd, 0, 1, &viewport);
-        vkCmdSetScissor(inCmd, 0, 1, &scissor);
+            vkCmdSetViewport(inCmd, 0, 1, &viewport);
+            vkCmdSetScissor(inCmd, 0, 1, &scissor);
 
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), inCmd);
+            ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), inCmd);
 
-        vkCmdEndRendering(inCmd);
+            vkCmdEndRendering(inCmd);
 
-        VK_CHECK(vkEndCommandBuffer(inCmd));
+            VK_CHECK(vkEndCommandBuffer(inCmd));
+        }
 
     }
 

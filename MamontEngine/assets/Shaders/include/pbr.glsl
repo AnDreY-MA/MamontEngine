@@ -248,6 +248,7 @@ vec3 GetLightContribution(PBRData pbrData, vec3 n, vec3 v, vec3 l, vec3 color)
   const float G = GeometricOcclusion(pbrData.dotNL, pbrData.dotNV, pbrData.alphaRoughness);
   const float D = MicrofaceDistribution(pbrData);
 
+  const float Dc = D_GGX(pbrData.alphaRoughness, pbrData.dotNH);
   // 1 D_GGX(pbrData.dotNV, pbrData.roughness, n, h);
   // 0 MicrofaceDistribution(pbrData);
   const float V = V_SmithGGXCorrelated(pbrData.dotNV, pbrData.dotNL, pbrData.roughness);

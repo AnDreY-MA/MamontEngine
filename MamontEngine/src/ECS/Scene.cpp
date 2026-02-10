@@ -20,47 +20,62 @@
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "Graphics/Resources/AssetManager.h"
+#include "Components/RigidbodyComponent.h"
+#include "Physics/Collision/BoxCollision.h"
+#include "Physics/Body/Rigidbody.h"
+#include "Core/Engine.h"
 
-/*META_INIT(glm);
+META_INIT(void) 
+IMPLEMENT_META_INIT(void)
+{
+    META_TYPE(float);
+    META_TYPE(bool);
+    META_TYPE(std::string);
+    META_TYPE(entt::entity);
+    META_TYPE(MamontEngine::Transform);
+    META_TYPE(MamontEngine::Color);
+    META_TYPE(MamontEngine::HeroPhysics::Rigidbody);
+}
+FINISH_REFLECT()
+
+META_INIT(glm);
 
 IMPLEMENT_META_INIT(glm)
 {
     META_TYPE(glm::vec3);
 }
-FINISH_REFLECT()*/
+FINISH_REFLECT()
+
+#define ALL_COMPONENTS(serializer) get<IDComponent>(serializer).get<TagComponent>(serializer).get<TransformComponent>(serializer) \
+        .get<MeshComponent>(serializer).get<DirectionLightComponent>(serializer).get<RigidbodyComponent>(serializer).get<HeroPhysics::BoxCollision>(serializer)
 
 
 namespace MamontEngine
 {
-     
-    Scene::Scene() 
+    IMPLEMENT_REFLECT_COMPONENT(MeshComponent, "Mesh Component")
+    {
+        meta.data<&MeshComponent::Mesh, entt::as_ref_t>("Model"_hs);
+    }
+    FINISH_REFLECT()
+
+    IMPLEMENT_REFLECT_COMPONENT(DirectionLightComponent, "DirectionLightComponent")
+    {
+        meta.base<LightComponent>();
+        meta.data<&DirectionLightComponent::Color>("Color");
+        meta.data<&DirectionLightComponent::Intensity, entt::as_ref_t>("Intensity");
+    }
+    FINISH_REFLECT()
+
+    Scene::Scene()
     {
         using hs = entt::hashed_string;
-        entt::meta_factory<MeshModel>{}
-        .type(hs{"Model"}, "Model").base<Asset>();
-        entt::meta_factory<Transform>
-        {}.type(hs{"Transform"}, "Transform");
-
-
-        entt::meta_factory<TransformComponent>{}
-                .type(hs{"TransformComponent "}, "Transform Component ")
-                .data<&TransformComponent::Transform>(hs{"Transform"}, "Transform");
-
-       entt::meta_factory<MeshComponent>{}
-           .type(hs{"MeshComponent"}, "Mesh component")
-           .data<&MeshComponent::Mesh>(hs{"Model"}, "Model");
-
-        entt::meta_factory<DirectionLightComponent>{}
-               .type(hs{"DirectionLightComponent"}, "Direction Light Component")
-               .base<LightComponent>()
-               .data<&DirectionLightComponent::Color>(hs{"Color"}, "Color")
-               .data<&DirectionLightComponent::Intensity>(hs{"Intensity"}, "Intensity");
+        entt::meta_factory<MeshModel>{}.type(hs{"Model"}, "Model").base<Asset>();
+        entt::meta_factory<Transform>{}.type(hs{"Transform"}, "Transform");
     }
 
     Scene::~Scene()
     {
         Clear();
-
     }
 
     void Scene::Clear()
@@ -71,7 +86,7 @@ namespace MamontEngine
     void Scene::Save()
     {
         const std::string fileScene = DEFAULT_ASSETS_DIRECTORY + "Scenes/Scene.sasset";
-        const bool result = Save(fileScene);
+        const bool        result    = Save(fileScene);
 
         Log::Info("Saved scene is {}", result ? "Success" : "Failed");
     }
@@ -87,8 +102,7 @@ namespace MamontEngine
 
         cereal::BinaryOutputArchive serializer(file);
 
-        entt::snapshot{m_Registry}.get<entt::entity>(serializer).get<IDComponent>(serializer).get<TagComponent>(serializer).get<TransformComponent>(serializer)
-            .get<MeshComponent>(serializer).get<DirectionLightComponent>(serializer);
+        entt::snapshot{m_Registry}.get<entt::entity>(serializer).ALL_COMPONENTS(serializer);
 
         file.close();
 
@@ -116,31 +130,60 @@ namespace MamontEngine
 
         cereal::BinaryInputArchive serializer(file);
 
-        entt::snapshot_loader{m_Registry}
-                .get<entt::entity>(serializer)
-                .get<IDComponent>(serializer)
-                .get<TagComponent>(serializer)
-                .get<TransformComponent>(serializer)
-                .get<MeshComponent>(serializer)
-                .get<DirectionLightComponent>(serializer);
+        entt::snapshot_loader{m_Registry}.get<entt::entity>(serializer).ALL_COMPONENTS(serializer);
 
         file.close();
 
         return true;
     }
 
-    void Scene::Update()
+    void Scene::Update(const float deltaTime)
     {
+        PROFILE_FUNCTION();
+
         auto view = m_Registry.view<MeshComponent, TransformComponent>();
         for (auto &&[entity, meshComponent, transform] : view.each())
         {
             if (meshComponent.Mesh)
             {
                 meshComponent.Mesh->UpdateTransform(transform.Matrix());
-                // transform.IsDirty = false;
             }
         }
-        
+    }
+
+    void Scene::StartScene()
+    {
+        auto viewRigidbodies = m_Registry.view<TransformComponent>();
+        viewRigidbodies.each([&](auto entity, TransformComponent& transform) {
+                    auto rigidbodyComponent = m_Registry.try_get<RigidbodyComponent>(entity);
+                    if (rigidbodyComponent)
+                    {
+                        rigidbodyComponent->Rigidbody->SetPosition(transform.Transform.Position);
+                        rigidbodyComponent->Rigidbody->SetRotation(transform.Transform.Rotation);
+                    }
+            });
+/*        for (auto [entity, transform, rigidbody] : viewRigidbodies.each())
+        {
+            rigidbody.Rigidbody->SetPosition(transform.Transform.Position);
+            rigidbody.Rigidbody->SetRotation(transform.Transform.Rotation);
+
+            const glm::vec3 position = rigidbody.Rigidbody->GetPosition();
+            Log::Info("Rigidbody position: {} {} {}", position.x, position.y, position.z);
+
+           /* if (auto collision = m_Registry.try_get<HeroPhysics::BoxCollision>(entity); collision)
+            {
+                auto collisionPtr = std::make_shared<HeroPhysics::BoxCollision>(*collision);
+                rigidbody.Rigidbody->SetCollisionShape(std::move(collisionPtr));
+            }
+
+        }*/
+
+        MamontEngine::MEngine::Get().GetPhysicsSytem()->SetPause(false);
+    }
+    
+    void Scene::StopScene()
+    {
+        MamontEngine::MEngine::Get().GetPhysicsSytem()->SetPause(true);
     }
 
     void Scene::DestroyEntity(Entity inEntity)

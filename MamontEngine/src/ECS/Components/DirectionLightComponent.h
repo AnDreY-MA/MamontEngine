@@ -2,6 +2,7 @@
 
 #include "ECS/Components/LightComponent.h"
 
+
 namespace MamontEngine
 {
     struct DirectionLightComponent : public LightComponent
@@ -18,5 +19,7 @@ namespace MamontEngine
         {
             ar(cereal::make_nvp("component", cereal::base_class<LightComponent>(this)));
         }
+
+        REFLECT();
     };
 }

@@ -9,9 +9,15 @@
 #include <ECS/SceneRenderer.h>
 #include "ImGuiLayer.h"
 #include "Core/Log.h"
+#include "Physics/PhysicsSystem.h"
 
 namespace MamontEngine
 {
+ /*   namespace HeroPhysics
+    {
+        class PhysicsSystem;
+    }*/
+
     class Scene;
     
 	class MEngine
@@ -62,6 +68,8 @@ namespace MamontEngine
             return m_Window.get();
         }
 
+        HeroPhysics::PhysicsSystem* GetPhysicsSytem() const { return m_PhysicsSystem.get(); }
+
         void PushGuiLayer(ImGuiLayer *inLayer);
 
         const SDL_Event* GetInputEvent() const
@@ -89,6 +97,8 @@ namespace MamontEngine
         std::unique_ptr<Renderer>      m_Renderer;
         std::unique_ptr<ImGuiLayer>    m_GuiLayer;
         std::unique_ptr<Log>           m_Log;
+
+        std::unique_ptr<HeroPhysics::PhysicsSystem> m_PhysicsSystem;
 
         std::unique_ptr<VkContextDevice> m_ContextDevice;
 
