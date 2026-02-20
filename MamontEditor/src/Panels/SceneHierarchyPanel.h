@@ -4,7 +4,6 @@
 #include <memory>
 
 #include <ECS/Entity.h>
-#include <ECS/Scene.h>
 
 namespace MamontEditor
 {

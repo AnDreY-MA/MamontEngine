@@ -50,7 +50,7 @@ float textureProj(vec4 shadowCoord, vec2 offset, uint cascadeIndex)
   float bias = 0.005;
   const float shadowAmbient = 0.3;
 
-  if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0) {
+  if (shadowCoord.z > 0.0 && shadowCoord.z < 1.0) {
     const float dist = texture(shadowMap, vec3(shadowCoord.st + offset, cascadeIndex)).r;
     if (shadowCoord.w > 0 && dist < shadowCoord.z - bias) {
       shadow = shadowAmbient;
@@ -95,15 +95,15 @@ uint GetCascadeIndex()
 
 vec3 CalculalteNormal()
 {
-   if(!bool(materialData.HasNormalMap))
-   {
-   return inNormal;
-   }
+  if (!bool(materialData.HasNormalMap))
+  {
+    return inNormal;
+  }
   const vec4 texel = texture(normalMap, inUV);
   vec3 tangent_normal = texel.xyz;
-  if(texel.w > 0.999)
+  if (texel.w > 0.999)
   {
-  tangent_normal = tangent_normal * 2.0 - 1.0;
+    tangent_normal = tangent_normal * 2.0 - 1.0;
   }
   else
   {
@@ -116,7 +116,7 @@ vec3 CalculalteNormal()
   vec2 st1 = dFdx(inUV);
   vec2 st2 = dFdx(inUV);
 
- const vec3 N = normalize(inNormal);
+  const vec3 N = normalize(inNormal);
   const vec3 T = normalize(q1 * st2.t - q2 * st1.t);
   const vec3 B = normalize(cross(N, T));
   const mat3 TBN = mat3(T, B, N);

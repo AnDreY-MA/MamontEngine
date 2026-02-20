@@ -40,4 +40,3 @@
 [submodule "mamontengine/vendor/cereal"]
 	path = mamontengine/vendor/cereal
 	url = https://github.com/USCiLab/cereal.git
-

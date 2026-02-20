@@ -50,6 +50,11 @@ namespace MamontEngine
             m_Scene->m_Registry.remove<T>(m_EntityHandle);
         }
 
+        void Destroy()
+        {
+            m_Scene->m_Registry.destroy(m_EntityHandle);
+        }
+
         UID GetID() const
         {
             return GetComponent<IDComponent>().ID;

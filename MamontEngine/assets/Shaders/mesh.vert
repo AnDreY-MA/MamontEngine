@@ -24,8 +24,7 @@ void main()
   outColor = v.color;
   outUV = v.uv;
   outTangent = v.tangent;
+  //outPos = (PushConstants.render_matrix * position).xyz;
   outPos = v.position;
-
   outViewPos = (sceneData.view * position).xyz;
 }
-

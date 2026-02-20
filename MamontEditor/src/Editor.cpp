@@ -113,7 +113,7 @@ namespace MamontEditor
             if (!panelHovered)
             {
                 const ImVec2 mousePos = ImGui::GetMousePos();
-                PickObject(mousePos);
+                //PickObject(mousePos);
             }
         }
 

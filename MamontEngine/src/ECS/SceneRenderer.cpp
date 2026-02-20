@@ -54,6 +54,19 @@ namespace MamontEngine
 
             return true;
         }
+
+        glm::vec3 GetForwardVector(const glm::quat inRotation)
+        {
+            const float yaw   = inRotation.y;
+            const float pitch = inRotation.z;
+
+            glm::vec3 forwardVector{glm::vec3(0)};
+            forwardVector.x  = std::cos(glm::radians(yaw)) * std::cos(glm::radians(pitch));
+            forwardVector.y  = std::sin(glm::radians(pitch));
+            forwardVector.z  = std::sin(glm::radians(yaw)) * std::cos(glm::radians(pitch));
+
+            return forwardVector;
+        }
     }
 
     SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera, const std::shared_ptr<Scene> &inScene) 
@@ -206,9 +219,7 @@ namespace MamontEngine
             viewDirectionLight.each([&](const auto& ligth, const auto& transform) { 
                 m_CascadeData.Color        = ligth.GetColor();
                 const glm::quat rotation       = transform.Transform.Rotation;
-                const glm::vec3 lightDirection = glm::normalize(
-                        rotation * glm::vec3(0.0f, 0.0f, -1.0f)
-                );
+                const glm::vec3 lightDirection = GetForwardVector(rotation);
                 m_SceneData.LightDirection   = lightDirection;
                 m_CascadeData.LightDirection = lightDirection;
             });
@@ -242,6 +253,8 @@ namespace MamontEngine
         {
             DebugRenderer::Draw(collision.GetBounds().Transform(transform.Matrix()), Color::GREEN);
         }
+
+        DebugRenderer::DrawPoint(glm::vec3(1.f), 2, Color::WHITE );
 
         DebugRenderer::Update();
 

@@ -48,6 +48,12 @@ namespace MamontEngine
             g_Vertices.clear();
         }
 
+        void DrawPoint(const glm::vec3 inPostion, const float radius, const Color& inColor)
+        {
+            const auto pointVertex = Vertex{.Position = inPostion, .Color = inColor.ToVector4() * 50.f};
+            g_Vertices.push_back(pointVertex);
+        }
+
         void DrawLine(const glm::vec3& inStart, const glm::vec3& inEnd, const Color& inColor, float inWidth)
         {
             const auto startVertex = Vertex{.Position = inStart, .Color = inColor.ToVector4()};

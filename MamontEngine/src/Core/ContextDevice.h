@@ -5,7 +5,7 @@
 #include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
 
-#include "FrameData.h"
+#include "Core/FrameData.h"
 #include "Graphics/Devices/PhysicalDevice.h"
 #include "Graphics/Resources/Models/Mesh.h"
 #include "Graphics/Vulkan/Swapchain.h"

@@ -47,7 +47,6 @@ namespace MamontEngine
             return m_Stats;
         }
 
-
         std::shared_ptr<SceneRenderer>& GetSceneRenderer()
         {
             return m_SceneRenderer;

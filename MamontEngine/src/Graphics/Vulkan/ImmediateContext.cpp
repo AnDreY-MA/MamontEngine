@@ -36,11 +36,12 @@ namespace ImmediateContext
 
     void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& inFunction)
     {
+        fmt::println("ImmediateSubmit");
+
         const VkDevice  device = LogicalDevice::GetDevice();
         VkCommandBuffer cmd    = s_ImmediateContext.CommandBuffer;
 
-        const VkResult waitResult = vkWaitForFences(device, 1, &s_ImmediateContext.Fence, VK_TRUE, UINT64_MAX);
-        if (waitResult != VK_SUCCESS)
+        if (vkWaitForFences(device, 1, &s_ImmediateContext.Fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to wait for immediate fence");
         }
@@ -70,7 +71,6 @@ namespace ImmediateContext
 
         vkDestroyFence(device, s_ImmediateContext.Fence, nullptr);
         vkDestroyCommandPool(device, s_ImmediateContext.CommandPool, nullptr);
-    
     }
 }
 } // namespace MamontEngine

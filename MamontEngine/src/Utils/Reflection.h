@@ -53,7 +53,8 @@ static inline entt::meta_factory<T> ReflectObject(std::string_view name)
 #define IMPLEMENT_REFLECT_OBJECT(TYPE)                                                                                                                         \
     int TYPE::InitTypeReflect()                                                                                                                                \
     {                                                                                                                                                          \
-        [[maybe_unused]] auto meta = ReflectObject<TYPE>((#TYPE));
+        [[maybe_unused]] auto meta = ReflectObject<TYPE>((#TYPE));                                                                                             \
+        meta.template func<&MetaInspectors::Inspect<TYPE>>(f_Inspect);
 
 #define META_TYPE(Type, ...)                                                                                                                                   \
     {                                                                                                                                                          \

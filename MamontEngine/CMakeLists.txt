@@ -15,7 +15,8 @@ file(GLOB_RECURSE ECSComps "src/ECS/Components/*.h" "src/ECS/Components/*.hpp" "
 file(GLOB_RECURSE UI "src/UI/*.h" "src/UI/*.hpp" "src/UI/*.cpp")
 file(GLOB_RECURSE Physics "src/Physics/*.h" "src/Physics/*.hpp" "src/Physics/*.cpp")
 file(GLOB_RECURSE Math "src/Math/*.h" "src/Math/*.hpp" "src/Math/*.cpp")
-set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Devices} ${Materials} ${Utils} ${ECS} ${UI} ${Math} ${ECSComps} ${Physics})
+file(GLOB_RECURSE Scripting "src/Scripting/*.h" "src/Scripting/*.hpp" "src/Scripting/*.cpp")
+set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Devices} ${Materials} ${Utils} ${ECS} ${UI} ${Math} ${ECSComps} ${Physics} ${Scripting})
 
 # Add library
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
@@ -112,6 +113,14 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ktx)
 #fast gltf
 add_subdirectory("vendor/fastgltf")
 target_link_libraries(${PROJECT_NAME} PUBLIC fastgltf::fastgltf)
+
+#lua
+add_subdirectory("vendor/lua")
+target_link_libraries(${PROJECT_NAME} PUBLIC lua)
+
+#sol
+target_include_directories(${PROJECT_NAME} PUBLIC "vendor/sol")
+#target_link_libraries(${PROJECT_NAME} PUBLIC sol2::sol2)
 
 #stb
 add_subdirectory("vendor/stb")

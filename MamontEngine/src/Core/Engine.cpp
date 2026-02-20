@@ -58,6 +58,8 @@ namespace MamontEngine
         
         JobSystem::Wait(contextJobs);
 
+        m_ScriptSystem = std::make_unique<ScriptSystem>();
+
         m_IsInitialized = true;
 
         m_MainDeletionQueue.PushFunction([&]() { 
@@ -129,7 +131,6 @@ namespace MamontEngine
                 m_Renderer->Render();
 
                 m_PhysicsSystem->Update(deltaTime, m_Scene->GetRegistry());
-
             }
         }
     }

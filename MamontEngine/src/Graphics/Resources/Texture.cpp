@@ -294,7 +294,7 @@ namespace MamontEngine
         VkFormat             format  = VK_FORMAT_R16G16B16A16_SFLOAT;
         VkImageUsageFlags    usage   = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         constexpr int32_t    dim     = 512;
-        const uint32_t       numMips = static_cast<uint32_t>(floor(log2(dim))) + 1;
+        const uint32_t   numMips = static_cast<uint32_t>(floor(log2(dim))) + 1;
         constexpr VkExtent3D extent{.width = dim, .height = dim, .depth = 1};
 
         Texture *newTexture = new Texture();
@@ -592,7 +592,7 @@ namespace MamontEngine
 
                     for (uint32_t m = 0; m < numMips; m++)
                     {
-                        pushBlock.Roughness = (float)m / (float)(numMips - 1);
+                        pushBlock.Roughness = static_cast<float>(m) / static_cast<float>(numMips - 1);
                         for (uint32_t f = 0; f < 6; f++)
                         {
                             viewport.width  = static_cast<float>(dim * std::pow(0.5f, m));

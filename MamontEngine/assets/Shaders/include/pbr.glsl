@@ -71,12 +71,11 @@ vec3 srgbToLinear(vec3 srgb)
 
 float D_GGX(float dotNH, float roughness, vec3 N, vec3 H)
 {
-  const vec3 NxH = cross(N, H);
-  const float a = dotNH * roughness;
-  const float k = roughness / (dot(NxH, NxH) + a * a);
-  const float d = k * k * (1.0 / PI);
+  const float a = roughness * roughness;
+  const float a2 = a * a;
+  const float denom = (dotNH * dotNH) * (a2 - 1.0) + 1.0;
 
-  return SaturateMediump(d);
+  return a2 / (PI * denom * denom);
 }
 
 float Geometric_SchlickmithGGX(float dotNL, float dotNV, float roughness)
@@ -89,11 +88,11 @@ float Geometric_SchlickmithGGX(float dotNL, float dotNV, float roughness)
   return GL * GV;
 }
 
-float GeometricOcclusion(float dotNL, float dotNV, float roughness)
+float GeometricOcclusion(PBRData pbrData)
 {
-  const float roughnessSq = roughness * roughness;
-  const float attenuationL = 2.0 * dotNL / (dotNL + sqrt(roughnessSq + (1.0 - roughnessSq) * (dotNL * dotNL)));
-  const float attenuationV = 2.0 * dotNV / (dotNV + sqrt(roughnessSq + (1.0 - roughnessSq) * (dotNV * dotNV)));
+  const float roughnessSq = pbrData.alphaRoughness * pbrData.alphaRoughness;
+  const float attenuationL = 2.0 * pbrData.dotNL / (pbrData.dotNL + sqrt(roughnessSq + (1.0 - roughnessSq) * (pbrData.dotNL * pbrData.dotNL)));
+  const float attenuationV = 2.0 * pbrData.dotNV / (pbrData.dotNV + sqrt(roughnessSq + (1.0 - roughnessSq) * (pbrData.dotNV * pbrData.dotNV)));
 
   return attenuationL * attenuationV;
 }
@@ -163,7 +162,7 @@ vec3 GetIBLContribution(PBRData pbrData, vec3 n, vec3 r, vec3 skyColor, sampler2
 {
   const vec3 F = F_Schlick(pbrData.dotNV, pbrData.F0);
 
-  const float lod = pbrData.roughness * 9.0;
+  const float lod = pbrData.roughness * 6.0;
 
   const vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrData.dotNV, 1.0 - pbrData.roughness))).rgb;
   const vec3 diffuseLight = texture(irradianceMap, n).rgb;
@@ -171,8 +170,6 @@ vec3 GetIBLContribution(PBRData pbrData, vec3 n, vec3 r, vec3 skyColor, sampler2
 
   const vec3 diffuse = diffuseLight * pbrData.diffuseColor;
   const vec3 specular = specularLight * (pbrData.specularColor * brdf.x + brdf.y);
-
-  const vec3 kD = (1.0 - F) * (1.0 - pbrData.metallic);
 
   const vec3 result = (diffuse + specular) * skyColor;
 
@@ -243,19 +240,8 @@ vec3 GetLightContribution(PBRData pbrData, vec3 n, vec3 v, vec3 l, vec3 color)
 
   const vec3 F = SpecularReflection(pbrData);
 
-  // 1 F_Schlick(pbrData.dotNH, pbrData.F0);
-  //0 SpecularReflection(pbrData);
-  const float G = GeometricOcclusion(pbrData.dotNL, pbrData.dotNV, pbrData.alphaRoughness);
+  const float G = GeometricOcclusion(pbrData);
   const float D = MicrofaceDistribution(pbrData);
-
-  const float Dc = D_GGX(pbrData.alphaRoughness, pbrData.dotNH);
-  // 1 D_GGX(pbrData.dotNV, pbrData.roughness, n, h);
-  // 0 MicrofaceDistribution(pbrData);
-  const float V = V_SmithGGXCorrelated(pbrData.dotNV, pbrData.dotNL, pbrData.roughness);
-  const float Vc = V_Kelemen(pbrData.dotLH);
-
-  const vec3 fr = (D * V) * F;
-  const vec3 Fd = pbrData.diffuseColor * Fd_Lambert();
 
   const vec3 diffuseContrib = (1.0 - F) * (pbrData.diffuseColor / PI);
   const vec3 specularContrib = F * G * D / (4.0 * pbrData.dotNL * pbrData.dotNV);

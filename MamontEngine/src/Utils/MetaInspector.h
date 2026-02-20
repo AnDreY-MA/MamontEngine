@@ -10,6 +10,7 @@
 using entt::literals::operator""_hs;
 
 constexpr entt::hashed_string f_Inspect = "Inspect"_hs;
+constexpr entt::hashed_string p_DisplayName = "DisplayName"_hs;
 
 namespace MetaInspectors
 {
@@ -38,6 +39,26 @@ namespace MetaInspectors
     static void InspectEnum(const char* name, entt::meta_any& value, const entt::meta_data& meta)
     {
         //Type type = value.cast<T>();
+
+        struct TypeID
+        {
+            unsigned Id;
+            std::string Name;
+        };
+
+        static std::vector<TypeID> enumNames = std::vector<TypeID>();
+        int                        amount{0};
+        std::string                active{"None"};
+
+        for (auto&& [enumID, elementType] : value.type().data())
+        {
+            std::string name = "UNKNOWN";
+            if (elementType.type().name() == p_DisplayName)
+            {
+                //name = elementType.type()
+            }
+        }
+
     }
 
     template<>
@@ -64,12 +85,18 @@ namespace MetaInspectors
     template <>
     inline void MetaInspect<HeroPhysics::Rigidbody>(const std::string &name, HeroPhysics::Rigidbody &value, const entt::meta_data &meta)
     {
-        float mass = value.GetMass();
+/*        float mass = value.GetMass();
         if (ImGui::DragFloat("Mass", &mass, 0.2f))
         {
             value.SetMass(mass);
         }
-        
+
+        const char* motionTypeName = "MotionType";
+
+        /*if (ImGui::BeginCombo(motionTypeNamem, ))
+        {
+
+        }*/
     }
 }
 

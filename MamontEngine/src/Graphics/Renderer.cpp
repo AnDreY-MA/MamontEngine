@@ -30,7 +30,6 @@ namespace MamontEngine
     Renderer::Renderer(VkContextDevice &inDeviceContext, const std::shared_ptr<WindowCore> &inWindow) 
         : m_DeviceContext(inDeviceContext), m_Window(inWindow)
     {
-
         InitPipelines();
 
         m_DirectLightPass = std::make_unique<DirectLightPass>(m_DeviceContext.CascadeDepthImage.ImageFormat, m_DeviceContext.CascadeDepthImage.Image);

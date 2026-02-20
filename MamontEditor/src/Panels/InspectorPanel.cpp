@@ -12,6 +12,7 @@
 #include <ECS/Components/DirectionLightComponent.h>
 #include <ECS/Components/RigidbodyComponent.h>
 #include <ECS/Components/Component.h>
+#include <ECS/Components/ScriptComponent.h>
 #include <entt/core/hashed_string.hpp>
 #include "Math/Color.h"
 #include "Physics/Collision/BoxCollision.h"
@@ -28,14 +29,23 @@ namespace
     {
        if (meta.type().is_pointer_like())
         {
-           //ImGui::Text("%s", "Pointer type detected NOT IMPLEMENTED YET.....");
-
-            if (entt::meta_any ref = *value; ref)
+            if (entt::meta_any ref = *value; ref && !ref.allow_cast<MamontEngine::Asset>())
             {
-                //ImGui::Text("%s", "Pointer type detected NOT IMPLEMENTED YET.....");
-                InspectType(reg, name, ref, meta);
-                //return;
+                ImGui::BeginChild(name.append("Field").c_str());
+                ImGui::Indent(10);
+                for (auto [id, metaData] : ref.type().data())
+                {
+                    auto        instance = metaData.get(ref);
+                    std::string metaName = std::string(metaData.name());
+                    InspectType(reg, metaName, instance, metaData);
+                    metaData.set(ref, instance);
+                }
+                ImGui::Unindent(10);
+                ImGui::Separator();
+                ImGui::EndChild();
             }
+
+            return;
         }
 
         if (!value.type().func(f_Inspect))
@@ -106,7 +116,6 @@ namespace
         {
             if (entt::meta_any ref = *property; ref && ref.allow_cast<Asset>())
             {
-                
                 auto asset = ref.try_cast<Asset>();
 
                 const std::string selectedString = asset != nullptr ? asset->GetPathFile() : "empty";
@@ -307,6 +316,7 @@ namespace MamontEditor
             DrawAddComponent<DirectionLightComponent>(m_SceneContext->GetRegistry(), m_Selected, "Direction Light Component");
             DrawAddComponent<RigidbodyComponent>(m_SceneContext->GetRegistry(), m_Selected, "Rigidbody Component");
             DrawAddComponent<HeroPhysics::BoxCollision>(m_SceneContext->GetRegistry(), m_Selected, "BoxCollision Component");
+            DrawAddComponent<ScriptComponent>(m_SceneContext->GetRegistry(), m_Selected, "Script Component");
 
             ImGui::EndPopup();
         }
@@ -326,6 +336,52 @@ namespace MamontEditor
             entt::meta_any metaProp = componentMeta.from_void(storage.value(m_Selected));
 
             InspectComponent(registry, m_Selected, metaProp);
+        }
+
+        ImGui::SameLine();
+
+        if (entity.HasComponent<ScriptComponent>())
+        {
+            constexpr ImGuiTreeNodeFlags TREE_FLAGS = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
+                                                      ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding;
+
+            const bool menuOpen = ImGui::CollapsingHeader("ScriptComponent", TREE_FLAGS);
+            if (!menuOpen)
+                return;
+
+            const std::string id = "ScriptComponent";
+            ImGui::PushID(id.c_str());
+            ImGui::Indent(10.f);
+
+            auto &scriptComponent = entity.GetComponent<ScriptComponent>();
+
+            const std::string selectedString = scriptComponent.GetFilePath();
+            if (ImGui::BeginCombo("##File", selectedString.c_str()))
+            {
+                constexpr auto                 extensionFile = ".lua";
+                const std::vector<std::string> files         = MamontEditor::ScanFolder(AssetsPath, extensionFile, true);
+                for (const auto &file : files)
+                {
+                    const std::string fullPath   = AssetsPath + "/Scripts/" + file;
+                    const bool        isSelected = (selectedString == fullPath);
+
+                    if (ImGui::Selectable(file.c_str(), isSelected))
+                    {
+                        scriptComponent.LoadScript(fullPath.c_str());
+                    }
+
+                    if (isSelected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }   
+
+            ImGui::Unindent(10);
+            ImGui::Separator();
+
+            ImGui::PopID();
         }
     }
     

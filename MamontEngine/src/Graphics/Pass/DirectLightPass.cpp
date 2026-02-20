@@ -132,8 +132,7 @@ namespace MamontEngine
             vkCmdSetScissor(cmd, 0, 1, &scissor);
 
             vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Pipeline);
-
-            
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
 
             for (const auto &object : inDrawContext.OpaqueSurfaces)
             {
@@ -216,16 +215,17 @@ namespace MamontEngine
                 const float distance = glm::length(frustumCorners[j] - frustumCenter);
                 radius               = glm::max(radius, distance);
             }
-            radius = std::ceil(radius * 16.f) / 16.f;
+            //radius = std::ceil(radius * 16.f) / 16.f;
 
-            const glm::vec3 maxExtents = glm::vec3(radius);
-            const glm::vec3 minExtents = -maxExtents;
+           /* const glm::vec3 maxExtents = glm::vec3(radius);
+            const glm::vec3 minExtents = -maxExtents;*/
 
-            const glm::mat4 lightViewMatrix  = glm::lookAt(frustumCenter - inLightDirection * -minExtents.z, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
-            const glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.f, maxExtents.z - minExtents.z);
+            const glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - inLightDirection * radius, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
+            glm::mat4 lightProj       = glm::orthoRH_ZO(-radius, radius, -radius, radius, 0.f, radius * 2.f);
+            lightProj[1][1] *= -1.f;
 
-            Cascades[i].SplitDepth        = (inCamera->GetNearClip() + splitDist * clipRange) * -1.f;
-            Cascades[i].ViewProjectMatrix = lightOrthoMatrix * lightViewMatrix;
+            Cascades[i].SplitDepth        = -(inCamera->GetNearClip() + splitDist * clipRange) ;
+            Cascades[i].ViewProjectMatrix = lightProj * lightViewMatrix;
 
             lastSplitDist = splitDist;
         }

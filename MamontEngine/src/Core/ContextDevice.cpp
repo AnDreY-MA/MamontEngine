@@ -267,6 +267,11 @@ namespace MamontEngine
         const auto           &currentFrame = GetCurrentFrame();
         const VkDevice &device       = LogicalDevice::GetDevice();
 
+        if (vkGetFenceStatus(device, currentFrame.RenderFence) != VK_SUCCESS)
+        {
+            return false;
+        }
+
         VK_CHECK_MESSAGE(vkWaitForFences(device, 1, &currentFrame.RenderFence, VK_TRUE, UINT64_MAX), "Wait FENCE");
         VK_CHECK(vkResetFences(device, 1, &currentFrame.RenderFence));
 
@@ -344,7 +349,6 @@ namespace MamontEngine
 
           /*  const auto cmdBackgroundAllocInfo = vkinit::command_buffer_allocate_info(frame.CommandPool, 2, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
             VK_CHECK(vkAllocateCommandBuffers(device, &cmdBackgroundAllocInfo, &frame.BackgroundBuffer));*/
-
         }
 
 #ifdef PROFILING
@@ -386,8 +390,6 @@ namespace MamontEngine
 
             VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &GetFrameAt(i).SwapchainSemaphore));
             std::cerr << "semaphore: " << GetFrameAt(i).SwapchainSemaphore << std::endl;
-
-            // VK_CHECK(vkCreateSemaphore(Device, &semaphoreCreateInfo, nullptr, &GetFrameAt(i).RenderSemaphore));
         }
 
         RenderCopleteSemaphores.resize(Swapchain.GetImages().size());

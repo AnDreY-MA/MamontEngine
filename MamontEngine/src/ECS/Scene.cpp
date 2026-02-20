@@ -21,6 +21,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include "Graphics/Resources/AssetManager.h"
 #include "Components/RigidbodyComponent.h"
+#include "Components/ScriptComponent.h"
 #include "Physics/Collision/BoxCollision.h"
 #include "Physics/Body/Rigidbody.h"
 #include "Core/Engine.h"
@@ -34,7 +35,7 @@ IMPLEMENT_META_INIT(void)
     META_TYPE(entt::entity);
     META_TYPE(MamontEngine::Transform);
     META_TYPE(MamontEngine::Color);
-    META_TYPE(MamontEngine::HeroPhysics::Rigidbody);
+    //META_TYPE(MamontEngine::HeroPhysics::Rigidbody);
 }
 FINISH_REFLECT()
 
@@ -153,16 +154,9 @@ namespace MamontEngine
 
     void Scene::StartScene()
     {
-        auto viewRigidbodies = m_Registry.view<TransformComponent>();
-        viewRigidbodies.each([&](auto entity, TransformComponent& transform) {
-                    auto rigidbodyComponent = m_Registry.try_get<RigidbodyComponent>(entity);
-                    if (rigidbodyComponent)
-                    {
-                        rigidbodyComponent->Rigidbody->SetPosition(transform.Transform.Position);
-                        rigidbodyComponent->Rigidbody->SetRotation(transform.Transform.Rotation);
-                    }
-            });
-/*        for (auto [entity, transform, rigidbody] : viewRigidbodies.each())
+        auto viewRigidbodies = m_Registry.view<TransformComponent, RigidbodyComponent>();
+        
+        for (auto [entity, transform, rigidbody] : viewRigidbodies.each())
         {
             rigidbody.Rigidbody->SetPosition(transform.Transform.Position);
             rigidbody.Rigidbody->SetRotation(transform.Transform.Rotation);
@@ -170,13 +164,19 @@ namespace MamontEngine
             const glm::vec3 position = rigidbody.Rigidbody->GetPosition();
             Log::Info("Rigidbody position: {} {} {}", position.x, position.y, position.z);
 
-           /* if (auto collision = m_Registry.try_get<HeroPhysics::BoxCollision>(entity); collision)
+            if (auto collision = m_Registry.try_get<HeroPhysics::BoxCollision>(entity); collision)
             {
                 auto collisionPtr = std::make_shared<HeroPhysics::BoxCollision>(*collision);
                 rigidbody.Rigidbody->SetCollisionShape(std::move(collisionPtr));
             }
 
-        }*/
+        }
+
+        const auto scriptView = m_Registry.view<ScriptComponent>();
+        for (auto [entity, scriptComponent] : scriptView.each())
+        {
+            scriptComponent.BeginPlay();
+        }
 
         MamontEngine::MEngine::Get().GetPhysicsSytem()->SetPause(false);
     }
@@ -184,6 +184,12 @@ namespace MamontEngine
     void Scene::StopScene()
     {
         MamontEngine::MEngine::Get().GetPhysicsSytem()->SetPause(true);
+        
+        const auto scriptView = m_Registry.view<ScriptComponent>();
+        for (auto [entity, scriptComponent] : scriptView.each())
+        {
+            scriptComponent.EndPlay();
+        }
     }
 
     void Scene::DestroyEntity(Entity inEntity)

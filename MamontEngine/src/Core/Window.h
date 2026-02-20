@@ -47,6 +47,6 @@ namespace MamontEngine
         SDL_Window* m_Window;
         ImGui_ImplVulkanH_Window *m_VulkanWindow;
 
-        VkExtent2D  m_WindowExtent{1900, 1060};
+        VkExtent2D  m_WindowExtent{1920, 1080};
 	};
 }
