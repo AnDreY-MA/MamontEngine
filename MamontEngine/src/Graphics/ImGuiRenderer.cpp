@@ -87,7 +87,6 @@ namespace MamontEngine
 
         {
             VK_CHECK(vkBeginCommandBuffer(inCmd, &cmdSecondaryBeginInfo));
-            PROFILE_VK_ZONE(MEngine::Get().GetContextDevice().GetCurrentFrame().TracyContext, inCmd, "Draw ImGui");
 
             const VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(inTargetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
             const VkRenderingInfo           renderInfo      = vkinit::rendering_info(inRenderExtent, &colorAttachment, nullptr);
@@ -112,7 +111,6 @@ namespace MamontEngine
 
             VK_CHECK(vkEndCommandBuffer(inCmd));
         }
-
     }
 
 } // namespace MamontEngine

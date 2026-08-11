@@ -31,7 +31,6 @@ namespace MetaInspectors
     template <>
     inline void MetaInspect<float>(const std::string &name, float &value, const entt::meta_data &meta)
     {
-        ImGui::SameLine();
         ImGui::DragFloat(name.c_str(), &value, 0.2f);
     }
 
@@ -85,18 +84,12 @@ namespace MetaInspectors
     template <>
     inline void MetaInspect<HeroPhysics::Rigidbody>(const std::string &name, HeroPhysics::Rigidbody &value, const entt::meta_data &meta)
     {
-/*        float mass = value.GetMass();
-        if (ImGui::DragFloat("Mass", &mass, 0.2f))
-        {
-            value.SetMass(mass);
-        }
-
         const char* motionTypeName = "MotionType";
 
-        /*if (ImGui::BeginCombo(motionTypeNamem, ))
+        if (ImGui::BeginCombo(motionTypeName, "r"))
         {
 
-        }*/
+        }
     }
 }
 

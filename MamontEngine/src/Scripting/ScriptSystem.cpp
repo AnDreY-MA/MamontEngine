@@ -2,6 +2,17 @@
 #include <sol/sol.hpp>
 #include "Core/Log.h"
 #include "ECS/Entity.h"
+#include <ECS/Components/TagComponent.h>
+
+#define REGISTER_COMPONENT(luaState, component, ptr) \
+    {                                                \
+        using namespace entt;                                                           \
+        using namespace MamontEngine;                                                    \
+        auto entityType = luaState["Entity"].get_or_create<sol::usertype<registry>>();    \
+        entityType.set_function("Add" #component, ptr);                                    \
+        entityType.set_function("Remove" #component, &Entity::RemoveComponent<component>);  \
+        entityType.set_function("Get" #component, &Entity::GetComponent<component>);         \
+    }
 
 namespace
 {
@@ -18,8 +29,13 @@ namespace
 
     void BindECS(sol::state& state)
     {
+        using namespace MamontEngine;
+
         sol::usertype<MamontEngine::Entity> entityType = state.new_usertype<MamontEngine::Entity>("Entity", sol::constructors<sol::types<entt::entity>>());
         entityType.set_function("Destroy", &MamontEngine::Entity::Destroy);
+
+        sol::usertype<TagComponent> nameComponent = state.new_usertype<TagComponent>("NameComponent");
+        nameComponent["name"]                     = &TagComponent::Tag;
     }
 }
 

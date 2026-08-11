@@ -6,12 +6,13 @@ namespace MamontEngine
 {
     namespace HeroPhysics
     {
-        class BruteForceBroadphase final : public Broadphase
+        class BruteForceBroadphase : public Broadphase
         {
+        public:
             BruteForceBroadphase() = default;
             ~BruteForceBroadphase() = default;
 
-            virtual void FindCollisionPairs(Rigidbody *inBodies, std::vector<CollisionPair> &inCollisionPairs, uint32_t totalBodyCount) override;
+            virtual void FindCollisionPairs(const std::vector<Rigidbody *> &inBodies, std::vector<CollisionPair> &inCollisionPairs, uint32_t totalBodyCount) override;
         };
     }
 } // namespace MamontEngine

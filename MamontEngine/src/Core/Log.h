@@ -18,18 +18,27 @@ namespace MamontEngine
         template <typename... Args>
         static void Info(const std::format_string<Args...> fmt, Args &&...args)
         {
+            if (!s_Instance)
+                return;
+
             s_Instance->AddMessage(ELevel::Info, std::format(fmt, std::forward<Args>(args)...));
         }
 
         template <typename... Args>
         static void Warn(const std::format_string<Args...> fmt, Args &&...args)
         {
+            if (!s_Instance)
+                return;
+
             s_Instance->AddMessage(ELevel::Warning, std::format(fmt, std::forward<Args>(args)...));
         }
 
         template <typename... Args>
         static void Error(const std::format_string<Args...> fmt, Args &&...args)
         {
+            if (!s_Instance)
+                return;
+
             s_Instance->AddMessage(ELevel::Error, std::format(fmt, std::forward<Args>(args)...));
         }
 

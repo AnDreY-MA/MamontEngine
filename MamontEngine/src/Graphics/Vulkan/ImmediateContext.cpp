@@ -36,9 +36,13 @@ namespace ImmediateContext
 
     void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& inFunction)
     {
-        fmt::println("ImmediateSubmit");
+        const VkDevice& device = LogicalDevice::GetDevice();
 
-        const VkDevice  device = LogicalDevice::GetDevice();
+        if (vkGetFenceStatus(device, s_ImmediateContext.Fence) != VK_SUCCESS)
+        {
+            return;
+        }
+
         VkCommandBuffer cmd    = s_ImmediateContext.CommandBuffer;
 
         if (vkWaitForFences(device, 1, &s_ImmediateContext.Fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)

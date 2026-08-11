@@ -51,7 +51,7 @@ namespace MamontEngine
         {
             return m_Registry;
         }
-        Entity        GetEntity(UID Id);
+        Entity GetEntity(UID Id);
 
     private:
         Entity CreateEntity(UID inId, std::string_view inName);
@@ -63,8 +63,11 @@ namespace MamontEngine
         bool Load(std::string_view inFile);
 
     private:
-        entt::registry m_Registry;
+        entt::registry     m_Registry;
         JobSystem::Context updateContext;
+
+        bool m_IsPaused{true};
+
         friend class Entity;
         friend class SceneHierarchyPanel;
 

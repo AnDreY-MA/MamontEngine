@@ -19,7 +19,8 @@ namespace MamontEngine
             Broadphase() = default;
             ~Broadphase() = default;
 
-            virtual void FindCollisionPairs(Rigidbody* inBodies, std::vector<CollisionPair> &inCollisionPairs, uint32_t totalBodyCount) = 0;
+            virtual void
+            FindCollisionPairs(const std::vector<Rigidbody *> &inBodies, std::vector<CollisionPair> &inCollisionPairs, uint32_t totalBodyCount) = 0;
         };
     }
 }

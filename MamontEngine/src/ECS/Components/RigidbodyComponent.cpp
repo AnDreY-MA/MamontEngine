@@ -19,6 +19,7 @@ namespace MamontEngine
 
     RigidbodyComponent::~RigidbodyComponent()
     {
+        Log::Info("RigidbodyComponent destructor");
         MEngine::Get().GetPhysicsSytem()->DestroyBody(Rigidbody); 
     }
 } // namespace MamontEngine

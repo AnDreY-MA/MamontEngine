@@ -12,6 +12,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include "Graphics/DebugRenderer.h"
 #include "Physics/Collision/BoxCollision.h"
+#include "Physics/Collision/SphereCollision.h"
 
 namespace MamontEngine
 {
@@ -253,6 +254,13 @@ namespace MamontEngine
         {
             DebugRenderer::Draw(collision.GetBounds().Transform(transform.Matrix()), Color::GREEN);
         }
+
+        const auto viewSphereCollisions = sceneRegistry.view<TransformComponent, HeroPhysics::SphereCollision>();
+        for (auto [entity, transform, collision] : viewSphereCollisions.each())
+        {
+            DebugRenderer::Draw(collision.GetBounds().Transform(transform.Matrix()), Color::BLUE);
+        }
+
 
         DebugRenderer::DrawPoint(glm::vec3(1.f), 2, Color::WHITE );
 

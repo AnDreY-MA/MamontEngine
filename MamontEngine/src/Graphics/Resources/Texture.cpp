@@ -1027,10 +1027,11 @@ namespace MamontEngine
 
         return newTexture;
     }
+
     Texture* GenerateBRDFLUT()
     {
         const VkDevice       device = LogicalDevice::GetDevice();
-        VkFormat             format = VK_FORMAT_R8G8B8A8_UNORM;
+        VkFormat             format = VK_FORMAT_R16G16B16A16_SFLOAT;
         VkImageUsageFlags    usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
         constexpr uint32_t   dim    = 512;
         constexpr VkExtent3D extent{.width = dim, .height = dim, .depth = 1};
@@ -1170,8 +1171,9 @@ namespace MamontEngine
         pipelineBuilder.SetVertexInput(vertexInputInfo);
 
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-        pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+        /*change*/ pipelineBuilder.SetCullMode(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
         pipelineBuilder.DisableBlending();
+        /*delete*/ pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
         pipelineBuilder.EnableDepthTest(VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL);
         pipelineBuilder.EnableDepthClamp(VK_FALSE);
         pipelineBuilder.m_Multisampling.sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;

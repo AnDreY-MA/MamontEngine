@@ -30,6 +30,8 @@ namespace MamontEngine
         loadedEngine = this;
         m_Log        = std::make_unique<Log>();
 
+        m_LastTickTime = std::chrono::steady_clock::now();
+
         JobSystem::Init(3);
 
         m_Window = std::make_shared<WindowCore>();
@@ -65,8 +67,6 @@ namespace MamontEngine
         m_MainDeletionQueue.PushFunction([&]() { 
             m_ContextDevice->DestroyFrameData(); 
         });
-
-        constexpr uint32_t maxBodiesCount = 0x7fffff;
     }
 
     void MEngine::Run()
@@ -80,7 +80,14 @@ namespace MamontEngine
 
         while (!bQuit)
         {
-            const float deltaTime = ImGui::GetIO().DeltaTime;
+            //const float deltaTime = ImGui::GetIO().DeltaTime;
+           /* const std::chrono::steady_clock::time_point timePoint = std::chrono::steady_clock::now();
+            const std::chrono::duration<float>          timeSpan  = std::chrono::duration_cast<std::chrono::duration<float>>(timePoint - m_LastTickTime);
+            m_DeltaTime                                           = timeSpan.count();
+            m_LastTickTime                                        = timePoint;*/
+            const float deltaTime                                 = ImGui::GetIO().DeltaTime;
+
+            //Log::Info("Custom: {}. \n ImGui: {}", m_DeltaTime, deltaTime);
 
             while (SDL_PollEvent(&event) != 0)
             {
@@ -126,11 +133,12 @@ namespace MamontEngine
             {
                 m_GuiLayer->ImGuiRender();
 
+                m_PhysicsSystem->Update(deltaTime);
+
                 UpdateScene(deltaTime);
 
                 m_Renderer->Render();
 
-                m_PhysicsSystem->Update(deltaTime, m_Scene->GetRegistry());
             }
         }
     }

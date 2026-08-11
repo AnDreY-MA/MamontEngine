@@ -23,6 +23,7 @@
 #include "Components/RigidbodyComponent.h"
 #include "Components/ScriptComponent.h"
 #include "Physics/Collision/BoxCollision.h"
+#include "Physics/Collision/SphereCollision.h"
 #include "Physics/Body/Rigidbody.h"
 #include "Core/Engine.h"
 
@@ -48,7 +49,7 @@ IMPLEMENT_META_INIT(glm)
 FINISH_REFLECT()
 
 #define ALL_COMPONENTS(serializer) get<IDComponent>(serializer).get<TagComponent>(serializer).get<TransformComponent>(serializer) \
-        .get<MeshComponent>(serializer).get<DirectionLightComponent>(serializer).get<RigidbodyComponent>(serializer).get<HeroPhysics::BoxCollision>(serializer)
+        .get<MeshComponent>(serializer).get<DirectionLightComponent>(serializer).get<RigidbodyComponent>(serializer).get<HeroPhysics::BoxCollision>(serializer).get<HeroPhysics::SphereCollision>(serializer)
 
 
 namespace MamontEngine
@@ -150,13 +151,32 @@ namespace MamontEngine
                 meshComponent.Mesh->UpdateTransform(transform.Matrix());
             }
         }
+
+        if (!m_IsPaused)
+        {
+            auto viewTransformsEnd = m_Registry.view<TransformComponent, RigidbodyComponent>();
+            auto rigidbodyGroup    = m_Registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
+
+            for (auto entity : rigidbodyGroup)
+            {
+                const auto &[transform, rigidbody] = rigidbodyGroup.get<TransformComponent, RigidbodyComponent>(entity);
+                transform.Transform.Position       = rigidbody.Rigidbody->GetPosition();
+                transform.Transform.Rotation       = rigidbody.Rigidbody->GetRotation();
+            }
+
+            /*for (auto&& [entity, transfrom, rigidbody] : viewTransformsEnd.each())
+            {
+                transfrom.Transform.Position = rigidbody.Rigidbody->GetPosition();
+                transfrom.Transform.Rotation = rigidbody.Rigidbody->GetRotation();
+            }*/
+        }
     }
 
     void Scene::StartScene()
     {
         auto viewRigidbodies = m_Registry.view<TransformComponent, RigidbodyComponent>();
         
-        for (auto [entity, transform, rigidbody] : viewRigidbodies.each())
+        for (auto&& [entity, transform, rigidbody] : viewRigidbodies.each())
         {
             rigidbody.Rigidbody->SetPosition(transform.Transform.Position);
             rigidbody.Rigidbody->SetRotation(transform.Transform.Rotation);
@@ -169,20 +189,27 @@ namespace MamontEngine
                 auto collisionPtr = std::make_shared<HeroPhysics::BoxCollision>(*collision);
                 rigidbody.Rigidbody->SetCollisionShape(std::move(collisionPtr));
             }
+            else if (auto collision = m_Registry.try_get<HeroPhysics::SphereCollision>(entity); collision)
+            {
+                auto collisionPtr = std::make_shared<HeroPhysics::SphereCollision>(*collision);
+                rigidbody.Rigidbody->SetCollisionShape(std::move(collisionPtr));
+            }
 
         }
 
         const auto scriptView = m_Registry.view<ScriptComponent>();
-        for (auto [entity, scriptComponent] : scriptView.each())
+        for (auto&& [entity, scriptComponent] : scriptView.each())
         {
             scriptComponent.BeginPlay();
         }
 
+        m_IsPaused = false;
         MamontEngine::MEngine::Get().GetPhysicsSytem()->SetPause(false);
     }
     
     void Scene::StopScene()
     {
+        m_IsPaused = true;
         MamontEngine::MEngine::Get().GetPhysicsSytem()->SetPause(true);
         
         const auto scriptView = m_Registry.view<ScriptComponent>();

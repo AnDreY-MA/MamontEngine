@@ -10,14 +10,10 @@
 #include "ImGuiLayer.h"
 #include "Core/Log.h"
 #include "Physics/PhysicsSystem.h"
+#include "Scripting/ScriptSystem.h"
 
 namespace MamontEngine
 {
- /*   namespace HeroPhysics
-    {
-        class PhysicsSystem;
-    }*/
-
     class Scene;
     
 	class MEngine
@@ -68,7 +64,9 @@ namespace MamontEngine
             return m_Window.get();
         }
 
-        HeroPhysics::PhysicsSystem* GetPhysicsSytem() const { return m_PhysicsSystem.get(); }
+        inline HeroPhysics::PhysicsSystem* GetPhysicsSytem() const { return m_PhysicsSystem.get(); }
+
+        inline ScriptSystem *GetScriptSystem() const { return m_ScriptSystem.get(); }
 
         void PushGuiLayer(ImGuiLayer *inLayer);
 
@@ -92,11 +90,15 @@ namespace MamontEngine
         bool       m_IsResizeRequested{false};
         bool       m_IsFreezeRendering{false};
 
+        float m_DeltaTime{0.f};
+        std::chrono::steady_clock::time_point m_LastTickTime;
+
         std::shared_ptr<WindowCore> m_Window;
 
         std::unique_ptr<Renderer>      m_Renderer;
         std::unique_ptr<ImGuiLayer>    m_GuiLayer;
         std::unique_ptr<Log>           m_Log;
+        std::unique_ptr<ScriptSystem>  m_ScriptSystem;
 
         std::unique_ptr<HeroPhysics::PhysicsSystem> m_PhysicsSystem;
 

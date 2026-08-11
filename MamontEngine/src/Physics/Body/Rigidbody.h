@@ -13,7 +13,7 @@ namespace HeroPhysics
 
 	class Rigidbody final : public NonCopyable
     {
-       // REFLECT()
+       REFLECT()
 
     public:
         Rigidbody();
@@ -51,11 +51,15 @@ namespace HeroPhysics
 
         inline float GetMass() const { return m_Mass; }
 
+        inline float GetInverseMass() const { return 1.f; }
+
         inline float GetAngularFactor() const { return m_AngularFactor; }
 
-        inline bool IsStatic() const { return m_MotionType == EMotionType::Static; }
+        inline float GetRestitution() const { return m_Restitution; }
 
-        const std::shared_ptr<const CollisionShape> &GetShape() const { return m_Shape; }
+        inline float GetFriction() const { return m_Friction; }
+
+        const std::shared_ptr<CollisionShape> &GetShape() const { return m_Shape; }
 
         void SetCollisionShape(const std::shared_ptr<CollisionShape> &inShape);
 
@@ -69,29 +73,41 @@ namespace HeroPhysics
 
         inline void SetMass(float inMass) { m_Mass = inMass; }
 
+        inline bool IsStatic() const { return m_MotionType == EMotionType::Static; }
+
+        inline bool IsKinematic() const { return m_MotionType == EMotionType::Kinematic; }
+
+        inline bool IsDynamic() const { return m_MotionType == EMotionType::Dynamic; }
+
     private:
+        std::shared_ptr<CollisionShape> m_Shape;
+
         glm::vec3                             m_Position{glm::vec3(0.f)};
         glm::quat                             m_Rotation;
-        std::shared_ptr<CollisionShape> m_Shape;
 
         EMotionType m_MotionType{EMotionType::Dynamic};
 
         glm::vec3 m_LinearVelocity{glm::vec3(0.f)};
         glm::vec3 m_AngularVelocity{glm::vec3(0.f)};
         glm::vec3 m_Force{glm::vec3(0.f)};
+        float m_GravityScale{1.0f};
+
+        glm::vec3 m_Torque{glm::vec3(0.f)};
+
+        glm::mat3 m_InverseInertia{glm::mat3(1.f)};
+
         float     m_Mass{1.f};
 
         float m_Friction{0.5f};
 
         float m_AngularFactor{1.f};
 
+        float m_Restitution{0.5f};
+
         UID m_Id;
 
-		glm::vec3 m_Gravity;
+        friend class PhysicsSystem;
 
-        glm::vec3 m_Torque{glm::vec3(0.f)};
-
-        glm::mat3 m_InverseInertia{glm::mat3(1.f)};
 	};
 }
 }

@@ -6,11 +6,12 @@ namespace MamontEngine
 {
 namespace HeroPhysics
 {
-     /*
+    IMPLEMENT_REFLECT_OBJECT(Rigidbody)
     {
         meta.data<&Rigidbody::m_Mass>("Mass");
+        meta.data<&Rigidbody::m_GravityScale>("Gravity Scale");
     }
-    FINISH_REFLECT()*/
+    FINISH_REFLECT()
 
     Rigidbody::Rigidbody()
     {

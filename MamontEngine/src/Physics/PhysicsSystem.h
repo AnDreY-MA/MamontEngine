@@ -1,13 +1,13 @@
 #pragma once
 
 #include <entt/entt.hpp>
+#include "Collision/Broadphase/Broadphase.h"
 
 namespace MamontEngine
 {
     namespace HeroPhysics
     {
     class Rigidbody;
-    class Broadphase;
     
     struct PhysicsSettings
     {
@@ -23,7 +23,7 @@ namespace MamontEngine
         PhysicsSystem(const PhysicsSettings &settings = {});
         ~PhysicsSystem();
 
-        void Update(const float inDeltaTime, entt::registry &inRegistry);
+        void Update(const float inDeltaTime);
 
         inline bool IsPaused() const { return m_IsPaused; }
 
@@ -34,13 +34,19 @@ namespace MamontEngine
         void DestroyBody(Rigidbody *body);
 
     private:
-        void UpdateRigidbodies(entt::registry &inRegistry);
+        void UpdateRigidbodies();
 
         void UpdateRigidbody(Rigidbody *body, const float deltaTime);
+        void IntegrateForce(Rigidbody *body, const float deltaTime);
+        void IntegrateVelocity(Rigidbody *body, const float deltaTime);
+
+        void ResolveCollisions(std::span<CollisionPair> inPair);
 
 	private:
         bool      m_IsPaused{true};
         glm::vec3 m_Gravity;
+
+        float m_AccumulateTime{0.f};
 
         uint32_t m_PositionIterations{2};
 
@@ -54,6 +60,8 @@ namespace MamontEngine
         std::vector<Rigidbody *> m_BodiesFreeList;
 
         std::unique_ptr<Broadphase> m_Broadphase;
+
+        float s_UpdateTimestep;
 	};
 }
 }

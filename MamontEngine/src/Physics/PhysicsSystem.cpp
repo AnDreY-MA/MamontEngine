@@ -6,6 +6,7 @@
 #include "Physics/Body/Rigidbody.h"
 #include "Physics/Collision/CollisionShape.h"
 #include "Physics/Collision/Broadphase/BruteForceBroadphase.h"
+#include "Physics/Collision/CollisionDetection.h"
 #include "Utils/Profile.h"
 #include "Math/Transform.h"
 
@@ -36,20 +37,23 @@ namespace
 
         return matrix;
     }
+
+    static constexpr float M_EPSILON = 0.000001f;
 } // namespace
 
 namespace MamontEngine
 {
     namespace HeroPhysics
     {
-        static float s_UpdateTimestep = 1.f / 60.f;
-
-        PhysicsSystem::PhysicsSystem(const PhysicsSettings &settings) : m_Gravity(settings.Gravity), m_MaxBodiesCount(settings.MaxBodyCount)
+        PhysicsSystem::PhysicsSystem(const PhysicsSettings &settings) 
+            : m_Gravity(settings.Gravity), m_MaxBodiesCount(settings.MaxBodyCount)
         {
             m_Rigidbodies.resize(m_MaxBodiesCount);
-            m_BodiesFreeList.reserve(m_MaxBodiesCount);
+            //m_BodiesFreeList.reserve(m_MaxBodiesCount);
 
-            //m_Broadphase = std::make_unique<BruteForceBroadphase>();
+            m_Broadphase = std::make_unique<BruteForceBroadphase>();
+
+            s_UpdateTimestep = 1.0f / 60.0f;
         }
 
         PhysicsSystem::~PhysicsSystem()
@@ -62,67 +66,97 @@ namespace MamontEngine
             }
         }
 
-        void PhysicsSystem::Update(const float inDeltaTime, entt::registry &inRegistry)
+        void PhysicsSystem::Update(const float inDeltaTime)
         {
             PROFILE_FUNCTION();
 
             if (m_IsPaused) return;
 
-            std::vector<CollisionPair> pairs;
-            pairs.reserve(m_RigidbodyCount);
-
-            for (uint32_t i = 0; i < m_RigidbodyCount; i++)
+            m_AccumulateTime += inDeltaTime;
+            for (uint32_t i = 0; (m_AccumulateTime + M_EPSILON >= s_UpdateTimestep) && i < 5; ++i)
             {
-                for (uint32_t j{ i }; j < m_RigidbodyCount; j++)
-                {
-                    const auto body1 = m_Rigidbodies[i];
-                    const auto body2 = m_Rigidbodies[j];
-                    if (!body1 || !body2) continue;
+                m_AccumulateTime -= s_UpdateTimestep;
 
-                    const auto &shape1 = body1->GetShape();
-                    const auto &shape2 = body2->GetShape();
-                    if (!shape1 || !shape2) continue;
+                std::vector<CollisionPair> pairs;
+                //pairs.reserve(m_RigidbodyCount);
 
-                    const AABB object1 = shape1->GetBounds().Transform(ToMatrix4(body1->GetPosition(), body1->GetPosition()));
-                    const AABB object2 = shape2->GetBounds().Transform(ToMatrix4(body2->GetPosition(), body2->GetRotation()));
+                m_Broadphase->FindCollisionPairs(m_Rigidbodies, pairs, m_RigidbodyCount);
 
-                    if (object1.TestOverlap(object2))
-                    {
-                        pairs.push_back({body1, body2});
-                    }
-                }
+                ResolveCollisions(pairs);
+
+                Log::Info("[PhysicsSystem] Collision pairs: {}", pairs.size());
+
+                UpdateRigidbodies();
+
             }
 
-            //m_Broadphase->FindCollisionPairs(m_Rigidbodies., pairs, m_RigidbodyCount);
-
-            UpdateRigidbodies(inRegistry);
-
-            auto viewTransformsEnd = inRegistry.view<TransformComponent, RigidbodyComponent>();
-            for (auto [entity, transfrom, rigidbody] : viewTransformsEnd.each())
+            if (m_AccumulateTime + M_EPSILON >= s_UpdateTimestep)
             {
-                transfrom.Transform.Position = rigidbody.Rigidbody->GetPosition();
-                transfrom.Transform.Rotation = rigidbody.Rigidbody->GetRotation();
+                m_AccumulateTime = std::fmod(m_AccumulateTime, s_UpdateTimestep);
             }
+
+            /*   while (m_AccumulateTime >= s_UpdateTimestep)
+            {
+                std::vector<CollisionPair> pairs;
+                pairs.reserve(m_RigidbodyCount);
+
+                m_Broadphase->FindCollisionPairs(m_Rigidbodies, pairs, m_RigidbodyCount);
+
+                UpdateRigidbodies();
+                m_AccumulateTime -= s_UpdateTimestep;
+            }            */
+            
         }
 
-        void PhysicsSystem::UpdateRigidbodies(entt::registry &inRegistry)
+        void PhysicsSystem::UpdateRigidbodies()
         {
             PROFILE_FUNCTION();
 
-            const auto viewBodies = inRegistry.view<RigidbodyComponent>();
+            Log::Info("Update bodies: {}", m_RigidbodyCount);
 
-            const float deltaTime = s_UpdateTimestep / float(m_PositionIterations);
+            const float deltaTime = s_UpdateTimestep;
 
-            for (uint32_t i = 0; i < m_PositionIterations; i++)
+            for (uint32_t bodyIndex = 0; bodyIndex < m_RigidbodyCount; bodyIndex++)
             {
-                uint32_t bodies = 0;
-                for (uint32_t bodyIndex = 0; bodyIndex < m_RigidbodyCount; bodyIndex++)
+                auto &body = m_Rigidbodies[bodyIndex];
+                UpdateRigidbody(body, deltaTime);
+            }
+
+             /*for (uint32_t bodyIndex = 0; bodyIndex < m_RigidbodyCount; bodyIndex++)
+            {
+                auto &body = m_Rigidbodies[bodyIndex];
+                if (!body->IsStatic())
                 {
-                    auto& body = m_Rigidbodies[bodyIndex];
-                    UpdateRigidbody(body, deltaTime);
-                    bodies++;
+                    body->m_Force += m_Gravity * body->m_Mass;
+                    
+                }
+                Log::Info("Focrce");
+            }
+
+            for (uint32_t bodyIndex = 0; bodyIndex < m_RigidbodyCount; bodyIndex++)
+            {
+                auto &body = m_Rigidbodies[bodyIndex];
+                if (!body->IsStatic())
+                {
+                    IntegrateForce(body, deltaTime);
                 }
             }
+
+            for (uint32_t bodyIndex = 0; bodyIndex < m_RigidbodyCount; bodyIndex++)
+            {
+                auto &body = m_Rigidbodies[bodyIndex];
+                if (!body->IsStatic())
+                {
+                    IntegrateVelocity(body, deltaTime);
+                }
+            }
+
+            for (uint32_t bodyIndex = 0; bodyIndex < m_RigidbodyCount; bodyIndex++)
+            {
+                auto &body = m_Rigidbodies[bodyIndex];
+                body->m_Force = glm::vec3(0.f);
+                body->m_Torque = glm::vec3(0.f);
+            }*/
         }
 
         void PhysicsSystem::UpdateRigidbody(Rigidbody *body, const float deltaTime)
@@ -135,48 +169,127 @@ namespace MamontEngine
                 return;
             }
 
+            s_UpdateTimestep /= m_PositionIterations;
+
             if (!body->IsStatic())
             {
                 if (body->GetMass() > 0.f)
                 {
-                    const auto newLinearVelocity = body->GetLinearVelocity() + m_Gravity * deltaTime;
-                    body->SetLinearVelocity(newLinearVelocity);
+                    body->m_LinearVelocity += (m_Gravity * body->m_GravityScale) * s_UpdateTimestep;
+                    body->m_LinearVelocity = body->m_LinearVelocity * m_DampingFactor;
 
-                    const glm::vec3 newPosition = body->GetPosition() + body->GetLinearVelocity() * deltaTime;
-                    body->SetPosition(newPosition);
+                    body->m_Position += body->GetLinearVelocity() * s_UpdateTimestep;
 
-                    const glm::vec3 newAngularVelocity = body->GetAngularVelocity() + (body->GetTorque() * body->GetInverseInertia() * deltaTime);
+                    const glm::vec3 newAngularVelocity = body->GetAngularVelocity() + (body->GetTorque() * body->GetInverseInertia() * s_UpdateTimestep);
                     body->SetAngularVelocity(newAngularVelocity * m_DampingFactor * body->GetAngularFactor());
 
-                    const glm::vec3 angularVelocity = body->GetAngularVelocity() * deltaTime;
+                    const glm::vec3 angularVelocity = body->GetAngularVelocity() * s_UpdateTimestep;
 
                     const glm::quat newRotation = body->GetRotation() + QuatMulVec3(body->GetRotation(), angularVelocity);
                     body->SetRotation(glm::normalize(newRotation));
                 }
             }
 
+            s_UpdateTimestep *= m_PositionIterations;
+
+        }
+
+        void PhysicsSystem::IntegrateForce(Rigidbody* body, const float deltaTime)
+        {
+            body->m_LinearVelocity += (body->m_Force * body->GetInverseMass()) * deltaTime;
+
+            body->m_AngularVelocity += glm::vec3(glm::mat3(1.0f)/*InverseInertiaTensor*/ * glm::vec4(body->m_Torque, 0.0f)) * deltaTime;
+
+            const float linierDamping{0.01f};
+            const float angularDamping{0.01f}; 
+
+            body->m_LinearVelocity *= (1.0f - linierDamping);
+            body->m_AngularVelocity *= (1.0f - angularDamping);
+        }
+
+        void PhysicsSystem::IntegrateVelocity(Rigidbody *body, const float deltaTime)
+        {
+            body->m_Position += body->m_LinearVelocity * deltaTime;
+
+            const glm::quat angularVelocityQuat(0.0f, body->m_AngularVelocity.x, body->m_AngularVelocity.y, body->m_AngularVelocity.z);
+            body->m_Rotation += (angularVelocityQuat * body->m_Rotation) * 0.5f * deltaTime;
+            body->m_Rotation = glm::normalize(body->m_Rotation);
+        }
+
+        void PhysicsSystem::ResolveCollisions(std::span<CollisionPair> inPair)
+        {
+            for (auto& pair : inPair)
+            {
+                auto body1 = pair.Object1;
+                auto body2 = pair.Object2;
+
+                if (!body1 || !body2)
+                    continue;
+
+                CollisionData collisionData{};
+                if (!CheckCollision(&pair, &collisionData))
+                {
+                    Log::Info("Check collision false");
+                    continue;
+                }
+
+                const glm::vec3 relativeVelocity = body2->GetLinearVelocity() - body1->GetLinearVelocity();
+
+                const float velocityAlongNormal{glm::dot(relativeVelocity, collisionData.Normal)};
+                if (velocityAlongNormal > 0)
+                    continue;
+
+                const float restitution = std::min(body1->GetRestitution(), body2->GetRestitution());
+
+                float scalarImpulse = -(1.0f + restitution) * velocityAlongNormal;
+                scalarImpulse /= body1->GetInverseMass() + body2->GetInverseMass();
+
+                const glm::vec3 impulse = collisionData.Normal * scalarImpulse;
+
+                if (!body1->IsKinematic() || !body1->IsStatic())
+                {
+                    body1->m_LinearVelocity -= impulse * body1->GetInverseMass();
+                }
+                if (!body2->IsKinematic() || !body2->IsStatic())
+                {
+                    body2->m_LinearVelocity += impulse * body2->GetInverseMass();
+                }
+
+                const float percent{0.2f};
+                const float slop = 0.01f;
+
+                const glm::vec3 correction = std::max(collisionData.Penetration - slop, 0.0f) * percent * collisionData.Normal / (body1->GetInverseMass() + body2->GetInverseMass());
+
+                if (!body1->IsKinematic() || !body1->IsStatic())
+                {
+                    body1->m_Position -= correction * body1->GetInverseMass();
+                }
+                if (!body2->IsKinematic() || !body2->IsStatic())
+                {
+                    body2->m_Position += correction * body2->GetInverseMass();
+                }
+            }
         }
 
         Rigidbody *PhysicsSystem::CreateBody()
         {
-            if (!m_BodiesFreeList.empty())
+        /*    if (m_BodiesFreeList.size() > 0)
             {
                 Rigidbody *body = m_BodiesFreeList.back();
                 m_BodiesFreeList.pop_back();
                 Log::Info("Create body from freelist");
                 return body;
-            }
+            }*/
 
             if (m_RigidbodyCount < m_MaxBodiesCount)
             {
-                Rigidbody*& body = m_Rigidbodies[m_RigidbodyCount];
+                Rigidbody *&body = m_Rigidbodies[m_RigidbodyCount];
                 body             = new Rigidbody();
-                m_RigidbodyCount++;
+                ++m_RigidbodyCount;
                 Log::Info("Create body: {}", (uint64_t)body->GetID());
                 return body;
             }
 
-            Log::Error("Physics System: Exceeded max rigidbody count {}", m_RigidbodyCount);
             return nullptr;
         }
 
@@ -184,6 +297,7 @@ namespace MamontEngine
         {
             if (body)
             {
+                Log::Info("Destroy Body");
                 m_BodiesFreeList.push_back(body);
             }
         }

@@ -27,7 +27,10 @@ namespace MamontEngine
 
             virtual AABB GetBounds() const = 0;
 
-            virtual glm::mat3 BuildInverseInertia(const float inMass) const = 0;
+            virtual glm::mat3 BuildInverseInertia(const float inMass) const
+            {
+                return glm::mat3(1.f);
+            }
             
             EShapeType GetShapeType() const { return m_ShapeType; }
 
