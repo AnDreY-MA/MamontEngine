@@ -139,6 +139,7 @@ namespace MamontEditor
             auto              newEntity          = m_Scene->CreateEntity(inNameItem);
             auto              newModel     = std::make_shared<MamontEngine::MeshModel>(newEntity.GetID(), inPath);
             newEntity.AddComponent<MamontEngine::MeshComponent>(std::move(newModel));
+            m_SeletctedEntity = newEntity;
         }
     }
 } // namespace MamontEditor

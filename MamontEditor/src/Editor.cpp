@@ -15,9 +15,13 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
+#include <Panels/FileBrowserPanel.h>
 
 namespace MamontEditor
 {
+    const std::string DEFAULT_LAYOUT_FILE = "DefaultPanelLayout.ini";
+    const std::string panelsIni           = DEFAULT_ASSETS_DIRECTORY + DEFAULT_LAYOUT_FILE;
+
     Editor        *Editor::s_Instance = nullptr;
 
     Editor::Editor()
@@ -27,6 +31,8 @@ namespace MamontEditor
 
     Editor::~Editor()
     {
+        ImGui::SaveIniSettingsToDisk(panelsIni.c_str());
+
         s_Instance = nullptr;
         m_Panels.clear();
     }
@@ -51,6 +57,8 @@ namespace MamontEditor
         icons_config.PixelSnapH       = true;
         icons_config.GlyphMinAdvanceX = 13.0f;
 
+        //ImGui::LoadIniSettingsFromDisk(panelsIni.c_str());
+
         fmt::println("Editor init");
 
         m_Panels.reserve(5);
@@ -59,9 +67,12 @@ namespace MamontEditor
         AddPanel<StatisticsPanel>();
         AddPanel<LogPanel>();
         AddPanel<SceneSettingsPanel>();
+        AddPanel<FileBrowserPanel>();
         // AddPanel<ViewportPanel>();
 
         AddIconFont();
+
+        GetPanel<FileBrowserPanel>()->SetCurrentPath(DEFAULT_ASSETS_DIRECTORY);
     }
 
     void Editor::Deactivate()

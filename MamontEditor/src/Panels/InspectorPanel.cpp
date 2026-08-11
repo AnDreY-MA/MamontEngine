@@ -16,6 +16,7 @@
 #include <entt/core/hashed_string.hpp>
 #include "Math/Color.h"
 #include "Physics/Collision/BoxCollision.h"
+#include "Physics/Collision/SphereCollision.h"
 #include "Utils/MetaInspector.h"
 
 const std::string RootDirectories = PROJECT_ROOT_DIR;
@@ -316,6 +317,7 @@ namespace MamontEditor
             DrawAddComponent<DirectionLightComponent>(m_SceneContext->GetRegistry(), m_Selected, "Direction Light Component");
             DrawAddComponent<RigidbodyComponent>(m_SceneContext->GetRegistry(), m_Selected, "Rigidbody Component");
             DrawAddComponent<HeroPhysics::BoxCollision>(m_SceneContext->GetRegistry(), m_Selected, "BoxCollision Component");
+            DrawAddComponent<HeroPhysics::SphereCollision>(m_SceneContext->GetRegistry(), m_Selected, "SphereCollision Component");
             DrawAddComponent<ScriptComponent>(m_SceneContext->GetRegistry(), m_Selected, "Script Component");
 
             ImGui::EndPopup();

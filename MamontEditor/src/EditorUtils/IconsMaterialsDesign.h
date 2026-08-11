@@ -7,3 +7,6 @@
 #define ICON_PLAY "\uF40A"
 #define ICON_STOP "\uF40A"
 #define ICON_STOP "\uF4DB"
+#define ICON_MDI_FOLDER "\uF24B"
+#define ICON_MDI_FILE "\uF214"
+#define ICON_MDI_FOLDER_OPEN "\uF76F"
