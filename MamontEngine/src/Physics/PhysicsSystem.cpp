@@ -171,7 +171,7 @@ namespace MamontEngine
 
             s_UpdateTimestep /= m_PositionIterations;
 
-            if (!body->IsStatic())
+            if (!body->IsStatic() && !body->IsSleep())
             {
                 if (body->GetMass() > 0.f)
                 {
@@ -273,13 +273,13 @@ namespace MamontEngine
 
         Rigidbody *PhysicsSystem::CreateBody()
         {
-        /*    if (m_BodiesFreeList.size() > 0)
+            if (m_BodiesFreeList.size() > 0)
             {
                 Rigidbody *body = m_BodiesFreeList.back();
                 m_BodiesFreeList.pop_back();
                 Log::Info("Create body from freelist");
                 return body;
-            }*/
+            }
 
             if (m_RigidbodyCount < m_MaxBodiesCount)
             {

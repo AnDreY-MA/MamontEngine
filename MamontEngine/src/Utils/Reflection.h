@@ -41,6 +41,17 @@ static inline entt::meta_factory<T> ReflectObject(std::string_view name)
     return factory;
 }
 
+template <typename T>
+static inline entt::meta_factory<T> ReflectEnum(std::string_view name)
+{
+    // entt::locator<entt::meta_ctx>::reset(MetaContext::GetMetaContext());
+    auto factory = entt::meta_factory<T>();
+
+    factory.type(entt::hashed_string{name.data()}, name.data());
+
+    return factory;
+}
+
 #define FINISH_REFLECT()                                                                                                                                       \
     return -1;                                                                                                                                                 \
     }
@@ -55,6 +66,13 @@ static inline entt::meta_factory<T> ReflectObject(std::string_view name)
     {                                                                                                                                                          \
         [[maybe_unused]] auto meta = ReflectObject<TYPE>((#TYPE));                                                                                             \
         meta.template func<&MetaInspectors::Inspect<TYPE>>(f_Inspect);
+
+#define IMPLEMENT_REFLECT_ENUM(TYPE)                                                                                                                         \
+    int ENUM_REFLECTS::TYPE_##TYPE::InitTypeReflect()                                                                                                                                \
+    {                                                                                                                                                          \
+        [[maybe_unused]] auto meta = ReflectEnum<TYPE>((#TYPE));    \
+        meta.template func<&MetaInspectors::InspectEnum<TYPE>>(f_Inspect);
+
 
 #define META_TYPE(Type, ...)                                                                                                                                   \
     {                                                                                                                                                          \

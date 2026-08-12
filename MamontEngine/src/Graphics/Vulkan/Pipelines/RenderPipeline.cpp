@@ -121,37 +121,6 @@ namespace MamontEngine
             vkDestroyShaderModule(inDevice, skyboxVertexShader, nullptr);
         }
 
-       // Debug Draw
-       {
-            const std::string debugDrawPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/debug_draw.frag.spv";
-
-            VkShaderModule debugDrawFragShader;
-            if (!VkPipelines::LoadShaderModule(debugDrawPath.c_str(), inDevice, &debugDrawFragShader))
-            {
-                fmt::println("Error when building the triangle fragment shader module");
-            }
-
-            const std::string debugDrawVertexShaderPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/debug_draw.vert.spv";
-            VkShaderModule    debugDrawVertexShader;
-            if (!VkPipelines::LoadShaderModule(debugDrawVertexShaderPath.c_str(), inDevice, &debugDrawVertexShader))
-            {
-                fmt::println("Error when building the triangle vertex shader module");
-            }
-
-            pipelineBuilder.SetShaders(debugDrawVertexShader, debugDrawFragShader);
-            VkPipelineLayout debugLayout;
-            VK_CHECK(vkCreatePipelineLayout(inDevice, &mesh_layout_info, nullptr, &debugLayout));
-            pipelineBuilder.SetLayout(debugLayout);
-            pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
-            pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
-            pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-            pipelineBuilder.EnableDepthTest(VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
-            pipelineBuilder.m_DepthStencil.depthWriteEnable = VK_FALSE;
-            DebugDrawPipeline = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), debugLayout);
-
-            vkDestroyShaderModule(inDevice, debugDrawFragShader, nullptr);
-            vkDestroyShaderModule(inDevice, debugDrawVertexShader, nullptr);
-       }
 
     }
 
@@ -160,7 +129,6 @@ namespace MamontEngine
         OpaquePipeline.reset();
         TransparentPipeline.reset();
         SkyboxPipline.reset();
-        DebugDrawPipeline.reset();
     }
     
 } // namespace MamontEngine

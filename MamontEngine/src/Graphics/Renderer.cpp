@@ -37,7 +37,7 @@ namespace MamontEngine
         const std::array<VkDescriptorSetLayout, 2> layouts = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
         m_DirectLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
 
-        DebugRenderer::Init();
+        
     }
 
     Renderer::~Renderer()
@@ -90,13 +90,15 @@ namespace MamontEngine
         fmt::println("DrawImage.ImageFormat: {}", string_VkFormat(inImageFormats.first));
         fmt::println("DepthImage.ImageFormat: {}", string_VkFormat(inImageFormats.second));
 
-        const std::array<VkDescriptorSetLayout, 2> laouts{m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
+        const std::array<VkDescriptorSetLayout, 2> layouts{m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
 
-        m_RenderPipeline = std::make_shared<RenderPipeline>(device, laouts, inImageFormats);
+        m_RenderPipeline = std::make_shared<RenderPipeline>(device, layouts, inImageFormats);
 
         m_DeviceContext.RenderPipeline = m_RenderPipeline;
 
         InitPickPipepline();
+
+        DebugRenderer::Init(device, layouts);
 
     }
 

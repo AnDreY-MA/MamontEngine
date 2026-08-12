@@ -11,3 +11,10 @@ private:                                                                        
         int               InitTypeReflect();                                                                                                                   \
         static inline int id = InitTypeReflect();                                                                                                              \
     }
+
+#define REFLECT_ENUM(TYPE)\
+    namespace ENUM_REFLECTS::TYPE_##TYPE \
+    {                                                                                                                                                          \
+        int InitTypeReflect();\
+        static int id = InitTypeReflect();\
+    }   

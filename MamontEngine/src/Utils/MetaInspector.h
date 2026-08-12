@@ -29,15 +29,25 @@ namespace MetaInspectors
     }
 
     template <>
+    inline void MetaInspect<bool>(const std::string &name, bool &value, const entt::meta_data &meta)
+    {
+        ImGui::Text(name.c_str());
+        ImGui::SameLine();
+        ImGui::Checkbox(("##" + name).c_str(), &value);
+    }
+    template <>
     inline void MetaInspect<float>(const std::string &name, float &value, const entt::meta_data &meta)
     {
-        ImGui::DragFloat(name.c_str(), &value, 0.2f);
+        ImGui::Text(name.c_str());
+        ImGui::SameLine();
+        ImGui::DragFloat(("##" + name).c_str(), &value, 0.2f);
     }
+
 
     template <typename Type>
     static void InspectEnum(const char* name, entt::meta_any& value, const entt::meta_data& meta)
     {
-        //Type type = value.cast<T>();
+        Type type = value.cast<Type>();
 
         struct TypeID
         {
@@ -46,17 +56,40 @@ namespace MetaInspectors
         };
 
         static std::vector<TypeID> enumNames = std::vector<TypeID>();
+        enumNames.resize(10);
         int                        amount{0};
         std::string                active{"None"};
 
         for (auto&& [enumID, elementType] : value.type().data())
         {
+            auto instance = elementType.get(value);
+
             std::string name = "UNKNOWN";
-            if (elementType.type().name() == p_DisplayName)
+            name = elementType.name();
+            enumNames[amount] = {enumID, name};
+            amount++;
+
+            if (elementType.get({}).cast<Type>() == type)
             {
-                //name = elementType.type()
+                active = name;
             }
         }
+
+        if (!ImGui::BeginCombo(name, active.c_str()))
+            return;
+
+        for (int i = 0; i < amount; ++i)
+        {
+            if (ImGui::Selectable(enumNames[i].Name.c_str(), enumNames[i].Name == active))
+            {
+                value = value.type().data(enumNames[i].Id).get({});
+                
+                ImGui::EndCombo();
+                return;
+            }
+        }
+
+        ImGui::EndCombo();
 
     }
 

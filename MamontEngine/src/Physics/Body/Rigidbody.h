@@ -7,7 +7,9 @@ namespace MamontEngine
 {
 namespace HeroPhysics
 {
-    enum class EMotionType : uint8_t{ Static, Dynamic, Kinematic };
+    enum class EMotionType
+    { Static = 0, Dynamic, Kinematic };
+    //REFLECT_ENUM(EMotionType)
 
     class CollisionShape;
 
@@ -79,18 +81,21 @@ namespace HeroPhysics
 
         inline bool IsDynamic() const { return m_MotionType == EMotionType::Dynamic; }
 
+        inline bool IsSleep() const { return m_Sleep; }
+
     private:
         std::shared_ptr<CollisionShape> m_Shape;
 
         glm::vec3                             m_Position{glm::vec3(0.f)};
         glm::quat                             m_Rotation;
 
+        bool        m_Sleep{false};
+        float       m_GravityScale{1.0f};
         EMotionType m_MotionType{EMotionType::Dynamic};
 
         glm::vec3 m_LinearVelocity{glm::vec3(0.f)};
         glm::vec3 m_AngularVelocity{glm::vec3(0.f)};
         glm::vec3 m_Force{glm::vec3(0.f)};
-        float m_GravityScale{1.0f};
 
         glm::vec3 m_Torque{glm::vec3(0.f)};
 

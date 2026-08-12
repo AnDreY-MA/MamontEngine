@@ -22,17 +22,19 @@ namespace MamontEngine
 
     namespace DebugRenderer
     {
-        void Init();
+        void Init(VkDevice inDevice, std::span<const VkDescriptorSetLayout> inDescriptorLayouts);
         void Destroy();
         void Update();
+
+        void Render(VkCommandBuffer inCmd);
 
         void ClearVertex();
 
         void DrawPoint(const glm::vec3 inPostion, const float radius, const Color &inColor = Color::RED);
 
-        void DrawLine(const glm::vec3 &inStart, const glm::vec3 &inEnd, const Color &inColor = Color::WHITE, float inWidth = .1f);
+        void DrawLine(const glm::vec3 &inStart, const glm::vec3 &inEnd, const Color &inColor = Color::WHITE, float inWidth = 1.f);
 
-        void Draw(const AABB &inBox, const Color &inColor = Color::WHITE, float width = .1f);
+        void Draw(const AABB &inBox, const Color &inColor = Color::WHITE, float width = 1.f);
         
         VkDeviceAddress GetVertexBufferAdress();
 

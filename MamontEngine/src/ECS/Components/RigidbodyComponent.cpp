@@ -1,8 +1,8 @@
 #include "ECS/Components/RigidbodyComponent.h"
 #include "Physics/Body/Rigidbody.h"
-#include "Core/Engine.h"
 #include "Utils/Reflection.h"
 #include "Core/Log.h"
+#include "Core/Engine.h"
 
 namespace MamontEngine
 {
@@ -14,6 +14,8 @@ namespace MamontEngine
 
     RigidbodyComponent::RigidbodyComponent()
     {
+        Log::Info("RigidbodyComponent Constructor");
+
         Rigidbody = MEngine::Get().GetPhysicsSytem()->CreateBody();
     }
 

@@ -19,6 +19,22 @@ namespace MamontEngine
 
 		~RigidbodyComponent();
 
+        RigidbodyComponent(RigidbodyComponent &&other) noexcept 
+            : Rigidbody(std::exchange(other.Rigidbody, nullptr))
+        {
+        }
+        RigidbodyComponent &operator=(RigidbodyComponent &&other) noexcept
+        {
+            if (this != &other)
+            {
+                Rigidbody = std::exchange(other.Rigidbody, nullptr);
+            }
+            return *this;
+        }
+
+        RigidbodyComponent(const RigidbodyComponent &)            = delete;
+        RigidbodyComponent &operator=(const RigidbodyComponent &) = delete;
+
         HeroPhysics::Rigidbody *Rigidbody;
 
     private:

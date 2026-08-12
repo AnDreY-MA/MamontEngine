@@ -134,23 +134,7 @@ namespace MamontEngine
             }
        }
 
-       if (const auto vertexCount = DebugRenderer::GetVertexCount(); vertexCount > 0)
-       {
-           vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inRenderPipeline->DebugDrawPipeline->Pipeline);
-           
-           const auto                 bufferAdress = DebugRenderer::GetVertexBufferAdress();
-           const GPUDrawPushConstants debug_pushconstants{
-                   .WorldMatrix = glm::mat4(1.f), .VertexBuffer = bufferAdress,
-           };
-
-           vkCmdPushConstants(inCmd,
-                              inRenderPipeline->DebugDrawPipeline->Layout,
-                              VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                              0,
-                              constantsSize,
-                              &debug_pushconstants);
-           vkCmdDraw(inCmd, vertexCount, 1, 0, 0);
-       }
+        DebugRenderer::Render(inCmd);
 
         /*for (const auto &r : transp_draws)
         {
@@ -260,9 +244,6 @@ namespace MamontEngine
         {
             DebugRenderer::Draw(collision.GetBounds().Transform(transform.Matrix()), Color::BLUE);
         }
-
-
-        DebugRenderer::DrawPoint(glm::vec3(1.f), 2, Color::WHITE );
 
         DebugRenderer::Update();
 

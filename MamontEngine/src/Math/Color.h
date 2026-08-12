@@ -13,14 +13,12 @@ namespace MamontEngine
                 float R, G, B, A;
             };
 
-            float Componnts[4] = {0.f, 0.f, 0.f, 1.f};
+            float Components[4] = {0.f, 0.f, 0.f, 1.f};
         };
 
-        constexpr Color() : R(0.f), G(0.f), B(0.f), A(1.f)
-        {
-        }
+        constexpr Color() = default;
 
-        constexpr Color(float r, float g, float b, float a = 1.f) : R(a), G(g), B(b), A(a)
+        constexpr Color(float r, float g, float b, float a = 1.f) : R(r), G(g), B(b), A(a)
         {
         }
 
@@ -34,9 +32,13 @@ namespace MamontEngine
             return glm::vec3(R, G, B);
         }
 
+        const float *Data() const
+        {
+            return Components;
+        }
         float *Data()
         {
-            return Componnts;
+            return Components;
         }
 
         static const Color WHITE;

@@ -1,6 +1,7 @@
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
 #include "Utils/Serialization.h"
+#include "Utils/Reflection.h"
 #include "ECS/Components/TagComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MeshComponent.h"
@@ -48,9 +49,9 @@ IMPLEMENT_META_INIT(glm)
 }
 FINISH_REFLECT()
 
+
 #define ALL_COMPONENTS(serializer) get<IDComponent>(serializer).get<TagComponent>(serializer).get<TransformComponent>(serializer) \
         .get<MeshComponent>(serializer).get<DirectionLightComponent>(serializer).get<RigidbodyComponent>(serializer).get<HeroPhysics::BoxCollision>(serializer).get<HeroPhysics::SphereCollision>(serializer)
-
 
 namespace MamontEngine
 {
@@ -68,11 +69,16 @@ namespace MamontEngine
     }
     FINISH_REFLECT()
 
+
     Scene::Scene()
     {
         using hs = entt::hashed_string;
         entt::meta_factory<MeshModel>{}.type(hs{"Model"}, "Model").base<Asset>();
         entt::meta_factory<Transform>{}.type(hs{"Transform"}, "Transform");
+
+       /* using namespace HeroPhysics;
+        entt::meta_factory<EMotionType>{}.data<EMotionType::Static>("Static"_hs).data<EMotionType::Dynamic>("Dynamic"_hs);
+        REFLECTENUMER(HeroPhysics::EMotionType::Static)*/
     }
 
     Scene::~Scene()
@@ -131,6 +137,8 @@ namespace MamontEngine
         }
 
         cereal::BinaryInputArchive serializer(file);
+
+        m_Registry.clear();
 
         entt::snapshot_loader{m_Registry}.get<entt::entity>(serializer).ALL_COMPONENTS(serializer);
 
