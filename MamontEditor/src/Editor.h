@@ -59,7 +59,7 @@ namespace MamontEditor
 		void AddIconFont();
 
 	private:
-        std::unordered_map<size_t, std::unique_ptr<EditorPanel>> m_Panels;
+        std::unordered_map<uint32_t, std::unique_ptr<EditorPanel>> m_Panels;
 
 		glm::vec2 m_ViewportBounds[2];
 

@@ -38,6 +38,11 @@ namespace MamontEngine::VkPipelines
     {
         m_PipelineLayout = inLayout;
     }
+    
+    void PipelineBuilder::SetCache(VkPipelineCache inCache)
+    {
+        m_PipelineCache = inCache;
+    }
 
     void PipelineBuilder::SetShaders(VkShaderModule inVertexShader, VkShaderModule inFragmentShader)
     {
@@ -225,14 +230,15 @@ namespace MamontEngine::VkPipelines
         pipelineInfo.pDynamicState = &dynamicInfo;
 
         VkPipeline newPipeline;
-        if (vkCreateGraphicsPipelines(inDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &newPipeline) != VK_SUCCESS)
+        if (vkCreateGraphicsPipelines(inDevice, m_PipelineCache, 1, &pipelineInfo, nullptr, &newPipeline) != VK_SUCCESS)
         {
             fmt::println("Failed to create pipeline");
             return VK_NULL_HANDLE;
         }
         else
         {
-            fmt::println("Succes to create pipeline");
+            fmt::println("----SUCCESS PIPELINE-----");
+            std::cerr << "PIPELINE: " << newPipeline << std::endl;
 
             return newPipeline;
         }

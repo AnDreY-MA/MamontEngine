@@ -2,6 +2,8 @@
 #include "Core/Engine.h"
 #include "UI/UI.h"
 #include "ECS/SceneRenderer.h"
+#include "Core/Log.h"
+#include "Core/Engine.h"
 
 namespace MamontEditor
 {
@@ -15,10 +17,15 @@ namespace MamontEditor
     {
         if (OnBegin())
         {
-            ImGui::SameLine();
+            if (ImGui::Button("Reload Shader"))
+            {
+            }
 
-
-            //ImGui::Checkbox()
+            bool isDrawBounds = MamontEngine::MEngine::Get().GetSceneRenderer()->IsDrawCollisionBounds();
+            if (ImGui::Checkbox("Draw collision bounds", &isDrawBounds))
+            {
+                MamontEngine::MEngine::Get().GetSceneRenderer()->EnableDrawCollisionBounds(isDrawBounds);
+            }
 
             OnEnd();
         }

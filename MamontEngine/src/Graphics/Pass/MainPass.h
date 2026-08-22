@@ -9,7 +9,7 @@ namespace MamontEngine
     {
     public:
         explicit MainPass();
-        ~MainPass() = default;
+        virtual ~MainPass() = default;
 
         virtual void Render(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, const DrawContext &inDrawContext, const glm::mat4 &viewproj) override;
 

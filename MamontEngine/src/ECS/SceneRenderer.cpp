@@ -8,6 +8,7 @@
 #include "Utils/VkPipelines.h"
 #include "ECS/Scene.h"
 #include "ECS/Components/DirectionLightComponent.h"
+#include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include <glm/gtx/quaternion.hpp>
 #include "Graphics/DebugRenderer.h"
@@ -56,7 +57,7 @@ namespace MamontEngine
             return true;
         }
 
-        glm::vec3 GetForwardVector(const glm::quat inRotation)
+        glm::vec3 GetForwardVector(const glm::quat& inRotation)
         {
             const float yaw   = inRotation.y;
             const float pitch = inRotation.z;
@@ -68,6 +69,11 @@ namespace MamontEngine
 
             return forwardVector;
         }
+
+        /* glm::vec3 GetForwardVector(const glm::quat &inRotation)
+        {
+            return inRotation * glm::vec3(0.f, 0.f, 1.0f);
+        }*/
     }
 
     SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera, const std::shared_ptr<Scene> &inScene) 
@@ -103,13 +109,15 @@ namespace MamontEngine
             {
                 vkCmdBindVertexBuffers(inCmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
             }
+            
             if (r.MeshBuffer.IndexBuffer.Buffer != VK_NULL_HANDLE)
             {
                 vkCmdBindIndexBuffer(inCmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
             }
 
             const GPUDrawPushConstants push_constants{
-                    .WorldMatrix  = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBufferAddress,
+                    .WorldMatrix  = r.Transform,
+                    .VertexBuffer = r.MeshBuffer.VertexBuffer.Address,
                     //.CascadeIndex = cascadeIndex
             };
 
@@ -121,21 +129,21 @@ namespace MamontEngine
                                &push_constants);
 
             vkCmdDrawIndexed(inCmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
-
-            
         };
 
         // Opaque Draw
-       for (const auto &object : m_DrawContext.OpaqueSurfaces)
-       {
+        for (const auto &object : m_DrawContext.OpaqueSurfaces)
+        {
             if (IsVisible(object.Bound, object.Transform, m_SceneData.Viewproj))
             {
                 draw(object);
             }
-       }
+        }
 
-        DebugRenderer::Render(inCmd);
-
+        if (m_DrawCollisionBounds)
+        {
+            DebugRenderer::Render(inCmd);
+        }
         /*for (const auto &r : transp_draws)
         {
             draw(m_DrawContext.TransparentSurfaces[r]);
@@ -157,7 +165,7 @@ namespace MamontEngine
 
             vkCmdBindIndexBuffer(cmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            const GPUDrawPushConstants pushConstants{.WorldMatrix = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBufferAddress, .ObjectID = (uint64_t)r.Id};
+            const GPUDrawPushConstants pushConstants{.WorldMatrix = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBuffer.Address, .ObjectID = (uint64_t)r.Id};
 
             constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
             vkCmdPushConstants(cmd, inLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &pushConstants);
@@ -197,32 +205,57 @@ namespace MamontEngine
             m_HasDirectionLight            = !viewDirectionLight.empty();
         }
 
+        {
+            const auto &viewPointLight = sceneRegistry.view<const PointLightComponent>();
+            m_LightData.PointLightingCount                = viewPointLight.size();
+        }
+
         if (m_HasDirectionLight)
         {
             const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent, TransformComponent>();
 
             viewDirectionLight.each([&](const auto& ligth, const auto& transform) { 
-                m_CascadeData.Color        = ligth.GetColor();
+                m_LightData.Color        = ligth.GetColor();
                 const glm::quat rotation       = transform.Transform.Rotation;
-                const glm::vec3 lightDirection = GetForwardVector(rotation);
+                const glm::vec3 lightDirection = transform.Transform.GetForwardVector();
+                    //GetForwardVector(rotation);
                 m_SceneData.LightDirection   = lightDirection;
-                m_CascadeData.LightDirection = lightDirection;
+                m_LightData.LightDirection = lightDirection;
             });
             for (size_t i = 0; i < CASCADECOUNT; i++)
             {
-                m_CascadeData.Splits[i] = inCascades[i].SplitDepth;
+                m_LightData.Splits[i] = inCascades[i].SplitDepth;
             }
 
-            m_CascadeData.InverseViewMatrix = glm::inverse(view);
+            m_LightData.InverseViewMatrix = glm::inverse(view);
         }
         else
         {
-            m_CascadeData.Color = glm::vec3(0.3f, 0.3f, 0.3f);
+            m_LightData.Color = glm::vec3(0.3f, 0.3f, 0.3f);
             m_SceneData.LightDirection   = glm::vec3(.0f);
-            m_CascadeData.LightDirection = glm::vec3(.0f);
+            m_LightData.LightDirection = glm::vec3(.0f);
         }
 
-        m_CascadeData.IsActive = m_HasDirectionLight;
+        if (m_LightData.PointLightingCount > 0)
+        {
+            const auto &viewPointLight = sceneRegistry.view<const PointLightComponent, TransformComponent>();
+
+            uint32_t indexLight = 0;
+            viewPointLight.each(
+                    [&](const PointLightComponent &ligthComponent, const TransformComponent &transform)
+                    {
+                        auto &light                             = m_LightData.PointLights[indexLight];
+                        light.Color                           = ligthComponent.GetColor();
+                        light.Radius                          = ligthComponent.GetRadius();
+                        light.Position                        = transform.Transform.Position;
+                        light.Attenuation                     = ligthComponent.GetAttenuation();
+                        ++indexLight;
+                    });
+
+            //UpdateLightFaceCubes();
+        }
+
+        m_LightData.HasDirectionLight = m_HasDirectionLight;
 
         const auto meshes = sceneRegistry.view<MeshComponent, TransformComponent>();
         for (const auto&& [entity, meshComponent, Transform] : meshes.each())
@@ -233,21 +266,58 @@ namespace MamontEngine
             }
         }
 
-        const auto viewCollisions = sceneRegistry.view<TransformComponent, HeroPhysics::BoxCollision>();
-        for (auto [entity, transform, collision] : viewCollisions.each())
+        if (m_DrawCollisionBounds)
         {
-            DebugRenderer::Draw(collision.GetBounds().Transform(transform.Matrix()), Color::GREEN);
-        }
+            const auto viewCollisions = sceneRegistry.view<TransformComponent, HeroPhysics::BoxCollision>();
+            for (auto [entity, transform, collision] : viewCollisions.each())
+            {
+                DebugRenderer::Draw(collision.GetBounds().Transform(transform.Matrix()), Color::GREEN);
+            }
 
-        const auto viewSphereCollisions = sceneRegistry.view<TransformComponent, HeroPhysics::SphereCollision>();
-        for (auto [entity, transform, collision] : viewSphereCollisions.each())
-        {
-            DebugRenderer::Draw(collision.GetBounds().Transform(transform.Matrix()), Color::BLUE);
-        }
+            const auto viewSphereCollisions = sceneRegistry.view<TransformComponent, HeroPhysics::SphereCollision>();
+            for (auto [entity, transform, collision] : viewSphereCollisions.each())
+            {
+                DebugRenderer::Draw(collision.GetBounds().Transform(transform.Matrix()), Color::BLUE);
+            }
 
-        DebugRenderer::Update();
+            DebugRenderer::Update();
+        }
+        
 
     }
 
-} // namespace MamontEngine
+    void SceneRenderer::UpdateLightFaceCubes()
+    {
+        for (uint32_t l = 0; l < m_LightData.PointLightingCount; ++l)
+        {
+            for (uint32_t f = 0; f < SHADOW_FACE_NUM; ++f)
+            {
+                glm::mat4 view = glm::mat4(1.0f);
+                switch (f)
+                {
+                    case 0: // POSITIVE_X
+                        view = glm::rotate(view, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+                        view = glm::rotate(view, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+                        break;
+                    case 1: // NEGATIVE_X
+                        view = glm::rotate(view, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+                        view = glm::rotate(view, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+                        break;
+                    case 2: // POSITIVE_Y
+                        view = glm::rotate(view, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+                        break;
+                    case 3: // NEGATIVE_Y
+                        view = glm::rotate(view, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+                        break;
+                    case 4: // POSITIVE_Z
+                        view = glm::rotate(view, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+                        break;
+                    case 5: // NEGATIVE_Z
+                        view = glm::rotate(view, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+                        break;
+                }
+            }
+        }
+    }
 
+} // namespace MamontEngine

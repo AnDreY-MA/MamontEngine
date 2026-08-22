@@ -5,6 +5,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "Utils/Profile.h"
+#include "Core/Log.h"
 
 namespace MamontEngine
 {
@@ -34,13 +35,19 @@ namespace MamontEngine
                     const auto body1 = inBodies[i];
                     const auto body2 = inBodies[j];
                     if (!body1 || !body2)
+                    {
+                        Log::Warn("FindCollisionPairs: bodies is not valid");
                         continue;
+                    }
 
                     const auto &shape1 = body1->GetShape();
                     const auto &shape2 = body2->GetShape();
 
                     if (!shape1 || !shape2)
+                    {
+                        Log::Warn("FindCollisionPairs: shapes is not valid");
                         continue;
+                    }
 
                     const AABB object1 = shape1->GetBounds().Transform(ToMatrix4(body1->GetPosition(), body1->GetRotation()));
                     const AABB object2 = shape2->GetBounds().Transform(ToMatrix4(body2->GetPosition(), body2->GetRotation()));

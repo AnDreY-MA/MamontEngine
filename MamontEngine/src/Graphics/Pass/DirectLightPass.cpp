@@ -6,7 +6,6 @@
 #include "Utils/VkInitializers.h"
 #include <Utils/Profile.h>
 #include "Math/AABB.h"
-#include "Graphics/Vulkan/Pipelines/PipelineData.h"
 
 namespace
 {
@@ -67,6 +66,17 @@ namespace MamontEngine
             VK_CHECK(vkCreateImageView(device, &layerViewInfo, nullptr, &Cascades[i].View));
             std::cerr << "Cascades[" << i << "].View: " << Cascades[i].View << std::endl;
         }
+
+        m_Buffer.Create(sizeof(glm::mat4) * CASCADECOUNT,
+                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                        VMA_MEMORY_USAGE_GPU_ONLY);
+        const VkBufferDeviceAddressInfo deviceAddressInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = m_Buffer.Buffer};
+        m_Buffer.Address                                  = vkGetBufferDeviceAddress(LogicalDevice::GetDevice(), &deviceAddressInfo);
+
+        for (auto &sBuffer : m_StagingBuffers)
+        {
+            sBuffer = CreateStagingBuffer(m_Buffer.Info.size);
+        }
     }
     
     DirectLightPass::~DirectLightPass()
@@ -78,7 +88,7 @@ namespace MamontEngine
             vkDestroyImageView(device, cascade.View, nullptr);
         }
 
-        m_CascadePipeline.reset();
+        m_Pipeline.reset();
     }
 
     void DirectLightPass::Render(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, const DrawContext &inDrawContext, const glm::mat4 &viewproj)
@@ -89,7 +99,7 @@ namespace MamontEngine
 
         const auto draw = [&](const RenderObject &r, uint32_t cascadeIndex)
         {
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
 
             constexpr VkDeviceSize offsets[1] = {0};
             vkCmdBindVertexBuffers(cmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
@@ -97,19 +107,19 @@ namespace MamontEngine
             vkCmdBindIndexBuffer(cmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
             const GPUDrawPushConstants push_constants{
-                    .WorldMatrix = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBufferAddress, .CascadeIndex = cascadeIndex};
+                    .WorldMatrix = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBuffer.Address, .CascadeIndex = cascadeIndex};
 
             constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
-            vkCmdPushConstants(cmd, m_CascadePipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
+            vkCmdPushConstants(cmd, m_Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
 
             vkCmdDrawIndexed(cmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
         };
 
         uint32_t cascadeIndex{0};
+        VkUtil::transition_image(cmd, m_CascadeImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
         for (const auto &cascade : Cascades)
         {
-            VkUtil::transition_image(cmd, m_CascadeImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-
             VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(cascade.View);
             depthAttachment.clearValue.depthStencil   = {1.f, 0};
             depthAttachment.loadOp                    = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -131,8 +141,8 @@ namespace MamontEngine
             vkCmdSetViewport(cmd, 0, 1, &viewport);
             vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Pipeline);
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CascadePipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
+            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Pipeline);
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
 
             for (const auto &object : inDrawContext.OpaqueSurfaces)
             {
@@ -143,9 +153,10 @@ namespace MamontEngine
             }
 
             vkCmdEndRendering(cmd);
-            VkUtil::transition_image(cmd, m_CascadeImage, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
             ++cascadeIndex;
         }
+        VkUtil::transition_image(cmd, m_CascadeImage, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+
     }
 
     void DirectLightPass::UpdateCascade(const Camera *inCamera, const glm::vec3 &inLightDirection)
@@ -215,19 +226,29 @@ namespace MamontEngine
                 const float distance = glm::length(frustumCorners[j] - frustumCenter);
                 radius               = glm::max(radius, distance);
             }
-            //radius = std::ceil(radius * 16.f) / 16.f;
+            radius = std::ceil(radius * 16.f) / 16.f;
+
+            const glm::vec3 maxExtents = glm::vec3(radius);
+            const glm::vec3 minExtents = -maxExtents;
+
+            const glm::vec3 lightDirection = glm::normalize(inLightDirection);
+            const glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDirection * -minExtents.x, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
+            const glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
+
+            Cascades[i].SplitDepth = (nearClip + splitDist * clipRange) * -1.f;
+            Cascades[i].ViewProjectMatrix = lightOrthoMatrix * lightViewMatrix;
 
            /* const glm::vec3 maxExtents = glm::vec3(radius);
             const glm::vec3 minExtents = -maxExtents;*/
 
-            const glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - inLightDirection * radius, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
-            glm::mat4 lightProj       = glm::orthoRH_ZO(-radius, radius, -radius, radius, 0.f, radius * 2.f);
-            lightProj[1][1] *= -1.f;
+/*            const glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - inLightDirection * radius, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
+            glm::mat4 lightProj       = glm::ortho(-radius, radius, -radius, radius, 0.f, radius * 2.f);
+            //lightProj[1][1] *= -1.f;
 
-            Cascades[i].SplitDepth        = -(inCamera->GetNearClip() + splitDist * clipRange) ;
-            Cascades[i].ViewProjectMatrix = lightProj * lightViewMatrix;
+            Cascades[i].SplitDepth        = (inCamera->GetNearClip() + splitDist * clipRange) * -1.f;
+            Cascades[i].ViewProjectMatrix = lightProj * lightViewMatrix;*/
 
-            lastSplitDist = splitDist;
+            lastSplitDist = cascadeSplits[i];
         }
     }
        
@@ -244,8 +265,6 @@ namespace MamontEngine
 
         VkPipelineLayout layout;
         VK_CHECK(vkCreatePipelineLayout(device, &layoutInfo, nullptr, &layout));
-
-        std::cerr << "Shadow Pipline laoyot: " << layout << std::endl;
 
         const std::string cascadeShadowPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/cascade_shadow.vert.spv";
 
@@ -288,10 +307,10 @@ namespace MamontEngine
             fmt::println("shadowPipeline == VK_NULL_HANDLE");
         }
 
-        std::cerr << "shadowPipeline: " << shadowPipeline << std::endl;
-        std::cerr << "shadowPipeline, Layout: " << layout << std::endl;
+        std::cerr << "Direct shadowPipeline: " << shadowPipeline << std::endl;
+        std::cerr << "Direct shadowPipeline, Layout: " << layout << std::endl;
 
-        m_CascadePipeline = std::make_unique<PipelineData>(shadowPipeline, layout);
+        m_Pipeline = std::make_unique<PipelineData>(shadowPipeline, layout);
 
         vkDestroyShaderModule(device, cascadeShadowShader, nullptr);
         vkDestroyShaderModule(device, cascadeFragmentShadowShader, nullptr);

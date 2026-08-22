@@ -182,6 +182,8 @@ namespace MamontEngine
 #endif
                 .timelineSemaphore   = VK_TRUE,
                 .bufferDeviceAddress = VK_TRUE,
+                .shaderOutputViewportIndex = VK_TRUE,
+                .shaderOutputLayer = VK_TRUE
         };
 
 
@@ -227,6 +229,9 @@ namespace MamontEngine
         InitSyncStructeres();
 
         ImmediateContext::InitImmediateContext(m_GraphicsQueue, m_GraphicsQueueFamily);
+
+        InitImage();
+
 
         m_SkyboxTexture = std::unique_ptr<Texture>(LoadCubeMapTexture(DEFAULT_ASSETS_DIRECTORY + "Textures/cubemap_vulkan.ktx", VK_FORMAT_R8G8B8A8_UNORM));
 
@@ -419,7 +424,7 @@ namespace MamontEngine
         for (size_t i{0}; i < FRAME_OVERLAP; ++i)
         {
             GetFrameAt(i).SceneDataBuffer.Create(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-            GetFrameAt(i).CascadeDataBuffer.Create(sizeof(CascadeData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+            GetFrameAt(i).LightDataBuffer.Create(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
             GetFrameAt(i).CascadeMatrixBuffer.Create(sizeof(glm::mat4) * CASCADECOUNT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
         }
@@ -430,7 +435,7 @@ namespace MamontEngine
         for (size_t i{0}; i < FRAME_OVERLAP; i++)
         {
             GetFrameAt(i).SceneDataBuffer.Destroy();
-            GetFrameAt(i).CascadeDataBuffer.Destroy();
+            GetFrameAt(i).LightDataBuffer.Destroy();
             GetFrameAt(i).CascadeMatrixBuffer.Destroy();
         }
     }
@@ -439,9 +444,9 @@ namespace MamontEngine
     {
         std::array<DescriptorAllocatorGrowable::PoolSizeRatio, 4> sizes = {
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 6},
-                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3},
-                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3},
-                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4}};
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4},
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4},
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 32}};
         const VkDevice device = LogicalDevice::GetDevice();
 
         GlobalDescriptorAllocator.Init(device, 100, sizes);
@@ -481,10 +486,12 @@ namespace MamontEngine
             builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             builder.AddBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+           
             builder.AddBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(7, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            builder.AddBinding(8, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, PointLightShadowMaps.size());
             GPUSceneDataDescriptorLayout = builder.Build(device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
         }
 
@@ -493,13 +500,14 @@ namespace MamontEngine
         std::cerr << "DrawImageDescriptorLayout: " << DrawImageDescriptorLayout << std::endl;
 
 
-        constexpr size_t cascadeDataSize     = sizeof(CascadeData);
-        constexpr size_t cascadeMatricesSize = sizeof(glm::mat4) * CASCADECOUNT;
+        constexpr size_t cascadeDataSize     = sizeof(LightData);
 
         for (auto &frame : m_Frames)
         {
             DescriptorWriter writer;
             writer.Clear();
+
+//TODO: CHANGE ORDER SETS
 
             auto &globalDescriptor = frame.GlobalDescriptor;
             globalDescriptor       = GlobalDescriptorAllocator.Allocate(device, GPUSceneDataDescriptorLayout);
@@ -509,8 +517,8 @@ namespace MamontEngine
                               CascadeDepthImage.Sampler,
                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            writer.WriteBuffer(2, frame.CascadeDataBuffer.Buffer, cascadeDataSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            writer.WriteBuffer(3, frame.CascadeMatrixBuffer.Buffer, cascadeMatricesSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            writer.WriteBuffer(2, frame.LightDataBuffer.Buffer, cascadeDataSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            writer.WriteBuffer(3, frame.CascadeMatrixBuffer.Buffer, sizeof(glm::mat4) * CASCADECOUNT, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             writer.WriteImage(4, m_SkyboxTexture->ImageView, m_SkyboxTexture->Sampler, 
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -535,7 +543,42 @@ namespace MamontEngine
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             }
-            
+
+            std::vector<VkDescriptorImageInfo> pointInfos;
+            pointInfos.reserve(MAX_POINT_LIGHT);
+            for (const auto &shadowMap : PointLightShadowMaps)
+            {
+                VkDescriptorImageInfo info{};
+                info.sampler     = shadowMap.Sampler;
+                info.imageView   = shadowMap.ImageView;
+                info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                pointInfos.push_back(info);
+            }
+
+            if (pointInfos.empty())
+            {
+                // Если нет ни одной текстуры, создаём "заглушку"
+                VkDescriptorImageInfo stub{};
+                stub.sampler     = VK_NULL_HANDLE;
+                stub.imageView   = VK_NULL_HANDLE;
+                stub.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                pointInfos.assign(MAX_POINT_LIGHT, stub);
+            }
+           /* else
+            {
+                while (pointInfos.size() < MAX_POINT_LIGHT)
+                {
+                    pointInfos.push_back(pointInfos.front());
+                }
+            }*/
+            writer.WriteImageArray(8, pointInfos, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+           /* writer.WriteImage(9,
+                              PointDepthImage.ImageView,
+                              PointDepthImage.Sampler,
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);*/
+
             writer.UpdateSet(device, globalDescriptor);
 
             std::cerr << "globalDescriptor: " << globalDescriptor << std::endl;
@@ -566,7 +609,6 @@ namespace MamontEngine
     void VkContextDevice::InitSwapchain(const VkExtent2D &inWindowExtent)
     {
         Swapchain.Init(Surface, inWindowExtent);
-        InitImage();
     }
 
     void VkContextDevice::InitImage()
@@ -628,29 +670,26 @@ namespace MamontEngine
     {
         const VkDevice device = LogicalDevice::GetDevice();
 
-        const VkFormat       depthFormat = Utils::FindDepthFormat(PhysicalDevice::GetDevice());
-        constexpr VkExtent3D shadowImageExtent{SHADOWMAP_DIMENSION, SHADOWMAP_DIMENSION, 1};
-
-        auto imageInfo = vkinit::image_create_info(depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, shadowImageExtent);
-
-        imageInfo.mipLevels   = 1;
-        imageInfo.arrayLayers = CASCADECOUNT;
-
-        constexpr auto allocinfo = VmaAllocationCreateInfo{.usage = VMA_MEMORY_USAGE_GPU_ONLY, .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
-
-        VK_CHECK(vmaCreateImage(Allocator::GetAllocator(),
-                                &imageInfo,
-                                &allocinfo,
-                                &CascadeDepthImage.Image,
-                                &CascadeDepthImage.Allocation,
-                                &CascadeDepthImage.Info));
-
-        CascadeDepthImage.ImageExtent = shadowImageExtent;
-        CascadeDepthImage.ImageFormat = depthFormat;
-
+        // CascadeImage
         {
-            auto imageViewInfo = vkinit::imageviewCreateInfo(
-                    depthFormat, CascadeDepthImage.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, CASCADECOUNT, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
+            const VkFormat       depthFormat = Utils::FindDepthFormat(PhysicalDevice::GetDevice());
+            constexpr VkExtent3D shadowImageExtent{SHADOWMAP_DIMENSION, SHADOWMAP_DIMENSION, 1};
+
+            auto imageInfo = vkinit::image_create_info(
+                    depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, shadowImageExtent, CASCADECOUNT);
+
+            imageInfo.mipLevels = 1;
+
+            constexpr auto allocinfo = VmaAllocationCreateInfo{.usage = VMA_MEMORY_USAGE_GPU_ONLY, .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
+
+            VK_CHECK(vmaCreateImage(
+                    Allocator::GetAllocator(), &imageInfo, &allocinfo, &CascadeDepthImage.Image, &CascadeDepthImage.Allocation, &CascadeDepthImage.Info));
+
+            CascadeDepthImage.ImageExtent = shadowImageExtent;
+            CascadeDepthImage.ImageFormat = depthFormat;
+
+            auto imageViewInfo =
+                    vkinit::imageviewCreateInfo(depthFormat, CascadeDepthImage.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, CASCADECOUNT, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
 
             VK_CHECK(vkCreateImageView(device, &imageViewInfo, nullptr, &CascadeDepthImage.ImageView));
         }
@@ -672,9 +711,90 @@ namespace MamontEngine
             samplerInfo.minLod        = 0.0f;
             samplerInfo.maxLod        = 1.0f;
             samplerInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            samplerInfo.compareEnable = VK_TRUE;
+            samplerInfo.compareOp     = VK_COMPARE_OP_LESS_OR_EQUAL;
 
             VK_CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &CascadeDepthImage.Sampler));
         }
+
+        std::cerr << "Start Creating Point Image" << std::endl;
+        // Create Point Shadow Image
+        PointShadowMapImageViews.resize(6 * MAX_POINT_LIGHT);
+        uint32_t j = 0;
+        for (auto& shadowMap : PointLightShadowMaps)
+        {
+            const VkFormat       pointDepthFormat = Utils::FindDepthFormat(PhysicalDevice::GetDevice());
+            constexpr VkExtent3D shadowImageExtent{shadowMapFaceImageSize, shadowMapFaceImageSize, 1};
+
+            auto imageInfo = vkinit::image_create_info(pointDepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, shadowImageExtent);
+
+            imageInfo.mipLevels   = 1;
+            imageInfo.arrayLayers = 6 * MAX_POINT_LIGHT;
+            imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            imageInfo.flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+            imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+            constexpr auto allocinfo = VmaAllocationCreateInfo{.usage = VMA_MEMORY_USAGE_GPU_ONLY, .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
+
+            VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &imageInfo, &allocinfo, &shadowMap.Image, &shadowMap.Allocation, &shadowMap.Info));
+
+           /* ImmediateContext::ImmediateSubmit([&](VkCommandBuffer cmd) { 
+                VkUtil::transition_image(cmd, PointDepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 6);
+            });*/
+
+            shadowMap.ImageExtent   = shadowImageExtent;
+            shadowMap.ImageFormat = pointDepthFormat;
+
+            auto imageViewInfo = vkinit::imageviewCreateInfo(pointDepthFormat, shadowMap.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 0, 6, VK_IMAGE_VIEW_TYPE_CUBE);
+            //imageViewInfo.components = {VK_COMPONENT_SWIZZLE_R};
+            imageViewInfo.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 6};
+
+            VK_CHECK(vkCreateImageView(device, &imageViewInfo, nullptr, &shadowMap.ImageView));
+
+            for (uint32_t i = 0; i < SHADOW_FACE_NUM; ++i)
+            {
+                const auto viewCreateInfo = VkImageViewCreateInfo{
+                        .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                        .image    = shadowMap.Image,
+                        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                        .format   = pointDepthFormat,
+                        .subresourceRange =
+                                VkImageSubresourceRange{
+                                        .aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
+                                        .baseMipLevel   = 0,
+                                        .levelCount     = 1,
+                                        .baseArrayLayer = i,
+                                        .layerCount     = 1,
+                                },
+                };
+
+                VK_CHECK(vkCreateImageView(device, &viewCreateInfo, nullptr, &PointShadowMapImageViews[i + j * 6]));
+            }
+
+            VkSamplerCreateInfo samplerInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr};
+            samplerInfo.magFilter     = VK_FILTER_LINEAR;
+            samplerInfo.minFilter     = VK_FILTER_LINEAR;
+            samplerInfo.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            samplerInfo.addressModeU  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            samplerInfo.addressModeV  = samplerInfo.addressModeU;
+            samplerInfo.addressModeW  = samplerInfo.addressModeU;
+            samplerInfo.mipLodBias    = 0.0f;
+            samplerInfo.maxAnisotropy = 1.0f;
+            samplerInfo.minLod        = 0.0f;
+            samplerInfo.maxLod        = 1.0f;
+            samplerInfo.compareEnable = VK_TRUE;
+            samplerInfo.compareOp     = VK_COMPARE_OP_LESS_OR_EQUAL;
+            //samplerInfo.compareOp     = VK_COMPARE_OP_NEVER;
+            samplerInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
+            VK_CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &shadowMap.Sampler));
+            std::cerr << "Point Image: " << shadowMap.Image << std::endl;
+
+
+            j++;
+        }
+        
     }
 
     void VkContextDevice::CreatePrefilteredCubeTexture(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &&inDrawSkyboxFunc)
@@ -717,6 +837,11 @@ namespace MamontEngine
             pickImage.Destroy();
         }
         CascadeDepthImage.Destroy();
+
+        for (auto& shadowMap : PointLightShadowMaps)
+        {
+            shadowMap.Destroy();
+        }
     }
 
     FrameData &VkContextDevice::GetCurrentFrame()

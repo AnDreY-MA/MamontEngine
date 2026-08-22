@@ -13,6 +13,7 @@ namespace MamontEngine
     class Scene;
     class MeshModel;
     class DirectLightPass;
+    class PointLightPass;
 
     struct RenderStats
     {
@@ -80,6 +81,7 @@ namespace MamontEngine
         std::unique_ptr<PipelineData> m_PickingPipeline;
 
         std::unique_ptr<DirectLightPass> m_DirectLightPass;
+        std::unique_ptr<PointLightPass> m_PointLightPass;
 
         std::unique_ptr<MeshModel> m_Skybox;
 

@@ -16,7 +16,6 @@ namespace MamontEngine
     class WindowCore;
     struct AllocatedImage;
 
-    constexpr size_t FRAME_OVERLAP = 3;
 
     struct VkContextDevice
     {
@@ -80,6 +79,8 @@ namespace MamontEngine
         std::vector<Texture> PickingImages;
 
         Texture CascadeDepthImage;
+        std::array<Texture, MAX_POINT_LIGHT> PointLightShadowMaps;
+        std::vector<VkImageView>             PointShadowMapImageViews;
 
         MSwapchain Swapchain;
 

@@ -36,6 +36,11 @@ namespace MamontEngine
         {
             return Position != other.Position && Rotation != other.Rotation && Scale != other.Scale;
         }
+
+        inline glm::vec3 GetForwardVector() const
+        {
+            return Rotation * glm::vec3(0.f, 0.f, 1.0f);
+        }
     };
 
 

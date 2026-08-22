@@ -20,7 +20,7 @@ namespace MamontEngine
             .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, 
             .buffer = VertexBuffer.Buffer
         };
-        VertexBufferAddress                    = vkGetBufferDeviceAddress(LogicalDevice::GetDevice(), &deviceAddressInfo);
+        VertexBuffer.Address                                      = vkGetBufferDeviceAddress(LogicalDevice::GetDevice(), &deviceAddressInfo);
 
         IndexBuffer.Create(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 

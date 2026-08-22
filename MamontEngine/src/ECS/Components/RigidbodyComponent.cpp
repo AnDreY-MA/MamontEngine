@@ -1,5 +1,6 @@
 #include "ECS/Components/RigidbodyComponent.h"
 #include "Physics/Body/Rigidbody.h"
+#include "Physics/PhysicsSystem.h"
 #include "Utils/Reflection.h"
 #include "Core/Log.h"
 #include "Core/Engine.h"

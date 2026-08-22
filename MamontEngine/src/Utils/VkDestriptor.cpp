@@ -2,12 +2,12 @@
 
 namespace MamontEngine
 {
-    void DescriptorLayoutBuilder::AddBinding(const uint32_t inBinding, VkDescriptorType inType)
+    void DescriptorLayoutBuilder::AddBinding(const uint32_t inBinding, VkDescriptorType inType, uint32_t inDescriptorCount)
     {
         const VkDescriptorSetLayoutBinding newBind = {
             .binding         = inBinding,
             .descriptorType  = inType,
-            .descriptorCount = 1,
+            .descriptorCount = inDescriptorCount,
         };
 
         m_Bindings.push_back(newBind);
@@ -160,7 +160,8 @@ namespace MamontEngine
 
     //// DescriptoeWriter
 
-    void DescriptorWriter::WriteImage(const int inBinding, VkImageView inImage, VkSampler inSampler, VkImageLayout inLayout, VkDescriptorType inType)
+    void DescriptorWriter::WriteImage(
+            const int inBinding, VkImageView inImage, VkSampler inSampler, VkImageLayout inLayout, VkDescriptorType inType, uint32_t inDescriptorCount)
     {
         const VkDescriptorImageInfo &info = ImageInfos.emplace_back(VkDescriptorImageInfo{.sampler = inSampler, .imageView = inImage, .imageLayout = inLayout});
 
@@ -168,7 +169,7 @@ namespace MamontEngine
 
         write.dstBinding      = inBinding;
         write.dstSet          = VK_NULL_HANDLE;
-        write.descriptorCount = 1;
+        write.descriptorCount = inDescriptorCount;
         write.descriptorType  = inType;
         write.pImageInfo      = &info;
 
@@ -185,6 +186,21 @@ namespace MamontEngine
         write.descriptorType  = inType;
         write.pImageInfo      = &info;
 
+        Writes.push_back(write);
+    }
+
+    void DescriptorWriter::WriteImageArray(int inBinding, const std::vector<VkDescriptorImageInfo> &imageInfos, VkDescriptorType type)
+    {
+        size_t offset = ImageInfos.size();
+        //ImageInfos.insert(ImageInfos.end(), imageInfos.begin(), imageInfos.end());
+
+        VkWriteDescriptorSet write{};
+        write.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstBinding      = inBinding;
+        write.dstSet          = VK_NULL_HANDLE;
+        write.descriptorCount = static_cast<uint32_t>(imageInfos.size());
+        write.descriptorType  = type;
+        write.pImageInfo      = imageInfos.data();
         Writes.push_back(write);
     }
 

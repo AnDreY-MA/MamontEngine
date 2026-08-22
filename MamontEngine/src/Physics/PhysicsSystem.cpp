@@ -84,7 +84,7 @@ namespace MamontEngine
 
                 ResolveCollisions(pairs);
 
-                Log::Info("[PhysicsSystem] Collision pairs: {}", pairs.size());
+                //Log::Info("[PhysicsSystem] Collision pairs: {}", pairs.size());
 
                 UpdateRigidbodies();
 
@@ -171,23 +171,20 @@ namespace MamontEngine
 
             s_UpdateTimestep /= m_PositionIterations;
 
-            if (!body->IsStatic() && !body->IsSleep())
+            if (!body->IsStatic())
             {
-                if (body->GetMass() > 0.f)
-                {
-                    body->m_LinearVelocity += (m_Gravity * body->m_GravityScale) * s_UpdateTimestep;
-                    body->m_LinearVelocity = body->m_LinearVelocity * m_DampingFactor;
+                body->m_LinearVelocity += (m_Gravity * body->m_GravityScale) * s_UpdateTimestep;
+                body->m_LinearVelocity = body->m_LinearVelocity * m_DampingFactor;
 
-                    body->m_Position += body->GetLinearVelocity() * s_UpdateTimestep;
+                body->m_Position += body->GetLinearVelocity() * s_UpdateTimestep;
 
-                    const glm::vec3 newAngularVelocity = body->GetAngularVelocity() + (body->GetTorque() * body->GetInverseInertia() * s_UpdateTimestep);
-                    body->SetAngularVelocity(newAngularVelocity * m_DampingFactor * body->GetAngularFactor());
+                const glm::vec3 newAngularVelocity = body->GetAngularVelocity() + (body->GetTorque() * body->GetInverseInertia() * s_UpdateTimestep);
+                body->SetAngularVelocity(newAngularVelocity * m_DampingFactor * body->GetAngularFactor());
 
-                    const glm::vec3 angularVelocity = body->GetAngularVelocity() * s_UpdateTimestep;
+                const glm::vec3 angularVelocity = body->GetAngularVelocity() * s_UpdateTimestep;
 
-                    const glm::quat newRotation = body->GetRotation() + QuatMulVec3(body->GetRotation(), angularVelocity);
-                    body->SetRotation(glm::normalize(newRotation));
-                }
+                const glm::quat newRotation = body->GetRotation() + QuatMulVec3(body->GetRotation(), angularVelocity);
+                body->SetRotation(glm::normalize(newRotation));
             }
 
             s_UpdateTimestep *= m_PositionIterations;

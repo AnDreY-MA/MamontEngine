@@ -5,7 +5,6 @@
 namespace MamontEngine
 {
     class Camera;
-    class PipelineData;
 
 	class DirectLightPass : public RenderPass
 	{
@@ -32,11 +31,11 @@ namespace MamontEngine
 
 
 	private:
-        CascadeData m_CascadeData;
         std::array<Cascade, CASCADECOUNT> Cascades;
 
-		std::unique_ptr<PipelineData> m_CascadePipeline;
-
         VkImage m_CascadeImage{VK_NULL_HANDLE};
+
+        AllocatedBuffer                            m_Buffer;
+        std::array<AllocatedBuffer, FRAME_OVERLAP> m_StagingBuffers;
 	};
 }

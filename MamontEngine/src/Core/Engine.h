@@ -9,13 +9,13 @@
 #include <ECS/SceneRenderer.h>
 #include "ImGuiLayer.h"
 #include "Core/Log.h"
-#include "Physics/PhysicsSystem.h"
 #include "Scripting/ScriptSystem.h"
+#include "Physics/PhysicsSystem.h"
 
 namespace MamontEngine
 {
     class Scene;
-    
+
 	class MEngine
 	{
     public:
@@ -84,14 +84,13 @@ namespace MamontEngine
         void InitImgui();
         void UpdateScene(float inDeltaTime);
 
+        std::chrono::milliseconds CalculateDeltaTimeMs();
+
     private:
         bool       m_IsInitialized{false};
         bool       m_StopRendering{false};
         bool       m_IsResizeRequested{false};
         bool       m_IsFreezeRendering{false};
-
-        float m_DeltaTime{0.f};
-        std::chrono::steady_clock::time_point m_LastTickTime;
 
         std::shared_ptr<WindowCore> m_Window;
 
@@ -111,5 +110,8 @@ namespace MamontEngine
         SDL_Event* m_InputEvent;
 
         std::shared_ptr<Camera> m_MainCamera;
+
+        std::chrono::microseconds m_DeltaTime{0};
+        uint64_t                  m_LastFrameTime{0};
     };
 }

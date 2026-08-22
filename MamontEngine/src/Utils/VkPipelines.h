@@ -18,7 +18,7 @@ namespace MamontEngine::VkPipelines
         }
 
         void SetLayout(VkPipelineLayout inLayout);
-
+        void SetCache(VkPipelineCache inCache);
         void SetShaders(VkShaderModule inVertexShader, VkShaderModule inFragmentShader);
         void SetInputTopology(VkPrimitiveTopology inTopology);
         void SetVertexInput(VkPipelineVertexInputStateCreateInfo inInfo);
@@ -57,5 +57,6 @@ namespace MamontEngine::VkPipelines
         VkPipelineLayout                       m_PipelineLayout;
         VkPipelineVertexInputStateCreateInfo   m_VertexInput;
 
+        VkPipelineCache m_PipelineCache{VK_NULL_HANDLE};
     };
 }

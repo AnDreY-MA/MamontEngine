@@ -1,6 +1,7 @@
 #include "Graphics/Vulkan/Buffers/Buffer.h"
 #include <cstring>
 #include "Graphics/Vulkan/Allocator.h"
+#include "Graphics/Vulkan/ImmediateContext.h"
 
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
@@ -56,6 +57,31 @@ namespace MamontEngine
         AllocatedBuffer newBuffer;
         newBuffer.Create(inAllocationSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
         return newBuffer;
+    }
+
+    void CopyDataToDynamicBuffer(AllocatedBuffer *targetBuffer, void *inData, AllocatedBuffer *stagingBuffer)
+    {
+        bool isCustomStaging{false};
+        if (stagingBuffer == nullptr)
+        {
+            isCustomStaging = true;
+            *stagingBuffer = CreateStagingBuffer((size_t)targetBuffer->Info.size);
+        }
+
+        memcpy(stagingBuffer->Info.pMappedData, inData, targetBuffer->Info.size);
+
+        ImmediateContext::ImmediateSubmit(
+                [&](VkCommandBuffer cmd)
+                {
+                    const VkBufferCopy copy = {.srcOffset = 0, .dstOffset = 0, .size = targetBuffer->Info.size};
+
+                    vkCmdCopyBuffer(cmd, stagingBuffer->Buffer, targetBuffer->Buffer, 1, &copy);
+                });
+
+        if (isCustomStaging)
+        {
+            stagingBuffer->Destroy();
+        }
     }
 } // namespace MamontEngine
 

@@ -16,15 +16,17 @@ void main()
 {
   const Vertex v = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
 
-  vec4 position = vec4(v.position, 1.0);
-  gl_Position = sceneData.viewproj * (PushConstants.render_matrix * position);
+  const vec4 worldPosition = PushConstants.render_matrix * vec4(v.position, 1.0);
 
-  outNormal = normalize(mat3(PushConstants.render_matrix) * v.normal);
+  outNormal = mat3(PushConstants.render_matrix) * v.normal;
   //outNormal = v.normal;
   outColor = v.color;
   outUV = v.uv;
   outTangent = v.tangent;
   //outPos = (PushConstants.render_matrix * position).xyz;
-  outPos = v.position;
-  outViewPos = (sceneData.view * position).xyz;
+  outPos = worldPosition.xyz;
+  outViewPos = (sceneData.view * worldPosition).xyz;
+
+  gl_Position = sceneData.viewproj * worldPosition;
+
 }

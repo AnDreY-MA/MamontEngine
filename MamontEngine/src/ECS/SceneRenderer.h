@@ -38,10 +38,6 @@ namespace MamontEngine
         {
             return m_SceneData;
         }
-        const CascadeData &GetCascadeData() const
-        {
-            return m_CascadeData;
-        }
 
         const Camera *GetCamera() const
         {
@@ -63,15 +59,26 @@ namespace MamontEngine
             return m_HasDirectionLight;
         }
 
+        bool IsDrawCollisionBounds() const { return m_DrawCollisionBounds; }
+        void EnableDrawCollisionBounds(bool value){ m_DrawCollisionBounds = value; }
+
+        inline const LightData &GetLightData() const { return m_LightData; }
+
+    private:
+        void UpdateLightFaceCubes();
+
+
     private:
         std::shared_ptr<Scene>     m_Scene;
         std::shared_ptr<Camera>    m_Camera;
         DrawContext                m_DrawContext;
 
         GPUSceneData m_SceneData;
-        CascadeData  m_CascadeData;
+        LightData  m_LightData;
 
         bool m_HasDirectionLight{false};
+
+        bool m_DrawCollisionBounds{false};
     };
 
 } // namespace MamontEngine

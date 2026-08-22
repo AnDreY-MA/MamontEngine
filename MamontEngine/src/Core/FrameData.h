@@ -49,7 +49,7 @@ namespace MamontEngine
         VkDescriptorSet             ViewportDescriptor{VK_NULL_HANDLE};
         
         AllocatedBuffer SceneDataBuffer;
-        AllocatedBuffer CascadeDataBuffer;
+        AllocatedBuffer LightDataBuffer;
 
         AllocatedBuffer CascadeMatrixBuffer;
 

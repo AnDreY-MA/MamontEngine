@@ -8,6 +8,9 @@ namespace MamontEngine
 {
 	struct LightComponent
 	{
+    private:
+        REFLECT();
+
     public:
         LightComponent()          = default;
 
@@ -22,7 +25,7 @@ namespace MamontEngine
             return Color.ToVector3() * Intensity;
 		}
 
-        float Intensity{1.f};
+        float Intensity{5.f};
         Color Color;
 
 	private:
@@ -33,5 +36,6 @@ namespace MamontEngine
         {
             ar(Intensity, Color);
         }
+
 	};
 }

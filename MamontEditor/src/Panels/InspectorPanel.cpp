@@ -10,6 +10,7 @@
 #include "Core/Engine.h"
 #include "EditorUtils/EditorUtils.h"
 #include <ECS/Components/DirectionLightComponent.h>
+#include <ECS/Components/PointLightComponent.h>
 #include <ECS/Components/RigidbodyComponent.h>
 #include <ECS/Components/Component.h>
 #include <ECS/Components/ScriptComponent.h>
@@ -315,6 +316,7 @@ namespace MamontEditor
         {
             DrawAddComponent<MeshComponent>(m_SceneContext->GetRegistry(), m_Selected, "Mesh Component");
             DrawAddComponent<DirectionLightComponent>(m_SceneContext->GetRegistry(), m_Selected, "Direction Light Component");
+            DrawAddComponent<PointLightComponent>(m_SceneContext->GetRegistry(), m_Selected, "Point Light Component");
             DrawAddComponent<RigidbodyComponent>(m_SceneContext->GetRegistry(), m_Selected, "Rigidbody Component");
             DrawAddComponent<HeroPhysics::BoxCollision>(m_SceneContext->GetRegistry(), m_Selected, "BoxCollision Component");
             DrawAddComponent<HeroPhysics::SphereCollision>(m_SceneContext->GetRegistry(), m_Selected, "SphereCollision Component");

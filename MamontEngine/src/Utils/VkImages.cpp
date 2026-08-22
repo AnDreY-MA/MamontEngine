@@ -63,6 +63,64 @@ namespace MamontEngine::VkUtil
 
         vkCmdPipelineBarrier2(cmd, &depInfo);
     }
+    void transition_image_aspect(VkCommandBuffer    cmd,
+                                 VkImage            image,
+                                 VkImageLayout      currentLayout,
+                                 VkImageLayout      newLayout,
+                                 VkImageAspectFlags aspectFlags,
+                                 uint32_t           mipLevels,
+                                 uint32_t           layerCount)
+    {
+        if (cmd == VK_NULL_HANDLE || image == VK_NULL_HANDLE)
+            return;
+
+        VkImageMemoryBarrier2 imageBarrier{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2};
+        imageBarrier.pNext = nullptr;
+
+        if (currentLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+        {
+            imageBarrier.srcStageMask  = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+            imageBarrier.srcAccessMask = 0;
+            imageBarrier.dstStageMask  = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+            imageBarrier.dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        }
+        else if (currentLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+        {
+            imageBarrier.srcStageMask  = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+            imageBarrier.srcAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            imageBarrier.dstStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+            imageBarrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
+        }
+        else if (currentLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+        {
+            imageBarrier.srcStageMask  = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+            imageBarrier.srcAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
+            imageBarrier.dstStageMask  = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+            imageBarrier.dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        }
+        else
+        {
+            imageBarrier.srcStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            imageBarrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+            imageBarrier.dstStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            imageBarrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+        }
+
+        imageBarrier.oldLayout = currentLayout;
+        imageBarrier.newLayout = newLayout;
+
+        const VkImageAspectFlags aspectMask = aspectFlags;
+
+        imageBarrier.subresourceRange            = vkinit::image_subresource_range(aspectMask);
+        imageBarrier.subresourceRange.levelCount = mipLevels;
+        imageBarrier.subresourceRange.layerCount = layerCount;
+        imageBarrier.image                       = image;
+
+        const VkDependencyInfo depInfo = {
+                .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO, .pNext = nullptr, .imageMemoryBarrierCount = 1, .pImageMemoryBarriers = &imageBarrier};
+
+        vkCmdPipelineBarrier2(cmd, &depInfo);
+    }
     //< transition
     //> copyimg
     void copy_image_to_image(VkCommandBuffer cmd, VkImage source, VkImage destination, const VkExtent2D &srcSize, const VkExtent2D &dstSize)

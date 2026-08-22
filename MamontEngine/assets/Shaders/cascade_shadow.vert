@@ -9,7 +9,7 @@
 layout (location = 0) out vec2 outUV;
 
 layout (set = 0, binding = 3) uniform UBO {
-	mat4[SHADOW_MAP_CASCADE_COUNT] cascadeViewProjMat;
+	mat4 cascadeViewProjMat[SHADOW_MAP_CASCADE_COUNT];
 } ubo;
 
 void main() {

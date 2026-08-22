@@ -12,10 +12,18 @@
 #include "Panels/SceneSettingsPanel.h"
 #include "Panels/ViewportPanel.h"
 #include "imgui.h"
+#include "Utils/Reflection.h"
+
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
 #include <Panels/FileBrowserPanel.h>
+
+/*IMPLEMENT_REFLECT_OBJECT(MamontEditor::LogPanel)
+{
+
+}
+FINISH_REFLECT()*/
 
 namespace MamontEditor
 {
@@ -68,7 +76,7 @@ namespace MamontEditor
         AddPanel<LogPanel>();
         AddPanel<SceneSettingsPanel>();
         AddPanel<FileBrowserPanel>();
-        // AddPanel<ViewportPanel>();
+        //AddPanel<ViewportPanel>();
 
         AddIconFont();
 
@@ -129,14 +137,30 @@ namespace MamontEditor
         }
 
         DrawMainPanel();
+
+        std::vector<uint32_t> idPanelsDelete;
         
         for (auto &[hash, panel] : m_Panels)
         {
+            if (!panel->IsOpened())
+            {
+                idPanelsDelete.push_back(hash);
+                continue;
+
+            }
+
             panel->GuiRender();
         }
 
+        for (const auto& id : idPanelsDelete)
+        {
+            m_Panels.erase(id);
+        }
+
+
         End();
     }
+    
     void Editor::DrawMainPanel()
     {
         if (ImGui::BeginMainMenuBar())
@@ -151,6 +175,16 @@ namespace MamontEditor
                 if (ImGui::MenuItem("Load"))
                 {
                     GetSceneContext()->Load();
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Windows"))
+            {
+                for (auto& [hash, panel] : m_Panels)
+                {
+                    ImGui::MenuItem(panel->GetName().c_str());
                 }
 
                 ImGui::EndMenu();

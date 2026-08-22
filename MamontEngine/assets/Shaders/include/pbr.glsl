@@ -40,28 +40,27 @@ struct PBRData
   float metallic;
 };
 
-vec3 Uncharted2Tonemap(vec3 color)
-{
-  float A = 0.15;
-  float B = 0.50;
-  float C = 0.10;
-  float D = 0.20;
-  float E = 0.02;
-  float F = 0.30;
-  float W = 11.2;
-  return ((color * (A * color + C * B) + D * E) / (color * (A * color + B) + D * F)) - E / F;
+vec3 gammaCorrect(vec3 color, float gamma) {
+  return pow(color, vec3(1.0 / gamma));
 }
 
-vec3 Tonemap(vec3 color)
-{
-  vec3 uncharted_color = Uncharted2Tonemap(color * EXPOSURE);
-  uncharted_color = uncharted_color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
-  return pow(uncharted_color, vec3(1.0f / GAMMA));
-}
+const mat3 ACESInputMat = mat3(
+    0.59719, 0.07600, 0.02840,
+    0.35458, 0.90834, 0.13383,
+    0.04823, 0.01566, 0.83777
+  );
 
-vec3 Tonemap(vec3 color, float exposure)
-{
-  return vec3(1.0) - exp(-color * exposure);
+const mat3 ACESOutputMat = mat3(
+    1.60475, -0.10208, -0.00327,
+    -0.53108, 1.10813, -0.07276,
+    -0.07367, -0.00605, 1.07602
+  );
+
+vec3 ACESTonemap(vec3 color) {
+  vec3 v = ACESInputMat * color;
+  vec3 a = v * (v + 0.0245786) - 0.000090537;
+  vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
+  return ACESOutputMat * (a / b);
 }
 
 vec3 srgbToLinear(vec3 srgb)
@@ -69,11 +68,10 @@ vec3 srgbToLinear(vec3 srgb)
   return pow(srgb, vec3(GAMMA));
 }
 
-float D_GGX(float dotNH, float roughness, vec3 N, vec3 H)
+float D_GGX(float dotNH, float roughness)
 {
-  const float a = roughness * roughness;
-  const float a2 = a * a;
-  const float denom = (dotNH * dotNH) * (a2 - 1.0) + 1.0;
+  const float a2 = roughness * roughness;
+  const float denom = (dotNH * a2 - dotNH) * dotNH + 1.0;
 
   return a2 / (PI * denom * denom);
 }
@@ -112,50 +110,14 @@ vec3 F_SchlickR(float cosTheta, vec3 F0, float F90)
   return F0 + (F90 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-float F_Schlick(float cosTheta, float F0, float F90)
+float V_SmithGGXCorrelated(float dotNV, float dotNL, float roughness)
 {
-  return F0 + (F90 - F0) * pow(1.0 - cosTheta, 5.0);
-}
-
-float Fd_Burley(PBRData pbrData)
-{
-  const float f90 = 0.5 + 2.0 * pbrData.roughness * pbrData.dotLH;
-  const float lightScatter = F_Schlick(pbrData.dotNL, 1.0, f90);
-  const float viewScatter = F_Schlick(pbrData.dotNV, 1.0, f90);
-
-  return lightScatter * viewScatter * (1.0 / PI);
-}
-
-float V_SmithGGXCorrelated(float dotNV, float dotNL, float alphaRoughness)
-{
-  const float GGXV = dotNL * sqrt(dotNV * dotNV * (1.0 - alphaRoughness) + alphaRoughness);
-  const float GGXL = dotNV * sqrt(dotNL * dotNL * (1.0 - alphaRoughness) + alphaRoughness);
+  const float a2 = roughness * roughness;
+  //const float GGXV = dotNL * sqrt(dotNV * dotNV * (1.0 - a2) + a2);
+  //const float GGXL = dotNV * sqrt(dotNL * dotNL * (1.0 - a2) + a2);
+  const float GGXL = dotNV * sqrt((-dotNL * a2 + dotNL) * dotNL + a2);
+  const float GGXV = dotNL * sqrt((-dotNV * a2 + dotNV) * dotNV + a2);
   return 0.5 / (GGXV + GGXL);
-}
-
-vec3 SpecularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, float metallic, float roughness, const vec3 albedo)
-{
-  vec3 color = vec3(0.0);
-
-  const vec3 H = normalize(V + L);
-  const float dotNH = clamp(dot(N, H), 0.0, 1.0);
-  const float dotNV = clamp(dot(N, V), 0.0, 1.0);
-  const float dotNL = clamp(dot(N, L), 0.0, 1.0);
-
-  const vec3 lightColor = vec3(1.0);
-
-  if (dotNL > 0.0)
-  {
-    const float distribution = D_GGX(dotNH, roughness, N, H);
-    const float geometric = Geometric_SchlickmithGGX(dotNL, dotNV, roughness);
-    const vec3 F = F_Schlick(dotNV, F0);
-
-    const vec3 spec = distribution * F * geometric / (4.0 * dotNL * dotNV + 0.001);
-    const vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);
-    color += (kD * albedo / PI + spec) * dotNL;
-  }
-
-  return color;
 }
 
 vec3 GetIBLContribution(PBRData pbrData, vec3 n, vec3 r, vec3 skyColor, sampler2D samplerBRDFLUT, samplerCube prefilteredMap, samplerCube irradianceMap)
@@ -184,9 +146,11 @@ float MicrofaceDistribution(PBRData pbrData)
   return roughnessSq / (PI * f * f);
 }
 
-float G_SchlickGGX(float NoV, float k)
+float G_SchlickGGX(float dotNV, float roughness)
 {
-  return NoV / (NoV * (1.0 - k) + k);
+  const float r = roughness + 1.0;
+  const float k = (r * r) / 8.0;
+  return dotNV / (dotNV * (1.0 - k) + k);
 }
 float G_Smith(float NoV, float NoL, float roughness)
 {
@@ -195,41 +159,7 @@ float G_Smith(float NoV, float NoL, float roughness)
   return G_SchlickGGX(NoV, k) * G_SchlickGGX(NoL, k);
 }
 
-vec3 BRDF_Specular(PBRData pbrData, vec3 F0)
-{
-  float D = D_GGX(pbrData.dotNH, pbrData.roughness, pbrData.N, pbrData.H);
-  float G = G_Smith(pbrData.dotNV, pbrData.dotNL, pbrData.roughness);
-  vec3 F = F_Schlick(pbrData.dotVH, F0);
-
-  return (D * G * F) / max(4.0 * pbrData.dotNV * pbrData.dotNL, 0.001);
-}
-
-vec3 GetNormal(sampler2D normalMap, vec3 normal, vec2 uv, vec3 position)
-{
-  const vec4 texel = texture(normalMap, uv);
-  vec3 tangentNormal = texel.xyz;
-  if (texel.w > 0.999)
-  {
-    tangentNormal = tangentNormal * 2.0 - 1.0;
-  }
-  else {
-    tangentNormal.xy = texel.xw * 2.0 - 1.0;
-    tangentNormal.z = sqrt(1 - dot(tangentNormal.xy, tangentNormal.xy));
-  }
-
-  const vec3 q1 = dFdx(position);
-  const vec3 q2 = dFdy(position);
-  const vec2 st1 = dFdx(uv);
-  const vec2 st2 = dFdy(uv);
-  const vec3 N = normalize(normal);
-  const vec3 T = normalize(q1 * st2.t - q2 * st1.t);
-  const vec3 B = -normalize(cross(N, T));
-
-  const mat3 TBN = mat3(T, B, N);
-
-  return normalize(TBN * tangentNormal);
-}
-
+/*V_0
 vec3 GetLightContribution(PBRData pbrData, vec3 n, vec3 v, vec3 l, vec3 color)
 {
   const vec3 h = normalize(l + v);
@@ -244,9 +174,52 @@ vec3 GetLightContribution(PBRData pbrData, vec3 n, vec3 v, vec3 l, vec3 color)
   const float D = MicrofaceDistribution(pbrData);
 
   const vec3 diffuseContrib = (1.0 - F) * (pbrData.diffuseColor / PI);
-  const vec3 specularContrib = F * G * D / (4.0 * pbrData.dotNL * pbrData.dotNV);
+  //const vec3 specularContrib = F * G * D / (4.0 * pbrData.dotNL * pbrData.dotNV);
+  const vec3 specularContrib = F * G * D / max(pbrData.dotNL * pbrData.dotNV, 0.01) * 0.25;
 
   const vec3 resultColor = pbrData.dotNL * color * (diffuseContrib + specularContrib);
 
+  return resultColor;
+}*/
+
+vec3 GetLightContribution(PBRData pbrData, vec3 n, vec3 v, vec3 l, vec3 h, vec3 color)
+{
+  float dotNV = abs(dot(n, v));
+  float dotNH = clamp(dot(n, h), 0.0, 1.0);
+  float dotHV = clamp(dot(h, v), 0.0, 1.0);
+  float dotNL = clamp(dot(n, l), 0.0, 1.0);
+
+  const float D = D_GGX(dotNH, pbrData.roughness);
+  const vec3 F = F_Schlick(dotHV, pbrData.F0);
+  const float V = V_SmithGGXCorrelated(dotNV, dotNL, pbrData.roughness);
+
+  vec3 Fr = (D * V) * F;
+  vec3 Fd = pbrData.diffuseColor * (1.0 / PI);
+  const vec3 Frd = Fr + Fd;
+
+  const vec3 result = (color * Frd);
+  return Frd;
+}
+
+vec3 DirectionLight(PBRData data, vec3 viewDirection, vec3 lightDirection, vec3 color)
+{
+  const vec3 H = normalize(viewDirection + lightDirection);
+  const vec3 F = F_Schlick(max(dot(H, viewDirection), 0.0), data.F0);
+
+  const float NV = max(dot(data.N, viewDirection), 0.0);
+  const float NL = max(dot(data.N, lightDirection), 0.0);
+
+  const float D = D_GGX(data.dotNH, data.roughness);
+  const float G = G_SchlickGGX(NV, data.roughness) * G_SchlickGGX(NL, data.roughness);
+
+  const vec3 specular = D * G * F / max(NV * NL, 0.01) * 0.25;
+
+  const vec3 kS = F;
+  vec3 kD = vec3(1.0) - kS;
+  kD *= 1.0 - data.metallic;
+
+  const vec3 diffuse = kD * data.albedo / PI;
+
+  const vec3 resultColor = (diffuse + specular) * color * NL;
   return resultColor;
 }

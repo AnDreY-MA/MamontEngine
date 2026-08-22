@@ -15,7 +15,7 @@ namespace MamontEngine
                                    std::span<const VkDescriptorSetLayout> inDescriptorLayouts,
                                    const std::pair<VkFormat, VkFormat>   inImageFormats)
     {
-        const std::string meshPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/mesh.frag.spv";
+        const std::string meshPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/mesh_frag.spv";
 
         VkShaderModule meshFragShader;
         if (!VkPipelines::LoadShaderModule(meshPath.c_str(), inDevice, &meshFragShader))
@@ -23,7 +23,7 @@ namespace MamontEngine
             fmt::println("Error when building the triangle fragment shader module");
         }
 
-        const std::string meshVertexShaderPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/mesh.vert.spv";
+        const std::string meshVertexShaderPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/mesh_vert.spv";
         VkShaderModule    meshVertexShader;
         if (!VkPipelines::LoadShaderModule(meshVertexShaderPath.c_str(), inDevice, &meshVertexShader))
         {
@@ -42,6 +42,10 @@ namespace MamontEngine
         VkPipelineLayout newLayout;
         VK_CHECK(vkCreatePipelineLayout(inDevice, &mesh_layout_info, nullptr, &newLayout));
 
+        VkPipelineCacheCreateInfo pipelineCacheInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
+        VkPipelineCache pipelineCache{VK_NULL_HANDLE};
+        VK_CHECK(vkCreatePipelineCache(inDevice, &pipelineCacheInfo, nullptr, &pipelineCache));
+
         const std::vector<VkVertexInputBindingDescription>  vertexInputBindings{};
         const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes{};
         const VkPipelineVertexInputStateCreateInfo vertexInputInfo =
@@ -59,9 +63,10 @@ namespace MamontEngine
         pipelineBuilder.SetColorAttachmentFormat(inImageFormats.first);
         pipelineBuilder.SetDepthFormat(inImageFormats.second);
         pipelineBuilder.SetLayout(newLayout);
+        pipelineBuilder.SetCache(pipelineCache);
 
         const VkPipeline opaquePipeline = pipelineBuilder.BuildPipline(inDevice);
-        OpaquePipeline            = std::make_unique<PipelineData>(opaquePipeline, newLayout);
+        OpaquePipeline            = std::make_unique<PipelineData>(opaquePipeline, newLayout, pipelineCache);
 
         std::cerr << "OpaquePipeline->Pipeline: " << OpaquePipeline->Pipeline << std::endl;
         std::cerr << "OpaquePipeline->Pipeline, newLayout: " << newLayout << std::endl;
@@ -74,7 +79,7 @@ namespace MamontEngine
             pipelineBuilder.SetLayout(transparentLayout);
             pipelineBuilder.EnableBlendingAdditive();
 
-            TransparentPipeline = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), transparentLayout);
+            TransparentPipeline = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), transparentLayout, pipelineCache);
             std::cerr << "TransparentPipeline->Pipeline: " << TransparentPipeline->Pipeline << std::endl;
             std::cerr << "TransparentPipeline->Pipeline, layout: " << TransparentPipeline->Layout << std::endl;
         }

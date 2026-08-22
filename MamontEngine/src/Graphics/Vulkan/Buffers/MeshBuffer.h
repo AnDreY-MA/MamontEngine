@@ -10,7 +10,6 @@ namespace MamontEngine
     {
         AllocatedBuffer IndexBuffer;
         AllocatedBuffer VertexBuffer;
-        VkDeviceAddress VertexBufferAddress{0};
         
         void Create(std::span<uint32_t> inIndices, std::span<Vertex> inVertices);
     };

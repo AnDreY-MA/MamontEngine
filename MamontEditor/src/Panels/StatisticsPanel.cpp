@@ -22,6 +22,15 @@ namespace MamontEditor
 
             m_IsHovered = ImGui::IsWindowHovered();
 
+            if (ImGui::BeginChild("Lighting"))
+            {
+                const auto &lightData = MamontEngine::MEngine::Get().GetSceneRenderer()->GetLightData();
+                ImGui::Text("Directional Light: %d", lightData.HasDirectionLight);
+                ImGui::Text("Point Light count: %i", lightData.PointLightingCount);
+
+            }
+            ImGui::EndChild();
+
             OnEnd();
         }
     }

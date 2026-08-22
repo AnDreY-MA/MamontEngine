@@ -18,6 +18,7 @@
 #include "Core/Log.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Pass/DirectLightPass.h"
+#include "Graphics/Pass/PointLightPass.h"
 #include "Core/JobSystem.h"
 #include "Graphics/DebugRenderer.h"
 // #define VMA_IMPLEMENTATION
@@ -32,12 +33,14 @@ namespace MamontEngine
     {
         InitPipelines();
 
-        m_DirectLightPass = std::make_unique<DirectLightPass>(m_DeviceContext.CascadeDepthImage.ImageFormat, m_DeviceContext.CascadeDepthImage.Image);
-
         const std::array<VkDescriptorSetLayout, 2> layouts = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
+
+        m_DirectLightPass = std::make_unique<DirectLightPass>(m_DeviceContext.CascadeDepthImage.ImageFormat, m_DeviceContext.CascadeDepthImage.Image);
         m_DirectLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
 
-        
+        m_PointLightPass = std::make_unique<PointLightPass>(m_DeviceContext.PointLightShadowMaps);
+        m_PointLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
+        m_PointLightPass->CreateImage();
     }
 
     Renderer::~Renderer()
@@ -59,7 +62,7 @@ namespace MamontEngine
             DrawContext skyboxContext;
             m_Skybox->Draw(skyboxContext);
             const RenderObject &object = skyboxContext.OpaqueSurfaces[0];
-            vertexAddress = object.MeshBuffer.VertexBufferAddress;
+            vertexAddress              = object.MeshBuffer.VertexBuffer.Address;
         }
 
         m_DeviceContext.CreatePrefilteredCubeTexture(vertexAddress, [&](VkCommandBuffer cmd) {
@@ -250,6 +253,17 @@ namespace MamontEngine
         RenderCascadeShadow(inCmd);
 
         {
+            const auto& lightData = m_SceneRenderer->GetLightData();
+            if (lightData.PointLightingCount > 0)
+            {
+                m_PointLightPass->Render(inCmd,
+                                         m_DeviceContext.GetCurrentFrame().GlobalDescriptor,
+                                         m_SceneRenderer->GetDrawContext(),
+                                         m_SceneRenderer->GetGPUSceneData().Viewproj);
+            }
+        }
+
+        {
             const auto start = std::chrono::high_resolution_clock::now();
 
             DrawGeometry(inCmd);
@@ -265,8 +279,6 @@ namespace MamontEngine
     {
         const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
         PROFILE_VK_ZONE(currentFrame.TracyContext, inCmd, "Draw Geometry");
-
-        const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
 
         const VkExtent2D &extent = m_Window->GetExtent();
 
@@ -346,7 +358,7 @@ namespace MamontEngine
 
         const GPUDrawPushConstants push_constants{
                 .WorldMatrix = glm::mat4(1.f), 
-                .VertexBuffer = object.MeshBuffer.VertexBufferAddress,
+                .VertexBuffer = object.MeshBuffer.VertexBuffer.Address,
         };
 
         constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
@@ -388,6 +400,12 @@ namespace MamontEngine
 
         const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
 
+        // Scene Buffer
+        {
+            const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
+            currentFrame.SceneDataBuffer.Copy(&sceneData);
+        }
+
         // Cascade Matrix Buffer
         {
             std::array<glm::mat4, CASCADECOUNT> cascadeViewProjMatrices{};
@@ -397,25 +415,21 @@ namespace MamontEngine
             }
             currentFrame.CascadeMatrixBuffer.Copy(cascadeViewProjMatrices.data());
         }
-
-        // Scene Buffer
-        {
-            const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
-            currentFrame.SceneDataBuffer.Copy(&sceneData);
-        }
+        
 
         // Cascade Data Buffer
         {
-            const CascadeData &cascadeData = m_SceneRenderer->GetCascadeData();
-            currentFrame.CascadeDataBuffer.Copy(&cascadeData);
+            const LightData &lightData = m_SceneRenderer->GetLightData();
+            currentFrame.LightDataBuffer.Copy(&lightData);
         }
 
     }
 
     void Renderer::UpdateSceneRenderer(float inDeltaTime)
     {
-        m_DirectLightPass->UpdateCascade(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetGPUSceneData().LightDirection);
+        m_DirectLightPass->UpdateCascade(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData().LightDirection);
         m_SceneRenderer->Update(m_Window->GetExtent(), m_DirectLightPass->GetCascades(), inDeltaTime);
+        m_PointLightPass->UpdateLights(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData());
     }
 
     void Renderer::DestroyPipelines()

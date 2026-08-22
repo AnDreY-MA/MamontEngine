@@ -3,8 +3,8 @@
 
 namespace MamontEngine
 {
-    PipelineData::PipelineData(VkPipeline inPipeline, VkPipelineLayout inLayout)
-        : Pipeline(inPipeline), Layout(inLayout)
+    PipelineData::PipelineData(VkPipeline inPipeline, VkPipelineLayout inLayout, VkPipelineCache inCache)
+        : Pipeline(inPipeline), Layout(inLayout), Cache(inCache)
     {
 
     }
@@ -15,5 +15,10 @@ namespace MamontEngine
 
         vkDestroyPipelineLayout(device, Layout, nullptr);
         vkDestroyPipeline(device, Pipeline, nullptr);
+        
+        if (Cache != VK_NULL_HANDLE)
+        {
+            vkDestroyPipelineCache(device, Cache, nullptr);
+        }
     }
 }

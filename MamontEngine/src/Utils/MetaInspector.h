@@ -74,8 +74,10 @@ namespace MetaInspectors
                 active = name;
             }
         }
+        ImGui::Text(name);
+        ImGui::SameLine();
 
-        if (!ImGui::BeginCombo(name, active.c_str()))
+        if (!ImGui::BeginCombo(("##" + std::string(name)).c_str(), active.c_str()))
             return;
 
         for (int i = 0; i < amount; ++i)
@@ -105,7 +107,9 @@ namespace MetaInspectors
     template <>
     inline void MetaInspect<Color>(const std::string &name, Color &value, const entt::meta_data &meta)
     {
-        ImGui::ColorEdit4(name.c_str(), value.Data());
+        ImGui::Text(name.c_str());
+        ImGui::SameLine();
+        ImGui::ColorEdit4(("##" + name).c_str(), value.Data());
     }
 
     template <>
@@ -117,12 +121,12 @@ namespace MetaInspectors
     template <>
     inline void MetaInspect<HeroPhysics::Rigidbody>(const std::string &name, HeroPhysics::Rigidbody &value, const entt::meta_data &meta)
     {
-        const char* motionTypeName = "MotionType";
+        /*const char* motionTypeName = "MotionType";
 
         if (ImGui::BeginCombo(motionTypeName, "r"))
         {
 
-        }
+        }*/
     }
 }
 

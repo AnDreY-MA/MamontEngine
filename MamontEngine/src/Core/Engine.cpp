@@ -30,8 +30,6 @@ namespace MamontEngine
         loadedEngine = this;
         m_Log        = std::make_unique<Log>();
 
-        m_LastTickTime = std::chrono::steady_clock::now();
-
         JobSystem::Init(3);
 
         m_Window = std::make_shared<WindowCore>();
@@ -80,12 +78,7 @@ namespace MamontEngine
 
         while (!bQuit)
         {
-            //const float deltaTime = ImGui::GetIO().DeltaTime;
-           /* const std::chrono::steady_clock::time_point timePoint = std::chrono::steady_clock::now();
-            const std::chrono::duration<float>          timeSpan  = std::chrono::duration_cast<std::chrono::duration<float>>(timePoint - m_LastTickTime);
-            m_DeltaTime                                           = timeSpan.count();
-            m_LastTickTime                                        = timePoint;*/
-            const float deltaTime                                 = ImGui::GetIO().DeltaTime;
+            const auto deltaTime = ImGui::GetIO().DeltaTime;
 
             //Log::Info("Custom: {}. \n ImGui: {}", m_DeltaTime, deltaTime);
 
@@ -175,6 +168,24 @@ namespace MamontEngine
         m_MainCamera->Update(inDeltaTime);
         m_Scene->Update(inDeltaTime);
         m_Renderer->UpdateSceneRenderer(inDeltaTime);
+    }
+
+    std::chrono::milliseconds MEngine::CalculateDeltaTimeMs()
+    {
+        const uint64_t currentTime =
+                static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
+
+        if (m_LastFrameTime == 0)
+        {
+            m_LastFrameTime = currentTime;
+            return std::chrono::milliseconds(16);
+        }
+
+        const uint64_t delta = currentTime - m_LastFrameTime;
+
+        m_LastFrameTime = currentTime;
+
+        return std::chrono::milliseconds(static_cast<long long>(delta));
     }
 
     void MEngine::InitImgui()

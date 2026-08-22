@@ -18,14 +18,17 @@ namespace MamontEditor
             return false;
         }
 
+        inline const std::string &GetName() const { return m_Name; }
+
+        inline bool IsOpened() const { return m_IsOpened; }
+
     protected:
         bool OnBegin(int32_t inWindowFlags = 0);
         void OnEnd() const;
 
-
 	protected:
         std::string m_Name;
-        bool        isVisible{true};
+        bool        m_IsOpened{true};
         bool        m_IsHovered;
 	};
 }

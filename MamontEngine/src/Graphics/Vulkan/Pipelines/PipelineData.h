@@ -4,11 +4,12 @@ namespace MamontEngine
 {
     struct PipelineData : public NonCopyable
     {
-        PipelineData(VkPipeline inPipeline, VkPipelineLayout inLayout);
+        PipelineData(VkPipeline inPipeline, VkPipelineLayout inLayout, VkPipelineCache inCache = VK_NULL_HANDLE);
         ~PipelineData();
 
         VkPipeline       Pipeline{VK_NULL_HANDLE};
         VkPipelineLayout Layout{VK_NULL_HANDLE};
+        VkPipelineCache  Cache{VK_NULL_HANDLE};
 
         bool operator==(const PipelineData& other) const
         {

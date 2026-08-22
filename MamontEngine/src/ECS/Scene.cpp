@@ -6,6 +6,7 @@
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/DirectionLightComponent.h"
+#include "ECS/Components/PointLightComponent.h"
 #include "Graphics/Resources/Models/Mesh.h"
 #include "Graphics/Resources/Models/Model.h"
 #include "Core/ContextDevice.h"
@@ -26,6 +27,7 @@
 #include "Physics/Collision/BoxCollision.h"
 #include "Physics/Collision/SphereCollision.h"
 #include "Physics/Body/Rigidbody.h"
+#include "Physics/PhysicsSystem.h"
 #include "Core/Engine.h"
 
 META_INIT(void) 
@@ -183,6 +185,9 @@ namespace MamontEngine
     void Scene::StartScene()
     {
         auto viewRigidbodies = m_Registry.view<TransformComponent, RigidbodyComponent>();
+        int  count           = 0;
+        auto lightType       = entt::resolve<LightComponent>();
+        ;
         
         for (auto&& [entity, transform, rigidbody] : viewRigidbodies.each())
         {
@@ -196,14 +201,47 @@ namespace MamontEngine
             {
                 auto collisionPtr = std::make_shared<HeroPhysics::BoxCollision>(*collision);
                 rigidbody.Rigidbody->SetCollisionShape(std::move(collisionPtr));
+                count++;
+                Log::Info("Box Collision count: {}", count);
             }
-            else if (auto collision = m_Registry.try_get<HeroPhysics::SphereCollision>(entity); collision)
+            if (auto collision = m_Registry.try_get<HeroPhysics::SphereCollision>(entity); collision)
             {
                 auto collisionPtr = std::make_shared<HeroPhysics::SphereCollision>(*collision);
                 rigidbody.Rigidbody->SetCollisionShape(std::move(collisionPtr));
             }
+            if (auto *storage = m_Registry.storage(lightType.info().hash()))
+            {
+                Log::Info("Success0");
+
+                if (storage->contains(entity))
+                {
+                    Log::Info("Success");
+                    void *componentPtr = storage->value(entity);
+                }
+            }
+        }
+
+        
+
+        auto lightsView = m_Registry.view<LightComponent>();
+        for (auto&& [entity, light] : lightsView.each())
+        {
 
         }
+        int countLights = 0;
+        if (auto *storage = m_Registry.storage(lightType.id()))
+        {
+            /*if (storage->contains(entity))
+            {
+                
+            }*/
+
+            //void          *value     = storage->value(entity);
+            //entt::meta_any component = lightType.from_void(value);
+            countLights++;
+        }
+        Log::Info("Lights count: {}", countLights);
+
 
         const auto scriptView = m_Registry.view<ScriptComponent>();
         for (auto&& [entity, scriptComponent] : scriptView.each())
