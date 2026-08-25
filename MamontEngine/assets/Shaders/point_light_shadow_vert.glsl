@@ -1,9 +1,8 @@
 #version 460
 
 #extension GL_GOOGLE_include_directive : require
-#extension GL_EXT_debug_printf : enable
+#extension GL_NV_viewport_array2 : enable
 
-//#include "include/vertex_data.glsl"
 #include "include/Light.glsl"
 #include "include/PointShadowMap.glsl"
 
@@ -19,5 +18,6 @@ void main()
 
   outPos = worldPosition;
 
+  gl_Layer = gl_InstanceIndex;
   gl_Position = PointLightConstants.LightBuffer.viewProj[PointLightConstants.BufferIndex] * worldPosition;
 }

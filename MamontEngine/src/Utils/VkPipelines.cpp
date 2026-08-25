@@ -237,7 +237,6 @@ namespace MamontEngine::VkPipelines
         }
         else
         {
-            fmt::println("----SUCCESS PIPELINE-----");
             std::cerr << "PIPELINE: " << newPipeline << std::endl;
 
             return newPipeline;

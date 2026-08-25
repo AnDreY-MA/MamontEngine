@@ -192,7 +192,6 @@ namespace MamontEngine
     void DescriptorWriter::WriteImageArray(int inBinding, const std::vector<VkDescriptorImageInfo> &imageInfos, VkDescriptorType type)
     {
         size_t offset = ImageInfos.size();
-        //ImageInfos.insert(ImageInfos.end(), imageInfos.begin(), imageInfos.end());
 
         VkWriteDescriptorSet write{};
         write.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

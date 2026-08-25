@@ -13,17 +13,10 @@ namespace MamontEngine
 
         virtual void Render(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, const DrawContext &inDrawContext, const glm::mat4 &viewproj) override;
 
-        void CreateImage();
         void CreatePipeline(std::span<const VkDescriptorSetLayout> inDescriptorLaouts, VkFormat inImageFormat);
 
-        void CreateDescriptors();
-        
         void UpdateLights(const Camera* inCamera, const LightData& inLightData);
 
-     /*   const std::array<glm::mat4, MAX_POINT_LIGHT * SHADOW_FACE_NUM>& GetFaceViewProjs() const
-        {
-            return m_ShadowFaceCubes;
-        }*/
 
     private:
         std::array<glm::mat4, MAX_POINT_LIGHT * SHADOW_FACE_NUM>   m_ShadowFaceCubes{};

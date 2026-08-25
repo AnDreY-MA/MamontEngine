@@ -125,6 +125,5 @@ namespace MamontEngine
         m_AspectRatio = (float)inWindowExtent.width / (float)inWindowExtent.height;
         m_Projection  = glm::perspective(glm::radians(m_FOV), m_AspectRatio, m_NearClip, m_FarClip);
         m_Projection[1][1] *= -1;
-
     }
 } // namespace MamontEngine

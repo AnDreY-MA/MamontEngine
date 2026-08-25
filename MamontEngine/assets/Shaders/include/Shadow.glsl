@@ -1,4 +1,5 @@
-#define SHADOW_MAP_CASCADE_COUNT 4
+#define SHADOW_MAP_CASCADE_COUNT 3
+#define SHADOW_OPACITY 0.5
 
 float textureProj(sampler2DArray shadowMap, vec4 shadowCoord, vec2 offset, uint cascadeIndex)
 {
@@ -49,16 +50,20 @@ uint GetCascadeIndex(vec3 viewPos, vec3 cascadeSplits)
   return cascadeIndex;
 }
 
-float calculatePointShadow(vec3 pos, vec3 lightPos, float NoL, samplerCube shadowMap, float farPlane)
+float GetPointShadowDepth(vec3 fragPos, vec3 lightPos, float lightNearPlane, float lightFarPlane)
 {
-  vec3 fragToLight = pos - lightPos;
-  fragToLight.z = -fragToLight.z;
-  const float currentDepth = length(fragToLight);
-  const float bias = max(0.05 * (1.0 - NoL), 0.05);
+    const float distanceToLight = length(fragPos - lightPos);
 
-  float closestDepth = texture(shadowMap, fragToLight).r;
-  closestDepth *= farPlane;
+    return (distanceToLight - lightNearPlane) / (lightFarPlane - lightNearPlane);
+}
 
-  const float result = currentDepth - bias > closestDepth ? 0.0 : 1.0;
-  return result;
+float calculatePointShadow(vec3 fragPos, vec3 lightPos, float dotNL, samplerCubeShadow shadowMap, float radius)
+{
+  vec3 fragToLight = fragPos - lightPos;
+  const float sampledDist = texture(shadowMap, fragToLight).r;
+  const float dist = length(fragToLight);
+
+  const float shadow = (dist <= sampledDist + 0.15) ? 1.0 : SHADOW_OPACITY;
+  
+  return shadow;
 }

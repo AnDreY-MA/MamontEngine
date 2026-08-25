@@ -60,6 +60,7 @@ namespace MamontEngine
         void DrawGeometry(VkCommandBuffer inCmd);
         void DrawSkybox(VkCommandBuffer inCmd);
 
+        void RenderShadows(VkCommandBuffer inCmd);
         void RenderCascadeShadow(VkCommandBuffer inCmd);
 
         void SetViewportScissor(VkCommandBuffer cmd, const VkExtent2D &inExtent) const;

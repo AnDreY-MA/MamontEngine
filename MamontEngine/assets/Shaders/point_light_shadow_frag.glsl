@@ -16,6 +16,7 @@ void main()
     discard;
   }
 
-  PointLight light = lightData.PointLights[PointLightConstants.LightIndex];
-  gl_FragDepth = length(inPos.xyz - light.Position) / light.Radius;
+  const PointLight light = lightData.PointLights[PointLightConstants.LightIndex];
+  const float distanceToLight = length(inPos.xyz - light.Position);
+  gl_FragDepth = distanceToLight / light.Radius;
 }

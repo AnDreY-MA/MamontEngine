@@ -43,8 +43,8 @@ namespace MamontEngine
         VK_CHECK(vkCreatePipelineLayout(inDevice, &mesh_layout_info, nullptr, &newLayout));
 
         VkPipelineCacheCreateInfo pipelineCacheInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
-        VkPipelineCache pipelineCache{VK_NULL_HANDLE};
-        VK_CHECK(vkCreatePipelineCache(inDevice, &pipelineCacheInfo, nullptr, &pipelineCache));
+        VkPipelineCache opacPipelineCache{VK_NULL_HANDLE};
+        VK_CHECK(vkCreatePipelineCache(inDevice, &pipelineCacheInfo, nullptr, &opacPipelineCache));
 
         const std::vector<VkVertexInputBindingDescription>  vertexInputBindings{};
         const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes{};
@@ -63,10 +63,10 @@ namespace MamontEngine
         pipelineBuilder.SetColorAttachmentFormat(inImageFormats.first);
         pipelineBuilder.SetDepthFormat(inImageFormats.second);
         pipelineBuilder.SetLayout(newLayout);
-        pipelineBuilder.SetCache(pipelineCache);
+        pipelineBuilder.SetCache(opacPipelineCache);
 
         const VkPipeline opaquePipeline = pipelineBuilder.BuildPipline(inDevice);
-        OpaquePipeline            = std::make_unique<PipelineData>(opaquePipeline, newLayout, pipelineCache);
+        OpaquePipeline                  = std::make_unique<PipelineData>(opaquePipeline, newLayout, opacPipelineCache);
 
         std::cerr << "OpaquePipeline->Pipeline: " << OpaquePipeline->Pipeline << std::endl;
         std::cerr << "OpaquePipeline->Pipeline, newLayout: " << newLayout << std::endl;
@@ -74,12 +74,15 @@ namespace MamontEngine
 
         //Transparent
         {
+            VkPipelineCache transPipelineCache{VK_NULL_HANDLE};
+            VK_CHECK(vkCreatePipelineCache(inDevice, &pipelineCacheInfo, nullptr, &transPipelineCache));
             VkPipelineLayout transparentLayout;
             VK_CHECK(vkCreatePipelineLayout(inDevice, &mesh_layout_info, nullptr, &transparentLayout));
             pipelineBuilder.SetLayout(transparentLayout);
             pipelineBuilder.EnableBlendingAdditive();
+            pipelineBuilder.SetCache(transPipelineCache);
 
-            TransparentPipeline = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), transparentLayout, pipelineCache);
+            TransparentPipeline = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), transparentLayout, transPipelineCache);
             std::cerr << "TransparentPipeline->Pipeline: " << TransparentPipeline->Pipeline << std::endl;
             std::cerr << "TransparentPipeline->Pipeline, layout: " << TransparentPipeline->Layout << std::endl;
         }
@@ -115,10 +118,14 @@ namespace MamontEngine
             std::cerr << "skyboxFragShader: " << skyboxFragShader << "\n";
             std::cerr << "skyboxVertexShader: " << skyboxVertexShader << "\n";
 
+            VkPipelineCache skyPipelineCache{VK_NULL_HANDLE};
+            VK_CHECK(vkCreatePipelineCache(inDevice, &pipelineCacheInfo, nullptr, &skyPipelineCache));
+
             pipelineBuilder.SetShaders(skyboxVertexShader, skyboxFragShader);
             pipelineBuilder.SetCullMode(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
             pipelineBuilder.EnableDepthTest(VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL);
             pipelineBuilder.DisableBlending();
+            pipelineBuilder.SetCache(skyPipelineCache);
 
             SkyboxPipline = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), skyboxLayout);
 

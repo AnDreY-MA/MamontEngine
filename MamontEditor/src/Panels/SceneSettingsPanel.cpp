@@ -19,6 +19,7 @@ namespace MamontEditor
         {
             if (ImGui::Button("Reload Shader"))
             {
+                MamontEngine::MEngine::Get().GetRenderer()->InitPipelines();
             }
 
             bool isDrawBounds = MamontEngine::MEngine::Get().GetSceneRenderer()->IsDrawCollisionBounds();

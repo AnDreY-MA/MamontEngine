@@ -40,7 +40,6 @@ namespace MamontEngine
 
         m_PointLightPass = std::make_unique<PointLightPass>(m_DeviceContext.PointLightShadowMaps);
         m_PointLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
-        m_PointLightPass->CreateImage();
     }
 
     Renderer::~Renderer()
@@ -95,9 +94,11 @@ namespace MamontEngine
 
         const std::array<VkDescriptorSetLayout, 2> layouts{m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
 
+        if (m_RenderPipeline)
+        {
+            m_RenderPipeline.reset();
+        }
         m_RenderPipeline = std::make_shared<RenderPipeline>(device, layouts, inImageFormats);
-
-        m_DeviceContext.RenderPipeline = m_RenderPipeline;
 
         InitPickPipepline();
 
@@ -250,18 +251,7 @@ namespace MamontEngine
     {
         PROFILE_VK_ZONE(m_DeviceContext.GetCurrentFrame().TracyContext, inCmd, "Draw Main");
 
-        RenderCascadeShadow(inCmd);
-
-        {
-            const auto& lightData = m_SceneRenderer->GetLightData();
-            if (lightData.PointLightingCount > 0)
-            {
-                m_PointLightPass->Render(inCmd,
-                                         m_DeviceContext.GetCurrentFrame().GlobalDescriptor,
-                                         m_SceneRenderer->GetDrawContext(),
-                                         m_SceneRenderer->GetGPUSceneData().Viewproj);
-            }
-        }
+        RenderShadows(inCmd);
 
         {
             const auto start = std::chrono::high_resolution_clock::now();
@@ -320,6 +310,19 @@ namespace MamontEngine
 
         vkCmdSetViewport(cmd, 0, 1, &viewport);
         vkCmdSetScissor(cmd, 0, 1, &scissor);
+    }
+
+    void Renderer::RenderShadows(VkCommandBuffer inCmd)
+    {
+        RenderCascadeShadow(inCmd);
+
+        const auto &lightData = m_SceneRenderer->GetLightData();
+        if (lightData.PointLightingCount > 0)
+        {
+            m_PointLightPass->Render(
+                    inCmd, m_DeviceContext.GetCurrentFrame().GlobalDescriptor, m_SceneRenderer->GetDrawContext(), m_SceneRenderer->GetGPUSceneData().Viewproj);
+        }
+
     }
 
     void Renderer::RenderCascadeShadow(VkCommandBuffer inCmd)
@@ -434,7 +437,6 @@ namespace MamontEngine
 
     void Renderer::DestroyPipelines()
     {
-        m_DeviceContext.RenderPipeline.reset();
         m_RenderPipeline.reset();
         m_PickingPipeline.reset();
     }

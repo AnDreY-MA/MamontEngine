@@ -546,6 +546,7 @@ namespace MamontEngine
 
             std::vector<VkDescriptorImageInfo> pointInfos;
             pointInfos.reserve(MAX_POINT_LIGHT);
+
             for (const auto &shadowMap : PointLightShadowMaps)
             {
                 VkDescriptorImageInfo info{};
@@ -554,30 +555,7 @@ namespace MamontEngine
                 info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 pointInfos.push_back(info);
             }
-
-            if (pointInfos.empty())
-            {
-                // Если нет ни одной текстуры, создаём "заглушку"
-                VkDescriptorImageInfo stub{};
-                stub.sampler     = VK_NULL_HANDLE;
-                stub.imageView   = VK_NULL_HANDLE;
-                stub.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                pointInfos.assign(MAX_POINT_LIGHT, stub);
-            }
-           /* else
-            {
-                while (pointInfos.size() < MAX_POINT_LIGHT)
-                {
-                    pointInfos.push_back(pointInfos.front());
-                }
-            }*/
             writer.WriteImageArray(8, pointInfos, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-           /* writer.WriteImage(9,
-                              PointDepthImage.ImageView,
-                              PointDepthImage.Sampler,
-                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);*/
 
             writer.UpdateSet(device, globalDescriptor);
 
@@ -719,17 +697,17 @@ namespace MamontEngine
 
         std::cerr << "Start Creating Point Image" << std::endl;
         // Create Point Shadow Image
-        PointShadowMapImageViews.resize(6 * MAX_POINT_LIGHT);
+        PointShadowMapImageViews.resize(SHADOW_FACE_NUM * MAX_POINT_LIGHT);
         uint32_t j = 0;
+        const VkFormat pointDepthFormat = Utils::FindDepthFormat(PhysicalDevice::GetDevice());
+        constexpr VkExtent3D shadowImageExtent{SHADOW_MAP_FACE_IMAGE_SIZE, SHADOW_MAP_FACE_IMAGE_SIZE, 1};
+
         for (auto& shadowMap : PointLightShadowMaps)
         {
-            const VkFormat       pointDepthFormat = Utils::FindDepthFormat(PhysicalDevice::GetDevice());
-            constexpr VkExtent3D shadowImageExtent{shadowMapFaceImageSize, shadowMapFaceImageSize, 1};
-
             auto imageInfo = vkinit::image_create_info(pointDepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, shadowImageExtent);
 
             imageInfo.mipLevels   = 1;
-            imageInfo.arrayLayers = 6 * MAX_POINT_LIGHT;
+            imageInfo.arrayLayers = SHADOW_FACE_NUM * MAX_POINT_LIGHT;
             imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
             imageInfo.flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
             imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -769,7 +747,7 @@ namespace MamontEngine
                                 },
                 };
 
-                VK_CHECK(vkCreateImageView(device, &viewCreateInfo, nullptr, &PointShadowMapImageViews[i + j * 6]));
+                VK_CHECK(vkCreateImageView(device, &viewCreateInfo, nullptr, &PointShadowMapImageViews[i + j * SHADOW_FACE_NUM])); /*[i + j * 6]*/
             }
 
             VkSamplerCreateInfo samplerInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr};
@@ -782,11 +760,11 @@ namespace MamontEngine
             samplerInfo.mipLodBias    = 0.0f;
             samplerInfo.maxAnisotropy = 1.0f;
             samplerInfo.minLod        = 0.0f;
-            samplerInfo.maxLod        = 1.0f;
+            samplerInfo.maxLod        = 0.0f;
             samplerInfo.compareEnable = VK_TRUE;
             samplerInfo.compareOp     = VK_COMPARE_OP_LESS_OR_EQUAL;
             //samplerInfo.compareOp     = VK_COMPARE_OP_NEVER;
-            samplerInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            //samplerInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
             VK_CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &shadowMap.Sampler));
             std::cerr << "Point Image: " << shadowMap.Image << std::endl;
@@ -838,10 +816,18 @@ namespace MamontEngine
         }
         CascadeDepthImage.Destroy();
 
+        const auto &device = LogicalDevice::GetDevice();
+
+        for (auto &imageview : PointShadowMapImageViews)
+        {
+            vkDestroyImageView(device, imageview, nullptr);
+        }
+
         for (auto& shadowMap : PointLightShadowMaps)
         {
             shadowMap.Destroy();
         }
+        
     }
 
     FrameData &VkContextDevice::GetCurrentFrame()

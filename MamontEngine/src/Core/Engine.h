@@ -59,6 +59,11 @@ namespace MamontEngine
             return m_Renderer->GetSceneRenderer();
         }
 
+        Renderer* GetRenderer() const
+        {
+            return m_Renderer.get();
+        }
+
         const WindowCore* GetMainWindow() const
         {
             return m_Window.get();

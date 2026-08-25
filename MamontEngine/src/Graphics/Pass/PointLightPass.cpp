@@ -69,21 +69,11 @@ namespace MamontEngine
         float _pad1;
     };
 
-    static_assert(sizeof(PointShadowConstants) == 96, "LightData size must be 512 bytes");
-
     PointLightPass::PointLightPass(std::array<Texture, MAX_POINT_LIGHT> &inShadowCubeImages) 
         : shadowCubeImages(inShadowCubeImages)
     {
         const VkDevice &device = LogicalDevice::GetDevice();
-        /*auto imageViewInfo       = vkinit::imageviewCreateInfo(VK_FORMAT_D32_SFLOAT, inShadowCubeImage, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1, VK_IMAGE_VIEW_TYPE_2D);
-        imageViewInfo.components      = {VK_COMPONENT_SWIZZLE_R};
-        imageViewInfo.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
 
-        for (uint32_t i = 0; i < 6; ++i)
-        {
-            imageViewInfo.subresourceRange.baseArrayLayer = 1;
-            VK_CHECK(vkCreateImageView(device, &imageViewInfo, nullptr, &m_CubeMapFaceImageView[i]));
-        }*/
         m_Buffer.Create(sizeof(ShadowCube) * SHADOW_FACE_NUM * MAX_POINT_LIGHT,
                         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                         VMA_MEMORY_USAGE_GPU_ONLY);
@@ -130,8 +120,6 @@ namespace MamontEngine
                     .LightIndex = lightCount
             };
 
-            Log::Info("Object position: {}", pushConstants.BufferIndex);
-
             constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(PointShadowConstants))};
             vkCmdPushConstants(cmd, m_Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &pushConstants);
 
@@ -148,8 +136,6 @@ namespace MamontEngine
             for (uint32_t i = 0; i < SHADOW_FACE_NUM; ++i)
             {
                 VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(contextDevice.PointShadowMapImageViews[i + l * SHADOW_FACE_NUM]);
-                //(contextDevice.PointShadowMapImageViews[i + l * SHADOW_FACE_NUM]);
-                //(contextDevice.PointShadowMapImageViews[i + l * SHADOW_FACE_NUM]);
                 depthAttachment.clearValue.depthStencil   = {1.f, 0};
                 depthAttachment.loadOp                    = VK_ATTACHMENT_LOAD_OP_CLEAR;
                 depthAttachment.storeOp                   = VK_ATTACHMENT_STORE_OP_STORE;
@@ -175,11 +161,10 @@ namespace MamontEngine
 
                 for (const auto &object : inDrawContext.OpaqueSurfaces)
                 {
-                      /*if (IsVisible(object.Bound, object.Transform, viewproj))
+                      if (IsVisible(object.Bound, object.Transform, viewproj))
                       {
                           draw(object, l, i);
-                      }*/
-                      draw(object, l, i);
+                      }
                 }
 
                 vkCmdEndRendering(cmd);
@@ -187,13 +172,6 @@ namespace MamontEngine
             VkUtil::transition_image_aspect(
                     cmd, shadowImage.Image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
         }
-        
-        
-    }
-
-    void PointLightPass::CreateImage()
-    {
-        
     }
 
     void PointLightPass::CreatePipeline(std::span<const VkDescriptorSetLayout> inDescriptorLaouts, VkFormat inImageFormat)
@@ -261,10 +239,6 @@ namespace MamontEngine
         pipelineBuilder.Clear();
     }
 
-    void PointLightPass::CreateDescriptors()
-    {
-    }
-
     void PointLightPass::UpdateLights(const Camera *inCamera, const LightData &inLightData)
     {
         m_LightCount = inLightData.PointLightingCount;
@@ -273,11 +247,12 @@ namespace MamontEngine
         {
             const auto &light = inLightData.PointLights[i];
 
-            glm::mat4 proj = glm::perspectiveRH_ZO(glm::radians(90.f), 1.f, inCamera->GetNearClip(), light.Radius);
+            glm::mat4 proj = glm::perspective(glm::radians(90.f), 1.f, inCamera->GetNearClip(), light.Radius);
+            proj[1][1] *= -1.0f;
             for (uint32_t f = 0; f < SHADOW_FACE_NUM; ++f)
             {
                 glm::mat4 view = glm::mat4(1.0f);
-                switch (i)
+                switch (f)
                 {
                     case 0: // POSITIVE_X
                         view = glm::rotate(view, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -307,7 +282,5 @@ namespace MamontEngine
 
         const auto currentFrame = MEngine::Get().GetContextDevice().GetFrame();
         CopyDataToDynamicBuffer(&m_Buffer, (void *)m_ShadowFaceCubes.data(), &m_StagingBuffers[currentFrame]);
-
-        //m_Buffer.Copy(m_ShadowFaceCubes.data());
     }
 }

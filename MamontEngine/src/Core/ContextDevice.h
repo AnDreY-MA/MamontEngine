@@ -91,7 +91,6 @@ namespace MamontEngine
         VkDescriptorSetLayout RenderDescriptorLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
 
-        std::shared_ptr<RenderPipeline> RenderPipeline;
         void            InitDescriptors();
 
         void CreatePrefilteredCubeTexture(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &&inDrawSkyboxFunc);

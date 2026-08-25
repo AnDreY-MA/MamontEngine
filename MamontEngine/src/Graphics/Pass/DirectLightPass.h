@@ -34,8 +34,5 @@ namespace MamontEngine
         std::array<Cascade, CASCADECOUNT> Cascades;
 
         VkImage m_CascadeImage{VK_NULL_HANDLE};
-
-        AllocatedBuffer                            m_Buffer;
-        std::array<AllocatedBuffer, FRAME_OVERLAP> m_StagingBuffers;
 	};
 }

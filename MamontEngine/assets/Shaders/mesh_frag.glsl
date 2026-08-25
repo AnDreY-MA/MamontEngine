@@ -112,14 +112,14 @@ void main()
   pbrData.specularColor = specularColor;
   pbrData.F0 = F0;
 
-  const uint cascadeIndex = GetCascadeIndex(inViewPos, lightData.cascadeSplits);
-
   vec3 lightColor = vec3(0.0);
 
-  // Sun Light
+  // Direction Light
   if (lightData.IsActive)
   {
-    const vec3 l = lightData.lightDirection;
+    const uint cascadeIndex = GetCascadeIndex(inViewPos, lightData.cascadeSplits);
+
+    const vec3 l = normalize(-lightData.lightDirection);
 
     const vec3 H = normalize(viewDirection + l);
     const float dotNL = clamp(dot(N, l), 0.001, 1.0);
@@ -142,7 +142,6 @@ void main()
   for (int i = 0; i < lightData.PointLightNum; ++i)
   {
     PointLight pointLight = lightData.PointLights[i];
-    const float distance = distance(pointLight.Position, inPos);
     const float attenuation = pointLight.Attenuation;
     const vec3 c = pointLight.Color;
     const vec3 l = normalize(pointLight.Position - inPos);
@@ -151,9 +150,7 @@ void main()
 
     const float dotNL = clamp(dot(N, l), 0.001, 1.0);
 
-    const float maxRange = 25.0;
-    const float shadow = calculatePointShadow(inPos, pointLight.Position, dotNL, pointLightShadowSamplers[i], maxRange);
-
+    const float shadow = calculatePointShadow(inPos, pointLight.Position, dotNL, pointLightShadowSamplers[i], pointLight.Radius);
     const float atten = CalculateAttenuation(inPos, l, pointLight) * attenuation;
 
     lightColor += (GetLightContribution(pbrData, N, viewDirection, l, H, c) * c) * (atten * dotNL * shadow);
@@ -168,35 +165,3 @@ void main()
 
   outFragColor = vec4(finalColor, baseColor.a);
 }
-/*for (int i = 0; i < lightData.PointLightNum; ++i)
-  {
-    PointLight pointLight = lightData.PointLights[i];
-    const float distance = distance(pointLight.Position, inPos);
-    const float attenuation = pointLight.Attenuation;
-    const vec3 c = pointLight.Color * attenuation;
-    const vec3 l = normalize(pointLight.Position - inPos);
-
-    const vec3 H = normalize(viewDirection + l);
-    const float dotNV = clamp(abs(dot(N, viewDirection)), 0.001, 1.0);
-    const float dotNH = clamp(dot(N, H), 0.0, 1.0);
-    const float dotVH = clamp(dot(viewDirection, H), 0.0, 1.0);
-    const float dotLH = clamp(dot(l, H), 0.0, 1.0);
-    pbrData.H = H;
-    pbrData.dotNV = dotNV;
-    pbrData.dotLH = dotLH;
-    const float dotNL = clamp(dot(N, l), 0.001, 1.0);
-
-    float shadow = 1.0;
-
-    if (bool(pointLight.CastShadow))
-    {
-      vec3 sampleVector = inPos - pointLight.Position;
-      float depth = texture(pointLightShadowSamplers[i], sampleVector).x;
-      if (length(sampleVector) > depth)
-      {
-        shadow = 0.0;
-      }
-    }
-
-    lightColor += GetLightContribution(pbrData, N, viewDirection, l, c) * shadow;
-  }*/

@@ -56,24 +56,6 @@ namespace MamontEngine
 
             return true;
         }
-
-        glm::vec3 GetForwardVector(const glm::quat& inRotation)
-        {
-            const float yaw   = inRotation.y;
-            const float pitch = inRotation.z;
-
-            glm::vec3 forwardVector{glm::vec3(0)};
-            forwardVector.x  = std::cos(glm::radians(yaw)) * std::cos(glm::radians(pitch));
-            forwardVector.y  = std::sin(glm::radians(pitch));
-            forwardVector.z  = std::sin(glm::radians(yaw)) * std::cos(glm::radians(pitch));
-
-            return forwardVector;
-        }
-
-        /* glm::vec3 GetForwardVector(const glm::quat &inRotation)
-        {
-            return inRotation * glm::vec3(0.f, 0.f, 1.0f);
-        }*/
     }
 
     SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera, const std::shared_ptr<Scene> &inScene) 
@@ -218,10 +200,9 @@ namespace MamontEngine
                 m_LightData.Color        = ligth.GetColor();
                 const glm::quat rotation       = transform.Transform.Rotation;
                 const glm::vec3 lightDirection = transform.Transform.GetForwardVector();
-                    //GetForwardVector(rotation);
-                m_SceneData.LightDirection   = lightDirection;
                 m_LightData.LightDirection = lightDirection;
             });
+
             for (size_t i = 0; i < CASCADECOUNT; i++)
             {
                 m_LightData.Splits[i] = inCascades[i].SplitDepth;
@@ -232,7 +213,6 @@ namespace MamontEngine
         else
         {
             m_LightData.Color = glm::vec3(0.3f, 0.3f, 0.3f);
-            m_SceneData.LightDirection   = glm::vec3(.0f);
             m_LightData.LightDirection = glm::vec3(.0f);
         }
 
@@ -244,15 +224,13 @@ namespace MamontEngine
             viewPointLight.each(
                     [&](const PointLightComponent &ligthComponent, const TransformComponent &transform)
                     {
-                        auto &light                             = m_LightData.PointLights[indexLight];
+                        auto &light                           = m_LightData.PointLights[indexLight];
                         light.Color                           = ligthComponent.GetColor();
                         light.Radius                          = ligthComponent.GetRadius();
                         light.Position                        = transform.Transform.Position;
                         light.Attenuation                     = ligthComponent.GetAttenuation();
                         ++indexLight;
                     });
-
-            //UpdateLightFaceCubes();
         }
 
         m_LightData.HasDirectionLight = m_HasDirectionLight;
@@ -283,41 +261,6 @@ namespace MamontEngine
             DebugRenderer::Update();
         }
         
-
-    }
-
-    void SceneRenderer::UpdateLightFaceCubes()
-    {
-        for (uint32_t l = 0; l < m_LightData.PointLightingCount; ++l)
-        {
-            for (uint32_t f = 0; f < SHADOW_FACE_NUM; ++f)
-            {
-                glm::mat4 view = glm::mat4(1.0f);
-                switch (f)
-                {
-                    case 0: // POSITIVE_X
-                        view = glm::rotate(view, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-                        view = glm::rotate(view, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-                        break;
-                    case 1: // NEGATIVE_X
-                        view = glm::rotate(view, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-                        view = glm::rotate(view, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-                        break;
-                    case 2: // POSITIVE_Y
-                        view = glm::rotate(view, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-                        break;
-                    case 3: // NEGATIVE_Y
-                        view = glm::rotate(view, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-                        break;
-                    case 4: // POSITIVE_Z
-                        view = glm::rotate(view, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-                        break;
-                    case 5: // NEGATIVE_Z
-                        view = glm::rotate(view, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-                        break;
-                }
-            }
-        }
     }
 
 } // namespace MamontEngine

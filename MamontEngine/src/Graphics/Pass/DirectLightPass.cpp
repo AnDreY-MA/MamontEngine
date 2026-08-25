@@ -67,16 +67,6 @@ namespace MamontEngine
             std::cerr << "Cascades[" << i << "].View: " << Cascades[i].View << std::endl;
         }
 
-        m_Buffer.Create(sizeof(glm::mat4) * CASCADECOUNT,
-                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                        VMA_MEMORY_USAGE_GPU_ONLY);
-        const VkBufferDeviceAddressInfo deviceAddressInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = m_Buffer.Buffer};
-        m_Buffer.Address                                  = vkGetBufferDeviceAddress(LogicalDevice::GetDevice(), &deviceAddressInfo);
-
-        for (auto &sBuffer : m_StagingBuffers)
-        {
-            sBuffer = CreateStagingBuffer(m_Buffer.Info.size);
-        }
     }
     
     DirectLightPass::~DirectLightPass()
@@ -233,20 +223,11 @@ namespace MamontEngine
 
             const glm::vec3 lightDirection = glm::normalize(inLightDirection);
             const glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDirection * -minExtents.x, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
-            const glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
-
+            glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.005f, maxExtents.z - minExtents.z);
+            lightOrthoMatrix[1][1] *= -1.0f;
+            
             Cascades[i].SplitDepth = (nearClip + splitDist * clipRange) * -1.f;
             Cascades[i].ViewProjectMatrix = lightOrthoMatrix * lightViewMatrix;
-
-           /* const glm::vec3 maxExtents = glm::vec3(radius);
-            const glm::vec3 minExtents = -maxExtents;*/
-
-/*            const glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - inLightDirection * radius, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
-            glm::mat4 lightProj       = glm::ortho(-radius, radius, -radius, radius, 0.f, radius * 2.f);
-            //lightProj[1][1] *= -1.f;
-
-            Cascades[i].SplitDepth        = (inCamera->GetNearClip() + splitDist * clipRange) * -1.f;
-            Cascades[i].ViewProjectMatrix = lightProj * lightViewMatrix;*/
 
             lastSplitDist = cascadeSplits[i];
         }

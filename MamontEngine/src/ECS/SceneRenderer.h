@@ -6,12 +6,11 @@
 
 namespace MamontEngine
 {
-    struct GPUSceneData
+    struct alignas(16) GPUSceneData
     {
         glm::mat4 View{glm::mat4(0.f)};
         glm::mat4 Proj{glm::mat4(0.f)};
         glm::mat4 Viewproj{glm::mat4(0.f)};
-        glm::vec3 LightDirection{glm::vec3(0.4f)};
         glm::vec3 CameraPosition{glm::vec3(0.0)};
     };
 
@@ -63,10 +62,6 @@ namespace MamontEngine
         void EnableDrawCollisionBounds(bool value){ m_DrawCollisionBounds = value; }
 
         inline const LightData &GetLightData() const { return m_LightData; }
-
-    private:
-        void UpdateLightFaceCubes();
-
 
     private:
         std::shared_ptr<Scene>     m_Scene;
