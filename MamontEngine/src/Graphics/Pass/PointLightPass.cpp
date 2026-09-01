@@ -90,6 +90,10 @@ namespace MamontEngine
     PointLightPass::~PointLightPass()
     {
         const VkDevice device = LogicalDevice::GetDevice();
+        for (auto& sBuffer : m_StagingBuffers)
+        {
+            sBuffer.Destroy();
+        }
 
         m_Buffer.Destroy();
 

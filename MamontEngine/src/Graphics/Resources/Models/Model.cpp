@@ -12,6 +12,7 @@
 #include "ktxvulkan.h"
 #include "Core/ContextDevice.h"
 #include "Graphics/Resources/Materials/MaterialAllocator.h"
+#include "Graphics/Resources/Materials/MaterialManager.h"
 #include <vk_mem_alloc.h>
 
 namespace
@@ -194,12 +195,12 @@ namespace MamontEngine
 
     void MeshModel::Draw(DrawContext &inContext)
     {
-        for (auto &material : m_Materials)
+        for (const auto &material : m_Materials)
         {
             if (!material || !material->IsDity)
                 continue;
 
-            MaterialAllocator::Update(&material->Constants, material->BufferOffset);
+            MaterialAllocator::Update(material.get());
 
             material->IsDity = false;
         }
@@ -221,7 +222,7 @@ namespace MamontEngine
                 const RenderObject def(primitive->Count,
                                         primitive->StartIndex,
                                         Buffer,
-                                        material->MaterialSet,
+                                        material->MaterialSet, material->Index,
                                         Bound,
                                         nodeMatrix, ID);
 
@@ -338,19 +339,23 @@ namespace MamontEngine
         const auto size = inFileAsset.images.size();
         m_Textures.reserve(size != 0 ? size : 1);
 
+
+        uint32_t i = 0;
         for (const fastgltf::Image &image : inFileAsset.images)
         {
-            const auto texture = load_image(inFileAsset, image);
+            const auto texture = load_image(inFileAsset, image, inSamplers[i]);
 
             if (texture)
             {
                 Log::Info("Loaded texture: {}", image.name.c_str());
                 m_Textures.push_back(texture);
+                //texture->Sampler = inSamplers[i];
             }
             else
             {
                 Log::Warn("gltf failed to load texture: {}", image.name);
             }
+            i++;
         }
 
         m_Textures.push_back(CreateWhiteTexture());
@@ -430,7 +435,7 @@ namespace MamontEngine
                 materialResources.OcclusionTexture->Sampler = inSamplers[samplerIndex];
             }
 
-            auto newMat = std::shared_ptr<Material>(MaterialAllocator::AllocateMaterial(passType, materialResources, constants));
+            auto newMat  = std::shared_ptr<Material>(MaterialManager::Get()->CreateMaterial(passType, materialResources, constants));
             newMat->Name = mat.name;
             m_Materials.push_back(newMat);
         }

@@ -41,7 +41,7 @@ namespace MamontEngine
 
         JobSystem::Context contextJobs;
         JobSystem::Execute(contextJobs, [this](auto args) { 
-            MaterialAllocator::Init(); 
+            m_MaterialManager = std::make_unique<MaterialManager>();
         });
 
         JobSystem::Execute(contextJobs, [this](auto args)
@@ -152,7 +152,7 @@ namespace MamontEngine
 
             m_Scene.reset();
 
-            MaterialAllocator::Destroy();
+            m_MaterialManager.reset();
 
             m_Window.reset();
             m_ContextDevice.reset();

@@ -13,7 +13,9 @@ namespace MamontEngine
 
         void Free(Material *material);
 
-        void Update(const void* inData, const size_t inOffset);
+        void Update(const Material * inMaterial);
+
+        VkDeviceAddress GetBufferAddess();
 
     }
 } // namespace MamontEngine

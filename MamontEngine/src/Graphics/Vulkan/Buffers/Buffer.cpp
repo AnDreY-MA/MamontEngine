@@ -59,7 +59,7 @@ namespace MamontEngine
         return newBuffer;
     }
 
-    void CopyDataToDynamicBuffer(AllocatedBuffer *targetBuffer, void *inData, AllocatedBuffer *stagingBuffer)
+    void CopyDataToDynamicBuffer(AllocatedBuffer *targetBuffer, const void *inData, AllocatedBuffer *stagingBuffer, VkDeviceSize dstOffset)
     {
         bool isCustomStaging{false};
         if (stagingBuffer == nullptr)
@@ -73,7 +73,7 @@ namespace MamontEngine
         ImmediateContext::ImmediateSubmit(
                 [&](VkCommandBuffer cmd)
                 {
-                    const VkBufferCopy copy = {.srcOffset = 0, .dstOffset = 0, .size = targetBuffer->Info.size};
+                    const VkBufferCopy copy = {.srcOffset = 0, .dstOffset = dstOffset, .size = targetBuffer->Info.size};
 
                     vkCmdCopyBuffer(cmd, stagingBuffer->Buffer, targetBuffer->Buffer, 1, &copy);
                 });

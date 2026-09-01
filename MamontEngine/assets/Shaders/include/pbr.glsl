@@ -22,11 +22,6 @@ struct PBRData
   vec3 N;
   vec3 H;
 
-  float dotNL;
-  float dotNV;
-  float dotNH;
-  float dotVH;
-  float dotLH;
   float roughness;
   float alphaRoughness;
 
@@ -76,30 +71,6 @@ float D_GGX(float dotNH, float roughness)
   return a2 / (PI * denom * denom);
 }
 
-float Geometric_SchlickmithGGX(float dotNL, float dotNV, float roughness)
-{
-  const float r = roughness + 1.0;
-  const float k = (r * r) / 8.0;
-  const float GL = dotNL / (dotNL * (1.0 - k) + k);
-  const float GV = dotNV / (dotNV * (1.0 - k) + k);
-
-  return GL * GV;
-}
-
-float GeometricOcclusion(PBRData pbrData)
-{
-  const float roughnessSq = pbrData.alphaRoughness * pbrData.alphaRoughness;
-  const float attenuationL = 2.0 * pbrData.dotNL / (pbrData.dotNL + sqrt(roughnessSq + (1.0 - roughnessSq) * (pbrData.dotNL * pbrData.dotNL)));
-  const float attenuationV = 2.0 * pbrData.dotNV / (pbrData.dotNV + sqrt(roughnessSq + (1.0 - roughnessSq) * (pbrData.dotNV * pbrData.dotNV)));
-
-  return attenuationL * attenuationV;
-}
-
-vec3 SpecularReflection(PBRData pbrData)
-{
-  return pbrData.reflectance0 + (pbrData.reflectance90 - pbrData.reflectance0) * pow(clamp(1.0 - pbrData.dotNV, 0.0, 1.0), 5.0);
-}
-
 vec3 F_Schlick(float cosTheta, vec3 F0)
 {
   return F0 + (vec3(1.0) - F0) * pow(1.0 - cosTheta, 5.0);
@@ -114,20 +85,20 @@ float V_SmithGGXCorrelated(float dotNV, float dotNL, float roughness)
 {
   const float a2 = roughness * roughness;
   //const float GGXV = dotNL * sqrt(dotNV * dotNV * (1.0 - a2) + a2);
-  //const float GGXL = dotNV * sqrt(dotNL * dotNL * (1.0 - a2) + a2);
+  //const float GGXL = dotNV * sqrt(dotNL * dotNL * (1.0 - a2) + a2);;
   const float GGXL = dotNV * sqrt((-dotNL * a2 + dotNL) * dotNL + a2);
   const float GGXV = dotNL * sqrt((-dotNV * a2 + dotNV) * dotNV + a2);
   return 0.5 / (GGXV + GGXL);
 }
 
-vec3 GetIBLContribution(PBRData pbrData, vec3 n, vec3 r, vec3 skyColor, sampler2D samplerBRDFLUT, samplerCube prefilteredMap, samplerCube irradianceMap)
+vec3 GetIBLContribution(PBRData pbrData, vec3 n, vec3 r, vec3 skyColor, float dotNV, sampler2D samplerBRDFLUT, samplerCube prefilteredMap, samplerCube irradianceMap)
 {
-  const vec3 F = F_Schlick(pbrData.dotNV, pbrData.F0);
+  const vec3 F = F_Schlick(dotNV, pbrData.F0);
 
   const float lod = pbrData.roughness * 6.0;
 
-  const vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrData.dotNV, 1.0 - pbrData.roughness))).rgb;
-  const vec3 diffuseLight = texture(irradianceMap, n).rgb;
+  const vec3 brdf = (texture(samplerBRDFLUT, vec2(dotNV, 1.0 - pbrData.roughness))).rgb;
+  const vec3 diffuseLight = (texture(irradianceMap, n)).rgb;
   const vec3 specularLight = textureLod(prefilteredMap, r, lod).rgb;
 
   const vec3 diffuse = diffuseLight * pbrData.diffuseColor;
@@ -136,14 +107,6 @@ vec3 GetIBLContribution(PBRData pbrData, vec3 n, vec3 r, vec3 skyColor, sampler2
   const vec3 result = (diffuse + specular) * skyColor;
 
   return result;
-}
-
-float MicrofaceDistribution(PBRData pbrData)
-{
-  const float roughnessSq = pbrData.alphaRoughness * pbrData.alphaRoughness;
-  const float f = (pbrData.dotNH * roughnessSq - pbrData.dotNH) * pbrData.dotNH + 1.0;
-
-  return roughnessSq / (PI * f * f);
 }
 
 float G_SchlickGGX(float dotNV, float roughness)
@@ -158,29 +121,6 @@ float G_Smith(float NoV, float NoL, float roughness)
   float k = (r * r) / 8.0;
   return G_SchlickGGX(NoV, k) * G_SchlickGGX(NoL, k);
 }
-
-/*V_0
-vec3 GetLightContribution(PBRData pbrData, vec3 n, vec3 v, vec3 l, vec3 color)
-{
-  const vec3 h = normalize(l + v);
-  pbrData.dotNL = clamp(dot(n, l), 0.001, 1.0);
-  pbrData.dotNH = clamp(dot(n, h), 0.0, 1.0);
-  pbrData.dotVH = clamp(dot(v, h), 0.0, 1.0);
-  pbrData.dotLH = clamp(dot(l, h), 0.0, 1.0);
-
-  const vec3 F = SpecularReflection(pbrData);
-
-  const float G = GeometricOcclusion(pbrData);
-  const float D = MicrofaceDistribution(pbrData);
-
-  const vec3 diffuseContrib = (1.0 - F) * (pbrData.diffuseColor / PI);
-  //const vec3 specularContrib = F * G * D / (4.0 * pbrData.dotNL * pbrData.dotNV);
-  const vec3 specularContrib = F * G * D / max(pbrData.dotNL * pbrData.dotNV, 0.01) * 0.25;
-
-  const vec3 resultColor = pbrData.dotNL * color * (diffuseContrib + specularContrib);
-
-  return resultColor;
-}*/
 
 vec3 GetLightContribution(PBRData pbrData, vec3 n, vec3 v, vec3 l, vec3 h, vec3 color)
 {
@@ -199,27 +139,4 @@ vec3 GetLightContribution(PBRData pbrData, vec3 n, vec3 v, vec3 l, vec3 h, vec3 
 
   const vec3 result = (color * Frd);
   return Frd;
-}
-
-vec3 DirectionLight(PBRData data, vec3 viewDirection, vec3 lightDirection, vec3 color)
-{
-  const vec3 H = normalize(viewDirection + lightDirection);
-  const vec3 F = F_Schlick(max(dot(H, viewDirection), 0.0), data.F0);
-
-  const float NV = max(dot(data.N, viewDirection), 0.0);
-  const float NL = max(dot(data.N, lightDirection), 0.0);
-
-  const float D = D_GGX(data.dotNH, data.roughness);
-  const float G = G_SchlickGGX(NV, data.roughness) * G_SchlickGGX(NL, data.roughness);
-
-  const vec3 specular = D * G * F / max(NV * NL, 0.01) * 0.25;
-
-  const vec3 kS = F;
-  vec3 kD = vec3(1.0) - kS;
-  kD *= 1.0 - data.metallic;
-
-  const vec3 diffuse = kD * data.albedo / PI;
-
-  const vec3 resultColor = (diffuse + specular) * color * NL;
-  return resultColor;
 }

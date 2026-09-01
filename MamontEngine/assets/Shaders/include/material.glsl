@@ -1,4 +1,6 @@
-layout(set = 1, binding = 0) uniform GLTFMaterialData {
+#extension GL_EXT_buffer_reference2 : require
+
+/*layout(set = 1, binding = 0) readonly buffer GLTFMaterialData {
   vec4 colorFactors;
   float metallicFactor;
   float roughnessFactor;
@@ -8,10 +10,27 @@ layout(set = 1, binding = 0) uniform GLTFMaterialData {
 
   uint HasNormalMap;
 
-} materialData;
+} materialData;*/
 
-layout(set = 1, binding = 1) uniform sampler2D colorMap;
-layout(set = 1, binding = 2) uniform sampler2D metalRoughTex;
-layout(set = 1, binding = 3) uniform sampler2D normalMap;
-layout(set = 1, binding = 4) uniform sampler2D emissiveMap;
-layout(set = 1, binding = 5) uniform sampler2D occlusionMap;
+struct MaterialData 
+{
+	vec4 colorFactors;
+  float metallicFactor;
+  float roughnessFactor;
+
+  float pad0;
+  float pad1;
+
+  uint HasNormalMap;
+};
+
+layout(buffer_reference, std430) readonly buffer MaterialBuffer{ 
+	MaterialData materials;
+};
+
+layout(set = 1, binding = 0) uniform sampler2D textureSamplers[];
+//0 - color
+//1 - metalroughness
+//2 - normal
+//3 - emmisive
+//4 - occlusion

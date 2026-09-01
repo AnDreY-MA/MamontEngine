@@ -444,40 +444,18 @@ namespace MamontEngine
     {
         std::array<DescriptorAllocatorGrowable::PoolSizeRatio, 4> sizes = {
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 6},
-                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4},
+                DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 6},
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4},
                 DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 32}};
         const VkDevice device = LogicalDevice::GetDevice();
 
         GlobalDescriptorAllocator.Init(device, 100, sizes);
 
-        {
-            DescriptorLayoutBuilder builder;
-            builder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-            builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            builder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            DrawImageDescriptorLayout = builder.Build(device, VK_SHADER_STAGE_COMPUTE_BIT);
-
-            DrawImageDescriptors = GlobalDescriptorAllocator.Allocate(device, DrawImageDescriptorLayout);
-        }
-
-        {
+        { // Descriptor for Object (textures)
             DescriptorLayoutBuilder layoutBuilder{};
-            layoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            layoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            layoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            layoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            layoutBuilder.AddBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            layoutBuilder.AddBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            layoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5);
 
             RenderDescriptorLayout = layoutBuilder.Build(device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
-        }
-
-        {
-            DescriptorWriter writer;
-            writer.WriteImage(0, DrawImage.ImageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-            writer.UpdateSet(device, DrawImageDescriptors);
         }
 
         {
@@ -497,7 +475,6 @@ namespace MamontEngine
 
         std::cerr << "GPUSceneDataDescriptorLayout: " << GPUSceneDataDescriptorLayout << std::endl;
         std::cerr << "RenderDescriptorLayout: " << RenderDescriptorLayout << std::endl;
-        std::cerr << "DrawImageDescriptorLayout: " << DrawImageDescriptorLayout << std::endl;
 
 
         constexpr size_t cascadeDataSize     = sizeof(LightData);
@@ -569,8 +546,6 @@ namespace MamontEngine
 
         GlobalDescriptorAllocator.DestroyPools(device);
 
-        DrawImageDescriptors = VK_NULL_HANDLE;
-
         for (auto& frame : m_Frames)
         {
             frame.FrameDescriptors.DestroyPools(device);
@@ -579,7 +554,6 @@ namespace MamontEngine
             frame.ViewportDescriptor = VK_NULL_HANDLE;
         }
 
-        vkDestroyDescriptorSetLayout(device, DrawImageDescriptorLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, RenderDescriptorLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, GPUSceneDataDescriptorLayout, nullptr);
     }

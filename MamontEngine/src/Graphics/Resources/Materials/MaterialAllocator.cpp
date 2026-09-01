@@ -6,17 +6,18 @@
 #include "Graphics/Vulkan/Buffers/Buffer.h"
 #include "Core/Engine.h"
 #include "Math/Color.h"
-#include <set>
+#include "Graphics/Vulkan/ImmediateContext.h"
 
 namespace MamontEngine
 {
     namespace MaterialAllocator
     {
         DescriptorAllocatorGrowable DescrtiptorAllocator;
-        size_t                      AlignedMaterialSize{0};
+        VkDeviceSize                AlignedMaterialSize{0};
         AllocatedBuffer g_Buffer;
+        std::array<AllocatedBuffer, FRAME_OVERLAP> stagingBuffers{};
 
-        constexpr size_t g_MaxMaterials = 2 * 1024;
+        constexpr size_t MAX_MATERIALS = 2 * 1024;
 
         std::vector<uint32_t> g_Free;
 
@@ -24,24 +25,32 @@ namespace MamontEngine
 
         void Init()
         {
-            constexpr std::array<DescriptorAllocatorGrowable::PoolSizeRatio, 3> sizes = {
-                    DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6},
-                    DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 6},
-                    DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}};
+            constexpr std::array<DescriptorAllocatorGrowable::PoolSizeRatio, 1> sizes = {
+                    DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6}, };
             
             const VkDevice& device = LogicalDevice::GetDevice();
             DescrtiptorAllocator.Init(device, 100, sizes);
 
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(PhysicalDevice::GetDevice(), &properties);
-            const size_t minAlignment = static_cast<size_t>(properties.limits.minUniformBufferOffsetAlignment);
+            const size_t minAlignment = static_cast<size_t>(properties.limits.minStorageBufferOffsetAlignment);
             constexpr size_t materialConstSize = sizeof(Material::MaterialConstants);
 
             AlignedMaterialSize = Utils::AlignUp(materialConstSize, minAlignment);
-            const size_t maxMaterialsByLimit = properties.limits.maxUniformBufferRange / AlignedMaterialSize;
-            const size_t actualMaxMaterials  = std::min(g_MaxMaterials, maxMaterialsByLimit);
+            const size_t maxMaterialsByLimit = properties.limits.maxStorageBufferRange / AlignedMaterialSize;
+            const size_t actualMaxMaterials  = std::min(MAX_MATERIALS, maxMaterialsByLimit);
 
-            g_Buffer.Create(actualMaxMaterials * AlignedMaterialSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+            g_Buffer.Create(actualMaxMaterials * AlignedMaterialSize,
+                            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                            VMA_MEMORY_USAGE_GPU_ONLY);
+
+            const VkBufferDeviceAddressInfo deviceAddressInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = g_Buffer.Buffer};
+            g_Buffer.Address                                  = vkGetBufferDeviceAddress(LogicalDevice::GetDevice(), &deviceAddressInfo);
+
+            for (auto& sBuffer : stagingBuffers)
+            {
+                sBuffer = CreateStagingBuffer(g_Buffer.Info.size);
+            }
         }
 
         void Destroy()
@@ -50,6 +59,11 @@ namespace MamontEngine
 
             DescrtiptorAllocator.ClearPools(device);
             DescrtiptorAllocator.DestroyPools(device);
+
+            for (auto &sBuffer : stagingBuffers)
+            {
+                sBuffer.Destroy();
+            }
 
             g_Buffer.Destroy();
         }
@@ -71,23 +85,27 @@ namespace MamontEngine
             Material *newMaterial = new Material();
             newMaterial->Constants    = data;
             newMaterial->Resources    = resources;
-            newMaterial->BufferOffset = index * AlignedMaterialSize;
             newMaterial->PassType     = pass;
             newMaterial->Index        = index;
 
             const VkDevice  &device   = LogicalDevice::GetDevice();
 
+            const std::vector<std::shared_ptr<Texture>> textures{
+                    resources.ColorTexture, resources.MetalRoughTexture, resources.NormalTexture, resources.EmissiveTexture, resources.OcclusionTexture};
+
+            std::vector<VkDescriptorImageInfo> textureDescriptors(textures.size());
+            for (size_t i = 0; i < textureDescriptors.size(); ++i)
+            {
+                textureDescriptors[i] = textures[i]->GetDescriptorInfo();
+            }
+
             newMaterial->MaterialSet = DescrtiptorAllocator.Allocate(device, contextDevice.RenderDescriptorLayout);
+
             DescriptorWriter writer;
-            writer.WriteBuffer(0, g_Buffer.Buffer, sizeof(Material::MaterialConstants), newMaterial->BufferOffset, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            writer.WriteImage(1, resources.ColorTexture->GetDescriptorInfo(), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            writer.WriteImage(2, resources.MetalRoughTexture->GetDescriptorInfo(), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            writer.WriteImage(3, resources.NormalTexture->GetDescriptorInfo(), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            writer.WriteImage(4, resources.EmissiveTexture->GetDescriptorInfo(), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            writer.WriteImage(5, resources.OcclusionTexture->GetDescriptorInfo(), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            writer.WriteImageArray(0, textureDescriptors, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             writer.UpdateSet(device, newMaterial->MaterialSet);
 
-            g_Buffer.Copy(&newMaterial->Constants, sizeof(Material::MaterialConstants), newMaterial->BufferOffset);
+            Update(newMaterial);
 
             return newMaterial;
         }
@@ -98,9 +116,27 @@ namespace MamontEngine
             //delete material;
         }
 
-        void Update(const void *inData, const size_t inOffset)
+        void Update(const Material *inMaterial)
         {
-            g_Buffer.Copy(inData, sizeof(Material::MaterialConstants), inOffset);
+            const auto       currentFrame = MEngine::Get().GetContextDevice().GetFrame();
+            AllocatedBuffer &staging      = stagingBuffers[currentFrame];
+
+            memcpy(staging.Info.pMappedData, &inMaterial->Constants, sizeof(Material::MaterialConstants));
+
+            ImmediateContext::ImmediateSubmit(
+                    [&](VkCommandBuffer cmd)
+                    {
+                        VkBufferCopy copy{};
+                        copy.srcOffset = 0;
+                        copy.dstOffset = inMaterial->Index * AlignedMaterialSize;
+                        copy.size      = sizeof(Material::MaterialConstants);
+                        vkCmdCopyBuffer(cmd, staging.Buffer, g_Buffer.Buffer, 1, &copy);
+                    });
+        }
+
+        VkDeviceAddress GetBufferAddess()
+        {
+            return g_Buffer.Address;
         }
 
     } // namespace MaterialAllocator

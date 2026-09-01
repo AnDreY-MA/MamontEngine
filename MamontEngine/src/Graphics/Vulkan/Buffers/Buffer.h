@@ -35,7 +35,7 @@ namespace MamontEngine
 
     AllocatedBuffer CreateStagingBuffer(const size_t inAllocationSize);
 
-    void CopyDataToDynamicBuffer(AllocatedBuffer *targetBuffer, void *inData, AllocatedBuffer *stagingBuffer = nullptr);
+    void CopyDataToDynamicBuffer(AllocatedBuffer *targetBuffer, const void *inData, AllocatedBuffer *stagingBuffer = nullptr, VkDeviceSize dstOffset = 0);
 
 } // namespace MamontEngine
 

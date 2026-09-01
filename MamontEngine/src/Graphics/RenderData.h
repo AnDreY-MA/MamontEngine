@@ -24,12 +24,14 @@ namespace MamontEngine
                      MeshBuffer InMeshBuffer,
 
                      VkDescriptorSet InMaterial,
+                     uint32_t InMaterialIndex,
                      AABB inBound,
                      glm::mat4       InTransform,
                      UID id)
             : IndexCount(InIndexCount)
             , FirstIndex(InFirstIndex), MeshBuffer(InMeshBuffer)
             , MaterialDescriptorSet(InMaterial)
+            , MaterialIndex(InMaterialIndex)
             , Bound(inBound)
             , Transform(InTransform)
             , Id(id)
@@ -41,6 +43,7 @@ namespace MamontEngine
         const MeshBuffer     MeshBuffer;
 
         VkDescriptorSet MaterialDescriptorSet;
+        uint32_t        MaterialIndex{0};
 		//const Material *Material;
         AABB            Bound;
 

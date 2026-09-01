@@ -77,6 +77,11 @@ namespace MamontEngine::VkPipelines
         m_Rasterizer.frontFace = inFrontFace;
     }
 
+    void PipelineBuilder::SetMultisampling(VkPipelineMultisampleStateCreateInfo inMultisampleInfo)
+    {
+        m_Multisampling = inMultisampleInfo;
+    }
+
     void PipelineBuilder::SetMultisamplingNone()
     {
         m_Multisampling.sampleShadingEnable = VK_FALSE;

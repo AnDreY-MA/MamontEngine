@@ -24,7 +24,6 @@ namespace MamontEngine
         std::swap(Resources, other.Resources);
         std::swap(Constants, other.Constants);
         std::swap(Index, other.Index);
-        std::swap(BufferOffset, other.BufferOffset);
         std::swap(Name, other.Name);
     }
 }

@@ -11,7 +11,7 @@ layout(location = 1) in vec2 inUV;
 
 void main()
 {
-  const float alpha = texture(colorMap, inUV).a;
+  const float alpha = texture(textureSamplers[0], inUV).a;
   if (alpha < 0.1) {
     discard;
   }
@@ -19,4 +19,5 @@ void main()
   const PointLight light = lightData.PointLights[PointLightConstants.LightIndex];
   const float distanceToLight = length(inPos.xyz - light.Position);
   gl_FragDepth = distanceToLight / light.Radius;
+
 }

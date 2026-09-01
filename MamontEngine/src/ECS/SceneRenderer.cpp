@@ -14,6 +14,7 @@
 #include "Graphics/DebugRenderer.h"
 #include "Physics/Collision/BoxCollision.h"
 #include "Physics/Collision/SphereCollision.h"
+#include "Graphics/Resources/Materials/MaterialAllocator.h"
 
 namespace MamontEngine
 {
@@ -97,10 +98,11 @@ namespace MamontEngine
                 vkCmdBindIndexBuffer(inCmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
             }
 
-            const GPUDrawPushConstants push_constants{
-                    .WorldMatrix  = r.Transform,
-                    .VertexBuffer = r.MeshBuffer.VertexBuffer.Address,
-                    //.CascadeIndex = cascadeIndex
+            const GPUDrawPushConstants push_constants
+            {
+                .WorldMatrix = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBuffer.Address, 
+                .MaterialBuffer = MaterialAllocator::GetBufferAddess(),
+                .MaterialIndex = r.MaterialIndex
             };
 
             vkCmdPushConstants(inCmd, 

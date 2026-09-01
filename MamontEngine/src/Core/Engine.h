@@ -11,6 +11,7 @@
 #include "Core/Log.h"
 #include "Scripting/ScriptSystem.h"
 #include "Physics/PhysicsSystem.h"
+#include "Graphics/Resources/Materials/MaterialManager.h"
 
 namespace MamontEngine
 {
@@ -103,6 +104,7 @@ namespace MamontEngine
         std::unique_ptr<ImGuiLayer>    m_GuiLayer;
         std::unique_ptr<Log>           m_Log;
         std::unique_ptr<ScriptSystem>  m_ScriptSystem;
+        std::unique_ptr<MaterialManager> m_MaterialManager;
 
         std::unique_ptr<HeroPhysics::PhysicsSystem> m_PhysicsSystem;
 

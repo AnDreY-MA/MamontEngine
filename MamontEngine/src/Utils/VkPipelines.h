@@ -24,6 +24,7 @@ namespace MamontEngine::VkPipelines
         void SetVertexInput(VkPipelineVertexInputStateCreateInfo inInfo);
         void SetPolygonMode(VkPolygonMode inMode);
         void SetCullMode(VkCullModeFlags inCullMode, VkFrontFace inFrontFace);
+        void SetMultisampling(VkPipelineMultisampleStateCreateInfo inMultisampleInfo);
         void SetMultisamplingNone();
         void DisableBlending();
         void EnableBlendingAdditive();

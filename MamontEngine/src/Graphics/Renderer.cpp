@@ -100,7 +100,7 @@ namespace MamontEngine
         }
         m_RenderPipeline = std::make_shared<RenderPipeline>(device, layouts, inImageFormats);
 
-        InitPickPipepline();
+        //InitPickPipepline();
 
         DebugRenderer::Init(device, layouts);
 
@@ -225,7 +225,7 @@ namespace MamontEngine
         VkCommandBuffer uiCommandBuffer = currentFrame.UICommandBuffer;
         m_ImGuiRenderer->Draw(uiCommandBuffer, m_DeviceContext.Swapchain.GetImageView(swapchainImageIndex), m_DrawExtent);
 
-        {
+       /* {
             VkUtil::transition_image(
                     cmd, m_DeviceContext.PickingImages[swapchainImageIndex].Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
             DrawPickingPass(cmd, swapchainImageIndex);
@@ -233,7 +233,7 @@ namespace MamontEngine
                                      m_DeviceContext.PickingImages[swapchainImageIndex].Image,
                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        }
+        }*/
 
         VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 

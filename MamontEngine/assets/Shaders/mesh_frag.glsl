@@ -37,13 +37,13 @@ const mat4 biasMat = mat4(
     0.5, 0.5, 0.0, 1.0
   );
 
-vec3 CalculalteNormal()
+vec3 CalculalteNormal(uint hasNormalMap)
 {
-  if (!bool(materialData.HasNormalMap))
+  if (!bool(hasNormalMap))
   {
     return normalize(inNormal);
   }
-  const vec4 texel = texture(normalMap, inUV);
+  const vec4 texel = texture(textureSamplers[2], inUV);
   vec3 tangent_normal = texel.xyz;
   if (texel.w > 0.999)
   {
@@ -71,52 +71,52 @@ vec3 CalculalteNormal()
 
 void main()
 {
-  const vec3 N = CalculalteNormal();
-  //normalize(inNormal);
-  //GetNormal(normalMap, inNormal, inUV, inPos);
-  const vec3 viewDirection = normalize(sceneData.cameraPosition - inPos);
-  const vec3 R = reflect(-viewDirection, N);
+    MaterialBuffer matbuffer = MaterialBuffer(PushConstants.materialBuffer + PushConstants.materialIndex);
+    const MaterialData materialData = matbuffer.materials;
 
-  const vec4 baseColorTexture = texture(colorMap, inUV);
-  const vec3 albedo = srgbToLinear(baseColorTexture.rgb * materialData.colorFactors.rgb * inColor.rgb);
+    const vec3 N = CalculalteNormal(materialData.HasNormalMap);
 
-  const vec4 baseColor = baseColorTexture * materialData.colorFactors * inColor;
+    const vec3 viewDirection = normalize(sceneData.cameraPosition - inPos);
+    const vec3 R = reflect(-viewDirection, N);
 
-  const vec4 metallicRoughness = texture(metalRoughTex, inUV);
-  const float metallic = metallicRoughness.b * materialData.metallicFactor;
-  const float roughness = clamp(metallicRoughness.g * materialData.roughnessFactor, 0.089, 1.0);
-  const float alphaRoughness = roughness * roughness;
+    const vec4 baseColorTexture = texture(textureSamplers[0], inUV);
+    const vec3 albedo = srgbToLinear(baseColorTexture.rgb * materialData.colorFactors.rgb * inColor.rgb);
 
-  const vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    const vec4 baseColor = baseColorTexture * materialData.colorFactors * inColor;
 
-  const vec3 specularColor = mix(F0, albedo, metallic);
+    const vec4 metallicRoughness = texture(textureSamplers[1], inUV);
+    const float metallic = metallicRoughness.b * materialData.metallicFactor;
+    const float roughness = clamp(metallicRoughness.g * materialData.roughnessFactor, 0.089, 1.0);
+    const float alphaRoughness = roughness * roughness;
 
-  const float reflectance = max(max(specularColor.r, specularColor.g), specularColor.b);
-  const float reflectance90 = clamp(reflectance * 25.0, 0.0, 1.0);
-  const vec3 specularEnviromentR0 = specularColor.rgb;
-  const vec3 specularEnviromentR90 = vec3(1.0, 1.0, 1.0) * reflectance90;
-  const vec3 diffuseColor = albedo * (vec3(1.0) - F0) * (1.0 - metallic);
-  //(1.0 - metallic) * albedo;
-  //albedo * (vec3(1.0) - F0) * (1.0 - metallic);
+    const vec3 F0 = mix(vec3(0.04), albedo, metallic);
 
-  PBRData pbrData;
-  pbrData.N = N;
+    const vec3 specularColor = mix(F0, albedo, metallic);
+
+    const float reflectance = max(max(specularColor.r, specularColor.g), specularColor.b);
+    const float reflectance90 = clamp(reflectance * 25.0, 0.0, 1.0);
+    const vec3 specularEnviromentR0 = specularColor.rgb;
+    const vec3 specularEnviromentR90 = vec3(1.0, 1.0, 1.0) * reflectance90;
+    const vec3 diffuseColor = albedo * (vec3(1.0) - F0) * (1.0 - metallic);
+
+    PBRData pbrData;
+    pbrData.N = N;
   
-  pbrData.roughness = roughness;
-  pbrData.metallic = metallic;
-  pbrData.alphaRoughness = alphaRoughness;
-  pbrData.albedo = albedo;
-  pbrData.reflectance0 = specularEnviromentR0;
-  pbrData.reflectance90 = specularEnviromentR90;
-  pbrData.diffuseColor = diffuseColor;
-  pbrData.specularColor = specularColor;
-  pbrData.F0 = F0;
+    pbrData.roughness = roughness;
+    pbrData.metallic = metallic;
+    pbrData.alphaRoughness = alphaRoughness;
+    pbrData.albedo = albedo;
+    pbrData.reflectance0 = specularEnviromentR0;
+    pbrData.reflectance90 = specularEnviromentR90;
+    pbrData.diffuseColor = diffuseColor;
+    pbrData.specularColor = specularColor;
+    pbrData.F0 = F0;
 
-  vec3 lightColor = vec3(0.0);
+    vec3 lightColor = vec3(0.0);
 
-  // Direction Light
-  if (lightData.IsActive)
-  {
+    // Direction Light
+    if (lightData.IsActive)
+    {
     const uint cascadeIndex = GetCascadeIndex(inViewPos, lightData.cascadeSplits);
 
     const vec3 l = normalize(-lightData.lightDirection);
@@ -129,19 +129,22 @@ void main()
     const float shadow = filterPCF(shadowMap,  shadowCoord / shadowCoord.w, cascadeIndex);
     float atten = 1.0;
     lightColor +=
-      (GetLightContribution(pbrData, N, viewDirection, l, H, lightData.color) * lightData.color) * ( atten * dotNL * shadow);
-  }
+        (GetLightContribution(pbrData, N, viewDirection, l, H, lightData.color) * lightData.color) * ( atten * dotNL * shadow);
 
-  if (lightData.IsActive)
-  {
-    const vec3 ibl = GetIBLContribution(pbrData, N, R, lightData.color, samplerBRDFLUT, samplerPrefilteredMap, irradianceMap);
+    const float dotNV = abs(dot(N, viewDirection));
+    const vec3 ibl = GetIBLContribution(pbrData, N, R, lightData.color, dotNV, samplerBRDFLUT, samplerPrefilteredMap, irradianceMap);
 
     lightColor += ibl;
-  }
+    }
 
-  for (int i = 0; i < lightData.PointLightNum; ++i)
-  {
-    PointLight pointLight = lightData.PointLights[i];
+    if (lightData.IsActive)
+    {
+    
+    }
+
+    for (int i = 0; i < lightData.PointLightNum; ++i)
+    {
+    const PointLight pointLight = lightData.PointLights[i];
     const float attenuation = pointLight.Attenuation;
     const vec3 c = pointLight.Color;
     const vec3 l = normalize(pointLight.Position - inPos);
@@ -154,14 +157,13 @@ void main()
     const float atten = CalculateAttenuation(inPos, l, pointLight) * attenuation;
 
     lightColor += (GetLightContribution(pbrData, N, viewDirection, l, H, c) * c) * (atten * dotNL * shadow);
-  }
+    }
 
-  //lightColor += prefilteredColor;
+    //lightColor += prefilteredColor;
 
-  vec3 finalColor = lightColor;
-  finalColor = ACESTonemap(finalColor);
-  finalColor = gammaCorrect(finalColor, GAMMA);
-  //finalColor = pow(finalColor, gamma);
+    vec3 finalColor = lightColor;
+    finalColor = ACESTonemap(finalColor);
+    finalColor = gammaCorrect(finalColor, GAMMA);
 
-  outFragColor = vec4(finalColor, baseColor.a);
+    outFragColor = vec4(finalColor, baseColor.a);
 }

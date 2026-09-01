@@ -57,9 +57,10 @@ float GetPointShadowDepth(vec3 fragPos, vec3 lightPos, float lightNearPlane, flo
     return (distanceToLight - lightNearPlane) / (lightFarPlane - lightNearPlane);
 }
 
-float calculatePointShadow(vec3 fragPos, vec3 lightPos, float dotNL, samplerCubeShadow shadowMap, float radius)
+float calculatePointShadow(vec3 fragPos, vec3 lightPos, float dotNL, samplerCube shadowMap, float radius)
 {
-  vec3 fragToLight = fragPos - lightPos;
+  const vec3 fragToLight = fragPos - lightPos;
+
   const float sampledDist = texture(shadowMap, fragToLight).r;
   const float dist = length(fragToLight);
 

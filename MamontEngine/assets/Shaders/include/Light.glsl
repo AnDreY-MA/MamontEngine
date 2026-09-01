@@ -17,7 +17,7 @@ struct PointLight
   int CastShadow;
 };
 
-layout(set = 0, binding = 8) uniform samplerCubeShadow pointLightShadowSamplers[MAX_POINT_LIGHT];
+layout(set = 0, binding = 8) uniform samplerCube pointLightShadowSamplers[MAX_POINT_LIGHT];
 
 layout(set = 0, binding = 2) uniform LightDataUBO {
   vec3 cascadeSplits;

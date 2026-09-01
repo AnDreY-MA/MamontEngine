@@ -15,6 +15,8 @@ layout(push_constant) uniform constants
 {
   mat4 render_matrix;
   VertexBuffer vertexBuffer;
+  MaterialBuffer materialBuffer;
   uint64_t objectID;
   uint cascadeIndex;
+  uint materialIndex;
 } PushConstants;

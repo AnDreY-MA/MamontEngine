@@ -45,14 +45,15 @@ namespace MamontEngine
             float _pad1{0.f};
 
             int HasNormaMap{0};
+            
+            float _pad2[3];
         } Constants;
 
         uint32_t Index{0};
-        size_t BufferOffset{0};
 
         bool IsDity{true};
 
         void Swap(Material &other);
     };
-} // namespace MamontEngine
 
+} // namespace MamontEngine
