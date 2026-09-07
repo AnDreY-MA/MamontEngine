@@ -6,7 +6,7 @@ namespace MamontEngine
 {
     IMPLEMENT_REFLECT_COMPONENT(TransformComponent, "Transform Component")
     {
-        meta.data<&TransformComponent::Transform, entt::as_ref_t>("Transform"_hs);
+        meta.data<&TransformComponent::m_Transform, entt::as_ref_t>("Transform"_hs);
     }
     FINISH_REFLECT()
 }

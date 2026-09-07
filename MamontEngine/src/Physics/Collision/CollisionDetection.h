@@ -17,5 +17,7 @@ namespace MamontEngine
 
 		//bool CheckCollision(const CollisionPair *inPair, std::vector<ContactManifold> &outResults);
         bool CheckCollision(const CollisionPair *inPair, CollisionData *collisionData);
+
+		bool BuildCollisionManifold(Rigidbody *body1, Rigidbody *body2, CollisionData &collisionData, Manifold *manifold);
 	}
 }

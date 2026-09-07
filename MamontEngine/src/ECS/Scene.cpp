@@ -156,29 +156,25 @@ namespace MamontEngine
         auto view = m_Registry.view<MeshComponent, TransformComponent>();
         for (auto &&[entity, meshComponent, transform] : view.each())
         {
-            if (meshComponent.Mesh)
+            if (meshComponent.Mesh; meshComponent.Mesh->IsDirty || transform.IsDirty())
             {
                 meshComponent.Mesh->UpdateTransform(transform.Matrix());
+                transform.SetDirty(false);
+                meshComponent.Mesh->IsDirty = false;
             }
         }
 
         if (!m_IsPaused)
         {
-            auto viewTransformsEnd = m_Registry.view<TransformComponent, RigidbodyComponent>();
             auto rigidbodyGroup    = m_Registry.group<RigidbodyComponent>(entt::get<TransformComponent>);
 
             for (auto entity : rigidbodyGroup)
             {
                 const auto &[transform, rigidbody] = rigidbodyGroup.get<TransformComponent, RigidbodyComponent>(entity);
-                transform.Transform.Position       = rigidbody.Rigidbody->GetPosition();
-                transform.Transform.Rotation       = rigidbody.Rigidbody->GetRotation();
+                transform.SetPosition(rigidbody.Rigidbody->GetPosition());
+                transform.SetRotation(rigidbody.Rigidbody->GetRotation());
             }
 
-            /*for (auto&& [entity, transfrom, rigidbody] : viewTransformsEnd.each())
-            {
-                transfrom.Transform.Position = rigidbody.Rigidbody->GetPosition();
-                transfrom.Transform.Rotation = rigidbody.Rigidbody->GetRotation();
-            }*/
         }
     }
 
@@ -187,12 +183,12 @@ namespace MamontEngine
         auto viewRigidbodies = m_Registry.view<TransformComponent, RigidbodyComponent>();
         int  count           = 0;
         auto lightType       = entt::resolve<LightComponent>();
-        ;
+        
         
         for (auto&& [entity, transform, rigidbody] : viewRigidbodies.each())
         {
-            rigidbody.Rigidbody->SetPosition(transform.Transform.Position);
-            rigidbody.Rigidbody->SetRotation(transform.Transform.Rotation);
+            rigidbody.Rigidbody->SetPosition(transform.GetPosition());
+            rigidbody.Rigidbody->SetRotation(transform.GetRotation());
 
             const glm::vec3 position = rigidbody.Rigidbody->GetPosition();
             Log::Info("Rigidbody position: {} {} {}", position.x, position.y, position.z);
@@ -220,27 +216,6 @@ namespace MamontEngine
                 }
             }
         }
-
-        
-
-        auto lightsView = m_Registry.view<LightComponent>();
-        for (auto&& [entity, light] : lightsView.each())
-        {
-
-        }
-        int countLights = 0;
-        if (auto *storage = m_Registry.storage(lightType.id()))
-        {
-            /*if (storage->contains(entity))
-            {
-                
-            }*/
-
-            //void          *value     = storage->value(entity);
-            //entt::meta_any component = lightType.from_void(value);
-            countLights++;
-        }
-        Log::Info("Lights count: {}", countLights);
 
 
         const auto scriptView = m_Registry.view<ScriptComponent>();

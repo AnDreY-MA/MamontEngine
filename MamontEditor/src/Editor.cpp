@@ -13,17 +13,11 @@
 #include "Panels/ViewportPanel.h"
 #include "imgui.h"
 #include "Utils/Reflection.h"
+#include <Panels/FileBrowserPanel.h>
 
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
-#include <Panels/FileBrowserPanel.h>
-
-/*IMPLEMENT_REFLECT_OBJECT(MamontEditor::LogPanel)
-{
-
-}
-FINISH_REFLECT()*/
 
 namespace MamontEditor
 {

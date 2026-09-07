@@ -50,14 +50,14 @@ namespace MamontEngine
         Node()  = default;
         ~Node() = default;
 
-        Node* Parent;
-        std::vector<Node*>        Children;
-        std::shared_ptr<NewMesh> Mesh;
+        Node*                       Parent{nullptr};
+        std::vector<Node*>          Children;
+        std::shared_ptr<NewMesh>    Mesh;
 
-        glm::mat4 Matrix;
-        glm::mat4 CurrentMatrix{glm::mat4(1.f)};
-        Transform Transform;
+        glm::mat4                   Matrix;
+        glm::mat4                   CurrentMatrix{glm::mat4(1.f)};
+        Transform                   Transform;
 
-        std::string Name;
+        std::string                 Name;
     };
 }

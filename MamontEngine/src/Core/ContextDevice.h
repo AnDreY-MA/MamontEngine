@@ -29,8 +29,6 @@ namespace MamontEngine
 
         void DestroyFrameData();
 
-        void InitShadowImages();
-
         void ResizeSwapchain(const VkExtent2D &inWindowExtent);
 
         FrameData       &GetCurrentFrame();
@@ -76,6 +74,8 @@ namespace MamontEngine
         Texture DrawImage;
         Texture DepthImage;
 
+        Texture IdTexture;
+
         std::vector<Texture> PickingImages;
 
         Texture CascadeDepthImage;
@@ -89,6 +89,9 @@ namespace MamontEngine
         VkDescriptorSetLayout RenderDescriptorLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
 
+        std::unique_ptr<Texture> m_SkyboxTexture;
+
+
         void            InitDescriptors();
 
         void CreatePrefilteredCubeTexture(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &&inDrawSkyboxFunc);
@@ -98,11 +101,11 @@ namespace MamontEngine
         void InitSwapchain(const VkExtent2D &inWindowExtent);
 
         void InitImage();
+        void InitShadowImages();
 
         void InitCommands();
 
         void InitSyncStructeres();
-
 
         void InitSceneBuffers();
 
@@ -111,6 +114,7 @@ namespace MamontEngine
 
 #pragma region Destroy functions
         void DestroyImages();
+        void DestroyShadowmImages();
 
         void DestroyCommands();
 
@@ -133,12 +137,11 @@ namespace MamontEngine
 
         VkQueue  m_GraphicsQueue{VK_NULL_HANDLE};
         uint32_t m_GraphicsQueueFamily{0};
-        std::unique_ptr<Texture> m_SkyboxTexture;
         std::unique_ptr<Texture> m_BRDFUTTexture;
         std::unique_ptr<Texture> m_PrefilteredCubeTexture;
         std::unique_ptr<Texture> m_IrradianceTexture;
 
-        bool m_IsResizeRequested{false};
+        bool m_IsResizeRequested{true};
 
         struct TracyInfo
         {

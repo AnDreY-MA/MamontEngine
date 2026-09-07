@@ -2,6 +2,7 @@
 
 #include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
 #include "ECS/SceneRenderer.h"
+#include "Pass/SkyPass.h"
 
 namespace MamontEngine
 {
@@ -14,6 +15,7 @@ namespace MamontEngine
     class MeshModel;
     class DirectLightPass;
     class PointLightPass;
+    class PickPass;
 
     struct RenderStats
     {
@@ -58,7 +60,7 @@ namespace MamontEngine
     private:
         void DrawMain(VkCommandBuffer inCmd);
         void DrawGeometry(VkCommandBuffer inCmd);
-        void DrawSkybox(VkCommandBuffer inCmd);
+        //void DrawSkybox(VkCommandBuffer inCmd);
 
         void RenderShadows(VkCommandBuffer inCmd);
         void RenderCascadeShadow(VkCommandBuffer inCmd);
@@ -83,8 +85,8 @@ namespace MamontEngine
 
         std::unique_ptr<DirectLightPass> m_DirectLightPass;
         std::unique_ptr<PointLightPass> m_PointLightPass;
-
-        std::unique_ptr<MeshModel> m_Skybox;
+        std::unique_ptr<PickPass>        m_PickPass;
+        std::unique_ptr<SkyPass>         m_SkyPass;
 
         bool IsActiveCascade{true};
 

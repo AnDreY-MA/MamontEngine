@@ -88,19 +88,17 @@ namespace MamontEngine
                     inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inRenderPipeline->OpaquePipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
 
             constexpr VkDeviceSize offsets[1] = {0};
-            if (r.MeshBuffer.VertexBuffer.Buffer != VK_NULL_HANDLE)
+           /* if (r.MeshBuffer.VertexBuffer.Buffer != VK_NULL_HANDLE)
             {
                 vkCmdBindVertexBuffers(inCmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
-            }
+            }*/
             
-            if (r.MeshBuffer.IndexBuffer.Buffer != VK_NULL_HANDLE)
-            {
-                vkCmdBindIndexBuffer(inCmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
-            }
+            vkCmdBindIndexBuffer(inCmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
             const GPUDrawPushConstants push_constants
             {
-                .WorldMatrix = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBuffer.Address, 
+                .WorldMatrix = r.Transform, 
+                .VertexBuffer = r.MeshBuffer.VertexBuffer.Address, 
                 .MaterialBuffer = MaterialAllocator::GetBufferAddess(),
                 .MaterialIndex = r.MaterialIndex
             };
@@ -200,8 +198,8 @@ namespace MamontEngine
 
             viewDirectionLight.each([&](const auto& ligth, const auto& transform) { 
                 m_LightData.Color        = ligth.GetColor();
-                const glm::quat rotation       = transform.Transform.Rotation;
-                const glm::vec3 lightDirection = transform.Transform.GetForwardVector();
+                const glm::quat rotation       = transform.GetRotation();
+                const glm::vec3 lightDirection = transform.GetForwardVector();
                 m_LightData.LightDirection = lightDirection;
             });
 
@@ -229,7 +227,7 @@ namespace MamontEngine
                         auto &light                           = m_LightData.PointLights[indexLight];
                         light.Color                           = ligthComponent.GetColor();
                         light.Radius                          = ligthComponent.GetRadius();
-                        light.Position                        = transform.Transform.Position;
+                        light.Position                        = transform.GetPosition();
                         light.Attenuation                     = ligthComponent.GetAttenuation();
                         ++indexLight;
                     });
@@ -261,8 +259,8 @@ namespace MamontEngine
             }
 
             DebugRenderer::Update();
+
         }
-        
     }
 
 } // namespace MamontEngine

@@ -17,5 +17,26 @@ namespace MamontEngine
             
             return inertia;
         }
+
+        std::vector<glm::vec3> BoxCollision::GetAxes(const glm::quat &inOrientation) const
+        {
+            std::vector<glm::vec3> axes;
+            axes.resize(3);
+
+            const glm::mat3 matOrientation = glm::mat3(inOrientation);
+            axes[0]                          = (matOrientation * glm::vec3(1.0f, 0.0f, 0.0f));
+            axes[1]                  = (matOrientation * glm::vec3(0.0f, 1.0f, 0.0f));
+            axes[2]                          = (matOrientation * glm::vec3(0.0f, 0.0f, 1.0f));
+
+            return axes;
+        }
+
+        std::vector<CollisionEdge> BoxCollision::GetEdges(const glm::mat4 &inTransform) const
+        {
+            std::vector<CollisionEdge> edges;
+
+            return edges;
+        }
+
 	}
 }

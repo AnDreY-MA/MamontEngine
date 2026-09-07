@@ -31,6 +31,16 @@ namespace MamontEngine
                 return AABB(-halfExtent, halfExtent);
             }
 
+            virtual std::vector<glm::vec3> GetAxes(const glm::quat& inOrientation) const override
+            {
+                return std::vector<glm::vec3>();
+            }
+
+            virtual std::vector<CollisionEdge> GetEdges(const glm::mat4 &inTransform) const override
+            {
+                return std::vector<CollisionEdge>();
+            }
+
         private:
             float m_Radius{1.f};
 

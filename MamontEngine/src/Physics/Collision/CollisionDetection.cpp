@@ -20,567 +20,155 @@ namespace
         
         return axes;
     }
-
-    std::pair<glm::vec3, glm::vec3>
-    closestPointsBetweenSegments(glm::vec3 lineOrig0, glm::vec3 dir0, float min0, float max0, glm::vec3 lineOrig1, glm::vec3 dir1, float min1, float max1)
-    {
-
-        glm::vec3 p0, p1;
-
-        float     v1v2 = glm::dot(dir0, dir1);
-        glm::vec3 r    = lineOrig1 - lineOrig0;
-        float     rv1  = glm::dot(r, dir0);
-        float     rv2  = glm::dot(r, dir1);
-
-        float t1 = glm::abs(v1v2) > 1.f - 0.0001f ? 0 : (rv1 * v1v2 - rv2) / (1.f - v1v2 * v1v2);
-        float t0 = rv1 + t1 * v1v2;
-
-        if (t0 < min0)
-        {
-            t0 = min0;
-            p0 = lineOrig0 + t0 * dir0;
-            t1 = -glm::dot(lineOrig1 - p0, dir1);
-        }
-        else if (t0 > max0)
-        {
-            t0 = max0;
-            p0 = lineOrig0 + t0 * dir0;
-            t1 = -glm::dot(lineOrig1 - p0, dir1);
-        }
-        else
-        {
-            p0 = lineOrig0 + t0 * dir0;
-        }
-
-        if (t1 < min1)
-        {
-            t1 = min1;
-            p1 = lineOrig1 + t1 * dir1;
-            t0 = -glm::dot(lineOrig0 - p1, dir0);
-            t0 = glm::clamp(t0, min0, max0);
-            p0 = lineOrig0 + t0 * dir0;
-        }
-        else if (t1 > max1)
-        {
-            t1 = max1;
-            p1 = lineOrig1 + t1 * dir1;
-            t0 = -glm::dot(lineOrig0 - p1, dir0);
-            t0 = glm::clamp(t0, min0, max0);
-            p0 = lineOrig0 + t0 * dir0;
-        }
-        else
-        {
-            p1 = lineOrig1 + t1 * dir1;
-        }
-
-        return {p0, p1};
-    }
-
-    struct BoxEdgeContactInfo
-    {
-        int edge0{0};
-        int edge1{0};
-    };
-
-    struct BoxFaceContactInfo
-    {
-        int Box{0};
-        int Axis{0};
-    };
-
-    enum class EBoxContactType : uint8_t
-    {
-        FACE, EDGE
-    };
-
-    thread_local std::vector<glm::vec2> polygon;
-    thread_local std::vector<glm::vec2> clip;
-    constexpr float                     epsilon = 1e-4f;
-    thread_local std::vector<glm::vec3> penetratedPoints;
-    void generateContactsPolygonBoxFace(glm::vec3               boxCenter,
-                                                 glm::mat3               boxBasis,
-                                                 int                     boxAxis,
-                                                 int                     boxAxisSign,
-                                                 glm::vec3               boxHalfExtents,
-                                                 glm::vec3               incPlaneOrig,
-                                                 glm::vec3               incPlaneNormal,
-                                                 std::vector<glm::vec2> &polygon,
-                                                 int                     clipX,
-                                                 int                     clipY,
-                                                 MamontEngine::HeroPhysics::ContactPoint           *contactPoints,
-                                                 int                    &numPoints)
-    {
-        penetratedPoints.clear();
-        penetratedPoints.reserve(polygon.size());
-
-        for (auto point : polygon)
-        {
-            glm::vec3 point3(0);
-            point3[clipX] = point.x;
-            point3[clipY] = point.y;
-            glm::vec3 dir(0);
-            dir[boxAxis]   = boxAxisSign;
-            float distance = glm::dot((incPlaneOrig - point3), incPlaneNormal) / glm::dot(dir, incPlaneNormal); // intersection of ray and plane
-            if (distance < boxHalfExtents[boxAxis] + epsilon)
-            {
-                point3[boxAxis] = boxAxisSign * distance;
-                penetratedPoints.push_back(point3);
-            }
-        }
-
-        if (penetratedPoints.size() > 4)
-        {
-            // build manifold from 4 points
-
-            glm::vec3 penetratedPoint0 = penetratedPoints[0];
-            penetratedPoint0[boxAxis]  = boxAxisSign * boxHalfExtents[boxAxis];
-            contactPoints[0]           = {boxCenter + boxBasis * penetratedPoint0, boxCenter + boxBasis * penetratedPoints[0]};
-
-            float maxDistance      = 0;
-            int   maxDistanceIndex = 0;
-            for (int i = 0; i < penetratedPoints.size(); ++i)
-            {
-                float distance = glm::distance2(penetratedPoints[0], penetratedPoints[i]);
-                if (distance > maxDistance)
-                {
-                    maxDistance      = distance;
-                    maxDistanceIndex = i;
-                }
-            }
-
-            penetratedPoint0          = penetratedPoints[maxDistanceIndex];
-            penetratedPoint0[boxAxis] = boxAxisSign * boxHalfExtents[boxAxis];
-            contactPoints[1]          = {boxCenter + boxBasis * penetratedPoint0, boxCenter + boxBasis * penetratedPoints[maxDistanceIndex]};
-
-            float maxArea      = 0;
-            int   maxAreaIndex = 0;
-            for (int i = 0; i < penetratedPoints.size(); ++i)
-            {
-                auto  ca   = penetratedPoints[0] - penetratedPoints[i];
-                auto  cb   = penetratedPoints[maxDistanceIndex] - penetratedPoints[i];
-                float area = glm::determinant(glm::mat2(glm::vec2(ca[clipX], ca[clipY]), glm::vec2(cb[clipX], cb[clipY])));
-                if (area > maxArea)
-                {
-                    maxArea      = area;
-                    maxAreaIndex = i;
-                }
-            }
-
-            penetratedPoint0          = penetratedPoints[maxAreaIndex];
-            penetratedPoint0[boxAxis] = boxAxisSign * boxHalfExtents[boxAxis];
-            contactPoints[2]          = {boxCenter + boxBasis * penetratedPoint0, boxCenter + boxBasis * penetratedPoints[maxAreaIndex]};
-
-            float minArea      = 0;
-            int   minAreaIndex = 0;
-            for (int i = 0; i < penetratedPoints.size(); ++i)
-            {
-                auto  da   = penetratedPoints[0] - penetratedPoints[i];
-                auto  db   = penetratedPoints[maxDistanceIndex] - penetratedPoints[i];
-                float area = glm::determinant(glm::mat2(glm::vec2(da[clipX], da[clipY]), glm::vec2(db[clipX], db[clipY])));
-                if (area < minArea)
-                {
-                    minArea      = area;
-                    minAreaIndex = i;
-                }
-            }
-
-            penetratedPoint0          = penetratedPoints[minAreaIndex];
-            penetratedPoint0[boxAxis] = boxAxisSign * boxHalfExtents[boxAxis];
-            contactPoints[3]          = {boxCenter + boxBasis * penetratedPoint0, boxCenter + boxBasis * penetratedPoints[minAreaIndex]};
-
-            numPoints = 4;
-        }
-        else
-        {
-            for (int i = 0; i < penetratedPoints.size(); ++i)
-            {
-                glm::vec3 penetratedPoint0 = penetratedPoints[i];
-                penetratedPoint0[boxAxis]  = boxAxisSign * boxHalfExtents[boxAxis];
-                contactPoints[i]           = {boxCenter + boxBasis * penetratedPoint0, boxCenter + boxBasis * penetratedPoints[i]};
-            }
-            numPoints = penetratedPoints.size();
-        }
-    }
-
-    namespace Clipping
-    {
-        constexpr int   MAX_POINTS = 128;
-        
-        static bool   isInside(glm::vec2 point, glm::vec2 a, glm::vec2 b)
-        {
-            return (b.y - a.y) * (point.x - a.x) - (b.x - a.x) * (point.y - a.y) > 0; // dot product with normal of edge towards interior
-        }
-
-        static glm::vec2 intersection(glm::vec2 a1, glm::vec2 b1, glm::vec2 a2, glm::vec2 b2)
-        {
-            auto  r1 = b1 - a1;
-            auto  r2 = b2 - a2;
-            float t  = glm::determinant(glm::mat2(a1 - a2, r2)) / glm::determinant(glm::mat2(-r1, r2));
-            return a1 + t * r1;
-        }
-
-        static void clipEdge(std::vector<glm::vec2> &polygon, glm::vec2 a, glm::vec2 b)
-        {
-            glm::vec2 newPoints[MAX_POINTS];
-            int       newPointCount = 0;
-
-            for (int i = 0; i < polygon.size(); ++i)
-            {
-                int j = (i + 1) % polygon.size();
-
-                bool iInside = isInside(polygon[i], a, b);
-                bool jInside = isInside(polygon[j], a, b);
-
-                if (iInside && jInside)
-                {
-                    newPoints[newPointCount++] = polygon[j];
-                }
-                else if (iInside)
-                {
-                    newPoints[newPointCount++] = intersection(polygon[i], polygon[j], a, b);
-                }
-                else if (jInside)
-                {
-                    newPoints[newPointCount++] = intersection(polygon[i], polygon[j], a, b);
-                    newPoints[newPointCount++] = polygon[j];
-                }
-            }
-
-            polygon.resize(newPointCount);
-
-            for (int i = 0; i < newPointCount; ++i)
-            {
-                polygon[i] = newPoints[i];
-            }
-        }
-
-        static void SuthHodglip(std::vector<glm::vec2>& polygon, std::vector<glm::vec2>& clip)
-        {
-            for (int i = 0; i < clip.size(); ++i)
-            {
-                int j = (i + 1) % clip.size();
-                clipEdge(polygon, clip[i], clip[j]);
-            }
-        }
-    }
 }
 
 namespace MamontEngine
 {
     namespace HeroPhysics
     {
-        static void generateBoxBoxFaceContacts(glm::mat3     uRef,
-            glm::vec3     posRef,
-            glm::vec3     halfExtentsRef,
-            glm::mat3     uInc,
-            glm::vec3     posInc,
-            glm::vec3     halfExtentsInc,
-            int           referenceAxis,
-            ContactPoint* contactPoints,
-            int& numPoints)
+        static std::vector<glm::vec3> GetBoxVertices(const AABB &aabb)
         {
-            glm::vec3 axis = uRef[referenceAxis];
-            float     refSign = glm::dot(axis, posInc - posRef) < 0 ? -1 : 1;
+            std::vector<glm::vec3> vertices;
+            vertices.resize(8);
+            
+            // Lower
+            vertices[0].x = aabb.Min.x;
+            vertices[0].y = aabb.Min.y;
+            vertices[0].z = aabb.Min.z;
 
-            float maxDot{0};
-            int   incAxis = 0;
-            float   incSign{0.1};
-            for (int i{ 0 }; i < 3; ++i)
-            {
-                const float dot = glm::dot(-refSign * axis, uInc[i]);
-                const float absDot = glm::abs(dot);
-                if (absDot > maxDot)
-                {
-                    maxDot = absDot;
-                    incAxis = i;
-                    incSign = dot < 0 ? -1 : 1;
-                }
-            }
+            vertices[1].x = aabb.Min.x;
+            vertices[1].z = aabb.Min.z;
 
-            polygon.reserve(8);
-            polygon.resize(4);
-            clip.resize(4);
+            vertices[2].z = aabb.Min.z;
 
-            const int incAxis1 = (incAxis + 1) % 3, incAxis2 = (incAxis + 2) % 3;
+            vertices[3].y = aabb.Min.y;
+            vertices[3].z = aabb.Min.z;
 
-            glm::mat3 inverseURef = glm::inverse(uRef);
+            vertices[4].x = aabb.Min.x;
+            vertices[4].y = aabb.Min.y;
 
-            const glm::vec3 incPlaneOrig = inverseURef * (posInc + uInc[incAxis] * halfExtentsInc[incAxis] * incSign - posRef);
+            vertices[5].x = aabb.Min.x;
 
-            const glm::vec3 poly0 = incPlaneOrig + inverseURef * (uInc[incAxis1] * halfExtentsInc[incAxis1] + uInc[incAxis2] * halfExtentsInc[incAxis2]);
-            const glm::vec3 poly1 = incPlaneOrig + inverseURef * (-uInc[incAxis1] * halfExtentsInc[incAxis1] + uInc[incAxis2] * halfExtentsInc[incAxis2]);
-            const glm::vec3 poly2 = incPlaneOrig + inverseURef * (-uInc[incAxis1] * halfExtentsInc[incAxis1] - uInc[incAxis2] * halfExtentsInc[incAxis2]);
-            const glm::vec3 poly3 = incPlaneOrig + inverseURef * (uInc[incAxis1] * halfExtentsInc[incAxis1] - uInc[incAxis2] * halfExtentsInc[incAxis2]);
+            vertices[7].y = aabb.Min.y;
 
-            int clipX = (referenceAxis + 1) % 3;
-            int clipY = (referenceAxis + 2) % 3;
+            // Upper
+            vertices[1].y = aabb.Max.y;
 
-            polygon[0] = {poly0[clipX], poly0[clipY]};
-            polygon[1] = {poly1[clipX], poly1[clipY]};
-            polygon[2] = {poly2[clipX], poly2[clipY]};
-            polygon[3] = {poly3[clipX], poly3[clipY]};
+            vertices[2].x = aabb.Max.x;
+            vertices[2].y = aabb.Max.y;
 
-            clip[0] = {halfExtentsRef[clipX], halfExtentsRef[clipY]};
-            clip[1] = {halfExtentsRef[clipX], -halfExtentsRef[clipY]};
-            clip[2] = {-halfExtentsRef[clipX], -halfExtentsRef[clipY]};
-            clip[3] = {-halfExtentsRef[clipX], halfExtentsRef[clipY]};
+            vertices[3].x = aabb.Max.x;
 
-            Clipping::SuthHodglip(polygon, clip);
+            vertices[4].z = aabb.Max.z;
 
-            const glm::vec3 incPlaneNormal = inverseURef * uInc[incAxis];
+            vertices[5].y = aabb.Max.y;
+            vertices[5].z = aabb.Max.z;
 
-            generateContactsPolygonBoxFace(
-                    posRef, uRef, referenceAxis, refSign, halfExtentsRef, incPlaneOrig, incPlaneNormal, polygon, clipX, clipY, contactPoints, numPoints);
+            vertices[6].x = aabb.Max.x;
+            vertices[6].y = aabb.Max.y;
+            vertices[6].z = aabb.Max.z;
+
+            vertices[7].x = aabb.Max.x;
+            vertices[7].z = aabb.Max.z;
+
+            return vertices;
         }
 
-        static bool CheckCollisionBoxBox(const CollisionPair *inPair, ContactManifold &outResults)
+        static std::pair<glm::vec3, glm::vec3> GetMinMaxVertexOnAxis(const Rigidbody* body, const glm::vec3& axis)
         {
-            float edgeOffset{.1f};
-            constexpr float edgeLimit{.999f};
+            const glm::mat4 currentTransform = body->GetWorldTransform();
 
-            float max = std::numeric_limits<float>::lowest();
+            const glm::vec3 localAxis = glm::transpose(glm::mat3(currentTransform)) * axis;
 
-            EBoxContactType contactType = EBoxContactType::FACE;
-            BoxEdgeContactInfo edgeInfo;
-            BoxFaceContactInfo faceInfo;
+            const auto vertices = GetBoxVertices(body->GetShape()->GetBounds());
 
-            glm::mat3 r = glm::mat3();
-            glm::mat3 absR = glm::mat3();
-
-            glm::mat3 u0 = glm::mat3(inPair->Object1->GetRotation());
-            glm::mat3 u1 = glm::mat3(inPair->Object2->GetRotation());
-
-            const glm::vec3 position1 = inPair->Object1->GetPosition();
-            const glm::vec3 position2 = inPair->Object2->GetPosition();
-
-            glm::vec3 t = position1 - position2;
-            t           = glm::vec3(glm::dot(t, u0[0]), glm::dot(t, u0[1]), glm::dot(t, u0[2]));
-
-            const auto            &shapeObject1 = inPair->Object1->GetShape();
-            const auto           &shapeObject2 = inPair->Object2->GetShape();
-            const auto            &shape1       = std::static_pointer_cast<BoxCollision>(shapeObject1);
-            const auto            &shape2       = std::static_pointer_cast<BoxCollision>(shapeObject2);
-            const glm::vec3       halfExtents1 = shape1->GetHalfExtent();
-            const glm::vec3       halfExtents2 = shape2->GetHalfExtent();
-
-            float ra = 0.f, rb = 0.f, l = 0.f, d = 0.f;
-
-            for (int i{ 0 }; i < 3; ++i)
+            int minVertex = 0, maxVertex = 0;
             {
-                for (int j{ 0 }; j < 3; ++j)
+                float minCorrelation = FLT_MAX, maxCorrelation = -FLT_MAX;
+                for (size_t i = 0; i < vertices.size(); ++i)
                 {
-                    r[i][j] = glm::dot(u0[i], u1[j]);
-                    absR[i][j] = glm::abs(r[i][j]);
-                }
-            }
-
-            for (int i{ 0 }; i < 3; i++)
-            {
-                ra = halfExtents1[i];
-                rb = halfExtents2[0] * absR[i][0] + halfExtents2[1] * absR[i][1] + halfExtents2[2] * absR[i][2];
-                l  = glm::abs(t[i]);
-                d  = l - ra - rb;
-                if (d > 0) return false;
-
-                if (d > max)
-                {
-                    max = d;
-                    contactType = EBoxContactType::FACE;
-                    faceInfo    = {0, i};
-                }
-            }
-
-            for (int i{ 0 }; i < 3; i++)
-            {
-                ra = halfExtents1[0] * absR[0][i] + halfExtents1[1] * absR[1][i] + halfExtents1[2] * absR[2][i];
-                rb = halfExtents2[i];
-                l  = glm::abs(t[0] * r[0][i] + t[1] * r[1][i] + t[2] * r[2][i]);
-                d  = l - ra - rb;
-
-                if (d > 0) return false;
-                if (d > max)
-                {
-                    max = d;
-                    contactType = EBoxContactType::FACE;
-                    faceInfo    = {1, i};
-                }
-            }
-
-            // Test axis L = A0 x B0
-            ra = halfExtents1[1] * absR[2][0] + halfExtents1[2] * absR[1][0];
-            rb = halfExtents2[1] * absR[0][2] + halfExtents2[2] * absR[0][1];
-            l  = glm::abs(t[2] * r[1][0] - t[1] * r[2][0]);
-            d  = l - ra - rb;
-            if (d > 0) return false;
-            if (absR[0][0] < edgeLimit && d > max + edgeOffset)
-            {
-                max = d;
-                contactType = EBoxContactType::EDGE;
-                edgeInfo    = {0, 0};
-                edgeOffset  = 0;
-            }
-
-            // Test exis L = A0 x B1
-            ra = halfExtents1[1] * absR[2][1] + halfExtents1[2] * absR[1][1];
-            rb = halfExtents2[0] * absR[0][2] + halfExtents2[2] * absR[0][0];
-            l  = glm::abs(t[2] * r[1][1] - t[1] * r[2][1]);
-            d  = l - ra - rb;
-            if (d > 0) return false;
-            if (absR[0][1] < edgeLimit && d > max + edgeOffset)
-            {
-                max         = d;
-                contactType = EBoxContactType::EDGE;
-                edgeInfo    = {0, 1};
-                edgeOffset  = 0;
-            }
-
-            // Test exis L = A0 x B2
-            ra = halfExtents1[1] * absR[2][2] + halfExtents1[2] * absR[1][2];
-            rb = halfExtents2[0] * absR[0][1] + halfExtents2[1] * absR[0][0];
-            l  = glm::abs(t[2] * r[1][2] - t[1] * r[2][2]);
-            d  = l - ra - rb;
-            if (d > 0) return false;
-            if (absR[0][2] < edgeLimit && d > max + edgeOffset)
-            {
-                max         = d;
-                contactType = EBoxContactType::EDGE;
-                edgeInfo    = {0, 2};
-                edgeOffset  = 0;
-            }
-
-            // Test exis L = A1 x B0
-            ra = halfExtents1[0] * absR[2][0] + halfExtents1[2] * absR[0][0];
-            rb = halfExtents2[1] * absR[1][2] + halfExtents2[2] * absR[1][1];
-            l  = glm::abs(t[0] * r[2][0] - t[2] * r[0][0]);
-            d  = l - ra - rb;
-            if (d > 0) return false;
-            if (absR[1][0] < edgeLimit && d > max + edgeOffset)
-            {
-                max         = d;
-                contactType = EBoxContactType::EDGE;
-                edgeInfo    = {1, 0};
-                edgeOffset  = 0;
-            }
-
-            // Test exis L = A1 x B1
-            ra = halfExtents1[0] * absR[2][1] + halfExtents1[2] * absR[0][1];
-            rb = halfExtents2[0] * absR[1][2] + halfExtents2[2] * absR[1][0];
-            l  = glm::abs(t[0] * r[2][1] - t[2] * r[0][1]);
-            d  = l - ra - rb;
-            if (d > 0) return false;
-            if (absR[1][1] < edgeLimit && d > max + edgeOffset)
-            {
-                max         = d;
-                contactType = EBoxContactType::EDGE;
-                edgeInfo    = {1, 1};
-                edgeOffset  = 0;
-            }
-
-            // Test exis L = A1 x B2
-            ra = halfExtents1[0] * absR[2][2] + halfExtents1[2] * absR[0][2];
-            rb = halfExtents2[0] * absR[1][1] + halfExtents2[1] * absR[1][0];
-            l  = glm::abs(t[0] * r[2][2] - t[2] * r[0][2]);
-            d  = l - ra - rb;
-            if (d > 0) return false;
-            if (absR[1][2] < edgeLimit && d > max + edgeOffset)
-            {
-                max         = d;
-                contactType = EBoxContactType::EDGE;
-                edgeInfo    = {1, 2};
-                edgeOffset  = 0;
-            }
-
-            // Test exis L = A2 x B0
-            ra = halfExtents1[0] * absR[1][0] + halfExtents1[1] * absR[0][0];
-            rb = halfExtents2[1] * absR[2][2] + halfExtents2[2] * absR[2][1];
-            l  = glm::abs(t[1] * r[0][0] - t[0] * r[1][0]);
-            d  = l - ra - rb;
-            if (d > 0) return false;
-            if (absR[2][0] < edgeLimit && d > max + edgeOffset)
-            {
-                max         = d;
-                contactType = EBoxContactType::EDGE;
-                edgeInfo    = {2, 0};
-                edgeOffset  = 0;
-            }
-
-            // Test exis L = A2 x B1
-            ra = halfExtents1[0] * absR[1][1] + halfExtents1[1] * absR[0][1];
-            rb = halfExtents2[0] * absR[2][2] + halfExtents2[2] * absR[2][0];
-            l  = glm::abs(t[1] * r[0][1] - t[0] * r[1][1]);
-            d  = l - ra - rb;
-            if (d > 0) return false;
-            if (absR[2][1] < edgeLimit && d > max + edgeOffset)
-            {
-                max         = d;
-                contactType = EBoxContactType::EDGE;
-                edgeInfo    = {2, 1};
-                edgeOffset  = 0;
-            }
-
-            // Test exis L = A2 x B2
-            ra = halfExtents1[0] * absR[1][2] + halfExtents1[1] * absR[0][2];
-            rb = halfExtents2[0] * absR[2][1] + halfExtents2[1] * absR[2][0];
-            l  = glm::abs(t[1] * r[0][2] - t[0] * r[1][2]);
-            d  = l - ra - rb;
-            if (d > 0) return false;
-            if (absR[2][2] < edgeLimit && d > max + edgeOffset)
-            {
-                max         = d;
-                contactType = EBoxContactType::EDGE;
-                edgeInfo    = {2, 2};
-            }
-
-            switch (contactType)
-            {
-                case EBoxContactType::FACE:
-                {
-                    glm::vec3 axis;
-                    ContactPoint contactPoints[4];
-                    int          numPoints;
-                    if (faceInfo.Box)
+                    const float currentCorrelation = glm::dot(localAxis, vertices[i]);
+                    if (currentCorrelation > maxCorrelation)
                     {
-                        axis = u1[faceInfo.Axis];
-                        generateBoxBoxFaceContacts(u1, position2, halfExtents2, u0, position1, halfExtents1, faceInfo.Axis, contactPoints, numPoints);
-                        
-                        for (int i{ 0 }; i < numPoints; i++) 
-                        {
-                            outResults.Points[i] = {contactPoints[i].Position1, contactPoints[i].Position2};
-                        }
+                        maxCorrelation = currentCorrelation;
+                        maxVertex      = int(i);
                     }
-                    else
+                    if (currentCorrelation <= minCorrelation)
                     {
-                        axis = u0[faceInfo.Axis];
-                        generateBoxBoxFaceContacts(u0, position1, halfExtents1, u1, position2, halfExtents2, faceInfo.Axis, contactPoints, numPoints);
-                        for (int i{0}; i < numPoints; i++)
-                        {
-                            outResults.Points[i] = {contactPoints[i].Position1, contactPoints[i].Position2};
-                        }
+                        minCorrelation = currentCorrelation;
+                        minVertex      = int(i);
                     }
+                }
+            }
 
-                    outResults.NumPoints = numPoints;
-                    outResults.Normal    = glm::dot(axis, position2 - position1) < 0 ? -axis : axis;
-                }
-                break;
-                
-                case EBoxContactType::EDGE:
-                {
-                    glm::vec3 axis = glm::cross(u0[edgeInfo.edge0], u1[edgeInfo.edge1]);
-                    outResults.Normal = glm::normalize(glm::dot(axis, position2 - position1) < 0 ? -axis : axis);
-                    glm::vec3 sign0(-1);
-                    sign0[(edgeInfo.edge0 + 1) % 3] = glm::dot(u0[(edgeInfo.edge0 + 1) % 3], outResults.Normal) < 0 ? -1 : 1;
-                    sign0[(edgeInfo.edge0 + 2) % 3] = glm::dot(u0[(edgeInfo.edge0 + 2) % 3], outResults.Normal) < 0 ? -1 : 1;
-                    glm::vec3 p0 = position1 + sign0[0] * halfExtents1[0] * u0[0] + sign0[1] * halfExtents1[1] * u0[1] + sign0[2] * halfExtents1[2] * u0[2];
-                    glm::vec3 sign1(-1);
-                    sign1[(edgeInfo.edge1 + 1) % 3] = glm::dot(u1[(edgeInfo.edge1 + 1) % 3], outResults.Normal) > 0 ? -1 : 1;
-                    sign1[(edgeInfo.edge1 + 2) % 3] = glm::dot(u1[(edgeInfo.edge1 + 2) % 3], outResults.Normal) > 0 ? -1 : 1;
-                    glm::vec3 p1          = position2 + sign1[0] * halfExtents2[0] * u1[0] + sign1[1] * halfExtents2[1] * u1[1] + sign1[2] * halfExtents2[2] * u1[2];
-                    outResults.NumPoints= 1;
-                    auto [point0, point1] = closestPointsBetweenSegments(
-                            p0, u0[edgeInfo.edge0], 0, halfExtents1[edgeInfo.edge0] * 2, p1, u1[edgeInfo.edge1], 0, halfExtents2[edgeInfo.edge1] * 2);
-                    outResults.Points[0] = {point0, point1};
-                }
-                break;
+            std::pair<glm::vec3, glm::vec3> result;
+
+            result.first = currentTransform * glm::vec4(vertices[minVertex], 1.f);
+            result.second = currentTransform * glm::vec4(vertices[maxVertex], 1.f);
+
+            return result;
+        }
+
+        static void GetIncidentReferencePolygon(const Rigidbody* body, const glm::vec3& axis, ReferencePolygon& refPolygon)
+        {
+            const glm::mat4 currentTransform = body->GetWorldTransform();
+
+            const glm::mat3 invNormalMatrix{glm::transpose(glm::mat3(currentTransform))};
+            const glm::mat3 normalMatrix{glm::inverse(invNormalMatrix)};
+
+            const glm::vec3 localAxis = invNormalMatrix * axis;
+            
+            const auto minmaxVertices = GetMinMaxVertexOnAxis(body, localAxis);
+
+            const auto boxVertices = GetBoxVertices(body->GetShape()->GetBounds());
+
+            //const; 
+
+        }
+
+        bool CheckCollisionAxis(
+                const glm::vec3 inAxis, Rigidbody *body1, Rigidbody *body2, CollisionShape *shape1, CollisionShape *shape2, CollisionData *outCollisionData);
+
+        static bool CheckCollisionBoxBox(const CollisionPair *inPair, CollisionData* outCollisionData)
+        {
+            CollisionData currentData;
+            CollisionData bestData; 
+            bestData.Penetration = -FLT_MAX;
+
+            const auto& shape1 = inPair->Object1->GetShape();
+            const auto& shape2 = inPair->Object2->GetShape();
+
+            const std::vector<glm::vec3> &shape1CollisionAxes = shape1->GetAxes(inPair->Object1->GetRotation());
+            const std::vector<glm::vec3> &shape2CollisionAxes = shape2->GetAxes(inPair->Object2->GetRotation());
+
+            static constexpr int MAX_COLLISION_AXES = 100;
+            static std::array<glm::vec3, MAX_COLLISION_AXES> possibleCollisionAxes{};
+
+            uint32_t possibleCollisionAxesCount{0};
+            for (const glm::vec3 &axis : shape1CollisionAxes)
+            {
+                possibleCollisionAxes[possibleCollisionAxesCount++] = axis;
+            }
+
+            for (const glm::vec3 &axis : shape2CollisionAxes)
+            {
+                possibleCollisionAxes[possibleCollisionAxesCount++] = axis;
+            }
+
+            for (uint32_t i = 0; i < possibleCollisionAxesCount; ++i)
+            {
+                const glm::vec3 &axis = possibleCollisionAxes[i];
+
+                if (!CheckCollisionAxis(axis, inPair->Object1, inPair->Object2, shape1.get(), shape2.get(), &currentData))
+                    return false;
+
+                if (currentData.Penetration >= bestData.Penetration)
+                    bestData = currentData;
+            }
+
+            if (outCollisionData)
+            {
+                *outCollisionData = bestData;
             }
 
             return true;
@@ -628,10 +216,18 @@ namespace MamontEngine
 
         bool CheckCollision(const CollisionPair *inPair, CollisionData *collisionData)
         {
-           /* const auto &shape1 = inPair->Object1->GetShape();
+            const auto &shape1 = inPair->Object1->GetShape();
             const auto &shape2 = inPair->Object2->GetShape();
 
-            if (shape1->GetShapeType() == EShapeType::Sphere)
+            switch (shape1->GetShapeType())
+            {
+                //case EShapeType::Box:
+                    
+                default:
+                    break;
+            }
+
+            /* if (shape1->GetShapeType() == EShapeType::Sphere)
             {
                 if (shape2->GetShapeType() == EShapeType::Sphere)
                 {
@@ -642,39 +238,44 @@ namespace MamontEngine
             return CheckSpherSphere(inPair, collisionData);
         }
 
-        /*        bool CheckCollision(const CollisionPair *inPair, std::vector<ContactManifold> &outResults)
+        bool BuildCollisionManifold(Rigidbody *body1, Rigidbody *body2, CollisionData &collisionData, Manifold *manifold)
         {
-            outResults.push_back(ContactManifold());
+            if (!manifold) return false;
 
-            return CheckCollisionBoxBox(inPair, outResults[0]);
-            //return false;
-        }*/
-       /* bool CheckCollision(const CollisionPair *inPair, CollisionData *outCollisionData)
+            ReferencePolygon poly1, poly2;
+
+
+            return false;
+        }
+
+        bool CheckCollisionAxis(
+            const glm::vec3 inAxis, Rigidbody* body1, Rigidbody* body2, CollisionShape* shape1, CollisionShape* shape2, CollisionData* outCollisionData)
         {
-            PROFILE_FUNCTION();
+            const auto obj1 = GetMinMaxVertexOnAxis(body1, inAxis);
+            const auto obj2 = GetMinMaxVertexOnAxis(body2, inAxis);
 
-            CollisionData bestColData;
-            bestColData.Penetration = -FLT_MAX;
+            const float minCorrelation1 = glm::dot(inAxis, obj1.first);
+            const float maxCorrelation1 = glm::dot(inAxis, obj1.second);
+            const float minCorrelation2 = glm::dot(inAxis, obj2.first);
+            const float maxCorrelation2 = glm::dot(inAxis, obj2.second);
 
-            const auto shape1Axes = GetCollisionAxes(inPair->Object1->GetRotation());
-            const auto shape2Axes = GetCollisionAxes(inPair->Object2->GetRotation());
-
-            static constexpr int MAX_COLLISION_AXES = 100;
-            glm::vec3            possibleCollisionAxes[MAX_COLLISION_AXES];
-
-            uint32_t possibleAxesCount{0};
-
-            for (const glm::vec3& axis : shape1Axes)
+            if (minCorrelation1 <= minCorrelation2 && maxCorrelation1 >= maxCorrelation2)
             {
-                possibleCollisionAxes[possibleAxesCount++] = axis;
+                outCollisionData->Normal = inAxis;
+                outCollisionData->Penetration = minCorrelation2 - maxCorrelation1;
+                outCollisionData->Point       = obj1.second + inAxis * outCollisionData->Penetration;
+                return true;
             }
 
-            for (const glm::vec3& axis : shape2Axes)
+            if (minCorrelation2 <= minCorrelation1 && maxCorrelation2 >= maxCorrelation1)
             {
-                possibleCollisionAxes[possibleAxesCount++] = axis;
+                outCollisionData->Normal      = -inAxis;
+                outCollisionData->Penetration = minCorrelation1 - maxCorrelation2;
+                outCollisionData->Point       = obj1.first + inAxis * outCollisionData->Penetration;
+                return true;    
             }
 
             return false;
-        }*/
+        }
     } // namespace HeroPhysics
 } // namespace MamontEngine

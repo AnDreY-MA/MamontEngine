@@ -293,20 +293,22 @@ namespace MamontEngine
 
         const fastgltf::Asset gltf = std::move(loadResult.get());
 
-        const VkDevice device = LogicalDevice::GetDevice();
 
-        std::vector<VkSampler> samplers = LoadSamplers(device, gltf.samplers);
-        LoadImages(gltf, samplers);
-        LoadMaterials(gltf, samplers);
+        LoadImages(gltf);
+        LoadMaterials(gltf);
 
         LoadMesh(gltf);
         LoadNodes(gltf);
 
         m_FilePath = filePath;
+
+        IsDirty = true;
     }
 
-    std::vector<VkSampler> MeshModel::LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers)
+    std::vector<VkSampler> MeshModel::LoadSamplers(const std::vector<fastgltf::Sampler> &samplers)
     {
+        const VkDevice device = LogicalDevice::GetDevice();
+
         VkSamplerCreateInfo sampl = {.sType     = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                                      .pNext     = nullptr,
                                      .magFilter = VK_FILTER_LINEAR,
@@ -326,7 +328,7 @@ namespace MamontEngine
             sampl.mipmapMode = extract_mipmap_mode(sampler.minFilter.value_or(fastgltf::Filter::Nearest));
 
             VkSampler newSampler;
-            vkCreateSampler(inDevice, &sampl, nullptr, &newSampler);
+            vkCreateSampler(device, &sampl, nullptr, &newSampler);
 
             modelSamplers.push_back(newSampler);
         }
@@ -334,34 +336,38 @@ namespace MamontEngine
         return modelSamplers;
     }
 
-    void MeshModel::LoadImages(const fastgltf::Asset &inFileAsset, const std::vector<VkSampler> &inSamplers)
+    void MeshModel::LoadImages(const fastgltf::Asset &inFileAsset)
     {
         const auto size = inFileAsset.images.size();
         m_Textures.reserve(size != 0 ? size : 1);
 
+        const std::vector<VkSampler> samplers = LoadSamplers(inFileAsset.samplers);
 
-        uint32_t i = 0;
-        for (const fastgltf::Image &image : inFileAsset.images)
+        for (const auto &textureGltf : inFileAsset.textures)
         {
-            const auto texture = load_image(inFileAsset, image, inSamplers[i]);
+            const auto &image   = inFileAsset.images[textureGltf.imageIndex.value()];
+            const auto &sampler   = inFileAsset.samplers[textureGltf.samplerIndex.value()];
+            const auto  texture = load_image(inFileAsset, image, samplers[textureGltf.samplerIndex.value()]);
 
             if (texture)
             {
                 Log::Info("Loaded texture: {}", image.name.c_str());
                 m_Textures.push_back(texture);
-                //texture->Sampler = inSamplers[i];
             }
             else
             {
                 Log::Warn("gltf failed to load texture: {}", image.name);
             }
-            i++;
         }
 
-        m_Textures.push_back(CreateWhiteTexture());
+        if (size == 0)
+        {
+            m_Textures.push_back(CreateWhiteTexture());
+        }
+
     }
 
-    void MeshModel::LoadMaterials(const fastgltf::Asset &inFileAsset, const std::vector<VkSampler> &inSamplers)
+    void MeshModel::LoadMaterials(const fastgltf::Asset &inFileAsset)
     {
         m_Materials.reserve(inFileAsset.materials.size());
 
@@ -394,7 +400,6 @@ namespace MamontEngine
                 const size_t sampler = inFileAsset.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
 
                 materialResources.ColorTexture         = m_Textures[img];
-                materialResources.ColorTexture->Sampler = inSamplers[sampler];
             }
 
             if (mat.pbrData.metallicRoughnessTexture.has_value())
@@ -403,7 +408,6 @@ namespace MamontEngine
                 const size_t sampler = inFileAsset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].samplerIndex.value();
 
                 materialResources.MetalRoughTexture         = m_Textures[img];
-                materialResources.MetalRoughTexture->Sampler = inSamplers[sampler];
             }
 
             if (mat.normalTexture.has_value())
@@ -411,7 +415,6 @@ namespace MamontEngine
                 const auto textureIndex                  = inFileAsset.textures[mat.normalTexture.value().textureIndex].imageIndex.value();
                 const auto samplerIndex                  = inFileAsset.textures[mat.normalTexture.value().textureIndex].samplerIndex.value();
                 materialResources.NormalTexture          = m_Textures[textureIndex];
-                materialResources.NormalTexture->Sampler = inSamplers[samplerIndex];
                 constants.HasNormaMap                    = 1;
             }
             else
@@ -424,7 +427,6 @@ namespace MamontEngine
                 const auto textureIndex                    = inFileAsset.textures[mat.emissiveTexture.value().textureIndex].imageIndex.value();
                 const auto samplerIndex                    = inFileAsset.textures[mat.emissiveTexture.value().textureIndex].samplerIndex.value();
                 materialResources.EmissiveTexture          = m_Textures[textureIndex];
-                materialResources.EmissiveTexture->Sampler = inSamplers[samplerIndex];
             }
 
             if (mat.occlusionTexture.has_value())
@@ -432,7 +434,6 @@ namespace MamontEngine
                 const auto textureIndex                     = inFileAsset.textures[mat.occlusionTexture.value().textureIndex].imageIndex.value();
                 const auto samplerIndex                     = inFileAsset.textures[mat.occlusionTexture.value().textureIndex].samplerIndex.value();
                 materialResources.OcclusionTexture          = m_Textures[textureIndex];
-                materialResources.OcclusionTexture->Sampler = inSamplers[samplerIndex];
             }
 
             auto newMat  = std::shared_ptr<Material>(MaterialManager::Get()->CreateMaterial(passType, materialResources, constants));
@@ -566,20 +567,11 @@ namespace MamontEngine
                 {
                     newPrimitive->MaterialIndex = static_cast<uint32_t>(p.materialIndex.value());
                 }
+                
                 else
                 {
                     newPrimitive->MaterialIndex = 0;
                 }
-
-                /*glm::vec3 minpos = vertices[initial_vtx].Position;
-                glm::vec3 maxpos = vertices[initial_vtx].Position;
-                for (size_t i = initial_vtx; i < vertices.size(); ++i)
-                {
-                    minpos = glm::min(minpos, vertices[i].Position);
-                    maxpos = glm::max(maxpos, vertices[i].Position);
-                }
-
-                newPrimitive->Bound = AABB(minpos, maxpos);*/
 
                 newmesh->Primitives.push_back(std::move(newPrimitive));
             }

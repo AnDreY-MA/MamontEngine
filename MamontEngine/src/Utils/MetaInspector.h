@@ -99,10 +99,13 @@ namespace MetaInspectors
     inline void MetaInspect<Transform>(const std::string &name, Transform &value, const entt::meta_data &meta)
     {
         //ImGui::Text(name.c_str());
+       // bool changed{false};
 
-        MUI::DrawVec3Control("Position", value.Position);
-        MUI::DrawQuatControl("Rotation", value.Rotation);
-        MUI::DrawVec3Control("Scale", value.Scale, 1.f);
+        bool pos = MUI::DrawVec3Control("Position", value.Position);
+        bool rot = MUI::DrawQuatControl("Rotation", value.Rotation);
+        bool scale = MUI::DrawVec3Control("Scale", value.Scale, 1.f);
+
+        value.IsDirty = pos || rot || scale;
     }
     template <>
     inline void MetaInspect<Color>(const std::string &name, Color &value, const entt::meta_data &meta)

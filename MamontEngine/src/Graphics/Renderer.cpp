@@ -19,6 +19,7 @@
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Pass/DirectLightPass.h"
 #include "Graphics/Pass/PointLightPass.h"
+#include "Graphics/Pass/PickPass.h"
 #include "Core/JobSystem.h"
 #include "Graphics/DebugRenderer.h"
 // #define VMA_IMPLEMENTATION
@@ -31,6 +32,8 @@ namespace MamontEngine
     Renderer::Renderer(VkContextDevice &inDeviceContext, const std::shared_ptr<WindowCore> &inWindow) 
         : m_DeviceContext(inDeviceContext), m_Window(inWindow)
     {
+        m_SkyPass = std::make_unique<SkyPass>();
+
         InitPipelines();
 
         const std::array<VkDescriptorSetLayout, 2> layouts = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
@@ -40,11 +43,14 @@ namespace MamontEngine
 
         m_PointLightPass = std::make_unique<PointLightPass>(m_DeviceContext.PointLightShadowMaps);
         m_PointLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
+
+        m_PickPass = std::make_unique<PickPass>();
+        m_PickPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
     }
 
     Renderer::~Renderer()
     {
-        m_Skybox.reset();
+        //m_Skybox.reset();
         m_SceneRenderer.reset();
         DestroyPipelines();
         DebugRenderer::Destroy();
@@ -53,29 +59,6 @@ namespace MamontEngine
     void Renderer::InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera, const std::shared_ptr<Scene> &inScene)
     {
         m_SceneRenderer = std::make_shared<SceneRenderer>(inMainCamera, inScene);
-        const std::string cubePath = DEFAULT_ASSETS_DIRECTORY + "cube.glb";
-        m_Skybox                   = std::make_unique<MeshModel>(0, cubePath);
-
-        VkDeviceAddress vertexAddress{0};
-        {
-            DrawContext skyboxContext;
-            m_Skybox->Draw(skyboxContext);
-            const RenderObject &object = skyboxContext.OpaqueSurfaces[0];
-            vertexAddress              = object.MeshBuffer.VertexBuffer.Address;
-        }
-
-        m_DeviceContext.CreatePrefilteredCubeTexture(vertexAddress, [&](VkCommandBuffer cmd) {
-                    DrawContext skyboxContext;
-                    m_Skybox->Draw(skyboxContext);
-                    const RenderObject &object = skyboxContext.OpaqueSurfaces[0];
-
-                    constexpr VkDeviceSize offsets[1] = {0};
-                    vkCmdBindVertexBuffers(cmd, 0, 1, &object.MeshBuffer.VertexBuffer.Buffer, offsets);
-
-                    vkCmdBindIndexBuffer(cmd, object.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
-
-                    vkCmdDrawIndexed(cmd, object.IndexCount, 1, object.FirstIndex, 0, 0);
-            });
     }
 
     void Renderer::InitImGuiRenderer()
@@ -98,7 +81,10 @@ namespace MamontEngine
         {
             m_RenderPipeline.reset();
         }
+        
         m_RenderPipeline = std::make_shared<RenderPipeline>(device, layouts, inImageFormats);
+
+        m_SkyPass->CreatePipeline(layouts, inImageFormats);
 
         //InitPickPipepline();
 
@@ -198,6 +184,9 @@ namespace MamontEngine
         m_DrawExtent                     = swapchainExtent;
         const uint32_t swapchainImageIndex    = m_DeviceContext.Swapchain.GetCurrentImageIndex();
 
+        std::vector<VkCommandBuffer> secondaryCommandBuffers;
+        secondaryCommandBuffers.reserve(4);
+
         VkCommandBuffer cmd = currentFrame.MainCommandBuffer;
         UpdateUniformBuffers();
 
@@ -208,6 +197,15 @@ namespace MamontEngine
 
         VkUtil::transition_image(cmd, m_DeviceContext.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         VkUtil::transition_image(cmd, m_DeviceContext.DepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+        VkCommandBuffer shadowCommandBuffer = currentFrame.ShadowCommandBuffer;
+        
+        if (const auto &lightData = m_SceneRenderer->GetLightData(); 
+            lightData.HasDirectionLight || lightData.PointLightingCount > 0)
+        {
+            RenderShadows(shadowCommandBuffer);
+            secondaryCommandBuffers.push_back(shadowCommandBuffer);
+        }
 
         DrawMain(cmd);
 
@@ -224,23 +222,11 @@ namespace MamontEngine
 
         VkCommandBuffer uiCommandBuffer = currentFrame.UICommandBuffer;
         m_ImGuiRenderer->Draw(uiCommandBuffer, m_DeviceContext.Swapchain.GetImageView(swapchainImageIndex), m_DrawExtent);
-
-       /* {
-            VkUtil::transition_image(
-                    cmd, m_DeviceContext.PickingImages[swapchainImageIndex].Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            DrawPickingPass(cmd, swapchainImageIndex);
-            VkUtil::transition_image(cmd,
-                                     m_DeviceContext.PickingImages[swapchainImageIndex].Image,
-                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        }*/
+        secondaryCommandBuffers.push_back(uiCommandBuffer);
 
         VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-
-        const std::array<VkCommandBuffer, 1> commandBuffers{uiCommandBuffer};
-
-        vkCmdExecuteCommands(cmd, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+        vkCmdExecuteCommands(cmd, static_cast<uint32_t>(secondaryCommandBuffers.size()), secondaryCommandBuffers.data());
 
         VK_CHECK(vkEndCommandBuffer(cmd));
 
@@ -251,7 +237,6 @@ namespace MamontEngine
     {
         PROFILE_VK_ZONE(m_DeviceContext.GetCurrentFrame().TracyContext, inCmd, "Draw Main");
 
-        RenderShadows(inCmd);
 
         {
             const auto start = std::chrono::high_resolution_clock::now();
@@ -285,7 +270,9 @@ namespace MamontEngine
         SetViewportScissor(inCmd, m_DrawExtent);
         vkCmdSetDepthBias(inCmd, 0, 0, 0);
 
-        DrawSkybox(inCmd);
+        m_SkyPass->Render(inCmd, currentFrame.GlobalDescriptor);
+
+        //DrawSkybox(inCmd);
 
         {
             PROFILE_VK_ZONE(currentFrame.TracyContext, inCmd, "Scene Render");
@@ -330,45 +317,9 @@ namespace MamontEngine
         IsActiveCascade = m_SceneRenderer->HasDirectionLight();
         if (!IsActiveCascade)
             return;
+
         const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
-
         m_DirectLightPass->Render(inCmd, currentFrame.GlobalDescriptor, m_SceneRenderer->GetDrawContext(), m_SceneRenderer->GetGPUSceneData().Viewproj);
-    }
-
-    void Renderer::DrawSkybox(VkCommandBuffer inCmd)
-    {
-        PROFILE_FUNCTION();
-
-        DrawContext skyboxContext;
-        m_Skybox->Draw(skyboxContext);
-        const RenderObject &object = skyboxContext.OpaqueSurfaces[0];
-
-        vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_RenderPipeline->SkyboxPipline->Pipeline);
-
-        vkCmdBindDescriptorSets(inCmd,
-                                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                m_RenderPipeline->SkyboxPipline->Layout,
-                                0,
-                                1,
-                                &m_DeviceContext.GetCurrentFrame().GlobalDescriptor,
-                                0,
-                                nullptr);
-
-        constexpr VkDeviceSize offsets[1] = {0};
-        vkCmdBindVertexBuffers(inCmd, 0, 1, &object.MeshBuffer.VertexBuffer.Buffer, offsets);
-
-        vkCmdBindIndexBuffer(inCmd, object.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
-
-        const GPUDrawPushConstants push_constants{
-                .WorldMatrix = glm::mat4(1.f), 
-                .VertexBuffer = object.MeshBuffer.VertexBuffer.Address,
-        };
-
-        constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
-        vkCmdPushConstants(
-                inCmd, m_RenderPipeline->SkyboxPipline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
-
-        vkCmdDrawIndexed(inCmd, object.IndexCount, 1, object.FirstIndex, 0, 0);
     }
 
     void Renderer::DrawPickingPass(VkCommandBuffer cmd, const uint32_t inCurrentSwapchainIndex)
@@ -420,7 +371,7 @@ namespace MamontEngine
         }
         
 
-        // Cascade Data Buffer
+        // Light Data Buffer
         {
             const LightData &lightData = m_SceneRenderer->GetLightData();
             currentFrame.LightDataBuffer.Copy(&lightData);

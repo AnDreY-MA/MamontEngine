@@ -106,8 +106,6 @@ namespace MamontEngine
 
         VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &img_info, &allocinfo, &Image, &Allocation, &Info));
 
-        std::cerr << "New TEXTURE: " << Image << std::endl;
-
         const VkImageAspectFlags aspectFlag =
                 (inFormat == VK_FORMAT_D32_SFLOAT || inFormat == VK_FORMAT_D24_UNORM_S8_UINT) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
@@ -129,6 +127,10 @@ namespace MamontEngine
                     .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr, .magFilter = VK_FILTER_LINEAR, .minFilter = VK_FILTER_LINEAR};
 
             vkCreateSampler(device, &sampl, nullptr, &Sampler);
+        }
+        else
+        {
+            Sampler = inSampler;
         }
     }
 

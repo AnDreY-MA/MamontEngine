@@ -16,7 +16,5 @@ namespace MamontEngine
 
         std::shared_ptr<PipelineData> OpaquePipeline;
         std::shared_ptr<PipelineData> TransparentPipeline;
-
-        std::shared_ptr<PipelineData> SkyboxPipline;
     };
 }

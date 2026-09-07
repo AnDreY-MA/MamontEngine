@@ -53,6 +53,8 @@ namespace MamontEngine
 
             m_Broadphase = std::make_unique<BruteForceBroadphase>();
 
+            m_Manifolds.resize(1000);
+
             s_UpdateTimestep = 1.0f / 60.0f;
         }
 
@@ -264,6 +266,28 @@ namespace MamontEngine
                 if (!body2->IsKinematic() || !body2->IsStatic())
                 {
                     body2->m_Position += correction * body2->GetInverseMass();
+                }
+            }
+        }
+
+        void PhysicsSystem::NarrowPhaseCollisions(std::span<CollisionPair> inPair)
+        {
+            for (auto &pair : inPair)
+            {
+                auto body1 = pair.Object1;
+                auto body2 = pair.Object2;
+
+                if (!body1 || !body2)
+                    continue;
+
+                CollisionData collisionData{};
+
+                if (CheckCollision(&pair, &collisionData))
+                {
+                    Manifold &manifold = m_Manifolds[m_ManifoldCount++];
+                    manifold.Init(body1, body2);
+
+
                 }
             }
         }

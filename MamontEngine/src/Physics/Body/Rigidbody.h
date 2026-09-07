@@ -35,6 +35,11 @@ namespace HeroPhysics
             return m_Rotation;
         }
 
+        inline glm::mat4 GetWorldTransform() const
+        {
+            return glm::translate(m_Position) * glm::mat4(m_Rotation);
+        }
+
         inline const glm::vec3 &GetLinearVelocity() const
         {
             return m_LinearVelocity;

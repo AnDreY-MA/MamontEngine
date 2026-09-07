@@ -18,12 +18,10 @@ void main()
 
   const vec4 worldPosition = PushConstants.render_matrix * vec4(v.position, 1.0);
 
-  outNormal = mat3(PushConstants.render_matrix) * v.normal;
-  //outNormal = v.normal;
+  outNormal = mat3(transpose(inverse(PushConstants.render_matrix))) * v.normal;
   outColor = v.color;
   outUV = v.uv;
   outTangent = v.tangent;
-  //outPos = (PushConstants.render_matrix * position).xyz;
   outPos = worldPosition.xyz;
   outViewPos = (sceneData.view * worldPosition).xyz;
 

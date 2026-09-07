@@ -43,11 +43,10 @@ namespace MamontEngine
 
     Texture *LoadCubeMapTexture(const std::string &inFileName, VkFormat inFormat);
 
-
     std::shared_ptr<Texture> CreateWhiteTexture();
-
-
     Texture* CreateErrorTexture();
+
+
 
     Texture *
     GeneratePrefilteredCube(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &inDrawSkyboxFunc, const Texture &inEnvironmentTexture);

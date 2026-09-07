@@ -40,8 +40,10 @@ namespace MamontEngine
         VkCommandPool   CommandPool{VK_NULL_HANDLE};
         VkCommandBuffer MainCommandBuffer{VK_NULL_HANDLE};
 
+        // Secondory 
         VkCommandBuffer UICommandBuffer{VK_NULL_HANDLE};
         VkCommandBuffer BackgroundBuffer{VK_NULL_HANDLE};
+        VkCommandBuffer ShadowCommandBuffer{VK_NULL_HANDLE};
 
         DeletionQueue               Deleteions;
         DescriptorAllocatorGrowable FrameDescriptors;

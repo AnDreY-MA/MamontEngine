@@ -24,7 +24,7 @@ namespace MamontEngine
 
         void Init(VkDevice inDevice, std::span<const VkDescriptorSetLayout> inDescriptorLayouts)
         {
-            g_Buffer.Create(MAX_VERTEX_COUNT * sizeof(Vertex),
+            g_Buffer.Create(sizeof(Vertex) * MAX_VERTEX_COUNT,
                             VK_BUFFER_USAGE_2_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT,
                             VMA_MEMORY_USAGE_CPU_TO_GPU);
             const VkBufferDeviceAddressInfo deviceAddressInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = g_Buffer.Buffer};

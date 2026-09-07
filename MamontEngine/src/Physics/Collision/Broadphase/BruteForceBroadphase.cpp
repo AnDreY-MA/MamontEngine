@@ -19,7 +19,7 @@ namespace MamontEngine
             matrix = glm::rotate(matrix, glm::radians(inRotation.x), MamontEngine::RIGHT_VECTOR);
             matrix = glm::rotate(matrix, glm::radians(inRotation.y), MamontEngine::UP_VECTOR);
             matrix = glm::rotate(matrix, glm::radians(inRotation.z), MamontEngine::FORWARD_VECTOR);
-            // matrix = glm::scale(matrix, Scale);
+            matrix = glm::scale(matrix, glm::vec3(1.f));
 
             return matrix;
         }

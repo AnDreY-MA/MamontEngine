@@ -105,6 +105,28 @@ namespace MamontEngine
     {
         PROFILE_ZONE("PointLightPass::Render");
 
+        VkCommandBufferInheritanceRenderingInfo inheritanceDynamicInfo{};
+        inheritanceDynamicInfo.sType                 = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO;
+        inheritanceDynamicInfo.colorAttachmentCount  = 0;
+        inheritanceDynamicInfo.depthAttachmentFormat = shadowCubeImages[0].ImageFormat;
+        inheritanceDynamicInfo.viewMask              = 0;
+        inheritanceDynamicInfo.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT;
+
+        const VkCommandBufferInheritanceInfo inheritanceInfo = {
+                .sType       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+                .pNext       = &inheritanceDynamicInfo,
+                .renderPass  = VK_NULL_HANDLE,
+                .subpass     = 0,
+                .framebuffer = VK_NULL_HANDLE,
+        };
+
+        VkCommandBufferBeginInfo cmdSecondaryBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        cmdSecondaryBeginInfo.pInheritanceInfo         = &inheritanceInfo;
+
+        constexpr VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION, .height = SHADOWMAP_DIMENSION};
+
+        VK_CHECK(vkBeginCommandBuffer(cmd, &cmdSecondaryBeginInfo));
+
         constexpr VkExtent2D extent = {.width = 1024, .height = 1024};
 
         const auto draw = [&](const RenderObject &r, uint32_t lightCount, uint32_t faceNum)
@@ -176,6 +198,9 @@ namespace MamontEngine
             VkUtil::transition_image_aspect(
                     cmd, shadowImage.Image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
         }
+
+        VK_CHECK(vkEndCommandBuffer(cmd));
+
     }
 
     void PointLightPass::CreatePipeline(std::span<const VkDescriptorSetLayout> inDescriptorLaouts, VkFormat inImageFormat)

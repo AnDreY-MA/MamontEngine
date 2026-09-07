@@ -105,7 +105,6 @@ namespace MamontEngine
                     isStopRendering = false;
                 }
 
-
                 m_MainCamera->ProccessEvent(event);
 
                 m_InputEvent = &event;
@@ -117,7 +116,7 @@ namespace MamontEngine
                 continue;
             }
 
-            if (m_ContextDevice->IsResizeRequest() || isResized)
+            if (m_ContextDevice->IsResizeRequest())
             {
                 m_ContextDevice->ResizeSwapchain(m_Window->Resize());
             }
@@ -140,7 +139,6 @@ namespace MamontEngine
     {
         if (m_IsInitialized)
         {
-            m_Log.reset();
             VkDevice &device = LogicalDevice::GetDevice();
             vkDeviceWaitIdle(device);
             m_MainDeletionQueue.Flush();
@@ -158,6 +156,8 @@ namespace MamontEngine
             m_ContextDevice.reset();
 
             JobSystem::Release();
+
+            m_Log.reset();
         }
 
         loadedEngine = nullptr;
@@ -194,7 +194,7 @@ namespace MamontEngine
 
         m_Renderer->InitImGuiRenderer();
 
-        m_MainDeletionQueue.PushFunction([=]() { ImGui_ImplVulkan_Shutdown(); });
+        m_MainDeletionQueue.PushFunction([]() { ImGui_ImplVulkan_Shutdown(); });
     }
 
     void MEngine::PushGuiLayer(ImGuiLayer *inLayer)

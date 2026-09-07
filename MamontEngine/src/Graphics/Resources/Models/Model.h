@@ -50,24 +50,27 @@ namespace MamontEngine
 
         UID ID;
 
+        bool IsDirty{false};
+
     private:
-        void                                  LoadMaterials(const fastgltf::Asset &inFileAsset, const std::vector<VkSampler> &inSamplers);
-        void                                  LoadImages(const fastgltf::Asset &inFileAsset, const std::vector<VkSampler>& inSamplers);
+        void                                  LoadMaterials(const fastgltf::Asset &inFileAsset);
+        void                                  LoadImages(const fastgltf::Asset &inFileAsset);
         void                                  LoadNodes(const fastgltf::Asset &inFileAsset);
         void                                  LoadMesh(const fastgltf::Asset &inFileAsset);
 
-        std::vector<VkSampler> LoadSamplers(VkDevice inDevice, const std::vector<fastgltf::Sampler> &samplers);
+        std::vector<VkSampler> LoadSamplers(const std::vector<fastgltf::Sampler> &samplers);
 
         void Clear();
 
     private:
         std::vector<Node*>                          m_Nodes;
-        std::vector<std::shared_ptr<Texture>>      m_Textures;
-        std::vector<std::shared_ptr<Material>> m_Materials;
-        std::vector<std::shared_ptr<NewMesh>>      m_Meshes;
+        std::vector<std::shared_ptr<Texture>>       m_Textures;
+        std::vector<std::shared_ptr<Material>>      m_Materials;
+        std::vector<std::shared_ptr<NewMesh>>       m_Meshes;
 
         MeshBuffer Buffer;
 
         AABB Bound;
+
 	};
 }

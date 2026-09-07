@@ -1,27 +1,15 @@
 #extension GL_EXT_buffer_reference2 : require
 
-/*layout(set = 1, binding = 0) readonly buffer GLTFMaterialData {
-  vec4 colorFactors;
-  float metallicFactor;
-  float roughnessFactor;
-
-  float pad0;
-  float pad1;
-
-  uint HasNormalMap;
-
-} materialData;*/
-
 struct MaterialData 
 {
 	vec4 colorFactors;
-  float metallicFactor;
-  float roughnessFactor;
+	float metallicFactor;
+	float roughnessFactor;
 
-  float pad0;
-  float pad1;
+	float pad0;
+	float pad1;
 
-  uint HasNormalMap;
+	uint HasNormalMap;
 };
 
 layout(buffer_reference, std430) readonly buffer MaterialBuffer{ 

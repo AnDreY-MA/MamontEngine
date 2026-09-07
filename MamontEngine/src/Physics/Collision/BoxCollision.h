@@ -35,6 +35,10 @@ namespace MamontEngine
 
         virtual glm::mat3 BuildInverseInertia(const float inMass) const override;
 
+        virtual std::vector<glm::vec3> GetAxes(const glm::quat &inOrientation) const override;
+
+        virtual std::vector<CollisionEdge> GetEdges(const glm::mat4 &inTransform) const override;
+
 	private:
         
         glm::vec3 m_HalfExtent{glm::vec3(0.f)};

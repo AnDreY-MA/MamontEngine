@@ -2,6 +2,7 @@
 
 #include <entt/entt.hpp>
 #include "Collision/Broadphase/Broadphase.h"
+#include "Collision/Manifold.h"
 
 namespace MamontEngine
 {
@@ -42,6 +43,8 @@ namespace MamontEngine
 
         void ResolveCollisions(std::span<CollisionPair> inPair);
 
+        void NarrowPhaseCollisions(std::span<CollisionPair> inPair);
+
 	private:
         bool      m_IsPaused{true};
         glm::vec3 m_Gravity;
@@ -58,6 +61,9 @@ namespace MamontEngine
 
         std::vector<Rigidbody *> m_Rigidbodies;
         std::vector<Rigidbody *> m_BodiesFreeList;
+
+        std::vector<Manifold> m_Manifolds;
+        uint32_t              m_ManifoldCount{0};
 
         std::unique_ptr<Broadphase> m_Broadphase;
 

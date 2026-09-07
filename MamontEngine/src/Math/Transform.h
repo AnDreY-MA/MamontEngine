@@ -15,6 +15,8 @@ namespace MamontEngine
         glm::quat Rotation{glm::vec3(0.f)};
         glm::vec3 Scale{glm::vec3(1.f)};
 
+        bool IsDirty{true};
+
         glm::mat4 Matrix() const
         {
             glm::mat4 matrix{glm::mat4(1.0f)};

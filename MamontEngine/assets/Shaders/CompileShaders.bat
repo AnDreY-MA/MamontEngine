@@ -13,5 +13,8 @@ glslc.exe -fshader-stage=vert point_light_shadow_vert.glsl -o point_light_shadow
 glslc.exe -fshader-stage=frag cascade_shadow.frag -o cascade_shadow.frag.spv
 glslc.exe -fshader-stage=vert cascade_shadow.vert -o cascade_shadow.vert.spv
 
+glslc.exe -fshader-stage=frag debug_draw.frag -o debug_draw.frag.spv
+glslc.exe -fshader-stage=vert debug_draw.vert -o debug_draw.vert.spv
+
 
 pause

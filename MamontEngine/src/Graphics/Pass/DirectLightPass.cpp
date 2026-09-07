@@ -6,6 +6,7 @@
 #include "Utils/VkInitializers.h"
 #include <Utils/Profile.h>
 #include "Math/AABB.h"
+#include "Core/Engine.h"
 
 namespace
 {
@@ -50,11 +51,13 @@ namespace
 
 namespace MamontEngine
 {
+    static VkFormat s_CascadeDepthFormat = VK_FORMAT_D32_SFLOAT;
+
     DirectLightPass::DirectLightPass(VkFormat inCascadeDepthFormat, VkImage inCascadeImage) 
         : m_CascadeImage(inCascadeImage)
     {
         const VkDevice& device = LogicalDevice::GetDevice();
-
+        s_CascadeDepthFormat   = inCascadeDepthFormat;
         for (size_t i = 0; i < CASCADECOUNT; i++)
         {
             auto layerViewInfo =
@@ -85,14 +88,34 @@ namespace MamontEngine
     {
         PROFILE_ZONE("DirectLightPass::Render");
 
+        VkCommandBufferInheritanceRenderingInfo inheritanceDynamicInfo{};
+        inheritanceDynamicInfo.sType                   = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO;
+        inheritanceDynamicInfo.colorAttachmentCount    = 0;
+        inheritanceDynamicInfo.depthAttachmentFormat = s_CascadeDepthFormat;
+        inheritanceDynamicInfo.viewMask                = 0;
+        inheritanceDynamicInfo.rasterizationSamples    = VK_SAMPLE_COUNT_1_BIT;
+
+        const VkCommandBufferInheritanceInfo inheritanceInfo = {
+                .sType       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+                .pNext       = &inheritanceDynamicInfo,
+                .renderPass  = VK_NULL_HANDLE,
+                .subpass     = 0,
+                .framebuffer = VK_NULL_HANDLE,
+        };
+
+        VkCommandBufferBeginInfo cmdSecondaryBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        cmdSecondaryBeginInfo.pInheritanceInfo         = &inheritanceInfo;
+
         constexpr VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION, .height = SHADOWMAP_DIMENSION};
+
+        VK_CHECK(vkBeginCommandBuffer(cmd, &cmdSecondaryBeginInfo));
 
         const auto draw = [&](const RenderObject &r, uint32_t cascadeIndex)
         {
             vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
 
             constexpr VkDeviceSize offsets[1] = {0};
-            vkCmdBindVertexBuffers(cmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
+            //vkCmdBindVertexBuffers(cmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
 
             vkCmdBindIndexBuffer(cmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
@@ -147,6 +170,7 @@ namespace MamontEngine
         }
         VkUtil::transition_image(cmd, m_CascadeImage, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
 
+        VK_CHECK(vkEndCommandBuffer(cmd));
     }
 
     void DirectLightPass::UpdateCascade(const Camera *inCamera, const glm::vec3 &inLightDirection)

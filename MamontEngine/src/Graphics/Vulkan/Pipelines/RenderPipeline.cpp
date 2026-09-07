@@ -90,57 +90,12 @@ namespace MamontEngine
 
         vkDestroyShaderModule(inDevice, meshFragShader, nullptr);
         vkDestroyShaderModule(inDevice, meshVertexShader, nullptr);
-
-        //Skybox
-
-       {
-            const VkPipelineLayoutCreateInfo skyboxlayoutInfo =
-                    vkinit::pipeline_layout_create_info(inDescriptorLayouts.size(), inDescriptorLayouts.data(), &matrixRange, 1);
-
-            VkPipelineLayout skyboxLayout;
-            VK_CHECK(vkCreatePipelineLayout(inDevice, &skyboxlayoutInfo, nullptr, &skyboxLayout));
-
-            const std::string skyboxPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/skybox.frag.spv";
-
-            VkShaderModule skyboxFragShader;
-            if (!VkPipelines::LoadShaderModule(skyboxPath.c_str(), inDevice, &skyboxFragShader))
-            {
-                fmt::println("Error when building the triangle fragment shader module");
-            }
-
-            const std::string skyboxVertexShaderPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/skybox.vert.spv";
-            VkShaderModule    skyboxVertexShader;
-            if (!VkPipelines::LoadShaderModule(skyboxVertexShaderPath.c_str(), inDevice, &skyboxVertexShader))
-            {
-                fmt::println("Error when building the triangle vertex shader module");
-            }
-
-            std::cerr << "skyboxFragShader: " << skyboxFragShader << "\n";
-            std::cerr << "skyboxVertexShader: " << skyboxVertexShader << "\n";
-
-            VkPipelineCache skyPipelineCache{VK_NULL_HANDLE};
-            VK_CHECK(vkCreatePipelineCache(inDevice, &pipelineCacheInfo, nullptr, &skyPipelineCache));
-
-            pipelineBuilder.SetShaders(skyboxVertexShader, skyboxFragShader);
-            pipelineBuilder.SetCullMode(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-            pipelineBuilder.EnableDepthTest(VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL);
-            pipelineBuilder.DisableBlending();
-            pipelineBuilder.SetCache(skyPipelineCache);
-
-            SkyboxPipline = std::make_shared<PipelineData>(pipelineBuilder.BuildPipline(inDevice), skyboxLayout);
-
-            vkDestroyShaderModule(inDevice, skyboxFragShader, nullptr);
-            vkDestroyShaderModule(inDevice, skyboxVertexShader, nullptr);
-        }
-
-
     }
 
     RenderPipeline::~RenderPipeline()
     {
         OpaquePipeline.reset();
         TransparentPipeline.reset();
-        SkyboxPipline.reset();
     }
     
 } // namespace MamontEngine

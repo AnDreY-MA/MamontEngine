@@ -231,7 +231,7 @@ namespace MamontEngine
         ImmediateContext::InitImmediateContext(m_GraphicsQueue, m_GraphicsQueueFamily);
 
         InitImage();
-
+        InitShadowImages();
 
         m_SkyboxTexture = std::unique_ptr<Texture>(LoadCubeMapTexture(DEFAULT_ASSETS_DIRECTORY + "Textures/cubemap_vulkan.ktx", VK_FORMAT_R8G8B8A8_UNORM));
 
@@ -254,6 +254,8 @@ namespace MamontEngine
         m_BRDFUTTexture->Destroy();
         m_PrefilteredCubeTexture->Destroy();
         m_IrradianceTexture->Destroy();
+
+        DestroyShadowmImages();
 
         Swapchain.Destroy(device);
         ImmediateContext::DestroyImmediateContext();
@@ -350,8 +352,12 @@ namespace MamontEngine
             VK_CHECK(vkAllocateCommandBuffers(device, &cmdAllocInfo, &frame.MainCommandBuffer));
             const auto cmdBackgroundAllocInfo = vkinit::command_buffer_allocate_info(frame.CommandPool, 1, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
             VK_CHECK(vkAllocateCommandBuffers(device, &cmdBackgroundAllocInfo, &frame.BackgroundBuffer));
+            
             const auto cmdSecondaryAllocInfo = vkinit::command_buffer_allocate_info(frame.CommandPool, 1, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
             VK_CHECK(vkAllocateCommandBuffers(device, &cmdSecondaryAllocInfo, &frame.UICommandBuffer));
+
+            const auto cmdCascadeAllocInfo = vkinit::command_buffer_allocate_info(frame.CommandPool, 1, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+            VK_CHECK(vkAllocateCommandBuffers(device, &cmdSecondaryAllocInfo, &frame.ShadowCommandBuffer));
 
         }
 
@@ -580,7 +586,7 @@ namespace MamontEngine
         std::cerr << "Image.DepthImage ImageView:" << DepthImage.ImageView << std::endl;
 
         {
-            const VkExtent3D extent = {Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
+           /* const VkExtent3D extent = {Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
 
             PickingImages.resize(Swapchain.GetImages().size());
             for (auto &image : PickingImages)
@@ -590,10 +596,12 @@ namespace MamontEngine
 
                 std::cerr << "PickingImages Image:" << image.Image << std::endl;
                 std::cerr << "PickingImages ImageView:" << image.ImageView << std::endl;
-            }
+            }*/
+
+            IdTexture.Create(extent, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
         }
 
-        InitShadowImages();
+        //InitShadowImages();
     }
 
     void VkContextDevice::ResizeSwapchain(const VkExtent2D &inWindowExtent)
@@ -601,17 +609,19 @@ namespace MamontEngine
         if (!m_IsResizeRequested)
             return;
 
+        fmt::println("ResizeSwapchain");
+
         const VkDevice device = LogicalDevice::GetDevice();
 
         vkDeviceWaitIdle(device);
 
         DestroyImages();
 
+        DestroyDescriptors();
+
         Swapchain.ReCreate(Surface, inWindowExtent);
 
         InitImage();
-
-        DestroyDescriptors();
 
         InitDescriptors();
 
@@ -644,6 +654,11 @@ namespace MamontEngine
                     vkinit::imageviewCreateInfo(depthFormat, CascadeDepthImage.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 1, CASCADECOUNT, VK_IMAGE_VIEW_TYPE_2D_ARRAY);
 
             VK_CHECK(vkCreateImageView(device, &imageViewInfo, nullptr, &CascadeDepthImage.ImageView));
+
+            ImmediateContext::ImmediateSubmit(
+                    [&](VkCommandBuffer cmd)
+                    { VkUtil::transition_image(cmd, CascadeDepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); });
+            
         }
 
         std::cerr << "Shadow Image:" << CascadeDepthImage.Image << std::endl;
@@ -743,7 +758,6 @@ namespace MamontEngine
             VK_CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &shadowMap.Sampler));
             std::cerr << "Point Image: " << shadowMap.Image << std::endl;
 
-
             j++;
         }
         
@@ -788,6 +802,13 @@ namespace MamontEngine
         {
             pickImage.Destroy();
         }
+
+        
+        
+    }
+
+    void VkContextDevice::DestroyShadowmImages()
+    {
         CascadeDepthImage.Destroy();
 
         const auto &device = LogicalDevice::GetDevice();
@@ -797,11 +818,10 @@ namespace MamontEngine
             vkDestroyImageView(device, imageview, nullptr);
         }
 
-        for (auto& shadowMap : PointLightShadowMaps)
+        for (auto &shadowMap : PointLightShadowMaps)
         {
             shadowMap.Destroy();
         }
-        
     }
 
     FrameData &VkContextDevice::GetCurrentFrame()

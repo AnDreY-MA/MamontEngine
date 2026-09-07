@@ -16,7 +16,6 @@ layout(set = 0, binding = 6) uniform samplerCube samplerPrefilteredMap;
 layout(set = 0, binding = 7) uniform samplerCube irradianceMap;
 
 
-
 layout(location = 0) in vec3 inPos;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inUV;
@@ -74,7 +73,7 @@ void main()
     MaterialBuffer matbuffer = MaterialBuffer(PushConstants.materialBuffer + PushConstants.materialIndex);
     const MaterialData materialData = matbuffer.materials;
 
-    const vec3 N = CalculalteNormal(materialData.HasNormalMap);
+    const vec3 N = CalculalteNormal(0);
 
     const vec3 viewDirection = normalize(sceneData.cameraPosition - inPos);
     const vec3 R = reflect(-viewDirection, N);
@@ -117,46 +116,41 @@ void main()
     // Direction Light
     if (lightData.IsActive)
     {
-    const uint cascadeIndex = GetCascadeIndex(inViewPos, lightData.cascadeSplits);
+        const uint cascadeIndex = GetCascadeIndex(inViewPos, lightData.cascadeSplits);
 
-    const vec3 l = normalize(-lightData.lightDirection);
+        const vec3 l = normalize(-lightData.lightDirection);
 
-    const vec3 H = normalize(viewDirection + l);
-    const float dotNL = clamp(dot(N, l), 0.001, 1.0);
+        const vec3 H = normalize(viewDirection + l);
+        const float dotNL = clamp(dot(N, l), 0.001, 1.0);
 
-    const vec4 shadowCoord = (biasMat * cascadeViewProjMatrices.matrices[cascadeIndex]) * vec4(inPos, 1.0);
+        const vec4 shadowCoord = (biasMat * cascadeViewProjMatrices.matrices[cascadeIndex]) * vec4(inPos, 1.0);
 
-    const float shadow = filterPCF(shadowMap,  shadowCoord / shadowCoord.w, cascadeIndex);
-    float atten = 1.0;
-    lightColor +=
-        (GetLightContribution(pbrData, N, viewDirection, l, H, lightData.color) * lightData.color) * ( atten * dotNL * shadow);
+        const float shadow = filterPCF(shadowMap,  shadowCoord / shadowCoord.w, cascadeIndex);
+        float atten = 1.0;
+        lightColor +=
+            (GetLightContribution(pbrData, N, viewDirection, l, H, lightData.color) * lightData.color) * ( atten * dotNL * shadow);
 
-    const float dotNV = abs(dot(N, viewDirection));
-    const vec3 ibl = GetIBLContribution(pbrData, N, R, lightData.color, dotNV, samplerBRDFLUT, samplerPrefilteredMap, irradianceMap);
+        const float dotNV = abs(dot(N, viewDirection));
+        const vec3 ibl = GetIBLContribution(pbrData, N, R, lightData.color, dotNV, samplerBRDFLUT, samplerPrefilteredMap, irradianceMap);
 
-    lightColor += ibl;
-    }
-
-    if (lightData.IsActive)
-    {
-    
+        lightColor += ibl;
     }
 
     for (int i = 0; i < lightData.PointLightNum; ++i)
     {
-    const PointLight pointLight = lightData.PointLights[i];
-    const float attenuation = pointLight.Attenuation;
-    const vec3 c = pointLight.Color;
-    const vec3 l = normalize(pointLight.Position - inPos);
+        const PointLight pointLight = lightData.PointLights[i];
+        const float attenuation = pointLight.Attenuation;
+        const vec3 c = pointLight.Color;
+        const vec3 l = normalize(pointLight.Position - inPos);
 
-    const vec3 H = normalize(viewDirection + l);
+        const vec3 H = normalize(viewDirection + l);
 
-    const float dotNL = clamp(dot(N, l), 0.001, 1.0);
+        const float dotNL = clamp(dot(N, l), 0.001, 1.0);
 
-    const float shadow = calculatePointShadow(inPos, pointLight.Position, dotNL, pointLightShadowSamplers[i], pointLight.Radius);
-    const float atten = CalculateAttenuation(inPos, l, pointLight) * attenuation;
+        const float shadow = calculatePointShadow(inPos, pointLight.Position, dotNL, pointLightShadowSamplers[i], pointLight.Radius);
+        const float atten = CalculateAttenuation(inPos, l, pointLight) * attenuation;
 
-    lightColor += (GetLightContribution(pbrData, N, viewDirection, l, H, c) * c) * (atten * dotNL * shadow);
+        lightColor += (GetLightContribution(pbrData, N, viewDirection, l, H, c) * c) * (atten * dotNL * shadow);
     }
 
     //lightColor += prefilteredColor;
