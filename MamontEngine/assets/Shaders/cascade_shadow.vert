@@ -3,14 +3,16 @@
 #extension GL_GOOGLE_include_directive : require
 
 #include "include/input_structures.glsl"
-
-#define SHADOW_MAP_CASCADE_COUNT 4
+#include "include/Shadow.glsl"
 
 layout (location = 0) out vec2 outUV;
 
-layout (set = 0, binding = 3) uniform UBO {
-	mat4 cascadeViewProjMat[SHADOW_MAP_CASCADE_COUNT];
-} ubo;
+const mat4 biasMat = mat4(
+    0.5, 0.0, 0.0, 0.0,
+    0.0, 0.5, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.5, 0.5, 0.0, 1.0
+);
 
 void main() {
 
@@ -19,5 +21,5 @@ void main() {
 
 	const vec4 worldPosition = PushConstants.render_matrix * vec4(v.position, 1.0);
 	//gl_Position = ubo.cascadeViewProjMat[PushConstants.cascadeIndex] * position * PushConstants.render_matrix;
-	gl_Position = ubo.cascadeViewProjMat[PushConstants.cascadeIndex] * worldPosition;
+	gl_Position = cascadeShadows.cascadeViewProjMat[PushConstants.cascadeIndex] * worldPosition;
 }

@@ -12,6 +12,9 @@ namespace MamontEngine
         glm::mat4 Proj{glm::mat4(0.f)};
         glm::mat4 Viewproj{glm::mat4(0.f)};
         glm::vec3 CameraPosition{glm::vec3(0.0)};
+
+        float NearPlane{0.01f};
+        float FarPlane{10.f};
     };
 
     class Scene;
@@ -25,9 +28,7 @@ namespace MamontEngine
 
         void Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const RenderPipeline *inRenderPipeline);
 
-        void RenderPicking(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, VkPipeline inPipeline, VkPipelineLayout inLayout);
-
-        void Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades, float inDeltaTime);
+        void Update(const VkExtent2D &inWindowExtent, float inDeltaTime);
 
         GPUSceneData &GetGPUSceneData()
         {

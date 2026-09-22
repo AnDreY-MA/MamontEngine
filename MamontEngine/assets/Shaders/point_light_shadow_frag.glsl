@@ -9,6 +9,16 @@ layout(location = 1) in vec2 inUV;
 
 //layout(location = 0) out float o_Depth;
 
+layout(set = 0, binding = 0) uniform SceneData {
+  mat4 view;
+  mat4 proj;
+  mat4 viewproj;
+  vec3 cameraPosition;
+
+  float nearPlane;
+  float farPlane;
+} sceneData;
+
 void main()
 {
   const float alpha = texture(textureSamplers[0], inUV).a;

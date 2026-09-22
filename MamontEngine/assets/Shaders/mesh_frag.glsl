@@ -1,7 +1,4 @@
-#version 450
-
-#extension GL_GOOGLE_include_directive : require
-#extension GL_EXT_buffer_reference : require
+#version 460
 
 #include "include/input_structures.glsl"
 #include "include/pbr.glsl"
@@ -25,16 +22,12 @@ layout(location = 5) in vec3 inViewPos;
 
 layout(location = 0) out vec4 outFragColor;
 
-layout(set = 0, binding = 3) uniform CVPM {
-  mat4 matrices[SHADOW_MAP_CASCADE_COUNT];
-} cascadeViewProjMatrices;
-
 const mat4 biasMat = mat4(
     0.5, 0.0, 0.0, 0.0,
     0.0, 0.5, 0.0, 0.0,
     0.0, 0.0, 1.0, 0.0,
     0.5, 0.5, 0.0, 1.0
-  );
+);
 
 vec3 CalculalteNormal(uint hasNormalMap)
 {
@@ -116,22 +109,22 @@ void main()
     // Direction Light
     if (lightData.IsActive)
     {
-        const uint cascadeIndex = GetCascadeIndex(inViewPos, lightData.cascadeSplits);
+        const uint cascadeIndex = GetCascadeIndex(inViewPos);
 
-        const vec3 l = normalize(-lightData.lightDirection);
+        const vec3 l = normalize(-lightData.DirectLight.Direction);
 
         const vec3 H = normalize(viewDirection + l);
         const float dotNL = clamp(dot(N, l), 0.001, 1.0);
 
-        const vec4 shadowCoord = (biasMat * cascadeViewProjMatrices.matrices[cascadeIndex]) * vec4(inPos, 1.0);
+        const vec4 shadowCoord = (biasMat * cascadeShadows.cascadeViewProjMat[cascadeIndex]) * vec4(inPos, 1.0);
 
         const float shadow = filterPCF(shadowMap,  shadowCoord / shadowCoord.w, cascadeIndex);
         float atten = 1.0;
         lightColor +=
-            (GetLightContribution(pbrData, N, viewDirection, l, H, lightData.color) * lightData.color) * ( atten * dotNL * shadow);
+            (GetLightContribution(pbrData, N, viewDirection, l, H, lightData.DirectLight.Color) * lightData.DirectLight.Color) * ( atten * dotNL * shadow);
 
         const float dotNV = abs(dot(N, viewDirection));
-        const vec3 ibl = GetIBLContribution(pbrData, N, R, lightData.color, dotNV, samplerBRDFLUT, samplerPrefilteredMap, irradianceMap);
+        const vec3 ibl = GetIBLContribution(pbrData, N, R, lightData.DirectLight.Color, dotNV, samplerBRDFLUT, samplerPrefilteredMap, irradianceMap);
 
         lightColor += ibl;
     }

@@ -46,13 +46,15 @@ namespace MamontEngine
 
     PickPass::~PickPass()
     {
+        const auto &device = LogicalDevice::GetDevice();
 
+        vkDestroyDescriptorSetLayout(device, m_IdDescriptorSetLayout, nullptr);
     }
     void PickPass::CreatePipeline(std::span<const VkDescriptorSetLayout> inDescriptorLaouts, VkFormat inImageFormat)
     {
 
         // Outline Pipeline
-/*        {
+        {
             constexpr VkPushConstantRange matrixRange{
                     .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(OutlinePushConstants)};
 
@@ -113,6 +115,6 @@ namespace MamontEngine
             vkDestroyShaderModule(device, pointFragmentShadowShader, nullptr);
 
             pipelineBuilder.Clear();
-        }*/
+        }
     }
 } // namespace MamontEngine

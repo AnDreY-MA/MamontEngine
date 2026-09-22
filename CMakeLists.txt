@@ -1,13 +1,11 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 4.2)
 
 #set(PROJECT_N Mamont)
 PROJECT(Mamont VERSION 0.0.1 LANGUAGES CXX)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/")
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_VS_PLATFORM_NAME "x64")
+include("cmake/ProjectSettings.cmake")
 
 
 set(CMAKE_CONFIGURATION_TYPES
@@ -16,7 +14,6 @@ set(CMAKE_CONFIGURATION_TYPES
     "Distribution"
     CACHE STRING "" FORCE
 )
-
 
 SET(Boost_NO_WARN_NEW_VERSIONS ON)
 IF (WIN32)
@@ -53,8 +50,5 @@ foreach(dir ${INCLUDES})
   message(STATUS ${dir})
 endforeach()
 
-#add_executable(${PROJECT_N} ${SRCS})
 add_subdirectory("MamontEngine")
 add_subdirectory("MamontEditor")
-
-#target_include_directories(${PROJECT_N} PUBLIC include)

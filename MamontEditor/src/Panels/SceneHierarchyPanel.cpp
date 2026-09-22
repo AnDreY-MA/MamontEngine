@@ -43,7 +43,7 @@ namespace MamontEditor
             {
                 if (registry.valid(handle))
                 {
-                    const MamontEngine::Entity entity{handle, m_Scene.get()};
+                    MamontEngine::Entity entity{handle, m_Scene.get()};
                     DrawEntityNode(entity);
                 }
             }
@@ -75,7 +75,7 @@ namespace MamontEditor
         return m_IsHovered;
     }
 
-    void SceneHierarchyPanel::DrawEntityNode(const MamontEngine::Entity& inEntity)
+    void SceneHierarchyPanel::DrawEntityNode(MamontEngine::Entity& inEntity)
     {
         const auto &tag = inEntity.GetComponent<MamontEngine::TagComponent>().Tag;
 

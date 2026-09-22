@@ -121,7 +121,7 @@ namespace MetaInspectors
         MUI::DrawVec3Control(name.c_str(), value);
     }
 
-    template <>
+/*    template <>
     inline void MetaInspect<HeroPhysics::Rigidbody>(const std::string &name, HeroPhysics::Rigidbody &value, const entt::meta_data &meta)
     {
         /*const char* motionTypeName = "MotionType";
@@ -129,8 +129,8 @@ namespace MetaInspectors
         if (ImGui::BeginCombo(motionTypeName, "r"))
         {
 
-        }*/
-    }
+        }
+    }*/
 }
 
 template <class Type>

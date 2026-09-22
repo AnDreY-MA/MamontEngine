@@ -4,6 +4,8 @@
 #include "ECS/SceneRenderer.h"
 #include "Core/Log.h"
 #include "Core/Engine.h"
+#include "EditorUtils/PropertyInspector.h"
+#include "Physics/PhysicsSystem.h"
 
 namespace MamontEditor
 {
@@ -27,6 +29,14 @@ namespace MamontEditor
             {
                 MamontEngine::MEngine::Get().GetSceneRenderer()->EnableDrawCollisionBounds(isDrawBounds);
             }
+
+            if (ImGui::CollapsingHeader("Physics System"))
+            {
+                //auto physicsSystem = MamontEngine::MEngine::Get().GetPhysicsSytem();
+                //auto s             = entt::make_any<HeroPhysics::PhysicsSystem>(physicsSystem);
+               // InspectComponent({}, physicsSystem);
+            }
+
 
             OnEnd();
         }

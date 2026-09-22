@@ -3,9 +3,6 @@
 #include "ECS/Scene.h"
 #include "entt/entt.hpp"
 #include "Components/IDComponent.h"
-#include "ECS/Components/DirectionLightComponent.h"
-#include "ECS/Components/RigidbodyComponent.h"
-
 
 namespace MamontEngine
 {
@@ -29,12 +26,10 @@ namespace MamontEngine
         template <typename T>
         T& GetComponent()
         {
-            return m_Scene->m_Registry.get<T>(m_EntityHandle);
-        }
-
-        template <typename T>
-        const T &GetComponent() const
-        {
+            if (!m_Scene)
+            {
+                fmt::println("Entity: Scene is nullptr");
+            }
             return m_Scene->m_Registry.get<T>(m_EntityHandle);
         }
 
@@ -55,7 +50,7 @@ namespace MamontEngine
             m_Scene->m_Registry.destroy(m_EntityHandle);
         }
 
-        UID GetID() const
+        UID GetID()
         {
             return GetComponent<IDComponent>().ID;
         }

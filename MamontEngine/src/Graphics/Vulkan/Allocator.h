@@ -9,5 +9,9 @@ namespace Allocator
     void Init(const VmaAllocatorCreateInfo &create_info);
 
     void Destroy();
+
+    void GetHeapBudgets(VmaBudget *outBudgetData);
+
+    uint32_t GetHeapCount();
 }
 }

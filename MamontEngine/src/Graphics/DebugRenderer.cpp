@@ -67,6 +67,8 @@ namespace MamontEngine
             pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
             pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
             pipelineBuilder.EnableDepthTest(VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
+            pipelineBuilder.DisableBlending();
+            pipelineBuilder.SetMultisamplingNone();
             pipelineBuilder.m_DepthStencil.depthWriteEnable = VK_FALSE;
             DebugDrawPipeline                               = std::make_unique<PipelineData>(pipelineBuilder.BuildPipline(inDevice), debugLayout);
 
@@ -123,8 +125,14 @@ namespace MamontEngine
 
         void DrawPoint(const glm::vec3 inPostion, const float radius, const Color &inColor)
         {
-            const auto pointVertex = Vertex{.Position = inPostion, .Color = inColor.ToVector4() * 1.f};
-            g_Vertices.push_back(pointVertex);
+           /* const auto pointVertex = Vertex{.Position = inPostion, .Color = inColor.ToVector4() * 1.f};
+            g_Vertices.push_back(pointVertex);*/
+
+            const Transform pointPosition = {.Position = inPostion};
+            const glm::vec3 pointExtent = {0.1f, 0.1f, 0.1f};
+            const AABB pointAABB(pointExtent, -pointExtent);
+
+            DebugRenderer::Draw(pointAABB.Transform(pointPosition.Matrix()), inColor, 15.f);
         }
 
         void DrawLine(const glm::vec3 &inStart, const glm::vec3 &inEnd, const Color &inColor, float inWidth)
@@ -151,12 +159,55 @@ namespace MamontEngine
                                     {max.x, max.y, max.z},
                                     {min.x, max.y, max.z}};
 
-            constexpr int edges[12][2] = {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {4, 5}, {5, 6}, {6, 7}, {7, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}};
+            constexpr int edges[12][2] = {
+                {0, 1}, {1, 2}, {2, 3}, {3, 0}, {4, 5}, {5, 6}, {6, 7}, {7, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}
+            };
 
             for (const auto &e : edges)
             {
                 DrawLine(v[e[0]], v[e[1]], inColor, width);
             }
+        }
+
+        void DrawFrustum(const glm::mat4 &invViewProj, const Color &color)
+        {
+            constexpr glm::vec3 corners[] = {glm::vec3(-1, -1, 0),
+                                         glm::vec3(+1, -1, 0),
+                                         glm::vec3(+1, +1, 0),
+                                         glm::vec3(-1, +1, 0),
+                                         glm::vec3(-1, -1, 1),
+                                         glm::vec3(+1, -1, 1),
+                                         glm::vec3(+1, +1, 1),
+                                         glm::vec3(-1, +1, 1)};
+
+            glm::vec3 pp[8];
+
+            for (size_t i = 0; i < 8; ++i)
+            {
+                const glm::vec4 q = invViewProj * glm::vec4(corners[i], 1.f);
+                pp[i]             = glm::vec3(q.x / q.w, q.y / q.w, q.z / q.w);
+            }
+
+            DrawLine(pp[0], pp[4], color);
+            DrawLine(pp[1], pp[5], color);
+            DrawLine(pp[2], pp[6], color);
+            DrawLine(pp[3], pp[7], color);
+            // near
+            DrawLine(pp[0], pp[1], color);
+            DrawLine(pp[1], pp[2], color);
+            DrawLine(pp[2], pp[3], color);
+            DrawLine(pp[3], pp[0], color);
+            // x
+            DrawLine(pp[0], pp[2], color);
+            DrawLine(pp[1], pp[3], color);
+            // far
+            DrawLine(pp[4], pp[5], color);
+            DrawLine(pp[5], pp[6], color);
+            DrawLine(pp[6], pp[7], color);
+            DrawLine(pp[7], pp[4], color);
+            // x
+            DrawLine(pp[4], pp[6], color);
+            DrawLine(pp[5], pp[7], color);
         }
 
         VkDeviceAddress GetVertexBufferAdress()

@@ -47,7 +47,7 @@ namespace MamontEngine
         void
         WriteImage(const int inBinding, VkImageView inImage, VkSampler inSampler, VkImageLayout inLayout, VkDescriptorType inType, uint32_t inDescriptorCount = 1);
         void WriteImage(const int inBinding, const VkDescriptorImageInfo descriptorInfo, const VkDescriptorType inType);
-        void WriteImageArray(int inBinding, const std::vector<VkDescriptorImageInfo> &imageInfos, VkDescriptorType type);
+        void WriteImageArray(int inBinding, const std::span<VkDescriptorImageInfo> imageInfos, VkDescriptorType type);
 
         void WriteBuffer(const int inBinding, VkDescriptorBufferInfo descriptorInfo, VkDescriptorType inType);
         void WriteBuffer(const int inBinding, VkBuffer& inBuffer, const size_t inSize, const size_t inOffset, VkDescriptorType inType);

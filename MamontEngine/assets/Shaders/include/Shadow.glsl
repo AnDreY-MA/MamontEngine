@@ -1,5 +1,10 @@
-#define SHADOW_MAP_CASCADE_COUNT 4
+#define SHADOW_MAP_CASCADE_COUNT 3
 #define SHADOW_OPACITY 0.5
+
+layout (set = 0, binding = 3) uniform CascadeShadowUBO {
+	mat4 cascadeViewProjMat[SHADOW_MAP_CASCADE_COUNT];
+    float CascadeSplits[SHADOW_MAP_CASCADE_COUNT];
+} cascadeShadows;
 
 float textureProj(sampler2DArray shadowMap, vec4 shadowCoord, vec2 offset, uint cascadeIndex)
 {
@@ -36,12 +41,12 @@ float filterPCF(sampler2DArray shadowMap, vec4 sc, uint cascadeIndex)
   return shadowFactor / count;
 }
 
-uint GetCascadeIndex(vec3 viewPos, vec3 cascadeSplits)
+uint GetCascadeIndex(vec3 viewPos)
 {
   uint cascadeIndex = 0;
   for (uint i = 0; i < SHADOW_MAP_CASCADE_COUNT - 1; ++i)
   {
-    if (viewPos.z < cascadeSplits[i])
+    if (viewPos.z < cascadeShadows.CascadeSplits[i])
     {
       cascadeIndex = i + 1;
     }

@@ -76,8 +76,6 @@ namespace MamontEngine
 
         Texture IdTexture;
 
-        std::vector<Texture> PickingImages;
-
         Texture CascadeDepthImage;
         std::array<Texture, MAX_POINT_LIGHT> PointLightShadowMaps;
         std::vector<VkImageView>             PointShadowMapImageViews;
@@ -88,9 +86,6 @@ namespace MamontEngine
 
         VkDescriptorSetLayout RenderDescriptorLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
-
-        std::unique_ptr<Texture> m_SkyboxTexture;
-
 
         void            InitDescriptors();
 
@@ -114,7 +109,7 @@ namespace MamontEngine
 
 #pragma region Destroy functions
         void DestroyImages();
-        void DestroyShadowmImages();
+        void DestroyShadowImages();
 
         void DestroyCommands();
 
@@ -140,6 +135,7 @@ namespace MamontEngine
         std::unique_ptr<Texture> m_BRDFUTTexture;
         std::unique_ptr<Texture> m_PrefilteredCubeTexture;
         std::unique_ptr<Texture> m_IrradianceTexture;
+        std::unique_ptr<Texture> m_SkyboxTexture;
 
         bool m_IsResizeRequested{true};
 

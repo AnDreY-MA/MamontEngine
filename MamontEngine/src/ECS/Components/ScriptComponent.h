@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sol/forward.hpp>
+#include "ECS/Entity.h"
 
 namespace MamontEngine
 {
@@ -11,7 +12,7 @@ namespace MamontEngine
         ScriptComponent(std::string_view inFile);
         ~ScriptComponent();
 
-        void BeginPlay();
+        void BeginPlay(Entity inOwner);
         void Update(float inDeltaTime);
         void EndPlay();
 
@@ -21,6 +22,8 @@ namespace MamontEngine
             return FileName;
         }
 
+        Entity GetOwner() const { return m_EntityOwner; }
+
 	private:
         std::shared_ptr<sol::environment>        m_Environment;
         std::shared_ptr<sol::protected_function> m_OnBeginFunc;
@@ -28,6 +31,7 @@ namespace MamontEngine
         std::shared_ptr<sol::protected_function> m_OnEndFunc;
         std::string                              FileName{std::string("")};
 
+        Entity m_EntityOwner;
 
 	};
 }

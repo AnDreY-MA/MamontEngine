@@ -197,12 +197,12 @@ namespace MamontEngine
     {
         for (const auto &material : m_Materials)
         {
-            if (!material || !material->IsDity)
+            if (!material || !material->IsDirty)
                 continue;
 
             MaterialAllocator::Update(material.get());
 
-            material->IsDity = false;
+            material->IsDirty = false;
         }
 
         std::function<void(Node*, DrawContext&)> collect = 
@@ -219,12 +219,12 @@ namespace MamontEngine
                     continue;
 
                 const auto        &material = m_Materials[primitive->MaterialIndex];
-                const RenderObject def(primitive->Count,
+                RenderObject def(primitive->Count,
                                         primitive->StartIndex,
                                         Buffer,
-                                        material->MaterialSet, material->Index,
-                                        Bound,
+                                        material->MaterialSet, material->Index, Bound,
                                         nodeMatrix, ID);
+                def.SphereBound = primitive->Bounds;
 
                 if (material->PassType == EMaterialPass::TRANSPARENT)
                     inContext.TransparentSurfaces.push_back(def);
@@ -462,19 +462,15 @@ namespace MamontEngine
                                       [&](const fastgltf::Node::TRS &transform)
                                       {
                                           newNode->Transform.Position = glm::vec3(transform.translation[0], transform.translation[1], transform.translation[2]);
-                                          newNode->Transform.Rotation = glm::vec3(0);
+                                          newNode->Transform.Rotation = glm::quat
+                                                  (transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]);
                                           newNode->Transform.Scale    = glm::vec3(transform.scale[0], transform.scale[1], transform.scale[2]);
 
-                                          const glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), newNode->Transform.Position);
-                                          const glm::quat rotation(transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]);
-                                          const glm::mat4 rotationMat = glm::toMat4(rotation);
-                                          const glm::mat4 scaleMat    = glm::scale(glm::mat4(1.0f), newNode->Transform.Scale);
-
-                                          newNode->Matrix = translationMat * rotationMat * scaleMat;
+                                          newNode->Matrix = newNode->Transform.Matrix();
                                       }},
                     node.transform);
 
-            m_Nodes.push_back(std::move(newNode));
+            m_Nodes.push_back(newNode);
         }
 
         for (size_t i = 0; i < sizeNodes; ++i)
@@ -494,6 +490,7 @@ namespace MamontEngine
     {
         std::vector<uint32_t> indices;
         std::vector<Vertex>   vertices;
+        m_Meshes.reserve(inFileAsset.meshes.size());
         for (const fastgltf::Mesh &mesh : inFileAsset.meshes)
         {
             std::shared_ptr<NewMesh> newmesh = std::make_shared<NewMesh>();
@@ -501,22 +498,25 @@ namespace MamontEngine
             newmesh->Primitives.reserve(mesh.primitives.size());
             for (auto &&p : mesh.primitives)
             {
+                const auto indice = p.indicesAccessor.has_value() ? p.indicesAccessor.value() : 0;
                 std::unique_ptr<Primitive> newPrimitive = std::make_unique<Primitive>();
                 newPrimitive->StartIndex                = static_cast<uint32_t>(indices.size());
-                newPrimitive->Count                     = static_cast<uint32_t>(inFileAsset.accessors[p.indicesAccessor.value()].count);
+                newPrimitive->Count                     = static_cast<uint32_t>(inFileAsset.accessors[indice].count);
 
                 const size_t initial_vtx = vertices.size();
 
                 {
-                    const fastgltf::Accessor &indexaccessor = inFileAsset.accessors[p.indicesAccessor.value()];
+                    const fastgltf::Accessor &indexaccessor = inFileAsset.accessors[indice];
                     indices.reserve(indices.size() + indexaccessor.count);
 
                     fastgltf::iterateAccessor<std::uint32_t>(
                             inFileAsset, indexaccessor, [&](const std::uint32_t idx) { indices.push_back(idx + initial_vtx); });
                 }
 
+                const auto pos = p.findAttribute("POSITION");
+                if (pos != p.attributes.end())
                 {
-                    const fastgltf::Accessor &posAccessor = inFileAsset.accessors[p.findAttribute("POSITION")->second];
+                    const fastgltf::Accessor &posAccessor = inFileAsset.accessors[pos->second];
                     vertices.resize(vertices.size() + posAccessor.count);
 
                     fastgltf::iterateAccessorWithIndex<glm::vec3>(inFileAsset,
@@ -572,6 +572,20 @@ namespace MamontEngine
                 {
                     newPrimitive->MaterialIndex = 0;
                 }
+
+                auto minpos = vertices[initial_vtx].Position;
+                auto maxpos = vertices[initial_vtx].Position;
+                for (size_t i = initial_vtx; i < vertices.size(); ++i)
+                {
+                    minpos = glm::min(minpos, vertices[i].Position);
+                    maxpos = glm::max(maxpos, vertices[i].Position);
+                }
+
+                newPrimitive->LocalBounds = AABB(minpos, maxpos);
+
+                newPrimitive->Bounds.Origin = (minpos + maxpos) / 2.f;
+                newPrimitive->Bounds.Extents = (maxpos - minpos) / 2.f;
+                newPrimitive->Bounds.Radius = glm::length(newPrimitive->Bounds.Extents);
 
                 newmesh->Primitives.push_back(std::move(newPrimitive));
             }

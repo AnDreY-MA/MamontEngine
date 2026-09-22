@@ -20,7 +20,6 @@
 #include "Graphics/Pass/DirectLightPass.h"
 #include "Graphics/Pass/PointLightPass.h"
 #include "Graphics/Pass/PickPass.h"
-#include "Core/JobSystem.h"
 #include "Graphics/DebugRenderer.h"
 // #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
@@ -46,11 +45,12 @@ namespace MamontEngine
 
         m_PickPass = std::make_unique<PickPass>();
         m_PickPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
+
+        m_GpuHeapBudgets.resize(10000);
     }
 
     Renderer::~Renderer()
     {
-        //m_Skybox.reset();
         m_SceneRenderer.reset();
         DestroyPipelines();
         DebugRenderer::Destroy();
@@ -69,6 +69,7 @@ namespace MamontEngine
     void Renderer::InitPipelines()
     {
         const VkDevice device = LogicalDevice::GetDevice();
+        vkDeviceWaitIdle(device);
 
         const std::pair<VkFormat, VkFormat> inImageFormats{m_DeviceContext.DrawImage.ImageFormat, m_DeviceContext.DepthImage.ImageFormat};
 
@@ -90,83 +91,6 @@ namespace MamontEngine
 
         DebugRenderer::Init(device, layouts);
 
-    }
-
-    void Renderer::InitPickPipepline()
-    {
-        const VkDevice device = LogicalDevice::GetDevice();
-
-        const std::string pickingPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/picking.frag.spv";
-
-        VkShaderModule pickingFragShader;
-        if (!VkPipelines::LoadShaderModule(pickingPath.c_str(), device, &pickingFragShader))
-        {
-            fmt::println("Error when building the triangle fragment shader module");
-            return;
-        }
-
-        const std::string pickingShaderVertPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/picking.vert.spv";
-        VkShaderModule    pickingVertShader;
-        if (!VkPipelines::LoadShaderModule(pickingShaderVertPath.c_str(), device, &pickingVertShader))
-        {
-            fmt::println("Error when building the triangle vertex shader module");
-            return;
-        }
-
-        std::cerr << "pickingFragShader: " << pickingFragShader << "\n";
-        std::cerr << "pickingVertShader: " << pickingVertShader << "\n";
-
-        const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {
-                vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, pickingVertShader),
-                vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, pickingFragShader)};
-
-        VkPipelineLayout pickingLayout;
-
-        // Create Layout
-        {
-            constexpr VkPushConstantRange pushConstRange = {
-                    .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                    .offset     = 0,
-                    .size       = sizeof(GPUDrawPushConstants),
-            };
-
-            const VkDescriptorSetLayout layouts[] = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
-
-            const VkPipelineLayoutCreateInfo picking_layout_info = vkinit::pipeline_layout_create_info(2, layouts, &pushConstRange);
-
-            VK_CHECK(vkCreatePipelineLayout(device, &picking_layout_info, nullptr, &pickingLayout));
-        }
-
-        const std::vector<VkVertexInputBindingDescription>   vertexInputBindings{};
-        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes{};
-        const VkPipelineVertexInputStateCreateInfo           vertexInputInfo =
-                vkinit::pipeline_vertex_input_state_create_info(vertexInputBindings, vertexInputAttributes);
-
-        VkPipelines::PipelineBuilder pipelineBuilder;
-        pipelineBuilder.SetShaders(pickingVertShader, pickingFragShader);
-        pipelineBuilder.SetLayout(pickingLayout);
-        pipelineBuilder.SetVertexInput(vertexInputInfo);
-        pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-        pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
-        pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
-        pipelineBuilder.SetMultisamplingNone();
-
-        pipelineBuilder.DisableBlending();
-        pipelineBuilder.m_ColorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT;
-
-        pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
-        pipelineBuilder.m_Rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-
-        pipelineBuilder.SetColorAttachmentFormat(m_DeviceContext.PickingImages[0].ImageFormat);
-        pipelineBuilder.SetDepthFormat(m_DeviceContext.DepthImage.ImageFormat);
-
-        VkPipeline pickingPipeline = pipelineBuilder.BuildPipline(device, 1);
-        m_PickingPipeline          = std::make_unique<PipelineData>(pickingPipeline, pickingLayout);
-        std::cerr << "PickingPipeline: " << pickingPipeline << std::endl;
-        std::cerr << "PickingPipeline, Layout: " << pickingLayout << std::endl;
-
-        vkDestroyShaderModule(device, pickingFragShader, nullptr);
-        vkDestroyShaderModule(device, pickingVertShader, nullptr);
     }
 
     void Renderer::Render()
@@ -237,17 +161,14 @@ namespace MamontEngine
     {
         PROFILE_VK_ZONE(m_DeviceContext.GetCurrentFrame().TracyContext, inCmd, "Draw Main");
 
+        const auto start = std::chrono::high_resolution_clock::now();
 
-        {
-            const auto start = std::chrono::high_resolution_clock::now();
+        DrawGeometry(inCmd);
 
-            DrawGeometry(inCmd);
+        const auto end     = std::chrono::high_resolution_clock::now();
+        const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
-            const auto end     = std::chrono::high_resolution_clock::now();
-            const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-
-            m_Stats.MeshDrawTime = elapsed.count() / 1000.f;
-        }
+        m_Stats.MeshDrawTime = elapsed.count() / 1000.f;
     }
 
     void Renderer::DrawGeometry(VkCommandBuffer inCmd)
@@ -272,12 +193,8 @@ namespace MamontEngine
 
         m_SkyPass->Render(inCmd, currentFrame.GlobalDescriptor);
 
-        //DrawSkybox(inCmd);
+        m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, m_RenderPipeline.get());
 
-        {
-            PROFILE_VK_ZONE(currentFrame.TracyContext, inCmd, "Scene Render");
-            m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, m_RenderPipeline.get());
-        }
         vkCmdEndRendering(inCmd);
 
         /*stats.DrawCallCount = 0;
@@ -301,6 +218,8 @@ namespace MamontEngine
 
     void Renderer::RenderShadows(VkCommandBuffer inCmd)
     {
+        const auto start = std::chrono::high_resolution_clock::now();
+
         RenderCascadeShadow(inCmd);
 
         const auto &lightData = m_SceneRenderer->GetLightData();
@@ -309,6 +228,11 @@ namespace MamontEngine
             m_PointLightPass->Render(
                     inCmd, m_DeviceContext.GetCurrentFrame().GlobalDescriptor, m_SceneRenderer->GetDrawContext(), m_SceneRenderer->GetGPUSceneData().Viewproj);
         }
+
+        const auto end     = std::chrono::high_resolution_clock::now();
+        const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+        m_Stats.ShadowsDrawTime = elapsed.count() / 1000.f;
 
     }
 
@@ -320,32 +244,6 @@ namespace MamontEngine
 
         const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
         m_DirectLightPass->Render(inCmd, currentFrame.GlobalDescriptor, m_SceneRenderer->GetDrawContext(), m_SceneRenderer->GetGPUSceneData().Viewproj);
-    }
-
-    void Renderer::DrawPickingPass(VkCommandBuffer cmd, const uint32_t inCurrentSwapchainIndex)
-    {
-        PROFILE_VK_ZONE(m_DeviceContext.GetCurrentFrame().TracyContext, cmd, "DrawPickingPass");
-
-        std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color        = {{0.0f, 0.0f, 0.0f, 0.0f}};
-        clearValues[1].depthStencil = {1.0f, 0};
-
-        const VkRenderingAttachmentInfo colorAttachment =
-                vkinit::attachment_info(m_DeviceContext.PickingImages[inCurrentSwapchainIndex].ImageView, clearValues.data());
-
-        const VkRenderingAttachmentInfo depthAttachment =
-                vkinit::depth_attachment_info(m_DeviceContext.DepthImage.ImageView, VK_ATTACHMENT_LOAD_OP_CLEAR, 0.f);
-        const VkExtent2D extent = m_Window->GetExtent();
-
-        const VkRenderingInfo renderInfo = vkinit::rendering_info(extent, &colorAttachment, &depthAttachment);
-        // vkCmdDispatch(cmd, std::ceil(extent.width / 16.0), std::ceil(extent.height / 16.0), 1);
-        vkCmdBeginRendering(cmd, &renderInfo);
-
-        SetViewportScissor(cmd, m_Window->GetExtent());
-
-        m_SceneRenderer->RenderPicking(cmd, m_DeviceContext.GetCurrentFrame().GlobalDescriptor, m_PickingPipeline->Pipeline, m_PickingPipeline->Layout);
-
-        vkCmdEndRendering(cmd);
     }
 
     void Renderer::UpdateUniformBuffers()
@@ -362,12 +260,7 @@ namespace MamontEngine
 
         // Cascade Matrix Buffer
         {
-            std::array<glm::mat4, CASCADECOUNT> cascadeViewProjMatrices{};
-            for (size_t i{0}; i < CASCADECOUNT; i++)
-            {
-                cascadeViewProjMatrices[i] = m_DirectLightPass->GetCascade(i).ViewProjectMatrix;
-            }
-            currentFrame.CascadeMatrixBuffer.Copy(cascadeViewProjMatrices.data());
+            currentFrame.CascadeMatrixBuffer.Copy(&m_DirectLightPass->GetCascades());
         }
         
 
@@ -379,67 +272,30 @@ namespace MamontEngine
 
     }
 
+    const MemoryStats &Renderer::GetGPUMemoryStats() const
+    {
+        Allocator::GetHeapBudgets(m_GpuHeapBudgets.data());
+        MemoryStats gpuMemoryStats;
+
+        for (uint32_t i = 0; i < Allocator::GetHeapCount(); ++i)
+        {
+            gpuMemoryStats.MemoryUsed += m_GpuHeapBudgets[i].usage;
+            gpuMemoryStats.MemoryAllocated += m_GpuHeapBudgets[i].budget;
+        }
+
+        return gpuMemoryStats;
+    }
+
     void Renderer::UpdateSceneRenderer(float inDeltaTime)
     {
-        m_DirectLightPass->UpdateCascade(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData().LightDirection);
-        m_SceneRenderer->Update(m_Window->GetExtent(), m_DirectLightPass->GetCascades(), inDeltaTime);
+        m_DirectLightPass->UpdateCascade(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData().DirectLight.Direction);
+        m_SceneRenderer->Update(m_Window->GetExtent(), inDeltaTime);
         m_PointLightPass->UpdateLights(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData());
     }
 
     void Renderer::DestroyPipelines()
     {
         m_RenderPipeline.reset();
-        m_PickingPipeline.reset();
-    }
-
-    uint64_t Renderer::TryPickObject(const glm::vec2 &inMousePos)
-    {
-        constexpr size_t bufferSize{sizeof(uint32_t) * 2};
-        const auto      &extent = m_DeviceContext.Swapchain.GetExtent();
-
-        const int32_t xPos = static_cast<int32_t>(inMousePos.x);
-        const int32_t yPos = static_cast<int32_t>(extent.height - inMousePos.y);
-
-        if (xPos >= extent.width || yPos >= extent.height)
-        {
-            return 0;
-        }
-
-        AllocatedBuffer stagingBuffer;
-        stagingBuffer.Create(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
-
-        auto &currentPickingImage = m_DeviceContext.PickingImages[m_DeviceContext.Swapchain.GetCurrentImageIndex()].Image;
-
-        ImmediateContext::ImmediateSubmit(
-                [&](VkCommandBuffer cmd)
-                {
-                    VkUtil::transition_image(cmd, currentPickingImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
-                    VkBufferImageCopy copyRegion               = {};
-                    copyRegion.bufferOffset                    = 0;
-                    copyRegion.bufferRowLength                 = 0;
-                    copyRegion.bufferImageHeight               = 0;
-                    copyRegion.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-                    copyRegion.imageSubresource.mipLevel       = 0;
-                    copyRegion.imageSubresource.baseArrayLayer = 0;
-                    copyRegion.imageSubresource.layerCount     = 1;
-                    copyRegion.imageOffset                     = {xPos, yPos, 0};
-                    copyRegion.imageExtent                     = {1, 1, 1};
-
-                    vkCmdCopyImageToBuffer(cmd, currentPickingImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, stagingBuffer.Buffer, 1, &copyRegion);
-
-                    VkUtil::transition_image(cmd, currentPickingImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                });
-
-        uint32_t pickedData[2] = {};
-        memcpy(&pickedData, stagingBuffer.Info.pMappedData, bufferSize);
-        const uint64_t lower    = pickedData[0];
-        const uint64_t upper    = pickedData[1];
-        const uint64_t resultID = (upper << 32) | lower;
-
-        stagingBuffer.Destroy();
-
-        return resultID;
     }
 
     /// Shadows

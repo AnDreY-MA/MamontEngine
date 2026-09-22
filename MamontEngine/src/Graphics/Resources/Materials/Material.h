@@ -51,9 +51,19 @@ namespace MamontEngine
 
         uint32_t Index{0};
 
-        bool IsDity{true};
+        bool IsDirty{true};
 
         void Swap(Material &other);
+
+    private:
+        friend class cereal::access;
+
+        template <class Archive>
+        void serialize(Archive &ar)
+        {
+            //ar(cereal::make_nvp("DescriptorSet", MaterialSet));
+            ar(cereal::make_nvp("MaterialPass", PassType));
+        }
     };
 
 } // namespace MamontEngine

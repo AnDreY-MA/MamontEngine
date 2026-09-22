@@ -19,7 +19,7 @@ file(GLOB_RECURSE Scripting "src/Scripting/*.h" "src/Scripting/*.hpp" "src/Scrip
 set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Devices} ${Materials} ${Utils} ${ECS} ${UI} ${Math} ${ECSComps} ${Physics} ${Scripting})
 
 # Add library
-add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
+add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES} "src/Core/Event/InputEvent.h")
 
 #include(ImGuizmo "vendor/ImGuizmo")
 
@@ -101,7 +101,7 @@ add_library(imgui STATIC
     vendor/imgui/imgui_widgets.cpp
     vendor/imgui/imgui_tables.cpp
     vendor/imgui/backends/imgui_impl_vulkan.cpp
-    vendor/imgui/backends/imgui_impl_sdl3.cpp)
+    vendor/imgui/backends/imgui_impl_sdl3.cpp "src/Graphics/Frustum.h" "src/Physics/Collision/Hull.h" "src/Core/Event/InputEvent.h")
 target_include_directories(imgui PUBLIC vendor/imgui)
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
 target_link_libraries(${PROJECT_NAME} PUBLIC imgui)
@@ -137,7 +137,7 @@ add_library(ImGuizmo STATIC
     vendor/ImGuizmo/ImSequencer.cpp
     vendor/ImGuizmo/GraphEditor.cpp
     vendor/ImGuizmo/ImCurveEdit.cpp
-    vendor/ImGuizmo/ImGradient.cpp)
+    vendor/ImGuizmo/ImGradient.cpp "src/Graphics/Frustum.h" "src/Physics/Collision/Hull.h" "src/Core/Event/InputEvent.h")
 
 #target_include_directories(ImGuizmo PUBLIC vendor/ImGuizmo)
 #target_link_libraries(${PROJECT_NAME} PUBLIC ImGuizmo)
@@ -153,9 +153,69 @@ target_link_libraries(ImGuizmo PUBLIC imgui)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC ImGuizmo)
 
+FetchContent_Declare(glslang
+	GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
+	GIT_TAG a8d39f97cdf08cf7eac4ae40dfe7b41420a3be30)
+set(ENABLE_CTEST            OFF CACHE BOOL "" FORCE)
+set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
+set(ENABLE_HLSL              ON CACHE BOOL "" FORCE)
+set(SKIP_GLSLANG_INSTALL     ON CACHE BOOL "" FORCE)
+
+#spirv
+FetchContent_Declare(spirv-cross
+	GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Cross.git
+	GIT_TAG vulkan-sdk-1.4.321.0)
+set(SPIRV_CROSS_CLI          OFF CACHE BOOL "" FORCE)
+set(SPIRV_CROSS_ENABLE_GLSL   ON CACHE BOOL "" FORCE)
+set(SPIRV_CROSS_ENABLE_HLSL  OFF CACHE BOOL "" FORCE)
+set(SPIRV_CROSS_ENABLE_MSL   OFF CACHE BOOL "" FORCE)
+set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(spirv-headers
+	GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers
+	GIT_TAG vulkan-sdk-1.4.321.0)
+set(SPIRV_HEADERS_SKIP_EXAMPLES ON CACHE BOOL "" FORCE)
+set(SPIRV_HEADERS_SKIP_INSTALL  ON CACHE BOOL "" FORCE)
+
+FetchContent_Declare(spirv-tools
+	GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools
+  GIT_TAG vulkan-sdk-1.4.321.0)
+set(SKIP_SPIRV_TOOLS_INSTALL  ON CACHE BOOL "" FORCE)
+set(SPIRV_BUILD_FUZZER       OFF CACHE BOOL "" FORCE)
+set(SPIRV_SKIP_EXECUTABLES    ON CACHE BOOL "" FORCE)
+set(SPIRV_SKIP_TESTS          ON CACHE BOOL "" FORCE)
+set(SPIRV_WARN_EVERYTHING    OFF CACHE BOOL "" FORCE)
+set(SPIRV_WERROR             OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(shaderc
+	GIT_REPOSITORY https://github.com/google/shaderc.git
+	GIT_TAG v2026.4)
+set(SHADERC_ENABLE_WERROR_COMPILE OFF CACHE BOOL "" FORCE)
+set(SHADERC_SKIP_COPYRIGHT_CHECK   ON CACHE BOOL "" FORCE)
+set(SHADERC_SKIP_EXAMPLES          ON CACHE BOOL "" FORCE)
+set(SHADERC_SKIP_INSTALL           ON CACHE BOOL "" FORCE)
+set(SHADERC_SKIP_TESTS             ON CACHE BOOL "" FORCE)
+
+
+FetchContent_MakeAvailable( spirv-headers spirv-tools spirv-cross glslang shaderc)
+
+set_target_properties(glslc                         PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+set_target_properties(glslc_exe                     PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+#set_target_properties(shaderc_combined_genfile      PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+set_target_properties(shaderc_combined-pkg-config   PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+set_target_properties(shaderc_shared                PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+set_target_properties(shaderc_static-pkg-config     PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+set_target_properties(shaderc-pkg-config            PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+set_target_properties(spirv-cross-c                 PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+set_target_properties(spirv-cross-reflect           PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+set_target_properties(spirv-cross-util              PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+set_target_properties(SPIRV-Tools-shared            PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+set_target_properties(SPVRemapper                   PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE shaderc spirv-cross-cpp)
+
 # PCH
 set(PCH_FILE src/pch.h)
 target_precompile_headers(${PROJECT_NAME} PUBLIC ${PCH_FILE})
 
 add_definitions(-DPROJECT_ROOT_DIR="${CMAKE_SOURCE_DIR}")
-message("PROJECT_ROOT_DIR" = ${CMAKE_SOURCE_DIR})

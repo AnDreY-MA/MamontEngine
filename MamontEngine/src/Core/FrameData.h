@@ -55,8 +55,6 @@ namespace MamontEngine
 
         AllocatedBuffer CascadeMatrixBuffer;
 
-        Cascade CascadeShadowMap;
-
         TracyVkCtx TracyContext = nullptr;
 
     };

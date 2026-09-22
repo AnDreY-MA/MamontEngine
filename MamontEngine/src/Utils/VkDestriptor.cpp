@@ -189,7 +189,7 @@ namespace MamontEngine
         Writes.push_back(write);
     }
 
-    void DescriptorWriter::WriteImageArray(int inBinding, const std::vector<VkDescriptorImageInfo> &imageInfos, VkDescriptorType type)
+    void DescriptorWriter::WriteImageArray(int inBinding, const std::span<VkDescriptorImageInfo> imageInfos, VkDescriptorType type)
     {
         size_t offset = ImageInfos.size();
 

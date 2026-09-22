@@ -33,7 +33,7 @@ namespace MamontEngine
             SetDirty(true);
         }
 
-        void SetRotation(const glm::vec3 &inScale)
+        void SetScale(const glm::vec3 &inScale)
         {
             m_Transform.Scale = inScale;
             SetDirty(true);

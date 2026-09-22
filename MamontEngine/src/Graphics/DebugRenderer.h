@@ -35,6 +35,8 @@ namespace MamontEngine
         void DrawLine(const glm::vec3 &inStart, const glm::vec3 &inEnd, const Color &inColor = Color::WHITE, float inWidth = 1.f);
 
         void Draw(const AABB &inBox, const Color &inColor = Color::WHITE, float width = 1.f);
+
+        void DrawFrustum(const glm::mat4 &invViewProj, const Color & = Color::WHITE);
         
         VkDeviceAddress GetVertexBufferAdress();
 

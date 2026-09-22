@@ -1,4 +1,4 @@
-#extension GL_ARB_gpu_shader_int64 : enable
+#extension GL_ARB_gpu_shader_int64 : require
 
 #include "vertex_data.glsl"
 #include "material.glsl"
@@ -9,6 +9,9 @@ layout(set = 0, binding = 0) uniform SceneData {
   mat4 proj;
   mat4 viewproj;
   vec3 cameraPosition;
+
+  float nearPlane;
+  float farPlane;
 } sceneData;
 
 layout(push_constant) uniform constants

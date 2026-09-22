@@ -23,11 +23,6 @@
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "variables": [
         {
-          "name": "CMAKE_TOOLCHAIN_FILE",
-          "value": "",
-          "type": "FILEPATH"
-        },
-        {
           "name": "CMAKE_MAKE_PROGRAM",
           "value": "C:/Program Files/Microsoft Visual Studio/18/Insiders/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe",
           "type": "FILEPATH"

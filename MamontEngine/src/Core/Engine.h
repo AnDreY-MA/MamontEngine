@@ -50,12 +50,17 @@ namespace MamontEngine
             return m_Renderer->GetStats();
         }
 
+        const MemoryStats &GetGPUMemoryStats() const
+        {
+            return m_Renderer->GetGPUMemoryStats();
+        }
+
         std::shared_ptr<Scene>& GetScene()
         {
             return m_Scene;
         }
 
-        std::shared_ptr<SceneRenderer>& GetSceneRenderer()
+        std::shared_ptr<SceneRenderer>& GetSceneRenderer() const
         {
             return m_Renderer->GetSceneRenderer();
         }
@@ -79,11 +84,6 @@ namespace MamontEngine
         const SDL_Event* GetInputEvent() const
         {
             return m_InputEvent;
-        }
-
-        uint64_t TryPickObject(const glm::vec2 &inMousePos)
-        {
-            return m_Renderer->TryPickObject(inMousePos);
         }
 
     private:

@@ -1,7 +1,17 @@
+
+local owner = {}
+
 function BeginPlay()
-	Log.Info("TestScript beginPlay")
+	--local name = ScriptComponent:GetOwner():GetTagComponent()
+	--Log.Info(name.name)
 end
 
-function EndPlay()
-	Log.Info("TestScript EndPlay")
+function Update(dt)
+	owner = ScriptComponent:GetOwner()
+	local name = owner:GetTagComponent()
+	--Log.Info(name.name)
+	newPosition = Vector3.new(4.0, 10.0, -3.0)
+	newPosition.x = 2.0
+	owner:GetTransformComponent():SetPosition(newPosition)
+	--Log.Info(transform.x)
 end

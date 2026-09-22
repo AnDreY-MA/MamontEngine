@@ -46,6 +46,7 @@ namespace MamontEngine
         uint32_t        MaterialIndex{0};
 		//const Material *Material;
         AABB            Bound;
+        SphereBounds SphereBound;
 
 		glm::mat4 Transform;
 
@@ -64,41 +65,42 @@ namespace MamontEngine
         std::vector<RenderObject> TransparentSurfaces;
     };
 
-    struct Cascade
-    {
-        VkImageView View;
-        float       SplitDepth{0.f};
-        glm::mat4   ViewProjectMatrix{glm::mat4(0.f)};
+    struct ShadowCascades
+    { 
+        std::array<glm::mat4, CASCADECOUNT> ViewProjectMatrixs{};
+        std::array<float, CASCADECOUNT>     DepthSpilts{};
     };
 
-    struct PointLight
+    struct alignas(16) PointLight
     {
         glm::vec3 Position;
-        float     padding0;
+        float     _pad0;
         glm::vec3 Color;
-        float     padding1;
+        float     _pad1;
         float     Radius;
         float     Attenuation;
-        uint32_t  CastShadow{1};
-        float     padding2;
+        uint32_t  CastShadow{1};  
+        float     _pad2;   
     };
-    static_assert(sizeof(PointLight) == 48, "PointLight size must be 48 bytes");
 
-    struct LightData
+    struct alignas(16) DirectionLight
     {
-        glm::vec3 Splits;
-        float     _pad0;
-        glm::mat4 InverseViewMatrix;
-        glm::vec3 LightDirection;
-        float     _pad1;
-        glm::vec3 Color;
-        uint32_t  HasDirectionLight;
-
-        PointLight PointLights[8];
-        uint32_t   PointLightingCount;
-        float      _pad2[3];           
+        glm::vec3 Color;   
+        float     pad0;                   
+        glm::vec3 Direction;
+        uint32_t CastShadow{1};
     };
-    static_assert(sizeof(LightData) == 512, "LightData size must be 512 bytes");
+
+    struct alignas(16) LightData
+    {
+        DirectionLight DirectLight;           
+        float          _pad;
+        uint32_t       HasDirectionLight;  
+
+        PointLight     PointLights[8];
+        uint32_t       PointLightingCount;
+        float          _pad2[3];
+    };
 
     struct ShadowCube
     {

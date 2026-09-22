@@ -17,14 +17,19 @@ struct PointLight
   int CastShadow;
 };
 
+struct DirectionLigth
+{
+	vec3 Color;
+	vec3 Direction;
+	int CastShadow;
+};
+
 layout(set = 0, binding = 8) uniform samplerCube pointLightShadowSamplers[MAX_POINT_LIGHT];
 
 layout(set = 0, binding = 2) uniform LightDataUBO {
-  vec3 cascadeSplits;
-  mat4 inverseViewMat;
-  vec3 lightDirection;
+  DirectionLigth DirectLight;
+  
   float _pad;
-  vec3 color;
   bool IsActive;
 
   PointLight PointLights[MAX_POINT_LIGHT];

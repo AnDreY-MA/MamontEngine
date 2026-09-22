@@ -7,57 +7,15 @@
 #include <Utils/Profile.h>
 #include "Math/AABB.h"
 #include "Core/Engine.h"
-
-namespace
-{
-    bool IsVisible(const MamontEngine::AABB &bound, const glm::mat4 inTrasnform, const glm::mat4 &viewproj)
-    {
-        constexpr std::array<glm::vec3, 8> corners{
-                glm::vec3{1, 1, 1},
-                glm::vec3{1, 1, -1},
-                glm::vec3{1, -1, 1},
-                glm::vec3{1, -1, -1},
-                glm::vec3{-1, 1, 1},
-                glm::vec3{-1, 1, -1},
-                glm::vec3{-1, -1, 1},
-                glm::vec3{-1, -1, -1},
-        };
-
-        const glm::mat4 matrix = viewproj * inTrasnform;
-
-        glm::vec3 min = {1.5, 1.5, 1.5};
-        glm::vec3 max = {-1.5, -1.5, -1.5};
-
-        for (int c = 0; c < 8; c++)
-        {
-            glm::vec4 v = matrix * glm::vec4(bound.Center() + (corners[c] * bound.Extent()), 1.f);
-
-            v.x = v.x / v.w;
-            v.y = v.y / v.w;
-            v.z = v.z / v.w;
-
-            min = glm::min(glm::vec3{v.x, v.y, v.z}, min);
-            max = glm::max(glm::vec3{v.x, v.y, v.z}, max);
-        }
-
-        if (min.z > 1.f || max.z < 0.f || min.x > 1.f || max.x < -1.f || min.y > 1.f || max.y < -1.f)
-        {
-            return false;
-        }
-
-        return true;
-    }
-} // namespace
+#include "Graphics/Frustum.h"
+#include "Graphics/Shader/ShaderModule.h"
 
 namespace MamontEngine
 {
-    static VkFormat s_CascadeDepthFormat = VK_FORMAT_D32_SFLOAT;
-
     DirectLightPass::DirectLightPass(VkFormat inCascadeDepthFormat, VkImage inCascadeImage) 
-        : m_CascadeImage(inCascadeImage)
+        : m_CascadeImage(inCascadeImage), m_CascadeFormat(inCascadeDepthFormat)
     {
         const VkDevice& device = LogicalDevice::GetDevice();
-        s_CascadeDepthFormat   = inCascadeDepthFormat;
         for (size_t i = 0; i < CASCADECOUNT; i++)
         {
             auto layerViewInfo =
@@ -66,19 +24,18 @@ namespace MamontEngine
             layerViewInfo.subresourceRange.baseArrayLayer = static_cast<uint32_t>(i);
             layerViewInfo.subresourceRange.layerCount     = 1;
 
-            VK_CHECK(vkCreateImageView(device, &layerViewInfo, nullptr, &Cascades[i].View));
-            std::cerr << "Cascades[" << i << "].View: " << Cascades[i].View << std::endl;
+            VK_CHECK(vkCreateImageView(device, &layerViewInfo, nullptr, &m_CascadeImageViews[i]));
+            std::cerr << "Cascades[" << i << "].View: " << m_CascadeImageViews[i] << std::endl;
         }
-
     }
     
     DirectLightPass::~DirectLightPass()
     {
         const VkDevice device = LogicalDevice::GetDevice();
 
-        for (auto& cascade : Cascades)
+        for (auto &cascadeView : m_CascadeImageViews)
         {
-            vkDestroyImageView(device, cascade.View, nullptr);
+            vkDestroyImageView(device, cascadeView, nullptr);
         }
 
         m_Pipeline.reset();
@@ -91,7 +48,7 @@ namespace MamontEngine
         VkCommandBufferInheritanceRenderingInfo inheritanceDynamicInfo{};
         inheritanceDynamicInfo.sType                   = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO;
         inheritanceDynamicInfo.colorAttachmentCount    = 0;
-        inheritanceDynamicInfo.depthAttachmentFormat = s_CascadeDepthFormat;
+        inheritanceDynamicInfo.depthAttachmentFormat   = m_CascadeFormat;
         inheritanceDynamicInfo.viewMask                = 0;
         inheritanceDynamicInfo.rasterizationSamples    = VK_SAMPLE_COUNT_1_BIT;
 
@@ -106,16 +63,13 @@ namespace MamontEngine
         VkCommandBufferBeginInfo cmdSecondaryBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         cmdSecondaryBeginInfo.pInheritanceInfo         = &inheritanceInfo;
 
-        constexpr VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION, .height = SHADOWMAP_DIMENSION};
+        constexpr VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION  , .height = SHADOWMAP_DIMENSION};
 
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdSecondaryBeginInfo));
 
         const auto draw = [&](const RenderObject &r, uint32_t cascadeIndex)
         {
             vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
-
-            constexpr VkDeviceSize offsets[1] = {0};
-            //vkCmdBindVertexBuffers(cmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
 
             vkCmdBindIndexBuffer(cmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
@@ -125,17 +79,17 @@ namespace MamontEngine
             constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
             vkCmdPushConstants(cmd, m_Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
 
-            vkCmdDrawIndexed(cmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
+            vkCmdDrawIndexed(cmd, r.IndexCount, 1, 0, 0, 0);
         };
 
-        uint32_t cascadeIndex{0};
+        const auto frustumPlanes = ExtractFrustumPlanes(viewproj);
+
         VkUtil::transition_image(cmd, m_CascadeImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-        for (const auto &cascade : Cascades)
+        for (uint32_t i = 0; i < m_CascadeImageViews.size(); ++i)
         {
-            VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(cascade.View);
+            VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(m_CascadeImageViews[i], VK_ATTACHMENT_LOAD_OP_LOAD);
             depthAttachment.clearValue.depthStencil   = {1.f, 0};
-            depthAttachment.loadOp                    = VK_ATTACHMENT_LOAD_OP_CLEAR;
             depthAttachment.storeOp                   = VK_ATTACHMENT_STORE_OP_STORE;
 
             const VkRenderingInfo renderCascadeInfo = vkinit::rendering_info(cascadeExtent, nullptr, &depthAttachment);
@@ -159,14 +113,13 @@ namespace MamontEngine
 
             for (const auto &object : inDrawContext.OpaqueSurfaces)
             {
-                if (IsVisible(object.Bound, object.Transform, viewproj))
+                if (IsNodeVisible(frustumPlanes, object.Transform, object.SphereBound))
                 {
-                    draw(object, cascadeIndex);
+                    draw(object, i);
                 }
             }
 
             vkCmdEndRendering(cmd);
-            ++cascadeIndex;
         }
         VkUtil::transition_image(cmd, m_CascadeImage, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
 
@@ -188,19 +141,20 @@ namespace MamontEngine
         const float ratio = maxZ / minZ;
 
         constexpr float cascadeSplitLambda{0.95f};
-
-        for (size_t i{0}; i < CASCADECOUNT; i++)
-        {
-            const float p       = (i + 1) / static_cast<float>(CASCADECOUNT);
-            const float log     = minZ * std::pow(ratio, p);
-            const float uniform = minZ + range * p;
-            const float d       = cascadeSplitLambda * (log - uniform) + uniform;
-            cascadeSplits[i]    = (d - nearClip) / clipRange;
-        }
+        const glm::mat4 inverseCamera = glm::inverse(inCamera->GetProjection() * inCamera->GetViewMatrix());
+        const glm::vec3 lightDirection = glm::normalize(inLightDirection);
 
         float lastSplitDist = 0.f;
         for (size_t i = 0; i < CASCADECOUNT; i++)
         {
+            {
+                const float p       = (i + 1) / static_cast<float>(CASCADECOUNT);
+                const float log     = minZ * std::pow(ratio, p);
+                const float uniform = minZ + range * p;
+                const float d       = cascadeSplitLambda * (log - uniform) + uniform;
+                cascadeSplits[i]    = (d - nearClip) / clipRange;
+            }
+
             const float                    splitDist      = cascadeSplits[i];
             std::array<glm::vec3, 8> frustumCorners = {
                     glm::vec3(-1.0f, 1.0f, 0.0f),
@@ -213,11 +167,11 @@ namespace MamontEngine
                     glm::vec3(-1.0f, -1.0f, 1.0f),
             };
 
-            const glm::mat4 inverseCamera = glm::inverse(inCamera->GetProjection() * inCamera->GetViewMatrix());
             for (uint32_t j = 0; j < 8; j++)
             {
-                const glm::vec4 invCorner = inverseCamera * glm::vec4(frustumCorners[j], 1.f);
-                frustumCorners[j]         = invCorner / invCorner.w;
+                glm::vec4 corner = inverseCamera * glm::vec4(frustumCorners[j], 1.f);
+                corner /= corner.w;
+                frustumCorners[j]         = glm::vec3(corner);
             }
 
             for (uint32_t j = 0; j < 4; j++)
@@ -240,20 +194,15 @@ namespace MamontEngine
                 const float distance = glm::length(frustumCorners[j] - frustumCenter);
                 radius               = glm::max(radius, distance);
             }
-            radius = std::ceil(radius * 16.f) / 16.f;
-
-            const glm::vec3 maxExtents = glm::vec3(radius);
-            const glm::vec3 minExtents = -maxExtents;
-
-            const glm::vec3 lightDirection = glm::normalize(inLightDirection);
-            const glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDirection * -minExtents.x, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
-            glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.005f, maxExtents.z - minExtents.z);
+            
+            const glm::mat4 lightViewMatrix = glm::lookAtRH(frustumCenter - lightDirection * radius, frustumCenter, glm::vec3(0.f, 1.f, 0.f));
+            glm::mat4 lightOrthoMatrix = glm::orthoRH_ZO(-radius, radius, -radius, radius, 0.005f, radius * 2.f);
             lightOrthoMatrix[1][1] *= -1.0f;
             
-            Cascades[i].SplitDepth = (nearClip + splitDist * clipRange) * -1.f;
-            Cascades[i].ViewProjectMatrix = lightOrthoMatrix * lightViewMatrix;
+            m_Cascades.DepthSpilts[i] = (nearClip + splitDist * clipRange) * -1.f;
+            m_Cascades.ViewProjectMatrixs[i]             = lightOrthoMatrix * lightViewMatrix;
 
-            lastSplitDist = cascadeSplits[i];
+            lastSplitDist = splitDist;
         }
     }
        
@@ -263,28 +212,18 @@ namespace MamontEngine
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(GPUDrawPushConstants)};
         const VkDevice device = LogicalDevice::GetDevice();
 
-        //const std::array<VkDescriptorSetLayout, 2> layouts = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
-
         const VkPipelineLayoutCreateInfo layoutInfo =
                 vkinit::pipeline_layout_create_info(static_cast<uint32_t>(inDescriptorLaouts.size()), inDescriptorLaouts.data(), &matrixRange);
 
         VkPipelineLayout layout;
         VK_CHECK(vkCreatePipelineLayout(device, &layoutInfo, nullptr, &layout));
 
-        const std::string cascadeShadowPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/cascade_shadow.vert.spv";
+        const std::string vertPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/cascade_shadow.vert";
+        const std::string fragPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/cascade_shadow.frag";
 
-        VkShaderModule cascadeShadowShader;
-        if (!VkPipelines::LoadShaderModule(cascadeShadowPath.c_str(), device, &cascadeShadowShader))
-        {
-            fmt::println("Error when building the triangle fragment shader module");
-        }
-        const std::string cascadeFragmentShadowPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/cascade_shadow.frag.spv ";
+        ShaderModule vertModule(device, vertPath, EShaderStage::Vertex);
+        ShaderModule fragModule(device, fragPath, EShaderStage::Fragment);
 
-        VkShaderModule cascadeFragmentShadowShader;
-        if (!VkPipelines::LoadShaderModule(cascadeFragmentShadowPath.c_str(), device, &cascadeFragmentShadowShader))
-        {
-            fmt::println("Error when building the triangle fragment shader module");
-        }
         const std::vector<VkVertexInputBindingDescription>   vertexInputBindings{};
         const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes{};
         const VkPipelineVertexInputStateCreateInfo           vertexInputInfo =
@@ -295,7 +234,7 @@ namespace MamontEngine
         pipelineBuilder.SetVertexInput(vertexInputInfo);
         pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
         pipelineBuilder.SetLayout(layout);
-        pipelineBuilder.SetShaders(cascadeShadowShader, cascadeFragmentShadowShader);
+        pipelineBuilder.SetShaders(vertModule.GetModule(), fragModule.GetModule());
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
         pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
         pipelineBuilder.SetDepthFormat(inImageFormat);
@@ -316,11 +255,6 @@ namespace MamontEngine
         std::cerr << "Direct shadowPipeline, Layout: " << layout << std::endl;
 
         m_Pipeline = std::make_unique<PipelineData>(shadowPipeline, layout);
-
-        vkDestroyShaderModule(device, cascadeShadowShader, nullptr);
-        vkDestroyShaderModule(device, cascadeFragmentShadowShader, nullptr);
-
-        pipelineBuilder.Clear();
     }
 
 } // namespace MamontEngine

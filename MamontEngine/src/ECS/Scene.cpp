@@ -77,10 +77,6 @@ namespace MamontEngine
         using hs = entt::hashed_string;
         entt::meta_factory<MeshModel>{}.type(hs{"Model"}, "Model").base<Asset>();
         entt::meta_factory<Transform>{}.type(hs{"Transform"}, "Transform");
-
-       /* using namespace HeroPhysics;
-        entt::meta_factory<EMotionType>{}.data<EMotionType::Static>("Static"_hs).data<EMotionType::Dynamic>("Dynamic"_hs);
-        REFLECTENUMER(HeroPhysics::EMotionType::Static)*/
     }
 
     Scene::~Scene()
@@ -161,6 +157,7 @@ namespace MamontEngine
                 meshComponent.Mesh->UpdateTransform(transform.Matrix());
                 transform.SetDirty(false);
                 meshComponent.Mesh->IsDirty = false;
+                Log::Info("Update Transform");
             }
         }
 
@@ -173,6 +170,12 @@ namespace MamontEngine
                 const auto &[transform, rigidbody] = rigidbodyGroup.get<TransformComponent, RigidbodyComponent>(entity);
                 transform.SetPosition(rigidbody.Rigidbody->GetPosition());
                 transform.SetRotation(rigidbody.Rigidbody->GetRotation());
+            }
+
+            const auto& scriptComponentView = m_Registry.view<ScriptComponent>();
+            for (const auto& [entity, script] : scriptComponentView.each())
+            {
+                script.Update(deltaTime);
             }
 
         }
@@ -191,14 +194,12 @@ namespace MamontEngine
             rigidbody.Rigidbody->SetRotation(transform.GetRotation());
 
             const glm::vec3 position = rigidbody.Rigidbody->GetPosition();
-            Log::Info("Rigidbody position: {} {} {}", position.x, position.y, position.z);
 
             if (auto collision = m_Registry.try_get<HeroPhysics::BoxCollision>(entity); collision)
             {
                 auto collisionPtr = std::make_shared<HeroPhysics::BoxCollision>(*collision);
                 rigidbody.Rigidbody->SetCollisionShape(std::move(collisionPtr));
                 count++;
-                Log::Info("Box Collision count: {}", count);
             }
             if (auto collision = m_Registry.try_get<HeroPhysics::SphereCollision>(entity); collision)
             {
@@ -216,12 +217,13 @@ namespace MamontEngine
                 }
             }
         }
+        Log::Info("Box Collision count: {}", count);
 
 
         const auto scriptView = m_Registry.view<ScriptComponent>();
         for (auto&& [entity, scriptComponent] : scriptView.each())
         {
-            scriptComponent.BeginPlay();
+            scriptComponent.BeginPlay(Entity{entity, this});
         }
 
         m_IsPaused = false;

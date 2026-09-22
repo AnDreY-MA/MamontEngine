@@ -33,6 +33,7 @@ namespace MamontEngine
 
     SkyPass::~SkyPass()
     {
+        m_Skybox.reset();
     }
 
     void SkyPass::CreatePipeline(std::span<const VkDescriptorSetLayout> inDescriptorLaouts, std::pair<VkFormat, VkFormat> inImageFormats)
@@ -82,6 +83,7 @@ namespace MamontEngine
         pipelineBuilder.Clear();
         pipelineBuilder.SetShaders(skyboxVertexShader, skyboxFragShader);
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
         pipelineBuilder.SetDepthFormat(inImageFormats.second);
         pipelineBuilder.SetColorAttachmentFormat(inImageFormats.first);
         pipelineBuilder.SetVertexInput(vertexInputInfo);
@@ -91,7 +93,6 @@ namespace MamontEngine
         pipelineBuilder.DisableBlending();
         pipelineBuilder.SetCache(skyPipelineCache);
         pipelineBuilder.SetMultisamplingNone();
-
 
         m_Pipeline = std::make_unique<PipelineData>(pipelineBuilder.BuildPipline(device), skyboxLayout, skyPipelineCache);
 
@@ -113,9 +114,6 @@ namespace MamontEngine
                                 &globalDescriptor,
                                 0,
                                 nullptr);
-
-        constexpr VkDeviceSize offsets[1] = {0};
-        vkCmdBindVertexBuffers(cmd, 0, 1, &object.MeshBuffer.VertexBuffer.Buffer, offsets);
 
         vkCmdBindIndexBuffer(cmd, object.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 

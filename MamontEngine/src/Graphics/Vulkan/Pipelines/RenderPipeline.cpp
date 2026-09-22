@@ -5,6 +5,9 @@
 #include "Utils//VkInitializers.h"
 #include "Core/ContextDevice.h"
 #include "ECS/SceneRenderer.h"
+//#include "Graphics/Shader/ShaderCompiler.h"
+#include "Graphics/Shader/ShaderModule.h"
+#include "Core/Log.h"
 
 //#define VMA_IMPLEMENTATION
 //#include <vk_mem_alloc.h>
@@ -15,20 +18,11 @@ namespace MamontEngine
                                    std::span<const VkDescriptorSetLayout> inDescriptorLayouts,
                                    const std::pair<VkFormat, VkFormat>   inImageFormats)
     {
-        const std::string meshPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/mesh_frag.spv";
+        const std::string meshFragPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/mesh_frag.glsl";
+        const std::string meshVertPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/mesh_vert.glsl";
 
-        VkShaderModule meshFragShader;
-        if (!VkPipelines::LoadShaderModule(meshPath.c_str(), inDevice, &meshFragShader))
-        {
-            fmt::println("Error when building the triangle fragment shader module");
-        }
-
-        const std::string meshVertexShaderPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/mesh_vert.spv";
-        VkShaderModule    meshVertexShader;
-        if (!VkPipelines::LoadShaderModule(meshVertexShaderPath.c_str(), inDevice, &meshVertexShader))
-        {
-            fmt::println("Error when building the triangle vertex shader module");
-        }
+        ShaderModule fragmentModule(inDevice, meshFragPath, EShaderStage::Fragment);
+        ShaderModule vertexModule(inDevice, meshVertPath, EShaderStage::Vertex);
 
         constexpr VkPushConstantRange matrixRange {
             .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
@@ -52,7 +46,7 @@ namespace MamontEngine
                 vkinit::pipeline_vertex_input_state_create_info(vertexInputBindings, vertexInputAttributes);
 
         VkPipelines::PipelineBuilder pipelineBuilder;
-        pipelineBuilder.SetShaders(meshVertexShader, meshFragShader);
+        pipelineBuilder.SetShaders(vertexModule.GetModule(), fragmentModule.GetModule());
         pipelineBuilder.SetVertexInput(vertexInputInfo);
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
         pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
@@ -86,10 +80,6 @@ namespace MamontEngine
             std::cerr << "TransparentPipeline->Pipeline: " << TransparentPipeline->Pipeline << std::endl;
             std::cerr << "TransparentPipeline->Pipeline, layout: " << TransparentPipeline->Layout << std::endl;
         }
-        
-
-        vkDestroyShaderModule(inDevice, meshFragShader, nullptr);
-        vkDestroyShaderModule(inDevice, meshVertexShader, nullptr);
     }
 
     RenderPipeline::~RenderPipeline()

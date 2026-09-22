@@ -1,5 +1,8 @@
 #include <Graphics/Vulkan/Allocator.h>
 
+#define VMA_IMPLEMENTATION
+#include <vk_mem_alloc.h>
+
 namespace MamontEngine
 {
 namespace Allocator
@@ -25,10 +28,25 @@ namespace Allocator
         {
             VmaTotalStatistics stats;
             vmaCalculateStatistics(g_memoryAllocator, &stats);
+            //char* statsString;
+            //vmaBuildStatsString(g_memoryAllocator, &statsString, VK_TRUE);
+            //fmt::println("StatsString: {} ", statsString);
+            //vmaFreeStatsString(g_memoryAllocator, statsString);
             fmt::println("Total device memory leaked: {} bytes", stats.total.statistics.allocationBytes);
             vmaDestroyAllocator(g_memoryAllocator);
             g_memoryAllocator = VK_NULL_HANDLE;
         }
+
+    }
+
+    void GetHeapBudgets(VmaBudget *outBudgetData)
+    {
+        vmaGetHeapBudgets(g_memoryAllocator, outBudgetData);
+    }
+
+    uint32_t GetHeapCount()
+    {
+        return g_memoryAllocator->GetMemoryHeapCount();
     }
 }
 }

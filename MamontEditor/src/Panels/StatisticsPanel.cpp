@@ -15,7 +15,9 @@ namespace MamontEditor
         if (OnBegin())
         {
             const ImGuiIO& io = ImGui::GetIO();
-            const MamontEngine::RenderStats &stats = MamontEngine::MEngine::Get().GetStats();
+            const auto                      &engine{MamontEngine::MEngine::Get()};
+
+            const MamontEngine::RenderStats &stats = engine.GetStats();
             //ImGui::Text("frametime %f ms", stats.FrameTime);
             ImGui::Text("Framerate: %f ms", io.Framerate);
             ImGui::Text("Drawtime: %f ms", stats.MeshDrawTime);
@@ -24,12 +26,13 @@ namespace MamontEditor
 
             if (ImGui::BeginChild("Lighting"))
             {
-                const auto &lightData = MamontEngine::MEngine::Get().GetSceneRenderer()->GetLightData();
+                const auto &lightData = engine.GetSceneRenderer()->GetLightData();
                 ImGui::Text("Directional Light: %d", lightData.HasDirectionLight);
                 ImGui::Text("Point Light count: %i", lightData.PointLightingCount);
 
             }
             ImGui::EndChild();
+            
 
             OnEnd();
         }

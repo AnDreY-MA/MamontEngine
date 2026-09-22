@@ -10,6 +10,8 @@ namespace MamontEngine
         explicit MaterialManager();
         ~MaterialManager();
 
+		void SetupDefaults();
+
 		static MaterialManager *Get() { return s_Instance; }
 
 		std::shared_ptr<Material>
@@ -20,4 +22,6 @@ namespace MamontEngine
 
 		static MaterialManager *s_Instance;
 	};
+
+	Material *CreateWhiteMaterial();
 }

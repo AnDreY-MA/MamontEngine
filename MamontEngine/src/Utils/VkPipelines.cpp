@@ -183,7 +183,7 @@ namespace MamontEngine::VkPipelines
 
         m_ColorBlendAttachment = {};
 
-        m_Multisampling = {.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+        m_Multisampling = {.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT};
 
         m_PipelineLayout = {};
 

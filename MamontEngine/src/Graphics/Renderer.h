@@ -3,6 +3,7 @@
 #include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
 #include "ECS/SceneRenderer.h"
 #include "Pass/SkyPass.h"
+#include "Core/JobSystem.h"
 
 namespace MamontEngine
 {
@@ -22,8 +23,15 @@ namespace MamontEngine
         float FrameTime{0.f};
         float SceneUpdateTime{0.f};
         float MeshDrawTime{0.f};
+        float ShadowsDrawTime{0.f};
         int   TriangleCount{0};
         int   DrawCallCount{0};
+    };
+
+    struct MemoryStats
+    {
+        size_t MemoryUsed{0};
+        size_t MemoryAllocated{0};
     };
 
     class Renderer : public NonMovable
@@ -40,15 +48,14 @@ namespace MamontEngine
 
         void Render();
 
-        void DrawPickingPass(VkCommandBuffer cmd, const uint32_t inCurrentSwapchainIndex);
-        uint64_t TryPickObject(const glm::vec2 &inMousePos);
-
         void UpdateSceneRenderer(float inDeltaTime);
 
         inline const RenderStats& GetStats() const
         {
             return m_Stats;
         }
+
+        const MemoryStats &GetGPUMemoryStats() const;
 
         std::shared_ptr<SceneRenderer>& GetSceneRenderer()
         {
@@ -69,7 +76,6 @@ namespace MamontEngine
 
         void UpdateUniformBuffers();
 
-        void InitPickPipepline();
 
 	private:
         VkContextDevice &m_DeviceContext;
@@ -81,7 +87,6 @@ namespace MamontEngine
         std::shared_ptr<WindowCore> m_Window;
 
         std::shared_ptr<RenderPipeline> m_RenderPipeline;
-        std::unique_ptr<PipelineData> m_PickingPipeline;
 
         std::unique_ptr<DirectLightPass> m_DirectLightPass;
         std::unique_ptr<PointLightPass> m_PointLightPass;
@@ -95,7 +100,9 @@ namespace MamontEngine
 
         RenderStats m_Stats;
 
-        VkImage m_CurrentSwapchainImage;
-        VkImageView m_CurrentSwapchainImageView;
+        mutable MemoryStats m_GpuMemoryStats;
+
+        mutable std::vector<VmaBudget> m_GpuHeapBudgets;
+
 	};
 }

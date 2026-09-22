@@ -96,7 +96,10 @@ namespace MamontEngine
             std::vector<VkDescriptorImageInfo> textureDescriptors(textures.size());
             for (size_t i = 0; i < textureDescriptors.size(); ++i)
             {
-                textureDescriptors[i] = textures[i]->GetDescriptorInfo();
+                if (const auto& texture = textures[i]; texture)
+                {
+                    textureDescriptors[i] = textures[i]->GetDescriptorInfo();
+                }
             }
 
             newMaterial->MaterialSet = DescrtiptorAllocator.Allocate(device, contextDevice.RenderDescriptorLayout);

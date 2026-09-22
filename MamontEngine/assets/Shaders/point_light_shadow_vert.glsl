@@ -1,8 +1,7 @@
 #version 460
 
 #extension GL_GOOGLE_include_directive : require
-#extension GL_NV_viewport_array2 : enable
-
+#extension GL_ARB_shader_viewport_layer_array : require
 #include "include/Light.glsl"
 #include "include/PointShadowMap.glsl"
 
@@ -18,6 +17,8 @@ void main()
 
   outPos = worldPosition;
 
-  gl_Layer = gl_InstanceIndex;
+  //gl_Layer = gl_InstanceIndex;
   gl_Position = PointLightConstants.LightBuffer.viewProj[PointLightConstants.BufferIndex] * worldPosition;
+  //gl_Position.z = -gl_Position.z;
+
 }

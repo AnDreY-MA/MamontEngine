@@ -6,6 +6,13 @@
 
 namespace MamontEngine
 {
+    enum TransformStatus : uint8_t
+    {
+        Clean = 0,
+        LocalDirty = 1 << 0,
+        WorldDirty = 1 << 1,
+    };
+
     struct Vertex
     {
         alignas(16) glm::vec3 Position = glm::vec3(0.0f);
@@ -17,7 +24,7 @@ namespace MamontEngine
 
     struct GPUDrawPushConstants
     {
-        glm::mat4       WorldMatrix{glm::mat4(0.f)};
+        glm::mat4       WorldMatrix{glm::mat4(1.f)};
         VkDeviceAddress VertexBuffer{0};
         VkDeviceAddress MaterialBuffer{0};
         uint64_t        ObjectID{0};
@@ -25,9 +32,11 @@ namespace MamontEngine
         uint32_t        MaterialIndex{0};
     };
 
-    struct PickingPushConstants
+    struct SphereBounds
     {
-        uint32_t ObjectID{0};
+        glm::vec3 Origin{glm::vec3(0.f)};
+        float     Radius{0.f};
+        glm::vec3 Extents{glm::vec3(0.0f)};
     };
 
     struct Primitive
@@ -36,6 +45,10 @@ namespace MamontEngine
         uint32_t Count{0};
 
         uint32_t MaterialIndex;
+
+        SphereBounds Bounds;
+
+        AABB LocalBounds;
     };
 
     struct NewMesh
@@ -59,5 +72,12 @@ namespace MamontEngine
         Transform                   Transform;
 
         std::string                 Name;
+
+        uint8_t Status = TransformStatus::Clean;
+
+        void MarkDirty()
+        {
+            Status |= TransformStatus::LocalDirty | TransformStatus::WorldDirty;
+        }
     };
 }

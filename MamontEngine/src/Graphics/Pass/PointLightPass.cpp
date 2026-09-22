@@ -13,48 +13,6 @@
 #include "Core/Log.h"
 #include "Core/Engine.h"
 
-namespace
-{
-    bool IsVisible(const MamontEngine::AABB &bound, const glm::mat4 inTrasnform, const glm::mat4 &viewproj)
-    {
-        constexpr std::array<glm::vec3, 8> corners{
-                glm::vec3{1, 1, 1},
-                glm::vec3{1, 1, -1},
-                glm::vec3{1, -1, 1},
-                glm::vec3{1, -1, -1},
-                glm::vec3{-1, 1, 1},
-                glm::vec3{-1, 1, -1},
-                glm::vec3{-1, -1, 1},
-                glm::vec3{-1, -1, -1},
-        };
-
-        const glm::mat4 matrix = viewproj * inTrasnform;
-
-        glm::vec3 min = {1.5, 1.5, 1.5};
-        glm::vec3 max = {-1.5, -1.5, -1.5};
-
-        for (int c = 0; c < 8; c++)
-        {
-            glm::vec4 v = matrix * glm::vec4(bound.Center() + (corners[c] * bound.Extent()), 1.f);
-
-            v.x = v.x / v.w;
-            v.y = v.y / v.w;
-            v.z = v.z / v.w;
-
-            min = glm::min(glm::vec3{v.x, v.y, v.z}, min);
-            max = glm::max(glm::vec3{v.x, v.y, v.z}, max);
-        }
-
-        if (min.z > 1.f || max.z < 0.f || min.x > 1.f || max.x < -1.f || min.y > 1.f || max.y < -1.f)
-        {
-            return false;
-        }
-
-        return true;
-    }
-} // namespace
-
-
 namespace MamontEngine
 {
     struct PointShadowConstants
@@ -127,14 +85,11 @@ namespace MamontEngine
 
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdSecondaryBeginInfo));
 
-        constexpr VkExtent2D extent = {.width = 1024, .height = 1024};
+        constexpr VkExtent2D extent = {.width = SHADOW_MAP_FACE_IMAGE_SIZE, .height = SHADOW_MAP_FACE_IMAGE_SIZE};
 
         const auto draw = [&](const RenderObject &r, uint32_t lightCount, uint32_t faceNum)
         {
             vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
-
-            constexpr VkDeviceSize offsets[1] = {0};
-            vkCmdBindVertexBuffers(cmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
 
             vkCmdBindIndexBuffer(cmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
@@ -157,10 +112,11 @@ namespace MamontEngine
         for (uint32_t l = 0; l < m_LightCount; ++l)
         {
             const Texture &shadowImage = shadowCubeImages[l];
-            VkUtil::transition_image_aspect(
-                    cmd, shadowImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
+            
             for (uint32_t i = 0; i < SHADOW_FACE_NUM; ++i)
             {
+                VkUtil::transition_image_aspect(
+                        cmd, shadowImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
                 VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(contextDevice.PointShadowMapImageViews[i + l * SHADOW_FACE_NUM]);
                 depthAttachment.clearValue.depthStencil   = {1.f, 0};
                 depthAttachment.loadOp                    = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -187,20 +143,17 @@ namespace MamontEngine
 
                 for (const auto &object : inDrawContext.OpaqueSurfaces)
                 {
-                      if (IsVisible(object.Bound, object.Transform, viewproj))
-                      {
-                          draw(object, l, i);
-                      }
+                    draw(object, l, i);
                 }
 
                 vkCmdEndRendering(cmd);
+                VkUtil::transition_image_aspect(
+                        cmd, shadowImage.Image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
             }
-            VkUtil::transition_image_aspect(
-                    cmd, shadowImage.Image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
+            
         }
 
         VK_CHECK(vkEndCommandBuffer(cmd));
-
     }
 
     void PointLightPass::CreatePipeline(std::span<const VkDescriptorSetLayout> inDescriptorLaouts, VkFormat inImageFormat)
@@ -272,11 +225,14 @@ namespace MamontEngine
     {
         m_LightCount = inLightData.PointLightingCount;
 
+        if (m_LightCount <= 0)
+            return;
+
         for (uint32_t i = 0; i < m_LightCount; ++i)
         {
             const auto &light = inLightData.PointLights[i];
 
-            glm::mat4 proj = glm::perspective(glm::radians(90.f), 1.f, inCamera->GetNearClip(), light.Radius);
+            glm::mat4 proj = glm::perspectiveRH_ZO(glm::radians(90.f), 1.f, inCamera->GetNearClip(), light.Radius);
             proj[1][1] *= -1.0f;
             for (uint32_t f = 0; f < SHADOW_FACE_NUM; ++f)
             {
@@ -310,6 +266,6 @@ namespace MamontEngine
         }
 
         const auto currentFrame = MEngine::Get().GetContextDevice().GetFrame();
-        CopyDataToDynamicBuffer(&m_Buffer, (void *)m_ShadowFaceCubes.data(), &m_StagingBuffers[currentFrame]);
+        CopyDataToDynamicBuffer(&m_Buffer, m_ShadowFaceCubes.data(), &m_StagingBuffers[currentFrame]);
     }
 }

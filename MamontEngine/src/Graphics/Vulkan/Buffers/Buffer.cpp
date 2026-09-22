@@ -2,9 +2,7 @@
 #include <cstring>
 #include "Graphics/Vulkan/Allocator.h"
 #include "Graphics/Vulkan/ImmediateContext.h"
-
-#define VMA_IMPLEMENTATION
-#include <vk_mem_alloc.h>
+#include "Graphics/Devices/LogicalDevice.h"
 
 namespace MamontEngine
 {

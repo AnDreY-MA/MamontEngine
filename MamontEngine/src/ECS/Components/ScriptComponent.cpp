@@ -19,7 +19,7 @@ namespace MamontEngine
         }
     }
 
-    void ScriptComponent::BeginPlay()
+    void ScriptComponent::BeginPlay(Entity inOwner)
     {
         if (!m_OnBeginFunc) return;
 
@@ -28,7 +28,10 @@ namespace MamontEngine
         {
             sol::error err = result;
             Log::Error("Failed call BeginPlay function in script\n Error: {}", err.what());
+            return;
         }
+
+        m_EntityOwner = inOwner;
     }
 
 

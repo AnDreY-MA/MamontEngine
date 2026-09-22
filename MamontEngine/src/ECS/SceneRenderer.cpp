@@ -15,50 +15,61 @@
 #include "Physics/Collision/BoxCollision.h"
 #include "Physics/Collision/SphereCollision.h"
 #include "Graphics/Resources/Materials/MaterialAllocator.h"
+#include "Graphics/Frustum.h"
+
+namespace
+{
+    std::vector<glm::vec3> GetBoxVertices(const MamontEngine::AABB &aabb)
+    {
+        std::vector<glm::vec3> vertices;
+        vertices.resize(8);
+
+        // Lower
+        vertices[0].x = aabb.Min.x;
+        vertices[0].y = aabb.Min.y;
+        vertices[0].z = aabb.Min.z;
+
+        vertices[1].x = aabb.Min.x;
+        vertices[1].z = aabb.Min.z;
+
+        vertices[2].z = aabb.Min.z;
+
+        vertices[3].y = aabb.Min.y;
+        vertices[3].z = aabb.Min.z;
+
+        vertices[4].x = aabb.Min.x;
+        vertices[4].y = aabb.Min.y;
+
+        vertices[5].x = aabb.Min.x;
+
+        vertices[7].y = aabb.Min.y;
+
+        // Upper
+        vertices[1].y = aabb.Max.y;
+
+        vertices[2].x = aabb.Max.x;
+        vertices[2].y = aabb.Max.y;
+
+        vertices[3].x = aabb.Max.x;
+
+        vertices[4].z = aabb.Max.z;
+
+        vertices[5].y = aabb.Max.y;
+        vertices[5].z = aabb.Max.z;
+
+        vertices[6].x = aabb.Max.x;
+        vertices[6].y = aabb.Max.y;
+        vertices[6].z = aabb.Max.z;
+
+        vertices[7].x = aabb.Max.x;
+        vertices[7].z = aabb.Max.z;
+
+        return vertices;
+    }
+} // namespace
 
 namespace MamontEngine
 {
-    namespace
-    {
-        bool IsVisible(const AABB &bound, const glm::mat4 inTrasnform, const glm::mat4 &viewproj)
-        {
-            constexpr std::array<glm::vec3, 8> corners{
-                    glm::vec3{1, 1, 1},
-                    glm::vec3{1, 1, -1},
-                    glm::vec3{1, -1, 1},
-                    glm::vec3{1, -1, -1},
-                    glm::vec3{-1, 1, 1},
-                    glm::vec3{-1, 1, -1},
-                    glm::vec3{-1, -1, 1},
-                    glm::vec3{-1, -1, -1},
-            };
-
-            const glm::mat4 matrix = viewproj * inTrasnform;
-
-            glm::vec3 min = {1.5, 1.5, 1.5};
-            glm::vec3 max = {-1.5, -1.5, -1.5};
-
-            for (int c = 0; c < 8; c++)
-            {
-                glm::vec4 v = matrix * glm::vec4(bound.Center() + (corners[c] * bound.Extent()), 1.f);
-
-                v.x = v.x / v.w;
-                v.y = v.y / v.w;
-                v.z = v.z / v.w;
-
-                min = glm::min(glm::vec3{v.x, v.y, v.z}, min);
-                max = glm::max(glm::vec3{v.x, v.y, v.z}, max);
-            }
-
-            if (min.z > 1.f || max.z < 0.f || min.x > 1.f || max.x < -1.f || min.y > 1.f || max.y < -1.f)
-            {
-                return false;
-            }
-
-            return true;
-        }
-    }
-
     SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera, const std::shared_ptr<Scene> &inScene) 
         : m_Camera(inCamera), m_Scene(inScene)
     {
@@ -86,12 +97,6 @@ namespace MamontEngine
         {
             vkCmdBindDescriptorSets(
                     inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inRenderPipeline->OpaquePipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
-
-            constexpr VkDeviceSize offsets[1] = {0};
-           /* if (r.MeshBuffer.VertexBuffer.Buffer != VK_NULL_HANDLE)
-            {
-                vkCmdBindVertexBuffers(inCmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
-            }*/
             
             vkCmdBindIndexBuffer(inCmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
@@ -113,19 +118,38 @@ namespace MamontEngine
             vkCmdDrawIndexed(inCmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
         };
 
+        uint32_t drawObjectCount{0};
+        const auto frustumPlanes = ExtractFrustumPlanes(m_SceneData.Viewproj);
         // Opaque Draw
         for (const auto &object : m_DrawContext.OpaqueSurfaces)
         {
-            if (IsVisible(object.Bound, object.Transform, m_SceneData.Viewproj))
+            if (IsNodeVisible(frustumPlanes, object.Transform, object.SphereBound))
             {
                 draw(object);
             }
+
+            drawObjectCount++;
         }
+
+       // Log::Info("Draw ObjectCount: {}", drawObjectCount);
+
+       /* const auto& meshView = m_Scene->GetRegistry().view<MeshComponent>();
+        for (const auto& [entity, mesh] : meshView.each())
+        {
+            const auto& model = mesh.Mesh;
+            if (!model)
+                continue;
+
+
+        }
+        const glm::mat4 viewProj         = m_Camera->GetProjection() * m_Camera->GetViewMatrix();
+        const FrustumPlane    frustumPlane = ExtractFrustumPlanes(viewProj);*/
 
         if (m_DrawCollisionBounds)
         {
             DebugRenderer::Render(inCmd);
         }
+
         /*for (const auto &r : transp_draws)
         {
             draw(m_DrawContext.TransparentSurfaces[r]);
@@ -133,46 +157,16 @@ namespace MamontEngine
 
     }
 
-    void SceneRenderer::RenderPicking(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, VkPipeline inPipeline, VkPipelineLayout inLayout)
-    {
-        uint64_t               idRenderObject{1};
-        constexpr VkDeviceSize offsets[1] = {0};
-
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inPipeline);
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inLayout, 0, 1, &globalDescriptor, 0, nullptr);
-
-        const auto draw = [&](const RenderObject &r) -> void
-        {
-            vkCmdBindVertexBuffers(cmd, 0, 1, &r.MeshBuffer.VertexBuffer.Buffer, offsets);
-
-            vkCmdBindIndexBuffer(cmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
-
-            const GPUDrawPushConstants pushConstants{.WorldMatrix = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBuffer.Address, .ObjectID = (uint64_t)r.Id};
-
-            constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
-            vkCmdPushConstants(cmd, inLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &pushConstants);
-
-            vkCmdDrawIndexed(cmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
-
-            ++idRenderObject;
-        };
-
-        for (const auto &object : m_DrawContext.OpaqueSurfaces)
-        {
-            draw(object);
-        }
-    }
-
-    void SceneRenderer::Update(const VkExtent2D &inWindowExtent, const std::array<Cascade, CASCADECOUNT> &inCascades, float inDeltaTime)
+    void SceneRenderer::Update(const VkExtent2D &inWindowExtent, float inDeltaTime)
     {
         PROFILE_FUNCTION();
 
         ClearDrawContext();
         DebugRenderer::ClearVertex();
 
-        const glm::mat4 &view = m_Camera->GetViewMatrix();
-
         m_Camera->UpdateProjection(inWindowExtent);
+
+        const glm::mat4 &view = m_Camera->GetViewMatrix();
         const glm::mat4 &projection = m_Camera->GetProjection();
 
         const auto& sceneRegistry = m_Scene->GetRegistry();
@@ -181,6 +175,8 @@ namespace MamontEngine
         m_SceneData.Proj           = projection;
         m_SceneData.Viewproj       = projection * view;
         m_SceneData.CameraPosition = m_Camera->GetPosition();
+        m_SceneData.NearPlane      = m_Camera->GetNearClip();
+        m_SceneData.FarPlane = m_Camera->GetFarClip();
 
         {
             const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent>();
@@ -197,23 +193,16 @@ namespace MamontEngine
             const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent, TransformComponent>();
 
             viewDirectionLight.each([&](const auto& ligth, const auto& transform) { 
-                m_LightData.Color        = ligth.GetColor();
-                const glm::quat rotation       = transform.GetRotation();
-                const glm::vec3 lightDirection = transform.GetForwardVector();
-                m_LightData.LightDirection = lightDirection;
+                m_LightData.DirectLight.Direction = transform.GetForwardVector();
+                m_LightData.DirectLight.Color     = ligth.GetColor();
+
             });
-
-            for (size_t i = 0; i < CASCADECOUNT; i++)
-            {
-                m_LightData.Splits[i] = inCascades[i].SplitDepth;
-            }
-
-            m_LightData.InverseViewMatrix = glm::inverse(view);
         }
+        
         else
         {
-            m_LightData.Color = glm::vec3(0.3f, 0.3f, 0.3f);
-            m_LightData.LightDirection = glm::vec3(.0f);
+            m_LightData.DirectLight.Color          = glm::vec3(0.3f, 0.3f, 0.3f);
+            m_LightData.DirectLight.Direction = glm::vec3(.0f);
         }
 
         if (m_LightData.PointLightingCount > 0)
@@ -231,6 +220,7 @@ namespace MamontEngine
                         light.Attenuation                     = ligthComponent.GetAttenuation();
                         ++indexLight;
                     });
+
         }
 
         m_LightData.HasDirectionLight = m_HasDirectionLight;
@@ -244,9 +234,11 @@ namespace MamontEngine
             }
         }
 
+        static bool stopPlane = false;
+        static glm::mat4   invViewProj = glm::mat4(1.f);
         if (m_DrawCollisionBounds)
         {
-            const auto viewCollisions = sceneRegistry.view<TransformComponent, HeroPhysics::BoxCollision>();
+           /* const auto viewCollisions = sceneRegistry.view<TransformComponent, HeroPhysics::BoxCollision>();
             for (auto [entity, transform, collision] : viewCollisions.each())
             {
                 DebugRenderer::Draw(collision.GetBounds().Transform(transform.Matrix()), Color::GREEN);
@@ -256,7 +248,20 @@ namespace MamontEngine
             for (auto [entity, transform, collision] : viewSphereCollisions.each())
             {
                 DebugRenderer::Draw(collision.GetBounds().Transform(transform.Matrix()), Color::BLUE);
+            }*/
+
+            
+
+             
+            /*if (stopPlane == false)
+            {
+                invViewProj = glm::inverse(m_SceneData.Viewproj);
+                stopPlane   = true;
             }
+
+            DebugRenderer::DrawFrustum(invViewProj);*/
+
+            //DebugRenderer::DrawLine(glm::vec3(1), glm::vec3(5));
 
             DebugRenderer::Update();
 

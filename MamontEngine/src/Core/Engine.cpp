@@ -76,11 +76,11 @@ namespace MamontEngine
 
         PROFILE_SETTHREADNAME("Main Thread");
 
+        MaterialManager::Get()->SetupDefaults();
+
         while (!bQuit)
         {
             const auto deltaTime = ImGui::GetIO().DeltaTime;
-
-            //Log::Info("Custom: {}. \n ImGui: {}", m_DeltaTime, deltaTime);
 
             while (SDL_PollEvent(&event) != 0)
             {

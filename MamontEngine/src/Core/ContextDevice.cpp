@@ -104,8 +104,7 @@ namespace MamontEngine
     {
         vkb::InstanceBuilder builder;
 
-        const auto instRet = builder.set_app_name("Mamont App")
-                                     .request_validation_layers(bUseValidationLayers)
+        const auto instRet = builder.set_app_name("Mamont App").request_validation_layers(bUseValidationLayers)
                                      //.use_default_debug_messenger()
                                      .require_api_version(1, 4, 321)
                                      .build();
@@ -242,8 +241,6 @@ namespace MamontEngine
         InitDescriptors();
 
         InitTracyContext();
-
-        //MaterialAllocator::Init();
     }
 
     VkContextDevice::~VkContextDevice()
@@ -255,7 +252,7 @@ namespace MamontEngine
         m_PrefilteredCubeTexture->Destroy();
         m_IrradianceTexture->Destroy();
 
-        DestroyShadowmImages();
+        DestroyShadowImages();
 
         Swapchain.Destroy(device);
         ImmediateContext::DestroyImmediateContext();
@@ -432,7 +429,7 @@ namespace MamontEngine
             GetFrameAt(i).SceneDataBuffer.Create(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
             GetFrameAt(i).LightDataBuffer.Create(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-            GetFrameAt(i).CascadeMatrixBuffer.Create(sizeof(glm::mat4) * CASCADECOUNT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+            GetFrameAt(i).CascadeMatrixBuffer.Create(sizeof(ShadowCascades), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
         }
     }
 
@@ -501,7 +498,7 @@ namespace MamontEngine
                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             writer.WriteBuffer(2, frame.LightDataBuffer.Buffer, cascadeDataSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            writer.WriteBuffer(3, frame.CascadeMatrixBuffer.Buffer, sizeof(glm::mat4) * CASCADECOUNT, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            writer.WriteBuffer(3, frame.CascadeMatrixBuffer.Buffer, sizeof(ShadowCascades), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             writer.WriteImage(4, m_SkyboxTexture->ImageView, m_SkyboxTexture->Sampler, 
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -585,21 +582,8 @@ namespace MamontEngine
         std::cerr << "Image.DepthImage Image:" << DepthImage.Image << std::endl;
         std::cerr << "Image.DepthImage ImageView:" << DepthImage.ImageView << std::endl;
 
-        {
-           /* const VkExtent3D extent = {Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
+        IdTexture.Create(extent, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-            PickingImages.resize(Swapchain.GetImages().size());
-            for (auto &image : PickingImages)
-            {
-                image.Create(
-                        extent, VK_FORMAT_R32G32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-
-                std::cerr << "PickingImages Image:" << image.Image << std::endl;
-                std::cerr << "PickingImages ImageView:" << image.ImageView << std::endl;
-            }*/
-
-            IdTexture.Create(extent, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-        }
 
         //InitShadowImages();
     }
@@ -798,16 +782,10 @@ namespace MamontEngine
         DrawImage.Destroy();
         DepthImage.Destroy();
 
-        for (auto &pickImage : PickingImages)
-        {
-            pickImage.Destroy();
-        }
-
-        
-        
+        IdTexture.Destroy();
     }
 
-    void VkContextDevice::DestroyShadowmImages()
+    void VkContextDevice::DestroyShadowImages()
     {
         CascadeDepthImage.Destroy();
 
