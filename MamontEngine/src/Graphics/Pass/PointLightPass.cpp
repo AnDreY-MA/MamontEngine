@@ -12,19 +12,86 @@
 #include "Core/Camera.h"
 #include "Core/Log.h"
 #include "Core/Engine.h"
+#include <Graphics/Shader/ShaderModule.h>
+
+namespace
+{
+    using namespace MamontEngine;
+
+    void UploadDataToBuffer(VkCommandBuffer cmd, void* newData, AllocatedBuffer& targetBuffer, AllocatedBuffer& stagingBuffer, size_t size, size_t offset)
+    {
+        const auto bufferBarrier1 = VkBufferMemoryBarrier2{
+                .sType         = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+                .srcStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                .srcAccessMask = VK_ACCESS_2_MEMORY_READ_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                .buffer        = targetBuffer.Buffer,
+                .offset        = 0,
+                .size          = VK_WHOLE_SIZE,
+        };
+
+        const auto dependencyInfo = VkDependencyInfo{
+                .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                .bufferMemoryBarrierCount = 1,
+                .pBufferMemoryBarriers    = &bufferBarrier1,
+        };
+        vkCmdPipelineBarrier2(cmd, &dependencyInfo);
+
+        auto *mappedData = reinterpret_cast<uint8_t *>(stagingBuffer.Info.pMappedData);
+        memcpy((void *)&mappedData[offset], newData, size);
+
+        const auto region = VkBufferCopy2{
+                .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                .srcOffset = (VkDeviceSize)offset,
+                .dstOffset = (VkDeviceSize)offset,
+                .size      = size,
+        };
+        const auto bufCopyInfo = VkCopyBufferInfo2{
+                .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+                .srcBuffer   = stagingBuffer.Buffer,
+                .dstBuffer   = targetBuffer.Buffer,
+                .regionCount = 1,
+                .pRegions    = &region,
+        };
+
+        vkCmdCopyBuffer2(cmd, &bufCopyInfo);
+
+        const auto bufferBarrier2 = VkBufferMemoryBarrier2{
+                .sType         = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+                .srcStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
+                .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                .dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
+                .buffer        = targetBuffer.Buffer,
+                .offset        = 0,
+                .size          = VK_WHOLE_SIZE,
+        };
+        const auto dependencyInfo2 = VkDependencyInfo{
+                .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                .bufferMemoryBarrierCount = 1,
+                .pBufferMemoryBarriers    = &bufferBarrier2,
+        };
+        vkCmdPipelineBarrier2(cmd, &dependencyInfo2);
+    }
+}
 
 namespace MamontEngine
 {
     struct PointShadowConstants
     {
-        glm::mat4       WorldMatrix{glm::mat4(0.f)};
+        glm::mat4       WorldMatrix{glm::mat4(1.f)};
         VkDeviceAddress VertexBuffer{0};
 
         VkDeviceAddress ShadowMapBufferAddress{0};
         uint32_t        BufferIndex{0};
         uint32_t        LightIndex{0};
+    };
 
-        float _pad1;
+    struct CubeFace
+    {
+        glm::vec3 Direction{glm::vec3(0.f)};
+        glm::vec3 Up{glm::vec3(0.f)};
     };
 
     PointLightPass::PointLightPass(std::array<Texture, MAX_POINT_LIGHT> &inShadowCubeImages) 
@@ -32,15 +99,21 @@ namespace MamontEngine
     {
         const VkDevice &device = LogicalDevice::GetDevice();
 
-        m_Buffer.Create(sizeof(ShadowCube) * SHADOW_FACE_NUM * MAX_POINT_LIGHT,
-                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_2_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                        VMA_MEMORY_USAGE_GPU_ONLY);
-        const VkBufferDeviceAddressInfo deviceAddressInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = m_Buffer.Buffer};
-        m_Buffer.Address                                  = vkGetBufferDeviceAddress(LogicalDevice::GetDevice(), &deviceAddressInfo);
+        constexpr VkDeviceSize shadowBufferSize = sizeof(glm::mat4) * MAX_POINT_LIGHT * SHADOW_FACE_NUM;
 
+        for (auto& buffer : m_Buffer)
+        {
+            buffer.Create(shadowBufferSize,
+                            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                            VMA_MEMORY_USAGE_GPU_ONLY);
+            const VkBufferDeviceAddressInfo deviceAddressInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = buffer.Buffer};
+            buffer.Address                                    = vkGetBufferDeviceAddress(LogicalDevice::GetDevice(), &deviceAddressInfo);
+        }
+
+        
         for (auto& sBuffer : m_StagingBuffers)
         {
-            sBuffer = CreateStagingBuffer(m_Buffer.Info.size);
+            sBuffer = CreateStagingBuffer(shadowBufferSize);
         }
 
     }
@@ -53,7 +126,11 @@ namespace MamontEngine
             sBuffer.Destroy();
         }
 
-        m_Buffer.Destroy();
+        for (auto& buffer : m_Buffer)
+        {
+            buffer.Destroy();
+        }
+
 
         m_Pipeline.reset();
 
@@ -66,7 +143,7 @@ namespace MamontEngine
         VkCommandBufferInheritanceRenderingInfo inheritanceDynamicInfo{};
         inheritanceDynamicInfo.sType                 = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO;
         inheritanceDynamicInfo.colorAttachmentCount  = 0;
-        inheritanceDynamicInfo.depthAttachmentFormat = shadowCubeImages[0].ImageFormat;
+        inheritanceDynamicInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
         inheritanceDynamicInfo.viewMask              = 0;
         inheritanceDynamicInfo.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT;
 
@@ -81,13 +158,14 @@ namespace MamontEngine
         VkCommandBufferBeginInfo cmdSecondaryBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         cmdSecondaryBeginInfo.pInheritanceInfo         = &inheritanceInfo;
 
-        constexpr VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION, .height = SHADOWMAP_DIMENSION};
-
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdSecondaryBeginInfo));
 
         constexpr VkExtent2D extent = {.width = SHADOW_MAP_FACE_IMAGE_SIZE, .height = SHADOW_MAP_FACE_IMAGE_SIZE};
+        const auto           currentFrame = MEngine::Get().GetContextDevice().GetFrame();
 
-        const auto draw = [&](const RenderObject &r, uint32_t lightCount, uint32_t faceNum)
+        UploadDataToBuffer(cmd, (void *)m_ShadowFaceCubes.data(), m_Buffer[currentFrame], m_StagingBuffers[currentFrame], sizeof(m_ShadowFaceCubes), 0);
+
+        const auto draw = [&](const RenderObject &r, uint32_t lightCount, uint32_t faceIndex)
         {
             vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
 
@@ -96,8 +174,8 @@ namespace MamontEngine
             const PointShadowConstants pushConstants{
                     .WorldMatrix = r.Transform, 
                     .VertexBuffer = r.MeshBuffer.VertexBuffer.Address, 
-                    .ShadowMapBufferAddress = m_Buffer.Address,
-                    .BufferIndex = faceNum + lightCount * SHADOW_FACE_NUM,
+                    .ShadowMapBufferAddress = m_Buffer[currentFrame].Address,
+                    .BufferIndex = lightCount * SHADOW_FACE_NUM + faceIndex,
                     .LightIndex = lightCount
             };
 
@@ -113,11 +191,12 @@ namespace MamontEngine
         {
             const Texture &shadowImage = shadowCubeImages[l];
             
-            for (uint32_t i = 0; i < SHADOW_FACE_NUM; ++i)
+            for (uint32_t faceIndex = 0; faceIndex < SHADOW_FACE_NUM; ++faceIndex)
             {
-                VkUtil::transition_image_aspect(
-                        cmd, shadowImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
-                VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(contextDevice.PointShadowMapImageViews[i + l * SHADOW_FACE_NUM]);
+                VkUtil::PipelineBarrier(
+                        cmd, shadowImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+                VkRenderingAttachmentInfo depthAttachment =
+                        vkinit::depth_attachment_info(contextDevice.PointShadowMapImageViews[l * SHADOW_FACE_NUM + faceIndex]);
                 depthAttachment.clearValue.depthStencil   = {1.f, 0};
                 depthAttachment.loadOp                    = VK_ATTACHMENT_LOAD_OP_CLEAR;
                 depthAttachment.storeOp                   = VK_ATTACHMENT_STORE_OP_STORE;
@@ -125,7 +204,7 @@ namespace MamontEngine
                 const VkRenderingInfo renderCascadeInfo = vkinit::rendering_info(extent, nullptr, &depthAttachment);
 
                 vkCmdBeginRendering(cmd, &renderCascadeInfo);
-                vkCmdSetDepthBias(cmd, 1.25f, 0.f, 1.75f);
+                //vkCmdSetDepthBias(cmd, 1.25f, 0.f, 1.75f);
                 const VkViewport viewport = {.x        = 0.0f,
                                              .y        = 0.0f,
                                              .width    = static_cast<float>(extent.width),
@@ -143,12 +222,14 @@ namespace MamontEngine
 
                 for (const auto &object : inDrawContext.OpaqueSurfaces)
                 {
-                    draw(object, l, i);
+                    draw(object, l, faceIndex);
                 }
 
                 vkCmdEndRendering(cmd);
-                VkUtil::transition_image_aspect(
-                        cmd, shadowImage.Image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
+                VkUtil::PipelineBarrier(cmd,
+                                                shadowImage.Image,
+                                                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
             }
             
         }
@@ -161,7 +242,7 @@ namespace MamontEngine
         constexpr VkPushConstantRange matrixRange{
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(PointShadowConstants)};
 
-        const VkDevice device = LogicalDevice::GetDevice();
+        const VkDevice& device = LogicalDevice::GetDevice();
 
         const VkPipelineLayoutCreateInfo layoutInfo = vkinit::pipeline_layout_create_info(
             static_cast<uint32_t>(inDescriptorLaouts.size()), inDescriptorLaouts.data(), &matrixRange, 1);
@@ -169,20 +250,12 @@ namespace MamontEngine
         VkPipelineLayout layout;
         VK_CHECK(vkCreatePipelineLayout(device, &layoutInfo, nullptr, &layout));
 
-        const std::string pointShadowPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/point_light_shadow_vert.spv";
+        const std::string pointShadowVertPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/point_light_shadow_vert.glsl";
+        const std::string pointFragmentShadowPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/point_light_shadow_frag.glsl";
 
-        VkShaderModule pointShadowShader;
-        if (!VkPipelines::LoadShaderModule(pointShadowPath.c_str(), device, &pointShadowShader))
-        {
-            fmt::println("Error when building the triangle fragment shader module");
-        }
-        const std::string pointFragmentShadowPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/point_light_shadow_frag.spv ";
+        ShaderModule fragModule(device, pointFragmentShadowPath, EShaderStage::Fragment);
+        ShaderModule vertModule(device, pointShadowVertPath, EShaderStage::Vertex);
 
-        VkShaderModule pointFragmentShadowShader;
-        if (!VkPipelines::LoadShaderModule(pointFragmentShadowPath.c_str(), device, &pointFragmentShadowShader))
-        {
-            fmt::println("Error when building the triangle fragment shader module");
-        }
         const std::vector<VkVertexInputBindingDescription>   vertexInputBindings{};
         const std::vector<VkVertexInputAttributeDescription> vertexInputAttributes{};
         const VkPipelineVertexInputStateCreateInfo           vertexInputInfo =
@@ -193,49 +266,61 @@ namespace MamontEngine
         pipelineBuilder.SetVertexInput(vertexInputInfo);
         pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
         pipelineBuilder.SetLayout(layout);
-        pipelineBuilder.SetShaders(pointShadowShader, pointFragmentShadowShader);
+        pipelineBuilder.SetShaders(vertModule.GetModule(), fragModule.GetModule());
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-        pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_LESS_OR_EQUAL);
-        pipelineBuilder.SetDepthFormat(inImageFormat);
+        pipelineBuilder.EnableDepthTest(true, VK_COMPARE_OP_LESS);
+        pipelineBuilder.SetDepthFormat(VK_FORMAT_D32_SFLOAT);
         pipelineBuilder.SetMultisamplingNone();
-        pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+        pipelineBuilder.SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
         pipelineBuilder.DisableBlending();
-        // pipelineBuilder.SetDepthBiasEnable(VK_TRUE);
         pipelineBuilder.EnableDepthClamp(VK_TRUE);
         pipelineBuilder.AddDynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS);
 
         VkPipeline pointPipeline = pipelineBuilder.BuildPipline(device, 0);
-        if (pointPipeline == VK_NULL_HANDLE)
-        {
-            fmt::println("pointPipeline == VK_NULL_HANDLE");
-        }
 
         std::cerr << "pointPipeline: " << pointPipeline << std::endl;
         std::cerr << "pointPipeline, Layout: " << layout << std::endl;
 
         m_Pipeline = std::make_unique<PipelineData>(pointPipeline, layout);
 
-        vkDestroyShaderModule(device, pointShadowShader, nullptr);
-        vkDestroyShaderModule(device, pointFragmentShadowShader, nullptr);
-
         pipelineBuilder.Clear();
     }
 
     void PointLightPass::UpdateLights(const Camera *inCamera, const LightData &inLightData)
     {
-        m_LightCount = inLightData.PointLightingCount;
+        m_LightCount = std::min(inLightData.PointLightingCount, MAX_POINT_LIGHT);
 
-        if (m_LightCount <= 0)
+        if (m_LightCount == 0)
             return;
+
+        constexpr std::array<CubeFace, SHADOW_FACE_NUM> CubeFaces = {
+                CubeFace{{1, 0, 0}, {0, -1, 0}},  // +X
+                CubeFace{{-1, 0, 0}, {0, -1, 0}}, // -X
+                CubeFace{{0, 1, 0}, {0, 0, 1}},   // +Y
+                CubeFace{{0, -1, 0}, {0, 0, -1}}, // -Y
+                CubeFace{{0, 0, 1}, {0, -1, 0}},  // +Z
+                CubeFace{{0, 0, -1}, {0, -1, 0}}, // -Z
+        };
+
+        constexpr float PointShadowNearPlane{0.05f};
 
         for (uint32_t i = 0; i < m_LightCount; ++i)
         {
             const auto &light = inLightData.PointLights[i];
 
-            glm::mat4 proj = glm::perspectiveRH_ZO(glm::radians(90.f), 1.f, inCamera->GetNearClip(), light.Radius);
+            glm::mat4 proj = glm::perspectiveRH_ZO(glm::radians(90.f), 1.f, PointShadowNearPlane, light.Radius);
             proj[1][1] *= -1.0f;
-            for (uint32_t f = 0; f < SHADOW_FACE_NUM; ++f)
+
+            for (uint32_t faceIndex = 0; faceIndex < SHADOW_FACE_NUM; ++faceIndex)
             {
+                const auto &face = CubeFaces[faceIndex];
+
+                const glm::mat4 view = glm::lookAtRH(light.Position, light.Position + face.Direction, face.Up);
+
+                m_ShadowFaceCubes[i * SHADOW_FACE_NUM + faceIndex] = proj * view;
+            }
+/*           for (uint32_t f = 0; f < SHADOW_FACE_NUM; ++f)
+            { 
                 glm::mat4 view = glm::mat4(1.0f);
                 switch (f)
                 {
@@ -261,11 +346,11 @@ namespace MamontEngine
                         break;
                 }
 
-                m_ShadowFaceCubes[f + i * SHADOW_FACE_NUM] = proj * view * glm::translate(glm::mat4(1.f), -light.Position);
-            }
+                m_ShadowFaceCubes[i * SHADOW_FACE_NUM + f] = proj * view * glm::translate(glm::mat4(1.f), -light.Position);
+            }*/
         }
 
-        const auto currentFrame = MEngine::Get().GetContextDevice().GetFrame();
-        CopyDataToDynamicBuffer(&m_Buffer, m_ShadowFaceCubes.data(), &m_StagingBuffers[currentFrame]);
+        //const auto currentFrame = MEngine::Get().GetContextDevice().GetFrame();
+        //CopyDataToDynamicBuffer(&m_Buffer[currentFrame], m_ShadowFaceCubes.data(), &m_StagingBuffers[currentFrame]);
     }
 }

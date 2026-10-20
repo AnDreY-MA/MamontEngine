@@ -3,6 +3,7 @@
 #include <entt/entt.hpp>
 #include "MetaInspector.h"
 #include "Utils/MetaReflection.h"
+#include <ECS/Components/ComponentRegistry.h>
 
 // ---------------------------------------------------------
 
@@ -59,7 +60,8 @@ static inline entt::meta_factory<T> ReflectEnum(std::string_view name)
 #define IMPLEMENT_REFLECT_COMPONENT(TYPE, NAME)                                                                                                                      \
     int TYPE::InitTypeReflect()                                                                                                                                \
     {                                                                                                                                                          \
-        [[maybe_unused]] auto meta = ReflectComponent<TYPE>((#TYPE), NAME);
+        [[maybe_unused]] auto meta = ReflectComponent<TYPE>((#TYPE), NAME); \
+        ::MamontEngine::ComponentRegistry::Instance().Register<TYPE>(NAME);
 
 #define IMPLEMENT_REFLECT_OBJECT(TYPE)                                                                                                                         \
     int TYPE::InitTypeReflect()                                                                                                                                \

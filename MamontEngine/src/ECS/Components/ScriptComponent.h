@@ -8,8 +8,8 @@ namespace MamontEngine
 	struct ScriptComponent
 	{
     public:
-        ScriptComponent() = default;
-        ScriptComponent(std::string_view inFile);
+        explicit ScriptComponent();
+        explicit ScriptComponent(std::string_view inFile);
         ~ScriptComponent();
 
         void BeginPlay(Entity inOwner);
@@ -17,6 +17,7 @@ namespace MamontEngine
         void EndPlay();
 
         void        LoadScript(std::string_view inFile);
+        void                      Reload();
         inline const std::string& GetFilePath() const
         {
             return FileName;
@@ -33,5 +34,16 @@ namespace MamontEngine
 
         Entity m_EntityOwner;
 
+        template <class Archive>
+        friend void save(Archive &ar, const ScriptComponent &scirpt)
+        {
+            ar(cereal::make_nvp("FilePath", scirpt.FileName));
+        }
+        template <class Archive>
+        friend void load(Archive &ar, ScriptComponent &scirpt)
+        {
+            ar(cereal::make_nvp("FilePath", scirpt.FileName));
+            scirpt.LoadScript(scirpt.FileName);
+        }
 	};
 }

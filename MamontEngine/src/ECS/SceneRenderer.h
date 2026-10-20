@@ -56,7 +56,7 @@ namespace MamontEngine
 
         const bool HasDirectionLight() const
         {
-            return m_HasDirectionLight;
+            return m_LightData.HasDirectionLight;
         }
 
         bool IsDrawCollisionBounds() const { return m_DrawCollisionBounds; }
@@ -71,8 +71,6 @@ namespace MamontEngine
 
         GPUSceneData m_SceneData;
         LightData  m_LightData;
-
-        bool m_HasDirectionLight{false};
 
         bool m_DrawCollisionBounds{false};
     };

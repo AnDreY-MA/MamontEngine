@@ -133,10 +133,10 @@ vec3 GetLightContribution(PBRData pbrData, vec3 n, vec3 v, vec3 l, vec3 h, vec3 
   const vec3 F = F_Schlick(dotHV, pbrData.F0);
   const float V = V_SmithGGXCorrelated(dotNV, dotNL, pbrData.roughness);
 
-  vec3 Fr = (D * V) * F;
-  vec3 Fd = pbrData.diffuseColor * (1.0 / PI);
+  const vec3 Fr = (D * V) * F;
+  const vec3 Fd = pbrData.diffuseColor * (1.0 / PI);
   const vec3 Frd = Fr + Fd;
 
   const vec3 result = (color * Frd);
-  return Frd;
+  return result;
 }

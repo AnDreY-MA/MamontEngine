@@ -102,11 +102,4 @@ namespace MamontEngine
         float          _pad2[3];
     };
 
-    struct ShadowCube
-    {
-        glm::mat4 FaceViewProjs[6];
-    };
 } // namespace MamontEngine
-/*
-
-*/

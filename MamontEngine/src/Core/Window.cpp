@@ -7,6 +7,15 @@
 
 namespace MamontEngine
 {
+    static bool SDLCALL CloseWindowEvent(void*, SDL_Event* event)
+    {
+      /*  Log::Info("Call CloseWindowEvent");
+
+        std::printf("Call CloseWindowEvent: %u\n", event->type);*/
+
+        return true;
+    }
+
     WindowCore::WindowCore()
     {
         Init();
@@ -28,10 +37,14 @@ namespace MamontEngine
 
         SDL_SetWindowPosition(m_Window, pos, pos);
         SDL_SetWindowSurfaceVSync(m_Window, false);
+
+        SDL_AddEventWatch(CloseWindowEvent, nullptr);
     }
 
     void WindowCore::Close()
     {
+        SDL_RemoveEventWatch(CloseWindowEvent, nullptr);
+
         SDL_DestroyWindow(m_Window);
     }
 
@@ -42,6 +55,18 @@ namespace MamontEngine
             fmt::print("Surface is false");
             exit(1);
         }
+    }
+
+    void WindowCore::PollEvents()
+    {
+        SDL_Event event;
+
+        while (SDL_PollEvent(&event) != 0)
+        {
+            ImGui_ImplSDL3_ProcessEvent(&event);
+
+        }
+
     }
 
     VkExtent2D WindowCore::Resize()

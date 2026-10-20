@@ -5,7 +5,6 @@
 #include <cereal/archives/portable_binary.hpp>
 namespace MamontEngine
 {
-
 	class Asset
 	{
     public:

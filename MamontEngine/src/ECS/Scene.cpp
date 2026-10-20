@@ -1,34 +1,40 @@
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
-#include "Utils/Serialization.h"
-#include "Utils/Reflection.h"
-#include "ECS/Components/TagComponent.h"
-#include "ECS/Components/TransformComponent.h"
-#include "ECS/Components/MeshComponent.h"
-#include "ECS/Components/DirectionLightComponent.h"
-#include "ECS/Components/PointLightComponent.h"
-#include "Graphics/Resources/Models/Mesh.h"
-#include "Graphics/Resources/Models/Model.h"
+#include "Core/Engine.h"
 #include "Core/ContextDevice.h"
 #include "Core/Log.h"
+
+
+#include "Graphics/Resources/Models/Mesh.h"
+#include "Graphics/Resources/Models/Model.h"
+#include "Graphics/Resources/AssetManager.h"
+
 #include <execution>
 #include <entt/core/hashed_string.hpp>
 #include "entt/meta/meta.hpp"
-#include "Utils/Reflection.h"
 #include <fstream>
 #include <ostream>
 #include <cereal/cereal.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/polymorphic.hpp>
-#include "Graphics/Resources/AssetManager.h"
-#include "Components/RigidbodyComponent.h"
-#include "Components/ScriptComponent.h"
+
 #include "Physics/Collision/BoxCollision.h"
 #include "Physics/Collision/SphereCollision.h"
 #include "Physics/Body/Rigidbody.h"
 #include "Physics/PhysicsSystem.h"
-#include "Core/Engine.h"
+
+#include "ECS/Components/TagComponent.h"
+#include "ECS/Components/TransformComponent.h"
+#include "ECS/Components/MeshComponent.h"
+#include "ECS/Components/DirectionLightComponent.h"
+#include "ECS/Components/PointLightComponent.h"
+#include "ECS/Components/CameraComponent.h"
+#include "ECS/Components/RigidbodyComponent.h"
+#include "ECS/Components/ScriptComponent.h"
+
+#include "Utils/Serialization.h"
+#include "Utils/Reflection.h"
 
 META_INIT(void) 
 IMPLEMENT_META_INIT(void)
@@ -53,7 +59,14 @@ FINISH_REFLECT()
 
 
 #define ALL_COMPONENTS(serializer) get<IDComponent>(serializer).get<TagComponent>(serializer).get<TransformComponent>(serializer) \
-        .get<MeshComponent>(serializer).get<DirectionLightComponent>(serializer).get<RigidbodyComponent>(serializer).get<HeroPhysics::BoxCollision>(serializer).get<HeroPhysics::SphereCollision>(serializer)
+        .get<MeshComponent>(serializer)                                                                                                                    \
+            .get<DirectionLightComponent>(serializer)                                                                                                          \
+            .get<PointLightComponent>(serializer)                                                                                                                        \
+            .get<RigidbodyComponent>(serializer)                                                                                                               \
+            .get<HeroPhysics::BoxCollision>(serializer)                                                                                                        \
+            .get<HeroPhysics::SphereCollision>(serializer) \
+            .get<ScriptComponent>(serializer) \
+            .get<CameraComponent>(serializer)
 
 namespace MamontEngine
 {
@@ -70,7 +83,6 @@ namespace MamontEngine
         meta.data<&DirectionLightComponent::Intensity, entt::as_ref_t>("Intensity");
     }
     FINISH_REFLECT()
-
 
     Scene::Scene()
     {
@@ -155,9 +167,7 @@ namespace MamontEngine
             if (meshComponent.Mesh; meshComponent.Mesh->IsDirty || transform.IsDirty())
             {
                 meshComponent.Mesh->UpdateTransform(transform.Matrix());
-                transform.SetDirty(false);
                 meshComponent.Mesh->IsDirty = false;
-                Log::Info("Update Transform");
             }
         }
 
@@ -177,7 +187,15 @@ namespace MamontEngine
             {
                 script.Update(deltaTime);
             }
-
+        }
+        
+        for (const auto &transformView = m_Registry.view<TransformComponent>();  
+            const auto &[entity, transform] : transformView.each())
+        {
+            if (transform.IsDirty())
+            {
+                transform.SetDirty(false);
+            }
         }
     }
 
@@ -186,7 +204,6 @@ namespace MamontEngine
         auto viewRigidbodies = m_Registry.view<TransformComponent, RigidbodyComponent>();
         int  count           = 0;
         auto lightType       = entt::resolve<LightComponent>();
-        
         
         for (auto&& [entity, transform, rigidbody] : viewRigidbodies.each())
         {
@@ -219,10 +236,10 @@ namespace MamontEngine
         }
         Log::Info("Box Collision count: {}", count);
 
-
         const auto scriptView = m_Registry.view<ScriptComponent>();
         for (auto&& [entity, scriptComponent] : scriptView.each())
         {
+            scriptComponent.Reload();
             scriptComponent.BeginPlay(Entity{entity, this});
         }
 

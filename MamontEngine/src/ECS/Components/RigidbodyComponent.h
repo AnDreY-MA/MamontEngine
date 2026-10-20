@@ -1,6 +1,7 @@
 #pragma once 
 
-#include "Utils/MetaReflection.h"
+#include "ECS/Components/Component.h"
+
 #include <entt/entt.hpp>
 #include <cereal/cereal.hpp>
 
@@ -11,7 +12,7 @@ namespace MamontEngine
         class Rigidbody;
 	}
 	
-	struct RigidbodyComponent
+	struct RigidbodyComponent : public Component
 	{
         REFLECT()
     public:

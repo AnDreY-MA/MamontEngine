@@ -2,6 +2,7 @@
 
 #include "Math/AABB.h"
 #include "Math/Plane.h"
+#include "ECS/Components/Component.h"
 
 namespace MamontEngine
 {
@@ -31,8 +32,9 @@ namespace MamontEngine
             glm::vec3 PosB{glm::vec3(0.f)};
         };
 
-        class CollisionShape
+        class CollisionShape : public Component
         {
+           // REFLECT();
         public:
             CollisionShape() = default;
 
@@ -44,17 +46,27 @@ namespace MamontEngine
 
             virtual ~CollisionShape() = default;
 
-
             virtual AABB GetBounds() const = 0;
 
             virtual std::vector<glm::vec3> GetAxes(const glm::quat& inOrientation) const = 0;
 
             virtual std::vector<CollisionEdge> GetEdges(const glm::mat4& inTransform) const = 0;
 
-            virtual std::pair<glm::vec3, glm::vec3> GetMinMaxVertexOnAxis(const Rigidbody *body, const glm::vec3 &axis) const
+            virtual std::pair<int, int> GetMinMaxVertexInAxis(const glm::vec3 &axis) const
+            {
+                return {0, 0};
+            };
+
+            virtual std::pair<glm::vec3, glm::vec3> GetMinMaxVertexOnAxis(const glm::mat4 &inWorldTransform, const glm::vec3 &axis) const
             {
                 return {};
             };
+
+            
+            virtual void GetIncindentRefPolygon(const glm::mat4 &inWorldTransform, const glm::vec3 &axis, ReferencePolygon &outRefPolygon) const
+            {
+
+            }
 
             virtual glm::mat3 BuildInverseInertia(const float inMass) const
             {

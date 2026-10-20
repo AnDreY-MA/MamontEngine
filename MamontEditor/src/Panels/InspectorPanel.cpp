@@ -15,6 +15,8 @@
 #include <ECS/Components/RigidbodyComponent.h>
 #include <ECS/Components/Component.h>
 #include <ECS/Components/ScriptComponent.h>
+#include <ECS/Components/CameraComponent.h>
+#include <ECS/Components/ComponentRegistry.h>
 #include <entt/core/hashed_string.hpp>
 #include "Math/Color.h"
 #include "Physics/Collision/BoxCollision.h"
@@ -133,7 +135,7 @@ namespace MamontEditor
     {
         using namespace MamontEngine;
 
-        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 1.75f);
+        ImGui::PushItemWidth(-1.0f);
 
         if (entity.HasComponent<TagComponent>())
         {
@@ -142,8 +144,6 @@ namespace MamontEditor
         }
 
         ImGui::PopItemWidth();
-        ImGui::SameLine();
-        ImGui::Text("");
 
         if (ImGui::Button("Add Component"))
         {
@@ -151,18 +151,29 @@ namespace MamontEditor
         }
         if (ImGui::BeginPopup("Add Component"))
         {
-            DrawAddComponent<MeshComponent>(m_SceneContext->GetRegistry(), m_Selected, "Mesh Component");
+            /* DrawAddComponent<MeshComponent>(m_SceneContext->GetRegistry(), m_Selected, "Mesh Component");
             DrawAddComponent<DirectionLightComponent>(m_SceneContext->GetRegistry(), m_Selected, "Direction Light Component");
             DrawAddComponent<PointLightComponent>(m_SceneContext->GetRegistry(), m_Selected, "Point Light Component");
             DrawAddComponent<RigidbodyComponent>(m_SceneContext->GetRegistry(), m_Selected, "Rigidbody Component");
             DrawAddComponent<HeroPhysics::BoxCollision>(m_SceneContext->GetRegistry(), m_Selected, "BoxCollision Component");
             DrawAddComponent<HeroPhysics::SphereCollision>(m_SceneContext->GetRegistry(), m_Selected, "SphereCollision Component");
-            DrawAddComponent<ScriptComponent>(m_SceneContext->GetRegistry(), m_Selected, "Script Component");
+            DrawAddComponent<ScriptComponent>(m_SceneContext->GetRegistry(), m_Selected, "Script Component");*/
+            //DrawAddComponent<CameraComponent>(m_SceneContext->GetRegistry(), m_Selected, "Camera Component");
+
+            for (const auto& entry : ComponentRegistry::Instance().GetEntries())
+            {
+                if (!entry.Has(m_SceneContext->GetRegistry(), m_Selected))
+                {
+                    if (ImGui::MenuItem(entry.Name.data()))
+                    {
+                        entry.Emplace(m_SceneContext->GetRegistry(), m_Selected);
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+            }
 
             ImGui::EndPopup();
         }
-
-        ImGui::SameLine();
 
         auto &registry = m_SceneContext->GetRegistry();
         for (auto &&[id, storage] : registry.storage())

@@ -6,6 +6,8 @@
 #include <ECS/Components/ScriptComponent.h>
 #include <ECS/Components/MeshComponent.h>
 #include <ECS/Components/TransformComponent.h>
+#include <ECS/Components/CameraComponent.h>
+#include "Core/InputSystem.h"
 
 #define REGISTER_COMPONENT_ECS(luaState, component) \
     {                                                \
@@ -64,9 +66,34 @@ namespace
         vector3["z"]      = &glm::vec3::z;
     }
 
+    MamontEngine::Entity GetEntityByName(MamontEngine::Scene *scene, const std::string &name)
+    {
+        using namespace MamontEngine;
+        entt::entity resutlEntity = entt::null;
+        auto        &registry = scene->GetRegistry();
+
+        registry.view<TagComponent>().each(
+                [&](const auto &entity, const TagComponent &component)
+                {
+                    if (name == component.Tag)
+                    {
+                        resutlEntity = entity;
+                    }
+                });
+
+        if (resutlEntity == entt::null)
+        {
+            Log::Warn("Failed to find entity: {}", name.c_str());
+        }
+
+        return {resutlEntity, scene};
+    }
+
     void BindECS(sol::state& state)
     {
         using namespace MamontEngine;
+
+        state.set_function("GetEntityByName", &GetEntityByName);
 
         sol::usertype<entt::registry> enttRegistry = state.new_usertype<entt::registry>("EnttRegistry");
 
@@ -90,7 +117,143 @@ namespace
         sol::usertype<MeshComponent> meshComponent_type = state.new_usertype<MeshComponent>("MeshComponent");
         REGISTER_COMPONENT_ECS(state, MeshComponent);
 
+        sol::usertype<CameraComponent> cameraComponent_type = state.new_usertype<CameraComponent>("CameraComponent");
+        cameraComponent_type.set_function("GetFOV", &CameraComponent::GetFOV);
+        cameraComponent_type.set_function("GetNear", &CameraComponent::GetNear);
+        cameraComponent_type.set_function("GetFar", &CameraComponent::GetFar);
+
+        REGISTER_COMPONENT_ECS(state, CameraComponent);
+
+        
+        sol::usertype<Scene> scene_type = state.new_usertype<Scene>("Scene");
+        //scene_type.set_function("GetRigstry", &Scene::GetRegistry);
+
     }
+
+    void BindInput(sol::state& state)
+    {
+        using namespace MamontEngine;
+
+        auto input = state["Input"].get_or_create<sol::table>();
+
+        input.set_function("IsKeyPressed", 
+            [](KeyCode key) -> bool { 
+                return InputSystem::Get().IsKeyPressed(key);
+            }
+        );
+        input.set_function("IsKeyHeld", [](KeyCode key) -> bool { 
+            return InputSystem::Get().IsKeyPressed(key); 
+        });
+
+        std::initializer_list<std::pair<sol::string_view, KeyCode>> keyItems = {
+            { "A", KeyCode::a },
+            { "B", KeyCode::b },
+            { "C", KeyCode::c },
+            { "D", KeyCode::d },
+            { "E", KeyCode::e },
+            { "F", KeyCode::f },
+            { "H", KeyCode::g },
+            { "G", KeyCode::h },
+            { "I", KeyCode::i },
+            { "J", KeyCode::j },
+            { "K", KeyCode::k },
+            { "L", KeyCode::l },
+            { "M", KeyCode::m },
+            { "N", KeyCode::n },
+            { "O", KeyCode::o },
+            { "P", KeyCode::p },
+            { "Q", KeyCode::q },
+            { "R", KeyCode::r },
+            { "S", KeyCode::s },
+            { "T", KeyCode::t },
+            { "U", KeyCode::u },
+            { "V", KeyCode::v },
+            { "W", KeyCode::w },
+            { "X", KeyCode::x },
+            { "Y", KeyCode::y },
+            { "Z", KeyCode::z },
+            //{ "UNKOWN", KeyCode::Unknown },
+            { "Space", KeyCode::space },
+            { "Escape", KeyCode::exclaim },
+            { "Comma", KeyCode::comma },
+            { "MINUS", KeyCode::minus },
+            { "PERIOD", KeyCode::period },
+            { "SLASH", KeyCode::slash },
+            { "SEMICOLON", KeyCode::semicolon},
+            { "EQUAL", KeyCode::equals },
+            { "LEFT_BRACKET", KeyCode::left_bracket},
+            { "BACKSLASH", KeyCode::backslash },
+            { "RIGHT_BRACKET", KeyCode::right_bracket },
+            //{ "BACK_TICK", KeyCode::BackTick },
+            //{ "Enter", KeyCode::en },
+            { "Tab", KeyCode::tab },
+            { "Backspace", KeyCode::backspace },
+            //{ "Insert", KeyCode::Insert },
+            //{ "Delete", KeyCode::Delete },
+            { "Right", KeyCode::right_paren },
+            { "Left", KeyCode::left_paren },
+            //{ "Down", KeyCode::Down },
+            //{ "Up", KeyCode::Up },
+            //{ "PageUp", KeyCode::PageUp },
+            //{ "PageDown", KeyCode::PageDown },
+            //{ "Home", KeyCode::home },
+            //{ "End", KeyCode::End },
+            { "CAPS_LOCK", KeyCode::capslock },
+            //{ "SCROLL_LOCK", KeyCode::ScrollLock },
+            //{ "NumLock", KeyCode::NumLock },
+            //{ "PrintScreen", KeyCode::PrintScreen },
+            //{ "Pasue", KeyCode::Pause },
+            //{ "LeftShift", KeyCode::LeftShift },
+            //{ "LeftControl", KeyCode::LeftControl },
+            //{ "LEFT_ALT", KeyCode::LeftAlt },
+            //{ "LEFT_SUPER", KeyCode::LeftSuper },
+           // { "RightShift", KeyCode::RightShift },
+            //{ "RightControl", KeyCode::RightControl },
+            //{ "RIGHT_ALT", KeyCode::RightAlt },
+            //{ "RIGHT_SUPER", KeyCode::RightSuper },
+            //{ "Menu", KeyCode::Menu },
+            { "F1", KeyCode::f1 },
+            { "F2", KeyCode::f2 },
+            { "F3", KeyCode::f3 },
+            { "F4", KeyCode::f4 },
+            { "F5", KeyCode::f5 },
+            { "F6", KeyCode::f6 },
+            { "F7", KeyCode::f7 },
+            { "F8", KeyCode::f8 },
+            { "F9", KeyCode::f9 },
+            { "F10", KeyCode::f10 },
+            { "F11", KeyCode::f11 },
+            { "F12", KeyCode::f12 },
+            { "Keypad0", KeyCode::kp_0 },
+            { "Keypad1", KeyCode::kp_1 },
+            { "Keypad2", KeyCode::kp_2 },
+            { "Keypad3", KeyCode::kp_3 },
+            { "Keypad4", KeyCode::kp_4 },
+            { "Keypad5", KeyCode::kp_5 },
+            { "Keypad6", KeyCode::kp_6 },
+            { "Keypad7", KeyCode::kp_7 },
+            { "Keypad8", KeyCode::kp_8 },
+            { "Keypad9", KeyCode::kp_9 },
+            { "Decimal", KeyCode::period },
+            { "Divide", KeyCode::slash },
+            //{ "Multiply", KeyCode::KPMultiply },
+            //{ "Subtract", KeyCode::Minus },
+            //{ "Add", KeyCode::KPAdd },
+            { "KP_EQUAL", KeyCode::equals }
+        };
+
+        state.new_enum<KeyCode, false>("Key", keyItems);
+
+        std::initializer_list<std::pair<sol::string_view, KeyMouse>> mouseItmes = {
+                {"Left", KeyMouse::Left},
+                {"Right", KeyMouse::Right},
+                {"Middle", KeyMouse::Middle},
+        };
+
+        state.new_enum<KeyMouse, false>("MouseButton", mouseItmes);
+    }
+
+    
 }
 
 namespace MamontEngine
@@ -103,6 +266,7 @@ namespace MamontEngine
         BindLogLua(*m_State);
         BindMathsLua(*m_State);
         BindECS(*m_State);
+        BindInput(*m_State);
     }
 
     ScriptSystem::~ScriptSystem()

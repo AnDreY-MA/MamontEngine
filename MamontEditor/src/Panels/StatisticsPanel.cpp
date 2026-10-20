@@ -22,6 +22,11 @@ namespace MamontEditor
             ImGui::Text("Framerate: %f ms", io.Framerate);
             ImGui::Text("Drawtime: %f ms", stats.MeshDrawTime);
 
+            /*const auto &memoryStats = engine.GetGPUMemoryStats();
+            ImGui::Text("MemoryUsed: %f", memoryStats.MemoryUsed);
+            ImGui::Text("MemoryAllocated: %f", memoryStats.MemoryAllocated);*/
+
+
             m_IsHovered = ImGui::IsWindowHovered();
 
             if (ImGui::BeginChild("Lighting"))

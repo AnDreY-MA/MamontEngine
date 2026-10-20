@@ -3,9 +3,9 @@
 
 namespace MamontEngine
 {
-    IMPLEMENT_REFLECT_COMPONENT(LightComponent, "Light Component")
+/*    IMPLEMENT_REFLECT_COMPONENT(LightComponent, "Light Component")
     {
 
     }
-    FINISH_REFLECT()
+    FINISH_REFLECT()*/
 }

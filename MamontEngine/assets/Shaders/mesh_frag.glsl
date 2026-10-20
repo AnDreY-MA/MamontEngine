@@ -121,7 +121,7 @@ void main()
         const float shadow = filterPCF(shadowMap,  shadowCoord / shadowCoord.w, cascadeIndex);
         float atten = 1.0;
         lightColor +=
-            (GetLightContribution(pbrData, N, viewDirection, l, H, lightData.DirectLight.Color) * lightData.DirectLight.Color) * ( atten * dotNL * shadow);
+            (GetLightContribution(pbrData, N, viewDirection, l, H, lightData.DirectLight.Color)) * ( atten * dotNL * shadow);
 
         const float dotNV = abs(dot(N, viewDirection));
         const vec3 ibl = GetIBLContribution(pbrData, N, R, lightData.DirectLight.Color, dotNV, samplerBRDFLUT, samplerPrefilteredMap, irradianceMap);
@@ -141,9 +141,9 @@ void main()
         const float dotNL = clamp(dot(N, l), 0.001, 1.0);
 
         const float shadow = calculatePointShadow(inPos, pointLight.Position, dotNL, pointLightShadowSamplers[i], pointLight.Radius);
-        const float atten = CalculateAttenuation(inPos, l, pointLight) * attenuation;
+        const float atten = CalculateAttenuation(inPos, pointLight.Position, pointLight.Radius) * attenuation;
 
-        lightColor += (GetLightContribution(pbrData, N, viewDirection, l, H, c) * c) * (atten * dotNL * shadow);
+        lightColor += (GetLightContribution(pbrData, N, viewDirection, l, H, c)) * (atten * dotNL * shadow);
     }
 
     //lightColor += prefilteredColor;

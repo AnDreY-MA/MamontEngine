@@ -13,6 +13,6 @@ layout(push_constant) uniform constants
   VertexBuffer vertexBuffer;
 
   PointLightBuffer LightBuffer;
-  int BufferIndex;
-  int LightIndex;
+  uint BufferIndex;
+  uint LightIndex;
 } PointLightConstants;

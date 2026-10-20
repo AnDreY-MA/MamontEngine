@@ -13,7 +13,8 @@
 #include "Core/ContextDevice.h"
 #include "Graphics/Resources/Materials/MaterialAllocator.h"
 #include "Graphics/Resources/Materials/MaterialManager.h"
-#include <vk_mem_alloc.h>
+#include <meshoptimizer.h>
+
 
 namespace
 {
@@ -143,6 +144,26 @@ namespace
             return newTexture;
         }
         
+    }
+
+    void OptimizeMesh(std::vector<uint32_t>& indices, std::vector<Vertex> vertices)
+    {
+        if (indices.empty() || vertices.empty())
+            return;
+        
+        std::vector<uint32_t> remap(vertices.size());
+        const auto            uniqueVertices = meshopt_generateVertexRemap(remap.data(), indices.data(), indices.size(), vertices.data(), vertices.size(), sizeof(Vertex));
+
+        std::vector<uint32_t> newIndices(indices.size());
+        std::vector<Vertex> newVertices(uniqueVertices);
+
+        meshopt_remapIndexBuffer(newIndices.data(), indices.data(), indices.size(), remap.data());
+        meshopt_remapVertexBuffer(newVertices.data(), vertices.data(), vertices.size(), sizeof(Vertex), remap.data());
+
+        indices  = std::move(newIndices);
+        vertices = std::move(newVertices);
+
+        meshopt_optimizeVertexCache(indices.data(), indices.data(), indices.size(), vertices.size());
     }
 } // namespace
 
@@ -591,6 +612,8 @@ namespace MamontEngine
             }
             m_Meshes.push_back(newmesh);
         }
+
+        //OptimizeMesh(indices, vertices);
 
         glm::vec3 minpos = vertices[0].Position;
         glm::vec3 maxpos = vertices[0].Position;

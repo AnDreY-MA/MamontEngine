@@ -12,10 +12,12 @@
 #include "Scripting/ScriptSystem.h"
 #include "Physics/PhysicsSystem.h"
 #include "Graphics/Resources/Materials/MaterialManager.h"
+#include "InputSystem.h"
 
 namespace MamontEngine
 {
     class Scene;
+    class TimeStep;
 
 	class MEngine
 	{
@@ -29,11 +31,6 @@ namespace MamontEngine
         const TracyVkCtx& GetTracyContext() const
         {
             return m_ContextDevice->GetCurrentFrame().TracyContext;
-        }
-
-        void EnableCascade(bool inValue)
-        {
-            m_Renderer->EnableCascade(inValue);
         }
 
         VkContextDevice& GetContextDevice()
@@ -86,6 +83,13 @@ namespace MamontEngine
             return m_InputEvent;
         }
 
+        struct Stats
+        {
+            double FrameTime{0.0};
+        };
+
+        inline const Stats &GetEngineStats() const { return m_Stats; }
+
     private:
         void InitImgui();
         void UpdateScene(float inDeltaTime);
@@ -105,6 +109,7 @@ namespace MamontEngine
         std::unique_ptr<Log>           m_Log;
         std::unique_ptr<ScriptSystem>  m_ScriptSystem;
         std::unique_ptr<MaterialManager> m_MaterialManager;
+        std::unique_ptr<InputSystem>     m_InputSystem;
 
         std::unique_ptr<HeroPhysics::PhysicsSystem> m_PhysicsSystem;
 
@@ -120,5 +125,9 @@ namespace MamontEngine
 
         std::chrono::microseconds m_DeltaTime{0};
         uint64_t                  m_LastFrameTime{0};
+
+        Stats m_Stats;
+
+        TimeStep* m_TimeStep;
     };
 }

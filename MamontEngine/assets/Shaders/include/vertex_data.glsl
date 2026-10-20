@@ -1,4 +1,5 @@
 #extension GL_EXT_buffer_reference : require
+#extension GL_EXT_scalar_block_layout : require
 
 struct Vertex {
 	vec3 position;
@@ -8,6 +9,6 @@ struct Vertex {
 	vec4 tangent;
 }; 
 
-layout(buffer_reference, std430) readonly buffer VertexBuffer{ 
+layout(scalar, buffer_reference, std430) readonly buffer VertexBuffer{ 
 	Vertex vertices[];
 };

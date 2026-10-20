@@ -51,18 +51,16 @@ float CalculateAngularAttenuation(vec3 lightDirection, vec3 l, vec2 scaleOffset)
   return result;
 }
 
-float CalculateAttenuation(vec3 pos, vec3 l, PointLight light)
+float CalculateAttenuation(vec3 pos, vec3 lightPos, float lightRadius)
 {
-  const float dist = length(light.Position - pos);
-  const float atten = CalcualteDistanceAttenuation(dist, light.Radius);
+  const float dist = length(lightPos - pos);
+  const float atten = CalcualteDistanceAttenuation(dist, lightRadius);
   return atten;
 }
 
-vec3 CalculatePointLight(PointLight light, vec3 fragPos, vec3 n, vec3 v, vec3 l, vec3 diffuseColor, float roughness, float metallic, vec3 f0, float occlusion)
+vec3 CalculatePointLight(PointLight light, vec3 fragPos, float dotNL, vec3 v, vec3 l, vec3 diffuseColor, float roughness, float metallic, vec3 f0, float occlusion)
 {
   const vec3 h = normalize(v + l);
-  const float dotNL = clamp(dot(n, l), 0.0, 1.0);
-
 
   vec3 result = vec3(1.0);
   

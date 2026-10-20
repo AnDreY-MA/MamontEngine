@@ -12,6 +12,8 @@
 #include "tracy/public/TracyClient.cpp"
 #include "Graphics/Resources/Materials/MaterialAllocator.h"
 #include "Core/JobSystem.h"
+#include "Core/Event/EventSystem.h"
+#include "Core/TimeStep.h"
 
 namespace MamontEngine
 {
@@ -28,7 +30,10 @@ namespace MamontEngine
     {
         assert(loadedEngine == nullptr);
         loadedEngine = this;
+
         m_Log        = std::make_unique<Log>();
+
+        m_TimeStep = new TimeStep();
 
         JobSystem::Init(3);
 
@@ -58,7 +63,11 @@ namespace MamontEngine
         
         JobSystem::Wait(contextJobs);
 
+        m_InputSystem = std::make_unique<InputSystem>();
+
+
         m_ScriptSystem = std::make_unique<ScriptSystem>();
+
 
         m_IsInitialized = true;
 
@@ -74,13 +83,41 @@ namespace MamontEngine
         bool      isResized{false};
         bool      isStopRendering{false};
 
+        Event eventResize;
+      /*  eventResize.Add([&]() { 
+            Log::Info("Event Resize");
+            m_ContextDevice->ResizeSwapchain(m_Window->Resize());
+        });*/
+
         PROFILE_SETTHREADNAME("Main Thread");
 
         MaterialManager::Get()->SetupDefaults();
 
+         /*auto ev = [](void *v, SDL_Event *event) -> bool {
+                const auto typeEvent = event->window.type;
+                isResized = true;
+
+                return true;
+            };
+
+        SDL_AddHintCallback(ev, nullptr);*/
+
         while (!bQuit)
         {
             const auto deltaTime = ImGui::GetIO().DeltaTime;
+
+            {
+                m_TimeStep->Update();
+
+                ImGuiIO &io = ImGui::GetIO();
+                io.DeltaTime = (float)m_TimeStep->GetSeconds();
+
+                const auto frameTime = m_TimeStep->GetMillis();
+            }
+
+            InputSystem::Get().ResetPressed();
+
+            //m_Window->PollEvents();
 
             while (SDL_PollEvent(&event) != 0)
             {
@@ -94,6 +131,7 @@ namespace MamontEngine
                 if (typeEvent == SDL_EVENT_WINDOW_RESIZED)
                 {
                     isResized = true;
+                    eventResize.Invoke();
                 }
 
                 if (typeEvent == SDL_EVENT_WINDOW_MINIMIZED)
@@ -105,7 +143,10 @@ namespace MamontEngine
                     isStopRendering = false;
                 }
 
-                m_MainCamera->ProccessEvent(event);
+                if (!m_Scene->IsSimulated())
+                {
+                    m_MainCamera->ProccessEvent(event);
+                }
 
                 m_InputEvent = &event;
             }
@@ -120,8 +161,7 @@ namespace MamontEngine
             {
                 m_ContextDevice->ResizeSwapchain(m_Window->Resize());
             }
-
-            if (!m_ContextDevice->IsResizeRequest())
+            else
             {
                 m_GuiLayer->ImGuiRender();
 
@@ -158,6 +198,8 @@ namespace MamontEngine
             JobSystem::Release();
 
             m_Log.reset();
+
+            delete m_TimeStep;
         }
 
         loadedEngine = nullptr;
@@ -165,9 +207,14 @@ namespace MamontEngine
 
     void MEngine::UpdateScene(float inDeltaTime)
     {
-        m_MainCamera->Update(inDeltaTime);
-        m_Scene->Update(inDeltaTime);
+        if (!m_Scene->IsSimulated())
+        {
+            m_MainCamera->Update(inDeltaTime);
+        }
+
         m_Renderer->UpdateSceneRenderer(inDeltaTime);
+
+        m_Scene->Update(inDeltaTime);
     }
 
     std::chrono::milliseconds MEngine::CalculateDeltaTimeMs()

@@ -7,8 +7,6 @@
 layout(location = 0) in vec4 inPos;
 layout(location = 1) in vec2 inUV;
 
-//layout(location = 0) out float o_Depth;
-
 layout(set = 0, binding = 0) uniform SceneData {
   mat4 view;
   mat4 proj;
@@ -22,11 +20,13 @@ layout(set = 0, binding = 0) uniform SceneData {
 void main()
 {
   const float alpha = texture(textureSamplers[0], inUV).a;
-  if (alpha < 0.1) {
+  if (alpha < 0.5) {
     discard;
   }
 
   const PointLight light = lightData.PointLights[PointLightConstants.LightIndex];
+
+
   const float distanceToLight = length(inPos.xyz - light.Position);
   gl_FragDepth = distanceToLight / light.Radius;
 

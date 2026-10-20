@@ -39,9 +39,15 @@ namespace MamontEngine
 
         virtual std::vector<CollisionEdge> GetEdges(const glm::mat4 &inTransform) const override;
 
+        virtual std::pair<int, int> GetMinMaxVertexInAxis(const glm::vec3 &axis) const override;
+
+        virtual std::pair<glm::vec3, glm::vec3> GetMinMaxVertexOnAxis(const glm::mat4 &inWorldTransform, const glm::vec3 &axis) const override;
+
+        virtual void GetIncindentRefPolygon(const glm::mat4 &inWorldTransform, const glm::vec3 &axis, ReferencePolygon &outRefPolygon) const override;
+
 	private:
         
-        glm::vec3 m_HalfExtent{glm::vec3(0.f)};
+        glm::vec3 m_HalfExtent{glm::vec3(1.f)};
         
         friend class cereal::access;
         template <typename Archive>

@@ -33,7 +33,6 @@ namespace MamontEngine
     {
         m_SkyPass = std::make_unique<SkyPass>();
 
-        InitPipelines();
 
         const std::array<VkDescriptorSetLayout, 2> layouts = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
 
@@ -41,10 +40,10 @@ namespace MamontEngine
         m_DirectLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
 
         m_PointLightPass = std::make_unique<PointLightPass>(m_DeviceContext.PointLightShadowMaps);
-        m_PointLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
 
         m_PickPass = std::make_unique<PickPass>();
-        m_PickPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
+        //m_PickPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
+        InitPipelines();
 
         m_GpuHeapBudgets.resize(10000);
     }
@@ -52,6 +51,7 @@ namespace MamontEngine
     Renderer::~Renderer()
     {
         m_SceneRenderer.reset();
+        m_SkyPass.reset();
         DestroyPipelines();
         DebugRenderer::Destroy();
     }
@@ -86,6 +86,7 @@ namespace MamontEngine
         m_RenderPipeline = std::make_shared<RenderPipeline>(device, layouts, inImageFormats);
 
         m_SkyPass->CreatePipeline(layouts, inImageFormats);
+        m_PointLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
 
         //InitPickPipepline();
 
@@ -108,9 +109,6 @@ namespace MamontEngine
         m_DrawExtent                     = swapchainExtent;
         const uint32_t swapchainImageIndex    = m_DeviceContext.Swapchain.GetCurrentImageIndex();
 
-        std::vector<VkCommandBuffer> secondaryCommandBuffers;
-        secondaryCommandBuffers.reserve(4);
-
         VkCommandBuffer cmd = currentFrame.MainCommandBuffer;
         UpdateUniformBuffers();
 
@@ -120,20 +118,25 @@ namespace MamontEngine
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
         VkUtil::transition_image(cmd, m_DeviceContext.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        VkUtil::transition_image(cmd, m_DeviceContext.DepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        VkUtil::transition_image(
+                cmd, m_DeviceContext.DepthImage.Image, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-        VkCommandBuffer shadowCommandBuffer = currentFrame.ShadowCommandBuffer;
         
         if (const auto &lightData = m_SceneRenderer->GetLightData(); 
             lightData.HasDirectionLight || lightData.PointLightingCount > 0)
         {
+            VkCommandBuffer shadowCommandBuffer = currentFrame.ShadowCommandBuffer;
+
             RenderShadows(shadowCommandBuffer);
-            secondaryCommandBuffers.push_back(shadowCommandBuffer);
+            //secondaryCommandBuffers.push_back(shadowCommandBuffer);
+            vkCmdExecuteCommands(cmd, 1, &shadowCommandBuffer);
         }
 
         DrawMain(cmd);
 
         VkUtil::transition_image(cmd, m_DeviceContext.DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        VkUtil::transition_image(
+                cmd, m_DeviceContext.DepthImage.Image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
 
         VkImage currentSwapchainImage = m_DeviceContext.Swapchain.GetImageAt(swapchainImageIndex);
         VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -146,11 +149,10 @@ namespace MamontEngine
 
         VkCommandBuffer uiCommandBuffer = currentFrame.UICommandBuffer;
         m_ImGuiRenderer->Draw(uiCommandBuffer, m_DeviceContext.Swapchain.GetImageView(swapchainImageIndex), m_DrawExtent);
-        secondaryCommandBuffers.push_back(uiCommandBuffer);
+        vkCmdExecuteCommands(cmd, 1, &uiCommandBuffer);
 
         VkUtil::transition_image(cmd, currentSwapchainImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-        vkCmdExecuteCommands(cmd, static_cast<uint32_t>(secondaryCommandBuffers.size()), secondaryCommandBuffers.data());
 
         VK_CHECK(vkEndCommandBuffer(cmd));
 
@@ -181,8 +183,8 @@ namespace MamontEngine
         constexpr VkClearValue                    clearColor      = {.color = {0.0f, 0.0f, 0.0f, 0.0f}};
         constexpr VkClearValue           clearDepth      = {.depthStencil = {1.0f, 0}};
         const VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(m_DeviceContext.DrawImage.ImageView, &clearColor);
-        VkRenderingAttachmentInfo       depthAttachment = vkinit::depth_attachment_info(m_DeviceContext.DepthImage.ImageView);
-        depthAttachment.clearValue                   = clearDepth;
+        const VkRenderingAttachmentInfo       depthAttachment = vkinit::depth_attachment_info(m_DeviceContext.DepthImage.ImageView, VK_ATTACHMENT_LOAD_OP_CLEAR, 1.f);
+        //depthAttachment.clearValue                   = clearDepth;
 
         const VkRenderingInfo renderInfo = vkinit::rendering_info(extent, &colorAttachment, &depthAttachment);
 
@@ -238,8 +240,7 @@ namespace MamontEngine
 
     void Renderer::RenderCascadeShadow(VkCommandBuffer inCmd)
     {
-        IsActiveCascade = m_SceneRenderer->HasDirectionLight();
-        if (!IsActiveCascade)
+        if (!m_SceneRenderer->HasDirectionLight())
             return;
 
         const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
@@ -274,37 +275,32 @@ namespace MamontEngine
 
     const MemoryStats &Renderer::GetGPUMemoryStats() const
     {
-        Allocator::GetHeapBudgets(m_GpuHeapBudgets.data());
+        VmaBudget budget{};
+        Allocator::GetHeapBudgets(&budget);
         MemoryStats gpuMemoryStats;
+        gpuMemoryStats.MemoryUsed = budget.usage;
+        gpuMemoryStats.MemoryAllocated = budget.budget;
 
-        for (uint32_t i = 0; i < Allocator::GetHeapCount(); ++i)
+        /*for (uint32_t i = 0; i < Allocator::GetHeapCount(); ++i)
         {
             gpuMemoryStats.MemoryUsed += m_GpuHeapBudgets[i].usage;
             gpuMemoryStats.MemoryAllocated += m_GpuHeapBudgets[i].budget;
-        }
+        }*/
 
         return gpuMemoryStats;
     }
 
     void Renderer::UpdateSceneRenderer(float inDeltaTime)
     {
-        m_DirectLightPass->UpdateCascade(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData().DirectLight.Direction);
         m_SceneRenderer->Update(m_Window->GetExtent(), inDeltaTime);
+
+        m_DirectLightPass->UpdateCascade(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData().DirectLight.Direction);
         m_PointLightPass->UpdateLights(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData());
     }
 
     void Renderer::DestroyPipelines()
     {
         m_RenderPipeline.reset();
-    }
-
-    /// Shadows
-
-    void Renderer::EnableCascade(bool inValue)
-    {
-        IsActiveCascade = inValue;
-
-        Log::Info("Enable Cascade: {}", inValue);
-    }
+    }   
 
 } // namespace MamontEngine

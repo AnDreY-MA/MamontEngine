@@ -10,7 +10,7 @@ namespace MamontEngine::vkinit
     VkCommandBufferAllocateInfo command_buffer_allocate_info(VkCommandPool pool, uint32_t count = 1, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     //< init_cmd
 
-    VkCommandBufferBeginInfo  command_buffer_begin_info(VkCommandBufferUsageFlags flags = 0);
+    VkCommandBufferBeginInfo  command_buffer_begin_info(VkCommandBufferUsageFlags flags = 0, const VkCommandBufferInheritanceInfo *inheritanceInfo = nullptr);
     VkCommandBufferSubmitInfo command_buffer_submit_info(VkCommandBuffer cmd);
 
     VkFenceCreateInfo fence_create_info(VkFenceCreateFlags flags = 0);
@@ -29,7 +29,7 @@ namespace MamontEngine::vkinit
 
     VkRenderingAttachmentInfo depth_attachment_info(VkImageView        view,
                                                     VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                                                    float              clearDepth = 0.f,
+                                                    float              clearDepth = 1.f,
                                                     VkImageLayout      layout     = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
     VkRenderingInfo rendering_info(VkExtent2D renderExtent, const VkRenderingAttachmentInfo *colorAttachment, const VkRenderingAttachmentInfo *depthAttachment);

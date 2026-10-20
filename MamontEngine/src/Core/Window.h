@@ -12,8 +12,6 @@ namespace MamontEngine
         explicit WindowCore();
         ~WindowCore();
 
-        
-
 		void CreateSurface(VkInstance instance, VkSurfaceKHR *surface);
 
 		SDL_Window *GetWindow()
@@ -36,6 +34,8 @@ namespace MamontEngine
             m_WindowExtent.width = width;
             m_WindowExtent.height = height;
 		}
+
+		void PollEvents();
 
 		VkExtent2D Resize();
 	private:

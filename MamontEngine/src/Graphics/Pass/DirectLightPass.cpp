@@ -45,12 +45,13 @@ namespace MamontEngine
     {
         PROFILE_ZONE("DirectLightPass::Render");
 
-        VkCommandBufferInheritanceRenderingInfo inheritanceDynamicInfo{};
-        inheritanceDynamicInfo.sType                   = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO;
-        inheritanceDynamicInfo.colorAttachmentCount    = 0;
-        inheritanceDynamicInfo.depthAttachmentFormat   = m_CascadeFormat;
-        inheritanceDynamicInfo.viewMask                = 0;
-        inheritanceDynamicInfo.rasterizationSamples    = VK_SAMPLE_COUNT_1_BIT;
+        const VkCommandBufferInheritanceRenderingInfo inheritanceDynamicInfo = {
+            .sType                   = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO,
+            .viewMask                = 0,
+            .colorAttachmentCount    = 0,
+            .depthAttachmentFormat   = m_CascadeFormat,
+            .rasterizationSamples    = VK_SAMPLE_COUNT_1_BIT
+        };
 
         const VkCommandBufferInheritanceInfo inheritanceInfo = {
                 .sType       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
@@ -60,8 +61,7 @@ namespace MamontEngine
                 .framebuffer = VK_NULL_HANDLE,
         };
 
-        VkCommandBufferBeginInfo cmdSecondaryBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-        cmdSecondaryBeginInfo.pInheritanceInfo         = &inheritanceInfo;
+        const VkCommandBufferBeginInfo cmdSecondaryBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, &inheritanceInfo);
 
         constexpr VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION  , .height = SHADOWMAP_DIMENSION};
 
@@ -79,38 +79,38 @@ namespace MamontEngine
             constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
             vkCmdPushConstants(cmd, m_Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
 
-            vkCmdDrawIndexed(cmd, r.IndexCount, 1, 0, 0, 0);
+            vkCmdDrawIndexed(cmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
         };
 
-        const auto frustumPlanes = ExtractFrustumPlanes(viewproj);
 
-        VkUtil::transition_image(cmd, m_CascadeImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        VkUtil::transition_image(cmd, m_CascadeImage, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-        for (uint32_t i = 0; i < m_CascadeImageViews.size(); ++i)
-        {
-            VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(m_CascadeImageViews[i], VK_ATTACHMENT_LOAD_OP_LOAD);
-            depthAttachment.clearValue.depthStencil   = {1.f, 0};
-            depthAttachment.storeOp                   = VK_ATTACHMENT_STORE_OP_STORE;
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Pipeline);
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
 
-            const VkRenderingInfo renderCascadeInfo = vkinit::rendering_info(cascadeExtent, nullptr, &depthAttachment);
-
-            vkCmdBeginRendering(cmd, &renderCascadeInfo);
-            vkCmdSetDepthBias(cmd, 1.25f, 0.f, 1.75f);
-            const VkViewport viewport = {.x        = 0.0f,
+        constexpr VkViewport viewport = {.x        = 0.0f,
                                          .y        = 0.0f,
                                          .width    = static_cast<float>(cascadeExtent.width),
                                          .height   = static_cast<float>(cascadeExtent.height),
                                          .minDepth = 0.0f,
                                          .maxDepth = 1.0f};
 
-            const VkRect2D scissor = {.offset = {0, 0}, .extent = cascadeExtent};
+        constexpr VkRect2D scissor = {.offset = {0, 0}, .extent = cascadeExtent};
 
-            vkCmdSetViewport(cmd, 0, 1, &viewport);
-            vkCmdSetScissor(cmd, 0, 1, &scissor);
+        vkCmdSetViewport(cmd, 0, 1, &viewport);
+        vkCmdSetScissor(cmd, 0, 1, &scissor);
+        vkCmdSetDepthBias(cmd, 1.25f, 0.f, 1.75f);
 
-            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Pipeline);
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
+        for (uint32_t i = 0; i < m_CascadeImageViews.size(); ++i)
+        {
+            const auto frustumPlanes = ExtractFrustumPlanes(m_Cascades.ViewProjectMatrixs[i]);
 
+            const VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(m_CascadeImageViews[i], VK_ATTACHMENT_LOAD_OP_LOAD);
+
+            const VkRenderingInfo renderCascadeInfo = vkinit::rendering_info(cascadeExtent, nullptr, &depthAttachment);
+
+            vkCmdBeginRendering(cmd, &renderCascadeInfo);
+            
             for (const auto &object : inDrawContext.OpaqueSurfaces)
             {
                 if (IsNodeVisible(frustumPlanes, object.Transform, object.SphereBound))
@@ -246,10 +246,6 @@ namespace MamontEngine
         pipelineBuilder.AddDynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS);
 
         VkPipeline shadowPipeline = pipelineBuilder.BuildPipline(device, 0);
-        if (shadowPipeline == VK_NULL_HANDLE)
-        {
-            fmt::println("shadowPipeline == VK_NULL_HANDLE");
-        }
 
         std::cerr << "Direct shadowPipeline: " << shadowPipeline << std::endl;
         std::cerr << "Direct shadowPipeline, Layout: " << layout << std::endl;

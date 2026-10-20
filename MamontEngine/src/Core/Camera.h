@@ -29,6 +29,18 @@ namespace MamontEngine
             m_Position = inPosition;
         }
 
+        void SetRotation(const glm::quat& inRotation)
+        {
+            m_Pitch = inRotation.x;
+            m_Yaw = inRotation.y;
+            //m_Yaw = inRotation.y;
+        }
+
+        void SetFOV(float inFOV)
+        {
+            m_FOV = inFOV;
+        }
+
         glm::vec3 GetPosition() const
         {
             return m_Position;

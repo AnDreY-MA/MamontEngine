@@ -1,8 +1,8 @@
-#pragma once 
+#pragma once
 
 namespace MamontEngine
 {
-	struct Event
+	class Function
 	{
 
 	};

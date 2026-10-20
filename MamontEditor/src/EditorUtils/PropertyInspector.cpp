@@ -15,16 +15,15 @@ namespace MamontEditor
 
         const auto propertyType = propertyMeta.type();
 
-        const char *label = propertyMeta.name() ? propertyMeta.name() : std::string{propertyMeta.type().info().name()}.data();
+        const std::string label = propertyMeta.name() ? std::string{propertyMeta.name()} : std::string{propertyMeta.type().info().name()};
 
         entt::meta_func &&propertyInspectFunction = propertyType.func(f_Inspect);
 
-        ImGui::PushID((std::string(label) + "prop").c_str());
+        ImGui::PushID((label + "prop").c_str());
 
         ImGui::Indent(10);
 
-        auto labelStr = std::string(label);
-        InspectType(labelStr, property, propertyMeta);
+        InspectType(label, property, propertyMeta);
 
         if (propertyType.is_pointer_like())
         {
@@ -68,9 +67,11 @@ namespace MamontEditor
                             {
                                 auto material = model->GetMaterial(i);
                                 if (!material)
-                                    return;
+                                    continue;
 
-                                if (ImGui::TreeNode(fmt::format("{}", material->Name).c_str()))
+                                ImGui::PushID(static_cast<int>(i));
+
+                                if (ImGui::TreeNode(material->Name.c_str()))
                                 {
                                     if (ImGui::ColorEdit4("Base Color", &material->Constants.ColorFactors[0]))
                                         material->IsDirty = true;
@@ -85,6 +86,8 @@ namespace MamontEditor
 
                                     ImGui::TreePop();
                                 }
+
+                                ImGui::PopID();
                             }
 
                             ImGui::TreePop();
@@ -100,13 +103,14 @@ namespace MamontEditor
         ImGui::PopID();
     }
 
-    void InspectType(std::string& name, entt::meta_any& value, entt::meta_data& meta)
+    void InspectType(const std::string& name, entt::meta_any& value, entt::meta_data& meta)
     {
         if (meta.type().is_pointer_like())
         {
             if (entt::meta_any ref = *value; ref && !ref.allow_cast<MamontEngine::Asset>())
             {
-                ImGui::BeginChild(name.append("Field").c_str());
+                const std::string childId = name + "Field";
+                ImGui::BeginChild(childId.c_str());
                 ImGui::Indent(10);
                 for (auto [id, metaData] : ref.type().data())
                 {

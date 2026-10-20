@@ -62,8 +62,6 @@ namespace MamontEngine
             return m_SceneRenderer;
         }
 
-        void EnableCascade(bool inValue);
-
     private:
         void DrawMain(VkCommandBuffer inCmd);
         void DrawGeometry(VkCommandBuffer inCmd);
@@ -92,8 +90,6 @@ namespace MamontEngine
         std::unique_ptr<PointLightPass> m_PointLightPass;
         std::unique_ptr<PickPass>        m_PickPass;
         std::unique_ptr<SkyPass>         m_SkyPass;
-
-        bool IsActiveCascade{true};
 
         VkExtent2D m_DrawExtent;
         float      m_RenderScale{1.f};

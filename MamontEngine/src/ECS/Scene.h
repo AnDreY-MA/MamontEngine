@@ -17,7 +17,6 @@ namespace MamontEngine
 	class Scene
     {
     public:
-        // Scene() = default;
         explicit Scene();
 
         ~Scene();
@@ -52,6 +51,8 @@ namespace MamontEngine
             return m_Registry;
         }
         Entity GetEntity(UID Id);
+
+        inline bool IsSimulated() const { return !m_IsPaused; }
 
     private:
         Entity CreateEntity(UID inId, std::string_view inName);

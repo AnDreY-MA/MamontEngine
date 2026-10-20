@@ -4,6 +4,11 @@
 
 namespace MamontEngine
 {
+    ScriptComponent::ScriptComponent()
+    {
+        Log::Info("Construct ScriptComp: {}", FileName);
+    }
+
     ScriptComponent::ScriptComponent(std::string_view inFile)
     {
         LoadScript(inFile);
@@ -94,5 +99,15 @@ namespace MamontEngine
         (*m_Environment)["ScriptComponent"] = this;
 
         luaState.collect_garbage();
+    }
+
+    void ScriptComponent::Reload()
+    {
+        if (FileName.empty())
+        {
+            Log::Warn("ScirptComponent: file empty");
+        }
+        LoadScript(FileName);
+
     }
 }

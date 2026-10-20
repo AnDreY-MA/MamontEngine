@@ -231,6 +231,8 @@ namespace MamontEngine::VkPipelines
             .dynamicStateCount = static_cast<uint32_t>(m_DynamicStates.size()),
             .pDynamicStates     = m_DynamicStates.data()
         };
+
+        std::cout << "Dynamic states: " << m_DynamicStates.size() << "\n";
         
         pipelineInfo.pDynamicState = &dynamicInfo;
 

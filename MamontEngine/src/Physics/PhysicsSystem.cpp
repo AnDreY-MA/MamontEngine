@@ -9,6 +9,7 @@
 #include "Physics/Collision/CollisionDetection.h"
 #include "Utils/Profile.h"
 #include "Math/Transform.h"
+#include "Utils/Reflection.h"
 
 namespace
 {
@@ -45,6 +46,12 @@ namespace MamontEngine
 {
     namespace HeroPhysics
     {
+        IMPLEMENT_REFLECT_COMPONENT(PhysicsSystem, "PhysicsSystem")
+        {
+            meta.data<&PhysicsSystem::m_Gravity, entt::as_ref_t>("Gravity"_hs);
+        }
+        FINISH_REFLECT()
+
         PhysicsSystem::PhysicsSystem(const PhysicsSettings &settings) 
             : m_Gravity(settings.Gravity), m_MaxBodiesCount(settings.MaxBodyCount)
         {
@@ -52,8 +59,6 @@ namespace MamontEngine
             //m_BodiesFreeList.reserve(m_MaxBodiesCount);
 
             m_Broadphase = std::make_unique<BruteForceBroadphase>();
-
-            m_Manifolds.resize(1000);
 
             s_UpdateTimestep = 1.0f / 60.0f;
         }
@@ -84,7 +89,7 @@ namespace MamontEngine
 
                 m_Broadphase->FindCollisionPairs(m_Rigidbodies, pairs, m_RigidbodyCount);
 
-                ResolveCollisions(pairs);
+                Narrowphase(pairs);
 
                 //Log::Info("[PhysicsSystem] Collision pairs: {}", pairs.size());
 
@@ -113,8 +118,6 @@ namespace MamontEngine
         void PhysicsSystem::UpdateRigidbodies()
         {
             PROFILE_FUNCTION();
-
-            Log::Info("Update bodies: {}", m_RigidbodyCount);
 
             const float deltaTime = s_UpdateTimestep;
 
@@ -215,7 +218,7 @@ namespace MamontEngine
             body->m_Rotation = glm::normalize(body->m_Rotation);
         }
 
-        void PhysicsSystem::ResolveCollisions(std::span<CollisionPair> inPair)
+        void PhysicsSystem::Narrowphase(std::span<CollisionPair> inPair)
         {
             for (auto& pair : inPair)
             {
@@ -232,63 +235,60 @@ namespace MamontEngine
                     continue;
                 }
 
-                const glm::vec3 relativeVelocity = body2->GetLinearVelocity() - body1->GetLinearVelocity();
+                Manifold &manifold = m_Manifolds[m_ManifoldsCount++];
+                manifold.Init(body1, body2);
 
-                const float velocityAlongNormal{glm::dot(relativeVelocity, collisionData.Normal)};
-                if (velocityAlongNormal > 0)
-                    continue;
+                assert(m_ManifoldCount < MAX_MANIFOLDS);
 
-                const float restitution = std::min(body1->GetRestitution(), body2->GetRestitution());
-
-                float scalarImpulse = -(1.0f + restitution) * velocityAlongNormal;
-                scalarImpulse /= body1->GetInverseMass() + body2->GetInverseMass();
-
-                const glm::vec3 impulse = collisionData.Normal * scalarImpulse;
-
-                if (!body1->IsKinematic() || !body1->IsStatic())
+                if (BuildCollisionManifold(body1, body2, collisionData, &manifold))
                 {
-                    body1->m_LinearVelocity -= impulse * body1->GetInverseMass();
-                }
-                if (!body2->IsKinematic() || !body2->IsStatic())
-                {
-                    body2->m_LinearVelocity += impulse * body2->GetInverseMass();
+
                 }
 
-                const float percent{0.2f};
-                const float slop = 0.01f;
-
-                const glm::vec3 correction = std::max(collisionData.Penetration - slop, 0.0f) * percent * collisionData.Normal / (body1->GetInverseMass() + body2->GetInverseMass());
-
-                if (!body1->IsKinematic() || !body1->IsStatic())
-                {
-                    body1->m_Position -= correction * body1->GetInverseMass();
-                }
-                if (!body2->IsKinematic() || !body2->IsStatic())
-                {
-                    body2->m_Position += correction * body2->GetInverseMass();
-                }
+                //ResolveContacts(pair, &collisionData);
+                
             }
         }
 
-        void PhysicsSystem::NarrowPhaseCollisions(std::span<CollisionPair> inPair)
+        void PhysicsSystem::ResolveContacts(const CollisionPair &inPair, const CollisionData *inCollisionData)
         {
-            for (auto &pair : inPair)
+            const auto     &body1{inPair.Object1};
+            const auto     &body2{inPair.Object2};
+            const glm::vec3 relativeVelocity = body2->GetLinearVelocity() - body1->GetLinearVelocity();
+
+            const float velocityAlongNormal{glm::dot(relativeVelocity, inCollisionData->Normal)};
+            if (velocityAlongNormal > 0)
+                return;
+
+            const float restitution = std::min(body1->GetRestitution(), body2->GetRestitution());
+
+            float scalarImpulse = -(1.0f + restitution) * velocityAlongNormal;
+            scalarImpulse /= body1->GetInverseMass() + body2->GetInverseMass();
+
+            const glm::vec3 impulse = inCollisionData->Normal * scalarImpulse;
+
+            if (!body1->IsKinematic() || !body1->IsStatic())
             {
-                auto body1 = pair.Object1;
-                auto body2 = pair.Object2;
+                body1->m_LinearVelocity -= impulse * body1->GetInverseMass();
+            }
+            if (!body2->IsKinematic() || !body2->IsStatic())
+            {
+                body2->m_LinearVelocity += impulse * body2->GetInverseMass();
+            }
 
-                if (!body1 || !body2)
-                    continue;
+            const float percent{0.2f};
+            const float slop = 0.01f;
 
-                CollisionData collisionData{};
+            const glm::vec3 correction = std::max(inCollisionData->Penetration - slop, 0.0f) * percent * inCollisionData->Normal /
+                                         (body1->GetInverseMass() + body2->GetInverseMass());
 
-                if (CheckCollision(&pair, &collisionData))
-                {
-                    Manifold &manifold = m_Manifolds[m_ManifoldCount++];
-                    manifold.Init(body1, body2);
-
-
-                }
+            if (!body1->IsKinematic() || !body1->IsStatic())
+            {
+                body1->m_Position -= correction * body1->GetInverseMass();
+            }
+            if (!body2->IsKinematic() || !body2->IsStatic())
+            {
+                body2->m_Position += correction * body2->GetInverseMass();
             }
         }
 

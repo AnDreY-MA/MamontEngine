@@ -3,6 +3,7 @@
 #include <entt/entt.hpp>
 #include "Collision/Broadphase/Broadphase.h"
 #include "Collision/Manifold.h"
+#include "Utils/MetaReflection.h"
 
 namespace MamontEngine
 {
@@ -12,14 +13,17 @@ namespace MamontEngine
     
     struct PhysicsSettings
     {
-        float TimeStep{1.f / 120.f};
+        float TimeStep{1.f / 60.f};
         glm::vec3 Gravity{glm::vec3(0.f, -9.81f, 0.f)};
 
         uint32_t MaxBodyCount{4096};
     };
 
+    constexpr int MAX_MANIFOLDS = 1000;
+
 	class PhysicsSystem
 	{
+        REFLECT();
     public:
         PhysicsSystem(const PhysicsSettings &settings = {});
         ~PhysicsSystem();
@@ -41,9 +45,9 @@ namespace MamontEngine
         void IntegrateForce(Rigidbody *body, const float deltaTime);
         void IntegrateVelocity(Rigidbody *body, const float deltaTime);
 
-        void ResolveCollisions(std::span<CollisionPair> inPair);
+        void Narrowphase(std::span<CollisionPair> inPair);
 
-        void NarrowPhaseCollisions(std::span<CollisionPair> inPair);
+        void ResolveContacts(const CollisionPair& inPair, const class CollisionData* inCollisionData);
 
 	private:
         bool      m_IsPaused{true};
@@ -62,10 +66,10 @@ namespace MamontEngine
         std::vector<Rigidbody *> m_Rigidbodies;
         std::vector<Rigidbody *> m_BodiesFreeList;
 
-        std::vector<Manifold> m_Manifolds;
-        uint32_t              m_ManifoldCount{0};
-
         std::unique_ptr<Broadphase> m_Broadphase;
+
+        std::array<Manifold, MAX_MANIFOLDS> m_Manifolds;
+        uint32_t                             m_ManifoldsCount{0};
 
         float s_UpdateTimestep;
 	};

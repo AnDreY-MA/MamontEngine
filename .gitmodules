@@ -40,3 +40,6 @@
 [submodule "mamontengine/vendor/cereal"]
 	path = mamontengine/vendor/cereal
 	url = https://github.com/USCiLab/cereal.git
+[submodule "MamontEngine/vendor/meshoptimizer"]
+	path = MamontEngine/vendor/meshoptimizer
+	url = https://github.com/zeux/meshoptimizer.git

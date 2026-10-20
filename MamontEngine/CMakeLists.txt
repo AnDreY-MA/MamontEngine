@@ -19,7 +19,7 @@ file(GLOB_RECURSE Scripting "src/Scripting/*.h" "src/Scripting/*.hpp" "src/Scrip
 set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Devices} ${Materials} ${Utils} ${ECS} ${UI} ${Math} ${ECSComps} ${Physics} ${Scripting})
 
 # Add library
-add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES} "src/Core/Event/InputEvent.h")
+add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES} "src/Core/Event/InputEvent.h" "src/Core/TimeStep.h")
 
 #include(ImGuizmo "vendor/ImGuizmo")
 
@@ -86,11 +86,14 @@ add_subdirectory("vendor/fmt" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/vma" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/entt" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/tracy" EXCLUDE_FROM_ALL)
+add_subdirectory("vendor/meshoptimizer" EXCLUDE_FROM_ALL)
 #add_subdirectory("vendor/rttr" EXCLUDE_FROM_ALL)
+
+include_directories(${PROJECT_NAME} meshoptimizer)
 
 include_directories(${PROJECT_NAME} tracy/public)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GPUOpen::VulkanMemoryAllocator EnTT::EnTT glm::glm Tracy::TracyClient)
+target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GPUOpen::VulkanMemoryAllocator EnTT::EnTT glm::glm Tracy::TracyClient meshoptimizer)
 
 # imgui
 add_library(imgui STATIC
@@ -101,7 +104,7 @@ add_library(imgui STATIC
     vendor/imgui/imgui_widgets.cpp
     vendor/imgui/imgui_tables.cpp
     vendor/imgui/backends/imgui_impl_vulkan.cpp
-    vendor/imgui/backends/imgui_impl_sdl3.cpp "src/Graphics/Frustum.h" "src/Physics/Collision/Hull.h" "src/Core/Event/InputEvent.h")
+    vendor/imgui/backends/imgui_impl_sdl3.cpp "src/Graphics/Frustum.h" "src/Physics/Collision/Hull.h" "src/Core/Event/InputEvent.h" "src/Core/TimeStep.h")
 target_include_directories(imgui PUBLIC vendor/imgui)
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
 target_link_libraries(${PROJECT_NAME} PUBLIC imgui)
@@ -137,7 +140,7 @@ add_library(ImGuizmo STATIC
     vendor/ImGuizmo/ImSequencer.cpp
     vendor/ImGuizmo/GraphEditor.cpp
     vendor/ImGuizmo/ImCurveEdit.cpp
-    vendor/ImGuizmo/ImGradient.cpp "src/Graphics/Frustum.h" "src/Physics/Collision/Hull.h" "src/Core/Event/InputEvent.h")
+    vendor/ImGuizmo/ImGradient.cpp "src/Graphics/Frustum.h" "src/Physics/Collision/Hull.h" "src/Core/Event/InputEvent.h" "src/Core/TimeStep.h")
 
 #target_include_directories(ImGuizmo PUBLIC vendor/ImGuizmo)
 #target_link_libraries(${PROJECT_NAME} PUBLIC ImGuizmo)

@@ -1,15 +1,12 @@
 #pragma once
 
+#include "ECS/Components/Component.h"
 #include "Math/Color.h"
-#include "Utils/MetaReflection.h"
 
 namespace MamontEngine
 {
-	struct LightComponent
+	struct LightComponent : public Component
 	{
-    private:
-        REFLECT();
-
     public:
         LightComponent()          = default;
 

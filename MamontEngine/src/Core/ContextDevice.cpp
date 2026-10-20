@@ -176,13 +176,15 @@ namespace MamontEngine
                 .descriptorBindingPartiallyBound              = VK_TRUE,
                 .descriptorBindingVariableDescriptorCount     = VK_TRUE,
                 .runtimeDescriptorArray                       = VK_TRUE,
+                .scalarBlockLayout                            = VK_TRUE,
 #ifdef PROFILING
                 .hostQueryReset = VK_TRUE,
 #endif
                 .timelineSemaphore   = VK_TRUE,
                 .bufferDeviceAddress = VK_TRUE,
                 .shaderOutputViewportIndex = VK_TRUE,
-                .shaderOutputLayer = VK_TRUE
+                .shaderOutputLayer = VK_TRUE,
+                
         };
 
 
@@ -338,7 +340,7 @@ namespace MamontEngine
     void VkContextDevice::InitCommands()
     {
         const VkCommandPoolCreateInfo commandPoolInfo =
-                vkinit::command_pool_create_info(m_GraphicsQueueFamily, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+                vkinit::command_pool_create_info(m_GraphicsQueueFamily, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
         const VkDevice device = LogicalDevice::GetDevice();
 
         for (auto& frame : m_Frames)
@@ -353,8 +355,8 @@ namespace MamontEngine
             const auto cmdSecondaryAllocInfo = vkinit::command_buffer_allocate_info(frame.CommandPool, 1, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
             VK_CHECK(vkAllocateCommandBuffers(device, &cmdSecondaryAllocInfo, &frame.UICommandBuffer));
 
-            const auto cmdCascadeAllocInfo = vkinit::command_buffer_allocate_info(frame.CommandPool, 1, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
-            VK_CHECK(vkAllocateCommandBuffers(device, &cmdSecondaryAllocInfo, &frame.ShadowCommandBuffer));
+            const auto cmdShadowAllocInfo = vkinit::command_buffer_allocate_info(frame.CommandPool, 1, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+            VK_CHECK(vkAllocateCommandBuffers(device, &cmdShadowAllocInfo, &frame.ShadowCommandBuffer));
 
         }
 
@@ -532,7 +534,7 @@ namespace MamontEngine
                 VkDescriptorImageInfo info{};
                 info.sampler     = shadowMap.Sampler;
                 info.imageView   = shadowMap.ImageView;
-                info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
                 pointInfos.push_back(info);
             }
             writer.WriteImageArray(8, pointInfos, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -578,6 +580,9 @@ namespace MamontEngine
 
         constexpr VkImageUsageFlags depthImageUsages = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
         DepthImage.Create(extent, Utils::FindDepthFormat(PhysicalDevice::GetDevice()) /*VK_FORMAT_D32_SFLOAT*/, depthImageUsages, false);
+        ImmediateContext::ImmediateSubmit(
+                [&](VkCommandBuffer cmd)
+                { VkUtil::transition_image(cmd, DepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL); });
 
         std::cerr << "Image.DepthImage Image:" << DepthImage.Image << std::endl;
         std::cerr << "Image.DepthImage ImageView:" << DepthImage.ImageView << std::endl;
@@ -641,7 +646,7 @@ namespace MamontEngine
 
             ImmediateContext::ImmediateSubmit(
                     [&](VkCommandBuffer cmd)
-                    { VkUtil::transition_image(cmd, CascadeDepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); });
+                    { VkUtil::transition_image(cmd, CascadeDepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL); });
             
         }
 
@@ -679,10 +684,11 @@ namespace MamontEngine
         {
             auto imageInfo = vkinit::image_create_info(pointDepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, shadowImageExtent);
 
+            imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
             imageInfo.mipLevels   = 1;
             imageInfo.arrayLayers = SHADOW_FACE_NUM * MAX_POINT_LIGHT;
             imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            imageInfo.flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
             imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
             imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
@@ -690,15 +696,16 @@ namespace MamontEngine
 
             VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &imageInfo, &allocinfo, &shadowMap.Image, &shadowMap.Allocation, &shadowMap.Info));
 
-           /* ImmediateContext::ImmediateSubmit([&](VkCommandBuffer cmd) { 
-                VkUtil::transition_image(cmd, PointDepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 6);
+            /* ImmediateContext::ImmediateSubmit(
+                    [&](VkCommandBuffer cmd)
+                    { 
+                VkUtil::transition_image(cmd, shadowMap.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 6);
             });*/
 
             shadowMap.ImageExtent   = shadowImageExtent;
             shadowMap.ImageFormat = pointDepthFormat;
 
             auto imageViewInfo = vkinit::imageviewCreateInfo(pointDepthFormat, shadowMap.Image, VK_IMAGE_ASPECT_DEPTH_BIT, 0, 6, VK_IMAGE_VIEW_TYPE_CUBE);
-            //imageViewInfo.components = {VK_COMPONENT_SWIZZLE_R};
             imageViewInfo.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 6};
 
             VK_CHECK(vkCreateImageView(device, &imageViewInfo, nullptr, &shadowMap.ImageView));
@@ -720,7 +727,7 @@ namespace MamontEngine
                                 },
                 };
 
-                VK_CHECK(vkCreateImageView(device, &viewCreateInfo, nullptr, &PointShadowMapImageViews[i + j * SHADOW_FACE_NUM])); /*[i + j * 6]*/
+                VK_CHECK(vkCreateImageView(device, &viewCreateInfo, nullptr, &PointShadowMapImageViews[i + j * SHADOW_FACE_NUM]));
             }
 
             VkSamplerCreateInfo samplerInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, .pNext = nullptr};

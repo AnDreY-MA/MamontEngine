@@ -10,6 +10,7 @@
 #include "ECS/Components/DirectionLightComponent.h"
 #include "ECS/Components/PointLightComponent.h"
 #include "ECS/Components/TransformComponent.h"
+#include "ECS/Components/CameraComponent.h"
 #include <glm/gtx/quaternion.hpp>
 #include "Graphics/DebugRenderer.h"
 #include "Physics/Collision/BoxCollision.h"
@@ -93,6 +94,8 @@ namespace MamontEngine
 
         constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
 
+        const auto materialBufferAddress{MaterialAllocator::GetBufferAddess()};
+
         const auto draw = [&](const RenderObject &r)
         {
             vkCmdBindDescriptorSets(
@@ -104,7 +107,7 @@ namespace MamontEngine
             {
                 .WorldMatrix = r.Transform, 
                 .VertexBuffer = r.MeshBuffer.VertexBuffer.Address, 
-                .MaterialBuffer = MaterialAllocator::GetBufferAddess(),
+                .MaterialBuffer = materialBufferAddress,
                 .MaterialIndex = r.MaterialIndex
             };
 
@@ -164,23 +167,48 @@ namespace MamontEngine
         ClearDrawContext();
         DebugRenderer::ClearVertex();
 
-        m_Camera->UpdateProjection(inWindowExtent);
-
-        const glm::mat4 &view = m_Camera->GetViewMatrix();
-        const glm::mat4 &projection = m_Camera->GetProjection();
-
-        const auto& sceneRegistry = m_Scene->GetRegistry();
+        auto &sceneRegistry = m_Scene->GetRegistry();
+        bool        hasAnotherView{false};
+        glm::mat4   view{glm::mat4(1.f)};
+        glm::mat4   projection{glm::mat4(1.f)};
+        if (m_Scene->IsSimulated())
+        {
+            for (auto camerasView = sceneRegistry.view<TransformComponent, CameraComponent>();
+                 auto &&[entity, transform, cameraComp] : camerasView.each())
+            {
+                if (cameraComp.IsViewTarget())
+                {
+                    m_SceneData.CameraPosition = transform.GetPosition();
+                    cameraComp.GetCamera()->SetPosition(transform.GetPosition());
+                    cameraComp.GetCamera()->SetRotation(transform.GetRotation());
+                    cameraComp.UpdateProj(inWindowExtent);
+                    view                       = cameraComp.GetView();
+                    projection     = cameraComp.GetProjection();
+                    hasAnotherView             = true;
+                    continue;
+                }
+            }
+        }
+        else
+        {
+            if (!hasAnotherView)
+            {
+                m_Camera->UpdateProjection(inWindowExtent);
+                view                       = m_Camera->GetViewMatrix();
+                projection                 = m_Camera->GetProjection();
+                m_SceneData.CameraPosition = m_Camera->GetPosition();
+            }
+        }
 
         m_SceneData.View           = view;
         m_SceneData.Proj           = projection;
         m_SceneData.Viewproj       = projection * view;
-        m_SceneData.CameraPosition = m_Camera->GetPosition();
         m_SceneData.NearPlane      = m_Camera->GetNearClip();
         m_SceneData.FarPlane = m_Camera->GetFarClip();
 
         {
             const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent>();
-            m_HasDirectionLight            = !viewDirectionLight.empty();
+            m_LightData.HasDirectionLight  = !viewDirectionLight.empty();
         }
 
         {
@@ -188,7 +216,7 @@ namespace MamontEngine
             m_LightData.PointLightingCount                = viewPointLight.size();
         }
 
-        if (m_HasDirectionLight)
+        if (m_LightData.HasDirectionLight)
         {
             const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent, TransformComponent>();
 
@@ -222,8 +250,6 @@ namespace MamontEngine
                     });
 
         }
-
-        m_LightData.HasDirectionLight = m_HasDirectionLight;
 
         const auto meshes = sceneRegistry.view<MeshComponent, TransformComponent>();
         for (const auto&& [entity, meshComponent, Transform] : meshes.each())

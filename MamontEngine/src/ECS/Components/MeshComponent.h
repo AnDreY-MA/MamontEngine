@@ -9,10 +9,13 @@ namespace MamontEngine
 {
 	struct MeshComponent : public Component
 	{
-        MeshComponent() = default;
+        explicit MeshComponent()
+        {
+            Mesh = std::make_shared<MeshModel>();
+        }
         MeshComponent(const MeshComponent &) = default;
 
-        MeshComponent(const std::shared_ptr<MeshModel> &inMesh) : Mesh(inMesh)
+        explicit MeshComponent(const std::shared_ptr<MeshModel> &inMesh) : Mesh(inMesh)
         {
             Dirty = true;
         }

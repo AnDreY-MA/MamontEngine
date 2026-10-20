@@ -19,12 +19,12 @@ namespace MamontEngine
 
 
     private:
-        std::array<glm::mat4, MAX_POINT_LIGHT * SHADOW_FACE_NUM>   m_ShadowFaceCubes{};
+        std::array<glm::mat4, MAX_POINT_LIGHT * SHADOW_FACE_NUM> m_ShadowFaceCubes;
 
         std::array<Texture, MAX_POINT_LIGHT>& shadowCubeImages;
 
-        AllocatedBuffer m_Buffer;
-        std::array < AllocatedBuffer, FRAME_OVERLAP> m_StagingBuffers;
+        std::array<AllocatedBuffer, FRAME_OVERLAP> m_Buffer;
+        std::array<AllocatedBuffer, FRAME_OVERLAP> m_StagingBuffers;
 
         uint32_t m_LightCount{0};
     };

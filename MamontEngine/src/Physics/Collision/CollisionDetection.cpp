@@ -26,106 +26,6 @@ namespace MamontEngine
 {
     namespace HeroPhysics
     {
-        static std::vector<glm::vec3> GetBoxVertices(const AABB &aabb)
-        {
-            std::vector<glm::vec3> vertices;
-            vertices.resize(8);
-            
-            // Lower
-            vertices[0].x = aabb.Min.x;
-            vertices[0].y = aabb.Min.y;
-            vertices[0].z = aabb.Min.z;
-
-            vertices[1].x = aabb.Min.x;
-            vertices[1].z = aabb.Min.z;
-
-            vertices[2].z = aabb.Min.z;
-
-            vertices[3].y = aabb.Min.y;
-            vertices[3].z = aabb.Min.z;
-
-            vertices[4].x = aabb.Min.x;
-            vertices[4].y = aabb.Min.y;
-
-            vertices[5].x = aabb.Min.x;
-
-            vertices[7].y = aabb.Min.y;
-
-            // Upper
-            vertices[1].y = aabb.Max.y;
-
-            vertices[2].x = aabb.Max.x;
-            vertices[2].y = aabb.Max.y;
-
-            vertices[3].x = aabb.Max.x;
-
-            vertices[4].z = aabb.Max.z;
-
-            vertices[5].y = aabb.Max.y;
-            vertices[5].z = aabb.Max.z;
-
-            vertices[6].x = aabb.Max.x;
-            vertices[6].y = aabb.Max.y;
-            vertices[6].z = aabb.Max.z;
-
-            vertices[7].x = aabb.Max.x;
-            vertices[7].z = aabb.Max.z;
-
-            return vertices;
-        }
-
-        static std::pair<glm::vec3, glm::vec3> GetMinMaxVertexOnAxis(const Rigidbody* body, const glm::vec3& axis)
-        {
-            const glm::mat4 currentTransform = body->GetWorldTransform();
-
-            const glm::vec3 localAxis = glm::transpose(glm::mat3(currentTransform)) * axis;
-
-            const auto vertices = GetBoxVertices(body->GetShape()->GetBounds());
-
-            int minVertex = 0, maxVertex = 0;
-            {
-                float minCorrelation = FLT_MAX, maxCorrelation = -FLT_MAX;
-                for (size_t i = 0; i < vertices.size(); ++i)
-                {
-                    const float currentCorrelation = glm::dot(localAxis, vertices[i]);
-                    if (currentCorrelation > maxCorrelation)
-                    {
-                        maxCorrelation = currentCorrelation;
-                        maxVertex      = int(i);
-                    }
-                    if (currentCorrelation <= minCorrelation)
-                    {
-                        minCorrelation = currentCorrelation;
-                        minVertex      = int(i);
-                    }
-                }
-            }
-
-            std::pair<glm::vec3, glm::vec3> result;
-
-            result.first = currentTransform * glm::vec4(vertices[minVertex], 1.f);
-            result.second = currentTransform * glm::vec4(vertices[maxVertex], 1.f);
-
-            return result;
-        }
-
-        static void GetIncidentReferencePolygon(const Rigidbody* body, const glm::vec3& axis, ReferencePolygon& refPolygon)
-        {
-            const glm::mat4 currentTransform = body->GetWorldTransform();
-
-            const glm::mat3 invNormalMatrix{glm::transpose(glm::mat3(currentTransform))};
-            const glm::mat3 normalMatrix{glm::inverse(invNormalMatrix)};
-
-            const glm::vec3 localAxis = invNormalMatrix * axis;
-            
-            const auto minmaxVertices = GetMinMaxVertexOnAxis(body, localAxis);
-
-            const auto boxVertices = GetBoxVertices(body->GetShape()->GetBounds());
-
-            //const; 
-
-        }
-
         bool CheckCollisionAxis(
                 const glm::vec3 inAxis, Rigidbody *body1, Rigidbody *body2, CollisionShape *shape1, CollisionShape *shape2, CollisionData *outCollisionData);
 
@@ -219,6 +119,12 @@ namespace MamontEngine
             const auto &shape1 = inPair->Object1->GetShape();
             const auto &shape2 = inPair->Object2->GetShape();
 
+            if (!shape1 || !shape2)
+            {
+                Log::Warn("[CheckCollision] Shapes is not valid!");
+                return false;
+            }
+
             switch (shape1->GetShapeType())
             {
                 //case EShapeType::Box:
@@ -242,8 +148,14 @@ namespace MamontEngine
         {
             if (!manifold) return false;
 
-            ReferencePolygon poly1, poly2;
+            const auto& shape1 = body1->GetShape();
+            const auto& shape2 = body2->GetShape();
 
+            ReferencePolygon poly1, poly2;
+            shape1->GetIncindentRefPolygon(body1->GetWorldTransform(), collisionData.Normal, poly1);
+            shape2->GetIncindentRefPolygon(body2->GetWorldTransform(), -collisionData.Normal, poly2);
+
+            // other not writen yet code
 
             return false;
         }
@@ -251,8 +163,8 @@ namespace MamontEngine
         bool CheckCollisionAxis(
             const glm::vec3 inAxis, Rigidbody* body1, Rigidbody* body2, CollisionShape* shape1, CollisionShape* shape2, CollisionData* outCollisionData)
         {
-            const auto obj1 = GetMinMaxVertexOnAxis(body1, inAxis);
-            const auto obj2 = GetMinMaxVertexOnAxis(body2, inAxis);
+            const auto obj1 = shape1->GetMinMaxVertexOnAxis(body1->GetWorldTransform(), inAxis);
+            const auto obj2 = shape2->GetMinMaxVertexOnAxis(body2->GetWorldTransform(), inAxis);
 
             const float minCorrelation1 = glm::dot(inAxis, obj1.first);
             const float maxCorrelation1 = glm::dot(inAxis, obj1.second);

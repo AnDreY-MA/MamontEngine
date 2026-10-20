@@ -13,13 +13,19 @@ namespace MamontEngine
         WorldDirty = 1 << 1,
     };
 
+    struct MyData
+    {
+        glm::vec3 p;
+        float     r;
+    };
+
     struct Vertex
     {
         alignas(16) glm::vec3 Position = glm::vec3(0.0f);
         alignas(16) glm::vec3 Normal   = glm::vec3(0.0f);
-        alignas(8) glm::vec2 UV = glm::vec2{0.f};
-        alignas(16) glm::vec4 Color = glm::vec4(1.f);
-        alignas(16) glm::vec4 Tangent = glm::vec4(0.f);
+        alignas(8) glm::vec2 UV       = glm::vec2{0.f};
+        alignas(16) glm::vec4 Color    = glm::vec4(1.f);
+        alignas(16) glm::vec4 Tangent  = glm::vec4(0.f);
     };
 
     struct GPUDrawPushConstants

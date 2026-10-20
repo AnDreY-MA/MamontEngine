@@ -29,14 +29,15 @@ MamontEngine::vkinit::command_buffer_allocate_info(VkCommandPool pool, uint32_t 
 //< init_cmd
 //
 //> init_cmd_draw
-VkCommandBufferBeginInfo MamontEngine::vkinit::command_buffer_begin_info(VkCommandBufferUsageFlags flags /*= 0*/)
+VkCommandBufferBeginInfo MamontEngine::vkinit::command_buffer_begin_info(VkCommandBufferUsageFlags flags /*= 0*/, const VkCommandBufferInheritanceInfo *inheritanceInfo)
 {
-    VkCommandBufferBeginInfo info = {};
-    info.sType                    = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    info.pNext                    = nullptr;
+    const VkCommandBufferBeginInfo info = {
+        .sType                  = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .pNext                  = nullptr,
+        .flags                  = flags,
+        .pInheritanceInfo       = inheritanceInfo
+    };
 
-    info.pInheritanceInfo = nullptr;
-    info.flags            = flags;
     return info;
 }
 //< init_cmd_draw
@@ -155,7 +156,8 @@ MamontEngine::vkinit::attachment_info(VkImageView view, const VkClearValue *clea
 //> depth_info
 VkRenderingAttachmentInfo MamontEngine::vkinit::depth_attachment_info(VkImageView                     view,
                                                                       VkAttachmentLoadOp loadOp,
-                                                                      float clearDepth, VkImageLayout layout /*= VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL*/)
+                                                                      float              clearDepth /*= 1.0*/,
+                                                                      VkImageLayout      layout /*= VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL*/)
 {
     VkRenderingAttachmentInfo depthAttachment{};
     depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
