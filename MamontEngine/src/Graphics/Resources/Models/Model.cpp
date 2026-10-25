@@ -169,12 +169,20 @@ namespace
 
 namespace MamontEngine
 {
+    MeshModel::MeshModel()
+    {
+        m_Type = EAssetType::Model;
+    }
+
     MeshModel::MeshModel(UID inID) : ID(inID)
     {
+        m_Type = EAssetType::Model;
     }
 
     MeshModel::MeshModel(UID inID, std::string_view filePath) :  ID(inID)
     {
+        m_Type = EAssetType::Model;
+
         Load(filePath);
     }
 
@@ -247,7 +255,7 @@ namespace MamontEngine
                                         nodeMatrix, ID);
                 def.SphereBound = primitive->Bounds;
 
-                if (material->PassType == EMaterialPass::TRANSPARENT)
+                if (material->PassType == EMaterialPass::Transparent)
                     inContext.TransparentSurfaces.push_back(def);
                 else
                     inContext.OpaqueSurfaces.push_back(def);
@@ -411,7 +419,7 @@ namespace MamontEngine
                     .MetalicFactor = mat.pbrData.metallicFactor,
                     .RoughFactor   = mat.pbrData.roughnessFactor};
 
-            const EMaterialPass passType = mat.alphaMode == fastgltf::AlphaMode::Blend ? EMaterialPass::TRANSPARENT : EMaterialPass::MAIN_COLOR;
+            const EMaterialPass passType = mat.alphaMode == fastgltf::AlphaMode::Blend ? EMaterialPass::Transparent : EMaterialPass::MAIN_COLOR;
 
             Material::MaterialResources materialResources = getDefaultMaterialResources();
 

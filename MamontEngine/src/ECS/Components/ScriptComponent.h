@@ -1,12 +1,14 @@
 #pragma once
 
+#include "Component.h"
 #include <sol/forward.hpp>
 #include "ECS/Entity.h"
 
 namespace MamontEngine
 {
-	struct ScriptComponent
+	struct ScriptComponent : public Component
 	{
+        REFLECT()
     public:
         explicit ScriptComponent();
         explicit ScriptComponent(std::string_view inFile);

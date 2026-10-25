@@ -58,7 +58,11 @@ namespace MamontEditor
 
                     m_SeletctedEntity = {};
 
-                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::ButtonEx("Add Child"))
+                {
+                    m_Scene->CreateEntity("New Child");
                 }
 
                 ImGui::EndPopup();

@@ -65,9 +65,9 @@ namespace MamontEngine
 
         m_InputSystem = std::make_unique<InputSystem>();
 
-
         m_ScriptSystem = std::make_unique<ScriptSystem>();
 
+        m_AudioSystem = std::make_unique<AudioSystem>();
 
         m_IsInitialized = true;
 
@@ -84,23 +84,10 @@ namespace MamontEngine
         bool      isStopRendering{false};
 
         Event eventResize;
-      /*  eventResize.Add([&]() { 
-            Log::Info("Event Resize");
-            m_ContextDevice->ResizeSwapchain(m_Window->Resize());
-        });*/
 
         PROFILE_SETTHREADNAME("Main Thread");
 
         MaterialManager::Get()->SetupDefaults();
-
-         /*auto ev = [](void *v, SDL_Event *event) -> bool {
-                const auto typeEvent = event->window.type;
-                isResized = true;
-
-                return true;
-            };
-
-        SDL_AddHintCallback(ev, nullptr);*/
 
         while (!bQuit)
         {
@@ -146,6 +133,7 @@ namespace MamontEngine
                 if (!m_Scene->IsSimulated())
                 {
                     m_MainCamera->ProccessEvent(event);
+
                 }
 
                 m_InputEvent = &event;
@@ -170,7 +158,6 @@ namespace MamontEngine
                 UpdateScene(deltaTime);
 
                 m_Renderer->Render();
-
             }
         }
     }

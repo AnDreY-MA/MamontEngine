@@ -46,12 +46,6 @@ namespace MamontEngine
 {
     namespace HeroPhysics
     {
-        IMPLEMENT_REFLECT_COMPONENT(PhysicsSystem, "PhysicsSystem")
-        {
-            meta.data<&PhysicsSystem::m_Gravity, entt::as_ref_t>("Gravity"_hs);
-        }
-        FINISH_REFLECT()
-
         PhysicsSystem::PhysicsSystem(const PhysicsSettings &settings) 
             : m_Gravity(settings.Gravity), m_MaxBodiesCount(settings.MaxBodyCount)
         {

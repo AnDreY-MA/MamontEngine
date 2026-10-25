@@ -13,6 +13,7 @@
 #include "Physics/PhysicsSystem.h"
 #include "Graphics/Resources/Materials/MaterialManager.h"
 #include "InputSystem.h"
+#include "Audio/AudioSystem.h"
 
 namespace MamontEngine
 {
@@ -76,6 +77,8 @@ namespace MamontEngine
 
         inline ScriptSystem *GetScriptSystem() const { return m_ScriptSystem.get(); }
 
+        inline AudioSystem &GetAudioSystem() const { return *m_AudioSystem.get(); }
+
         void PushGuiLayer(ImGuiLayer *inLayer);
 
         const SDL_Event* GetInputEvent() const
@@ -110,6 +113,8 @@ namespace MamontEngine
         std::unique_ptr<ScriptSystem>  m_ScriptSystem;
         std::unique_ptr<MaterialManager> m_MaterialManager;
         std::unique_ptr<InputSystem>     m_InputSystem;
+
+        std::unique_ptr<AudioSystem> m_AudioSystem;
 
         std::unique_ptr<HeroPhysics::PhysicsSystem> m_PhysicsSystem;
 

@@ -3,6 +3,7 @@
 #include "Graphics/Resources/Models/Model.h"
 #include "Core/Engine.h"
 #include "EditorUtils/EditorUtils.h"
+#include "Asset/AssetManager.h"
 
 namespace MamontEditor
 {
@@ -29,69 +30,73 @@ namespace MamontEditor
         {
             if (entt::meta_any ref = *property; ref && ref.allow_cast<Asset>())
             {
-                auto asset = ref.try_cast<Asset>();
-
-                const std::string selectedString = asset != nullptr ? asset->GetPathFile() : "empty";
-                if (ImGui::BeginCombo("##File", selectedString.c_str()))
+                if (auto* asset = ref.try_cast<Asset>(); asset)
                 {
-                    constexpr auto                 extensionFile = ".glb";
-                    const std::vector<std::string> files         = MamontEditor::ScanFolder(AssetsPath, extensionFile);
-                    for (const auto &file : files)
+                    const auto       &pathFile       = asset->GetPathFile();
+                    const std::string selectedString = pathFile.empty() ? "empty" : asset->GetPathFile();
+
+                    if (ImGui::BeginCombo("##File", selectedString.c_str()))
                     {
-                        const std::string fullPath   = AssetsPath + "/" + file;
-                        const bool        isSelected = (selectedString == fullPath);
-
-                        if (ImGui::Selectable(file.c_str(), isSelected))
+                        const auto extensions = AssetMananger::GetExtensionsFromType(asset->GetType());
+                        const std::vector<std::string>       files      = MamontEditor::ScanFolder(AssetsPath, extensions);
+                        for (const auto &file : files)
                         {
-                            asset->Load(fullPath);
-                        }
+                            const std::string fullPath   = AssetsPath + "/" + file;
+                            const bool        isSelected = (selectedString == fullPath);
 
-                        if (isSelected)
-                        {
-                            ImGui::SetItemDefaultFocus();
-                        }
-                    }
-                    ImGui::EndCombo();
-                }
-
-                if (asset)
-                {
-                    if (auto model = static_cast<MeshModel *>(asset); model)
-                    {
-                        ImGui::Text("Nodes: %i", model->GetSizeNodes());
-                        ImGui::Text("Meshes: %i", model->GetSizeMeshes());
-
-                        if (ImGui::TreeNodeEx("Materials"))
-                        {
-                            for (size_t i{0}; i < model->GetSizeMaterials(); i++)
+                            if (ImGui::Selectable(file.c_str(), isSelected))
                             {
-                                auto material = model->GetMaterial(i);
-                                if (!material)
-                                    continue;
-
-                                ImGui::PushID(static_cast<int>(i));
-
-                                if (ImGui::TreeNode(material->Name.c_str()))
-                                {
-                                    if (ImGui::ColorEdit4("Base Color", &material->Constants.ColorFactors[0]))
-                                        material->IsDirty = true;
-                                    if (ImGui::DragFloat("Metallic", &material->Constants.MetalicFactor, 0.01f, 0.f, 1.f))
-                                    {
-                                        material->IsDirty = true;
-                                    }
-                                    if (ImGui::DragFloat("Roughness", &material->Constants.RoughFactor, 0.01f, 0.f, 1.f))
-                                    {
-                                        material->IsDirty = true;
-                                    }
-
-                                    ImGui::TreePop();
-                                }
-
-                                ImGui::PopID();
+                                asset->Load(fullPath);
                             }
 
-                            ImGui::TreePop();
+                            if (isSelected)
+                            {
+                                ImGui::SetItemDefaultFocus();
+                            }
                         }
+                        ImGui::EndCombo();
+                    }
+                    
+                    if (ref.allow_cast<MeshModel>())
+                    {
+                        if (auto model = static_cast<MeshModel *>(asset); model)
+                        {
+                            ImGui::Text("Nodes: %i", model->GetSizeNodes());
+                            ImGui::Text("Meshes: %i", model->GetSizeMeshes());
+
+                            if (ImGui::TreeNodeEx("Materials"))
+                            {
+                                for (size_t i{0}; i < model->GetSizeMaterials(); i++)
+                                {
+                                    auto material = model->GetMaterial(i);
+                                    if (!material)
+                                        continue;
+
+                                    ImGui::PushID(static_cast<int>(i));
+
+                                    if (ImGui::TreeNode(material->Name.c_str()))
+                                    {
+                                        if (ImGui::ColorEdit4("Base Color", &material->Constants.ColorFactors[0]))
+                                            material->IsDirty = true;
+                                        if (ImGui::DragFloat("Metallic", &material->Constants.MetalicFactor, 0.01f, 0.f, 1.f))
+                                        {
+                                            material->IsDirty = true;
+                                        }
+                                        if (ImGui::DragFloat("Roughness", &material->Constants.RoughFactor, 0.01f, 0.f, 1.f))
+                                        {
+                                            material->IsDirty = true;
+                                        }
+
+                                        ImGui::TreePop();
+                                    }
+
+                                    ImGui::PopID();
+                                }
+
+                                ImGui::TreePop();
+                            }
+                        }
+
                     }
                 }
             }

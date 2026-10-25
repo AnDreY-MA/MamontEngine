@@ -1,9 +1,16 @@
 #include "ECS/Components/ScriptComponent.h"
 #include <sol/sol.hpp>
 #include "Core/Engine.h"
+#include "Utils/Reflection.h"
 
 namespace MamontEngine
 {
+    IMPLEMENT_REFLECT_COMPONENT(ScriptComponent, "ScriptComponent")
+    {
+        meta.base<Component>();
+    }
+    FINISH_REFLECT()
+
     ScriptComponent::ScriptComponent()
     {
         Log::Info("Construct ScriptComp: {}", FileName);
@@ -28,6 +35,8 @@ namespace MamontEngine
     {
         if (!m_OnBeginFunc) return;
 
+        m_EntityOwner = inOwner;
+
         auto result = m_OnBeginFunc->call();
         if (!result.valid())
         {
@@ -35,10 +44,7 @@ namespace MamontEngine
             Log::Error("Failed call BeginPlay function in script\n Error: {}", err.what());
             return;
         }
-
-        m_EntityOwner = inOwner;
     }
-
 
     void ScriptComponent::Update(float inDeltaTime)
     {

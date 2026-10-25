@@ -23,7 +23,6 @@ namespace MamontEngine
 
 	class PhysicsSystem
 	{
-        REFLECT();
     public:
         PhysicsSystem(const PhysicsSettings &settings = {});
         ~PhysicsSystem();

@@ -6,6 +6,7 @@
 #include "Math/Color.h"
 #include "UI/UI.h"
 #include "Physics/Body/Rigidbody.h"
+#include <filesystem>
 
 using entt::literals::operator""_hs;
 
@@ -42,7 +43,6 @@ namespace MetaInspectors
         ImGui::SameLine();
         ImGui::DragFloat(("##" + name).c_str(), &value, 0.2f);
     }
-
 
     template <typename Type>
     static void InspectEnum(const char* name, entt::meta_any& value, const entt::meta_data& meta)
@@ -119,6 +119,17 @@ namespace MetaInspectors
     inline void MetaInspect<glm::vec3>(const std::string &name, glm::vec3 &value, const entt::meta_data &meta)
     {
         MUI::DrawVec3Control(name.c_str(), value);
+    }
+
+    template <>
+    inline void MetaInspect<std::filesystem::path>(const std::string &name, std::filesystem::path &value, const entt::meta_data &meta)
+    {
+        const auto path = value.string();
+        if (ImGui::BeginCombo("##File", path.c_str()))
+        {
+           
+            ImGui::EndCombo();
+        }
     }
 
 /*    template <>

@@ -39,8 +39,6 @@
 #include <SDL3/SDL_events.h>
 #include <cereal/cereal.hpp>
 
-
-
 #include <fmt/core.h>
 #include <vk_mem_alloc.h>
 

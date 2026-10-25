@@ -8,7 +8,7 @@
 namespace MamontEngine
 {
     constexpr const size_t   CASCADECOUNT = 4;
-    constexpr const uint32_t SHADOWMAP_DIMENSION{4096};
+    constexpr const uint32_t SHADOWMAP_DIMENSION{2048};
 
     constexpr size_t         FRAME_OVERLAP = 3;
     constexpr uint32_t       SHADOW_MAP_FACE_IMAGE_SIZE{1024};

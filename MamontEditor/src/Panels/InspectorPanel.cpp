@@ -210,7 +210,7 @@ namespace MamontEditor
             const std::string selectedString = scriptComponent.GetFilePath();
             if (ImGui::BeginCombo("##File", selectedString.c_str()))
             {
-                constexpr auto                 extensionFile = ".lua";
+                const std::array<std::string, 1> extensionFile = {std::string(".lua")};
                 const std::vector<std::string> files         = MamontEditor::ScanFolder(AssetsPath, extensionFile, true);
                 for (const auto &file : files)
                 {

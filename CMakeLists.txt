@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 4.2)
 
-#set(PROJECT_N Mamont)
-PROJECT(Mamont VERSION 0.0.1 LANGUAGES CXX)
+PROJECT(Mamont VERSION 0.0.1 LANGUAGES C CXX)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/")
 
-include("cmake/ProjectSettings.cmake")
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+
+include("cmake/ProjectSettings.cmake")
 
 set(CMAKE_CONFIGURATION_TYPES
     "Debug"
@@ -21,11 +22,18 @@ IF (WIN32)
   ADD_DEFINITIONS(-D_WIN32_WINNT=0x0A00)
 ENDIF (WIN32)
 
-#file(GLOB_RECURSE SRCS ${PROJECT_SOURCE_DIR}/src/*.cpp)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
+    "${CMAKE_BINARY_DIR}/bin"
+)
 
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY
+    "${CMAKE_BINARY_DIR}/lib"
+)
 
-# a macro that gets all of the header containing directories.
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY
+    "${CMAKE_BINARY_DIR}/lib"
+)
+
 MACRO(header_directories return_list includes_base_folder extention )
   FILE(GLOB_RECURSE new_list ${includes_base_folder}/*.${extention})
   SET(dir_list "")
@@ -37,17 +45,11 @@ MACRO(header_directories return_list includes_base_folder extention )
   SET(${return_list} ${dir_list})
 ENDMACRO()
 
-# using said macro.
 header_directories(INCLUDES ${PROJECT_SOURCE_DIR}/include/ hpp)
 
 message("src files:")
 foreach(file ${SRCS})
   message(STATUS ${file})
-endforeach()
-
-message("include directories:")
-foreach(dir ${INCLUDES})
-  message(STATUS ${dir})
 endforeach()
 
 add_subdirectory("MamontEngine")

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphics/Resources/Asset.h"
+#include "Asset/Asset.h"
 #include "Graphics/Resources/Materials/Material.h"
 #include "Graphics/Resources/Models/Mesh.h"
 #include <fastgltf/glm_element_traits.hpp>
@@ -13,7 +13,7 @@ namespace MamontEngine
 	class MeshModel : public Asset
 	{ 
     public:
-        MeshModel() = default;
+        explicit MeshModel();
         explicit MeshModel(UID inID);
         explicit MeshModel(UID inID, std::string_view filePath);
         
@@ -71,6 +71,5 @@ namespace MamontEngine
         MeshBuffer Buffer;
 
         AABB Bound;
-
 	};
 }

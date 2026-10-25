@@ -7,6 +7,7 @@
 #include <ECS/Components/MeshComponent.h>
 #include <ECS/Components/TransformComponent.h>
 #include <ECS/Components/CameraComponent.h>
+#include <ECS/Components/AudioComponent.h>
 #include "Core/InputSystem.h"
 
 #define REGISTER_COMPONENT_ECS(luaState, component) \
@@ -123,10 +124,15 @@ namespace
         cameraComponent_type.set_function("GetFar", &CameraComponent::GetFar);
 
         REGISTER_COMPONENT_ECS(state, CameraComponent);
-
         
         sol::usertype<Scene> scene_type = state.new_usertype<Scene>("Scene");
         //scene_type.set_function("GetRigstry", &Scene::GetRegistry);
+
+        sol::usertype<AudioComponent> audioComponent_type = state.new_usertype<AudioComponent>("AudioComponent");
+        audioComponent_type.set_function("Play", &AudioComponent::Play);
+        audioComponent_type.set_function("Pause", &AudioComponent::Pause);
+        audioComponent_type.set_function("Stop", &AudioComponent::Stop);
+        REGISTER_COMPONENT_ECS(state, AudioComponent);
 
     }
 

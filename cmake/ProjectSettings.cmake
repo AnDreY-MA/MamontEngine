@@ -13,3 +13,8 @@ foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${LIB_OUT_DIR})
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${LIB_OUT_DIR})
 endforeach (OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES)
+
+add_compile_definitions(
+    NOMINMAX           # убирает min/max из windows.h
+    WIN32_LEAN_AND_MEAN # и заодно остальную win32-помойку
+)

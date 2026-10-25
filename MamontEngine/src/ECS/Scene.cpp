@@ -7,7 +7,7 @@
 
 #include "Graphics/Resources/Models/Mesh.h"
 #include "Graphics/Resources/Models/Model.h"
-#include "Graphics/Resources/AssetManager.h"
+#include "Asset/AssetManager.h"
 
 #include <execution>
 #include <entt/core/hashed_string.hpp>
@@ -32,6 +32,10 @@
 #include "ECS/Components/CameraComponent.h"
 #include "ECS/Components/RigidbodyComponent.h"
 #include "ECS/Components/ScriptComponent.h"
+#include "ECS/Components/AudioComponent.h"
+#include "ECS/Components/AudioListenerComponent.h"
+
+#include "Audio/Sound.h"
 
 #include "Utils/Serialization.h"
 #include "Utils/Reflection.h"
@@ -42,10 +46,10 @@ IMPLEMENT_META_INIT(void)
     META_TYPE(float);
     META_TYPE(bool);
     META_TYPE(std::string);
+    META_TYPE(std::filesystem::path);
     META_TYPE(entt::entity);
     META_TYPE(MamontEngine::Transform);
     META_TYPE(MamontEngine::Color);
-    //META_TYPE(MamontEngine::HeroPhysics::Rigidbody);
 }
 FINISH_REFLECT()
 
@@ -66,10 +70,18 @@ FINISH_REFLECT()
             .get<HeroPhysics::BoxCollision>(serializer)                                                                                                        \
             .get<HeroPhysics::SphereCollision>(serializer) \
             .get<ScriptComponent>(serializer) \
-            .get<CameraComponent>(serializer)
+            .get<CameraComponent>(serializer) \
+            .get<AudioListenerComponent>(serializer)
 
 namespace MamontEngine
 {
+    IMPLEMENT_REFLECT_COMPONENT(AudioListenerComponent, "Audio Listener Component")
+    {
+        meta.base<Component>();
+        meta.data<&AudioListenerComponent::IsEnabled, entt::as_ref_t>("Enable");
+    }
+    FINISH_REFLECT()
+
     IMPLEMENT_REFLECT_COMPONENT(MeshComponent, "Mesh Component")
     {
         meta.data<&MeshComponent::Mesh, entt::as_ref_t>("Model"_hs);
@@ -88,6 +100,7 @@ namespace MamontEngine
     {
         using hs = entt::hashed_string;
         entt::meta_factory<MeshModel>{}.type(hs{"Model"}, "Model").base<Asset>();
+        entt::meta_factory<Sound>{}.type(hs{"Sound"}, "Sound").base<Asset>();
         entt::meta_factory<Transform>{}.type(hs{"Transform"}, "Transform");
     }
 
@@ -197,12 +210,18 @@ namespace MamontEngine
                 transform.SetDirty(false);
             }
         }
+
+
+        for (const auto& listenerView = m_Registry.view<AudioListenerComponent, TransformComponent>();
+            const auto& [entity, listener, transform] : listenerView.each())
+        {
+
+        }
     }
 
     void Scene::StartScene()
     {
         auto viewRigidbodies = m_Registry.view<TransformComponent, RigidbodyComponent>();
-        int  count           = 0;
         auto lightType       = entt::resolve<LightComponent>();
         
         for (auto&& [entity, transform, rigidbody] : viewRigidbodies.each())
@@ -216,7 +235,6 @@ namespace MamontEngine
             {
                 auto collisionPtr = std::make_shared<HeroPhysics::BoxCollision>(*collision);
                 rigidbody.Rigidbody->SetCollisionShape(std::move(collisionPtr));
-                count++;
             }
             if (auto collision = m_Registry.try_get<HeroPhysics::SphereCollision>(entity); collision)
             {
@@ -234,7 +252,6 @@ namespace MamontEngine
                 }
             }
         }
-        Log::Info("Box Collision count: {}", count);
 
         const auto scriptView = m_Registry.view<ScriptComponent>();
         for (auto&& [entity, scriptComponent] : scriptView.each())
@@ -244,14 +261,15 @@ namespace MamontEngine
         }
 
         m_IsPaused = false;
-        MamontEngine::MEngine::Get().GetPhysicsSytem()->SetPause(false);
+        MEngine::Get().GetPhysicsSytem()->SetPause(false);
     }
     
     void Scene::StopScene()
     {
         m_IsPaused = true;
-        MamontEngine::MEngine::Get().GetPhysicsSytem()->SetPause(true);
-        
+        MEngine::Get().GetPhysicsSytem()->SetPause(true);
+        MEngine::Get().GetAudioSystem().StopAll();
+
         const auto scriptView = m_Registry.view<ScriptComponent>();
         for (auto [entity, scriptComponent] : scriptView.each())
         {

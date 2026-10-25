@@ -50,6 +50,7 @@ namespace MamontEngine
         template <class Archive>
         void serialize(Archive &ar)
         {
+            ar(cereal::make_nvp("ViewTarget", m_IsViewTarget));
 
         }
 	};

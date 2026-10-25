@@ -8,7 +8,7 @@ namespace MamontEngine
     enum class EMaterialPass : uint8_t
     {
         MAIN_COLOR = 0,
-        TRANSPARENT,
+        Transparent,
         OTHER
     };
 

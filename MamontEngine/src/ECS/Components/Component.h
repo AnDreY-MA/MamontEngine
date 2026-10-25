@@ -7,9 +7,11 @@ namespace MamontEngine
 	struct Component
 	{
     private:
-        REFLECT()
+        REFLECT();
     public:
         Component() = default;
         virtual ~Component() = default;
+
+        
 	};
 }

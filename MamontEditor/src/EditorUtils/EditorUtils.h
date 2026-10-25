@@ -7,6 +7,6 @@
 
 namespace MamontEditor
 {
-    std::vector<std::string> ScanFolder(const std::string &folderPath, const std::string &extension = "", bool recursive = false);
+    std::vector<std::string> ScanFolder(const std::string &folderPath, std::span<const std::string> inExtensions, bool recursive = false);
 
 }

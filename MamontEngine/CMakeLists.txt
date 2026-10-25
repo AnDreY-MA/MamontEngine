@@ -7,27 +7,23 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 file(GLOB src "src/*.h" "src/*.cpp" "src/*.hpp")
 file(GLOB_RECURSE Core "src/Core/*.h" "src/Core/*.hpp" "src/Core/*.cpp")
 file(GLOB_RECURSE Renderer "src/Graphics/*.h" "src/Graphics/*.hpp" "src/Graphics/*.cpp")
-file(GLOB_RECURSE Devices "src/Graphics/Devices/*.h" "src/Graphics/Devices/*.hpp" "src/Graphics/Devices/*.cpp")
-file(GLOB_RECURSE Materials "src/Graphics/Resources/*.h" "src/Graphics/Resources/*.hpp" "src/Graphics/Resources/*.cpp")
 file(GLOB_RECURSE Utils "src/Utils/*.h" "src/Utils/*.hpp" "src/Utils/*.cpp")
 file(GLOB_RECURSE ECS "src/ECS/*.h" "src/ECS/*.hpp" "src/ECS/*.cpp")
-file(GLOB_RECURSE ECSComps "src/ECS/Components/*.h" "src/ECS/Components/*.hpp" "src/ECS/Components/*.cpp")
 file(GLOB_RECURSE UI "src/UI/*.h" "src/UI/*.hpp" "src/UI/*.cpp")
 file(GLOB_RECURSE Physics "src/Physics/*.h" "src/Physics/*.hpp" "src/Physics/*.cpp")
+file(GLOB_RECURSE Audio "src/Audio/*.h" "src/Audio/*.hpp" "src/Audio/*.cpp")
 file(GLOB_RECURSE Math "src/Math/*.h" "src/Math/*.hpp" "src/Math/*.cpp")
+file(GLOB_RECURSE Asset "src/Asset/*.h" "src/Asset/*.hpp" "src/Asset/*.cpp")
 file(GLOB_RECURSE Scripting "src/Scripting/*.h" "src/Scripting/*.hpp" "src/Scripting/*.cpp")
-set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Devices} ${Materials} ${Utils} ${ECS} ${UI} ${Math} ${ECSComps} ${Physics} ${Scripting})
+set(SOURCE_FILES ${src} ${Core} ${Renderer} ${Devices} ${Materials} ${Utils} ${ECS} ${UI} ${Math} ${Asset} ${ECSComps} ${Physics} ${Scripting} ${Audio})
 
 # Add library
-add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES} "src/Core/Event/InputEvent.h" "src/Core/TimeStep.h")
-
-#include(ImGuizmo "vendor/ImGuizmo")
+add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/src"
-    "${CMAKE_CURRENT_SOURCE_DIR}/vendor")
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor)
 
-# Compile definitions
 target_compile_definitions(${PROJECT_NAME} PUBLIC
   "$<$<CONFIG:Debug>:MM_DEBUG;_DEBUG>"
   "$<$<CONFIG:Release>:MM_RELEASE;NDEBUG>"
@@ -40,7 +36,6 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
   "$<$<CONFIG:Release>:TRACY_ENABLE>"
 )
 
-# Compiler-specific flags
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   target_compile_definitions(${PROJECT_NAME} PRIVATE "MM_COMPILER_CLANG")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -87,13 +82,44 @@ add_subdirectory("vendor/vma" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/entt" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/tracy" EXCLUDE_FROM_ALL)
 add_subdirectory("vendor/meshoptimizer" EXCLUDE_FROM_ALL)
-#add_subdirectory("vendor/rttr" EXCLUDE_FROM_ALL)
 
 include_directories(${PROJECT_NAME} meshoptimizer)
 
 include_directories(${PROJECT_NAME} tracy/public)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GPUOpen::VulkanMemoryAllocator EnTT::EnTT glm::glm Tracy::TracyClient meshoptimizer)
+target_include_directories(${PROJECT_NAME}
+    SYSTEM PRIVATE
+    "${STEAMAUDIO_INCLUDE_DIR}"
+)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC vk-bootstrap SDL3::SDL3 fmt::fmt GPUOpen::VulkanMemoryAllocator EnTT::EnTT glm::glm Tracy::TracyClient meshoptimizer soloud)
+
+
+#SoLud
+set(SOLOUD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/vendor/soloud")
+
+file(GLOB_RECURSE SOLOUD_SOURCES CONFIGURE_DEPENDS
+    "${SOLOUD_ROOT}/src/core/*.cpp"
+    "${SOLOUD_ROOT}/src/filter/*.cpp"
+    "${SOLOUD_ROOT}/src/audiosource/wav/*.cpp"
+    "${SOLOUD_ROOT}/src/audiosource/wav/*.c"
+    "${SOLOUD_ROOT}/src/audiosource/monotone/*.cpp"
+    "${SOLOUD_ROOT}/src/audiosource/speech/*.cpp"
+    "${SOLOUD_ROOT}/src/audiosource/sfxr/*.cpp"
+    "${SOLOUD_ROOT}/src/audiosource/vic/*.cpp"
+    "${SOLOUD_ROOT}/src/backend/miniaudio/*.cpp"
+)
+
+add_library(soloud STATIC ${SOLOUD_SOURCES})
+
+target_include_directories(soloud
+    PUBLIC  "${SOLOUD_ROOT}/include"
+    PRIVATE "${SOLOUD_ROOT}/src"
+)
+
+target_compile_definitions(soloud PUBLIC
+    WITH_MINIAUDIO=1
+)
 
 # imgui
 add_library(imgui STATIC
@@ -104,7 +130,7 @@ add_library(imgui STATIC
     vendor/imgui/imgui_widgets.cpp
     vendor/imgui/imgui_tables.cpp
     vendor/imgui/backends/imgui_impl_vulkan.cpp
-    vendor/imgui/backends/imgui_impl_sdl3.cpp "src/Graphics/Frustum.h" "src/Physics/Collision/Hull.h" "src/Core/Event/InputEvent.h" "src/Core/TimeStep.h")
+    vendor/imgui/backends/imgui_impl_sdl3.cpp)
 target_include_directories(imgui PUBLIC vendor/imgui)
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
 target_link_libraries(${PROJECT_NAME} PUBLIC imgui)
@@ -140,10 +166,8 @@ add_library(ImGuizmo STATIC
     vendor/ImGuizmo/ImSequencer.cpp
     vendor/ImGuizmo/GraphEditor.cpp
     vendor/ImGuizmo/ImCurveEdit.cpp
-    vendor/ImGuizmo/ImGradient.cpp "src/Graphics/Frustum.h" "src/Physics/Collision/Hull.h" "src/Core/Event/InputEvent.h" "src/Core/TimeStep.h")
+    vendor/ImGuizmo/ImGradient.cpp)
 
-#target_include_directories(ImGuizmo PUBLIC vendor/ImGuizmo)
-#target_link_libraries(${PROJECT_NAME} PUBLIC ImGuizmo)
 target_include_directories(ImGuizmo PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
