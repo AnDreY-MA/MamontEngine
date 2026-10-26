@@ -134,7 +134,7 @@ namespace MamontEngine
     Scene::Scene()
     {
         using hs = entt::hashed_string;
-        entt::meta_factory<MeshModel>{}.type(hs{"Model"}, "Model").base<Asset>();
+        entt::meta_factory<Model>{}.type(hs{"Model"}, "Model").base<Asset>();
         entt::meta_factory<Sound>{}.type(hs{"Sound"}, "Sound").base<Asset>();
         entt::meta_factory<Transform>{}.type(hs{"Transform"}, "Transform");
 

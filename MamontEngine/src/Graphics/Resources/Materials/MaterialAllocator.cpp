@@ -93,12 +93,12 @@ namespace MamontEngine
             const std::vector<std::shared_ptr<Texture>> textures{
                     resources.ColorTexture, resources.MetalRoughTexture, resources.NormalTexture, resources.EmissiveTexture, resources.OcclusionTexture};
 
-            std::vector<VkDescriptorImageInfo> textureDescriptors(textures.size());
-            for (size_t i = 0; i < textureDescriptors.size(); ++i)
+            std::vector<VkDescriptorImageInfo> textureDescriptors;
+            for (auto &texture : textures)
             {
-                if (const auto& texture = textures[i]; texture)
+                if (texture)
                 {
-                    textureDescriptors[i] = textures[i]->GetDescriptorInfo();
+                    textureDescriptors.push_back(texture->GetDescriptorInfo());
                 }
             }
 
@@ -121,6 +121,9 @@ namespace MamontEngine
 
         void Update(const Material *inMaterial)
         {
+            if (!inMaterial)
+                return;
+
             const auto       currentFrame = MEngine::Get().GetContextDevice().GetFrame();
             AllocatedBuffer &staging      = stagingBuffers[currentFrame];
 

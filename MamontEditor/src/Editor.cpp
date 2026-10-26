@@ -127,8 +127,6 @@ namespace MamontEditor
         REGISTERPANEL(FileBrowserPanel);
         REGISTERPANEL(SceneSettingsPanel);
 
-        MamontEngine::Log::Info("SceneHPanel: {}", typeid("MamontEditor::SceneHierarchyPanel").name());
-
         AddIconFont();
 
         GetPanel<FileBrowserPanel>()->SetCurrentPath(DEFAULT_ASSETS_DIRECTORY);

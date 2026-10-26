@@ -159,6 +159,7 @@ namespace MamontEditor
             DrawItemAddPrimitives("Cylinder", "D:/Repos/MamontEngine/MamontEngine/assets/cylinder.glb", contextDevice);
             DrawItemAddPrimitives("Plane", "D:/Repos/MamontEngine/MamontEngine/assets/plane.glb", contextDevice);
             DrawItemAddPrimitives("Monkies", "D:/Repos/MamontEngine/MamontEngine/assets/monkeyHD.glb", contextDevice);
+            DrawItemAddPrimitives("Helmet", "D:/Repos/MamontEngine/MamontEngine/assets/Helmet.glb", contextDevice);
 
             ImGui::EndMenu();
         }
@@ -171,7 +172,7 @@ namespace MamontEditor
         if (ImGui::MenuItem(inNameItem.data()))
         {
             auto              newEntity          = m_Scene->CreateEntity(inNameItem);
-            auto              newModel     = std::make_shared<MamontEngine::MeshModel>(newEntity.GetID(), inPath);
+            auto              newModel     = std::make_shared<MamontEngine::Model>(newEntity.GetID(), inPath);
             newEntity.AddComponent<MamontEngine::MeshComponent>(std::move(newModel));
             m_SelectedEntity = newEntity;
         }

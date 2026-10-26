@@ -162,6 +162,7 @@ namespace MamontEngine
         constexpr VkPhysicalDeviceVulkan14Features features14 = {.maintenance5 = VK_TRUE, .maintenance6 = VK_TRUE, .pushDescriptor = VK_TRUE};
 
         constexpr VkPhysicalDeviceVulkan13Features features = {
+                .robustImageAccess = VK_TRUE,
                 .synchronization2 = VK_TRUE,
                 .dynamicRendering = VK_TRUE,
         };
@@ -187,10 +188,16 @@ namespace MamontEngine
                 
         };
 
+        VkPhysicalDeviceRobustness2FeaturesKHR robustness2Features{};
+        robustness2Features.sType               = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_KHR;
+        robustness2Features.robustBufferAccess2 = VK_TRUE; // Включаем нужные фичи
+        robustness2Features.robustImageAccess2  = VK_TRUE;
+        robustness2Features.nullDescriptor      = VK_TRUE;
+
 
         vkb::PhysicalDeviceSelector selector{vkbInstance};
 
-        std::vector<const char *> extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME};
+        std::vector<const char *> extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, VK_KHR_ROBUSTNESS_2_EXTENSION_NAME};
 
 #ifdef PROFILING
         extensions.push_back("VK_EXT_calibrated_timestamps");
@@ -203,13 +210,14 @@ namespace MamontEngine
                                                            .set_required_features_12(features12)
                                                            .set_surface(Surface)
                                                            .add_required_extensions(extensions)
+                                                           //.add_required_extension_features(robustness2Features)
                                                            .select()
                                                            .value();
         fmt::print("Name {}", physicalDevice.name);
 
-        const vkb::DeviceBuilder deviceBuilder{physicalDevice};
+        vkb::DeviceBuilder deviceBuilder{physicalDevice};
 
-        const vkb::Device vkbDevice = deviceBuilder.build().value();
+        const vkb::Device vkbDevice = deviceBuilder.add_pNext(&robustness2Features).build().value();
 
         LogicalDevice::InitDevice(vkbDevice.device);
         PhysicalDevice::Init(physicalDevice.physical_device);

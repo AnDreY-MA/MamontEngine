@@ -57,23 +57,25 @@ namespace MamontEngine
         AABB LocalBounds;
     };
 
-    struct NewMesh
+    struct Mesh
     {
         std::vector<std::unique_ptr<Primitive>> Primitives;
 
         std::string Name;
     };
 
+    static constexpr uint32_t INVALID_NODE_INDEX = 0xFFFFFFFF;
+
     struct Node
     {
         Node()  = default;
         ~Node() = default;
 
-        Node*                       Parent{nullptr};
-        std::vector<Node*>          Children;
-        std::shared_ptr<NewMesh>    Mesh;
+        uint32_t                    ParentIndex{INVALID_NODE_INDEX};
+        std::vector<uint32_t>       Children;
+        uint32_t                    MeshIndex{0};
 
-        glm::mat4                   Matrix;
+        glm::mat4                   Matrix{glm::mat4(1.f)};
         glm::mat4                   CurrentMatrix{glm::mat4(1.f)};
         Transform                   Transform;
 

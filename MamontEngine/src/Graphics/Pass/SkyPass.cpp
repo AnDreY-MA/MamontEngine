@@ -13,7 +13,7 @@ namespace MamontEngine
     {
         const std::string cubePath = DEFAULT_ASSETS_DIRECTORY + "cube.glb";
 
-        m_Skybox = std::make_unique<MeshModel>(0, cubePath);
+        m_Skybox = std::make_unique<Model>(0, cubePath);
         m_Skybox->Draw(m_SkyboxContext);
 
         const RenderObject &object = m_SkyboxContext.OpaqueSurfaces[0];

@@ -9,7 +9,11 @@ struct MaterialData
 	float pad0;
 	float pad1;
 
+	uint HasBaseTexture;
+	uint HasMetalRough;
 	uint HasNormalMap;
+	uint HasEmmisive;
+	uint HasOcclusion;
 };
 
 layout(buffer_reference, std430) readonly buffer MaterialBuffer{ 
@@ -22,3 +26,4 @@ layout(set = 1, binding = 0) uniform sampler2D textureSamplers[];
 //2 - normal
 //3 - emmisive
 //4 - occlusion
+

@@ -57,12 +57,13 @@ namespace MamontEditor
                         ImGui::EndCombo();
                     }
                     
-                    if (ref.allow_cast<MeshModel>())
+                    if (ref.allow_cast<Model>())
                     {
-                        if (auto model = static_cast<MeshModel *>(asset); model)
+                        if (auto model = static_cast<Model *>(asset); model)
                         {
                             ImGui::Text("Nodes: %i", model->GetSizeNodes());
                             ImGui::Text("Meshes: %i", model->GetSizeMeshes());
+                            ImGui::Text("Textures size: %i", model->GetTextures().size());
 
                             if (ImGui::TreeNodeEx("Materials"))
                             {

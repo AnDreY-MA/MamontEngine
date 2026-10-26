@@ -13,7 +13,7 @@ namespace MamontEngine
     struct DrawContext;
     class Camera;
     class Scene;
-    class MeshModel;
+    class Model;
     class DirectLightPass;
     class PointLightPass;
     class PickPass;

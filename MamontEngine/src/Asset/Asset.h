@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <cereal/cereal.hpp>
 #include <cereal/archives/portable_binary.hpp>
+#include "Core/UID.h"
+
 namespace MamontEngine
 {
     enum class EAssetType : uint8_t
@@ -33,8 +35,16 @@ namespace MamontEngine
 
         EAssetType GetType() const { return m_Type; }
 
+        UID GetID() const { return ID; }
+        
     protected:
         Asset(std::string_view inPath) : m_FilePath(inPath.data())
+        {
+
+        }
+
+        Asset(UID id)
+            : ID(id)
         {
 
         }
@@ -42,6 +52,8 @@ namespace MamontEngine
 	protected:
         std::filesystem::path m_FilePath;
         std::string           m_Name{std::string("")};
+
+        UID ID;
 
         EAssetType m_Type;
 

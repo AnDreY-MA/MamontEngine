@@ -18,7 +18,7 @@ namespace MamontEngine
 	private:
         std::unique_ptr<PipelineData> m_Pipeline;
         DrawContext                   m_SkyboxContext;
-        std::unique_ptr<MeshModel>    m_Skybox;
+        std::unique_ptr<Model>    m_Skybox;
         std::pair<VkFormat, VkFormat> m_ImageFormats;
 
 	};

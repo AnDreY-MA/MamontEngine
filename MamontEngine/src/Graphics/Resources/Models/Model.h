@@ -3,21 +3,25 @@
 #include "Asset/Asset.h"
 #include "Graphics/Resources/Materials/Material.h"
 #include "Graphics/Resources/Models/Mesh.h"
-#include <fastgltf/glm_element_traits.hpp>
-#include <fastgltf/parser.hpp>
 #include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/Buffers/MeshBuffer.h"
 
+namespace fastgltf
+{
+    class Asset;
+    class Sampler;
+}
+
 namespace MamontEngine
 {
-	class MeshModel : public Asset
+    class Model : public Asset, public NonCopyable
 	{ 
     public:
-        explicit MeshModel();
-        explicit MeshModel(UID inID);
-        explicit MeshModel(UID inID, std::string_view filePath);
+        explicit Model();
+        explicit Model(UID inID);
+        explicit Model(UID inID, std::string_view filePath);
         
-        ~MeshModel();
+        ~Model();
 
         virtual void Load(std::string_view filePath) override;
         
@@ -48,7 +52,11 @@ namespace MamontEngine
             return Bound;
         }
 
-        UID ID;
+        std::span<const std::shared_ptr<Texture>> GetTextures()
+        {
+            return m_Textures;
+        }
+
 
         bool IsDirty{false};
 
@@ -63,10 +71,10 @@ namespace MamontEngine
         void Clear();
 
     private:
-        std::vector<Node*>                          m_Nodes;
+        std::vector<Node>                          m_Nodes;
         std::vector<std::shared_ptr<Texture>>       m_Textures;
         std::vector<std::shared_ptr<Material>>      m_Materials;
-        std::vector<std::shared_ptr<NewMesh>>       m_Meshes;
+        std::vector<std::unique_ptr<Mesh>>       m_Meshes;
 
         MeshBuffer Buffer;
 

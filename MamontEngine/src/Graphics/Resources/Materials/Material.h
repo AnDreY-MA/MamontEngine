@@ -26,6 +26,15 @@ namespace MamontEngine
 
         std::string Name{std::string("Empty Material")};
 
+        enum MaterialFlags : uint32_t
+        {
+            MaterialFlags_HasBaseColorTexture = 0,
+            MaterialFlags_HasRoughMetalTexture = 1 << 0,
+            MaterialFlags_HasNormalTexture = 1 << 1,
+            MaterialFlags_HasEmissiveTexture = 1 << 2,
+            MaterialFlags_HasOcclusionTexture = 1 << 4
+        };
+
         struct MaterialResources
         {
             std::shared_ptr<Texture> ColorTexture;
@@ -44,8 +53,12 @@ namespace MamontEngine
             float _pad0{0.f};
             float _pad1{0.f};
 
+            int HasBaseTexture{1};
+            int HasMetalRough{0};
             int HasNormaMap{0};
-            
+            int HasEmmisive{0};
+            int HasOcclusion{0};
+
             float _pad2[3];
         } Constants;
 

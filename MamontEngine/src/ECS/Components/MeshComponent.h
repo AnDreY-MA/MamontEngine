@@ -11,16 +11,16 @@ namespace MamontEngine
 	{
         explicit MeshComponent()
         {
-            Mesh = std::make_shared<MeshModel>();
+            Mesh = std::make_shared<Model>();
         }
         MeshComponent(const MeshComponent &) = default;
 
-        explicit MeshComponent(const std::shared_ptr<MeshModel> &inMesh) : Mesh(inMesh)
+        explicit MeshComponent(const std::shared_ptr<Model> &inMesh) : Mesh(inMesh)
         {
             Dirty = true;
         }
 
-        std::shared_ptr<MeshModel> Mesh;
+        std::shared_ptr<Model> Mesh;
 
         bool Dirty{false};
 
@@ -38,7 +38,7 @@ namespace MamontEngine
             std::string path;
             archive(cereal::make_nvp("FilePath", path));
 
-            component.Mesh = std::make_shared<MeshModel>(1, path);
+            component.Mesh = std::make_shared<Model>(1, path);
         }
 
         REFLECT();

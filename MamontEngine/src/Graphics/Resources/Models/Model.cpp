@@ -4,17 +4,27 @@
 #include <stb/include/stb_image.h>
 #include "Core/Engine.h"
 #include "Core/Log.h"
-#include "Graphics/Devices/LogicalDevice.h"
-#include "Graphics/Resources/Texture.h"
-#include "Graphics/Vulkan/Allocator.h"
+
 #include "Utils/Utilities.h"
 #include "ktx.h"
 #include "ktxvulkan.h"
 #include "Core/ContextDevice.h"
-#include "Graphics/Resources/Materials/MaterialAllocator.h"
-#include "Graphics/Resources/Materials/MaterialManager.h"
+
 #include <meshoptimizer.h>
 
+#include "Graphics/Resources/Materials/MaterialAllocator.h"
+#include "Graphics/Resources/Materials/MaterialManager.h"
+#include "Graphics/Devices/LogicalDevice.h"
+#include "Graphics/Resources/Texture.h"
+#include "Graphics/Vulkan/Allocator.h"
+
+#include <fastgltf/core.hpp>
+#include <fastgltf/types.hpp>
+#include <fastgltf/tools.hpp>
+#include <fastgltf/parser.hpp>
+#include <fastgltf/glm_element_traits.hpp>
+
+#include <ranges>
 
 namespace
 {
@@ -58,8 +68,6 @@ namespace
     {
         auto newTexture = std::make_shared<Texture>();
 
-        int width, height, nrChannels;
-
         std::visit(
                 fastgltf::visitor{
                         [](auto &arg) {},
@@ -68,7 +76,10 @@ namespace
                             assert(filePath.fileByteOffset == 0);
                             assert(filePath.uri.isLocalPath());
 
-                            const std::string path(filePath.uri.path().begin(), filePath.uri.path().end());
+                            const auto &uri = *filePath.uri;
+                            const std::string path(uri.path().begin(), uri.path().end());
+                            int               width, height, nrChannels;
+
                             unsigned char    *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
                             if (data)
                             {
@@ -85,8 +96,10 @@ namespace
                         },
                         [&](const fastgltf::sources::Vector &vector)
                         {
-                            unsigned char *data =
-                                    stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
+                            int width, height, nrChannels;
+
+                            const auto    *bytes = reinterpret_cast<const stbi_uc *>(vector.bytes.data());
+                            unsigned char *data = stbi_load_from_memory(bytes, static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
                             if (data)
                             {
                                 const VkExtent3D imagesize{.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height), .depth = 1};
@@ -99,16 +112,21 @@ namespace
                                                 inSampler);
                                 stbi_image_free(data);
                             }
+
                         },
                         [&](const fastgltf::sources::BufferView &view)
                         {
                             const auto &bufferView = asset.bufferViews[view.bufferViewIndex];
                             const auto &buffer     = asset.buffers[bufferView.bufferIndex];
+                            int         width, height, nrChannels;
+
 
                             std::visit(fastgltf::visitor{[](auto &arg) {},
-                                                         [&](const fastgltf::sources::Vector &vector)
+                                                         [&](const fastgltf::sources::Array &array)
                                                          {
-                                                             unsigned char *data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
+                                                             const auto *bytes = reinterpret_cast<const stbi_uc *>(array.bytes.data());
+
+                                                             unsigned char *data = stbi_load_from_memory(bytes + bufferView.byteOffset,
                                                                                                          static_cast<int>(bufferView.byteLength),
                                                                                                          &width,
                                                                                                          &height,
@@ -127,6 +145,7 @@ namespace
                                                                                  false,
                                                                                  inSampler);
                                                                  stbi_image_free(data);
+
                                                              }
                                                          }},
                                        buffer.data);
@@ -169,38 +188,35 @@ namespace
 
 namespace MamontEngine
 {
-    MeshModel::MeshModel()
+    Model::Model()
     {
         m_Type = EAssetType::Model;
     }
 
-    MeshModel::MeshModel(UID inID) : ID(inID)
+    Model::Model(UID inID) 
+        : Asset(inID)
     {
         m_Type = EAssetType::Model;
     }
 
-    MeshModel::MeshModel(UID inID, std::string_view filePath) :  ID(inID)
+    Model::Model(UID inID, std::string_view filePath) 
+        : Asset(inID)
     {
         m_Type = EAssetType::Model;
 
         Load(filePath);
     }
 
-    MeshModel::~MeshModel()
+    Model::~Model()
     {
         Clear();
     }
 
-    void MeshModel::Clear()
+    void Model::Clear()
     {
         const auto &device = LogicalDevice::GetDevice();
         vkDeviceWaitIdle(device);
 
-        for (auto &node : m_Nodes)
-        {
-            node->Mesh.reset();
-            delete node;
-        }
         m_Nodes.clear();
 
         for (auto &texture : m_Textures)
@@ -214,15 +230,15 @@ namespace MamontEngine
             material->MaterialSet = VK_NULL_HANDLE;
             MaterialAllocator::Free(material.get());
         }
-        
         m_Materials.clear();
+
         m_Meshes.clear();
 
         Buffer.IndexBuffer.Destroy();
         Buffer.VertexBuffer.Destroy();
     }
 
-    void MeshModel::Draw(DrawContext &inContext)
+    void Model::Draw(DrawContext &inContext)
     {
         for (const auto &material : m_Materials)
         {
@@ -234,15 +250,16 @@ namespace MamontEngine
             material->IsDirty = false;
         }
 
-        std::function<void(Node*, DrawContext&)> collect = 
-            ([&collect, this](Node* node, DrawContext &inContext)
+        std::function<void(const Node&, DrawContext&)> collect = 
+            ([&collect, this](const Node& node, DrawContext &inContext)
         {
-            if (!node || !node->Mesh)
+             const auto& currentMesh = m_Meshes[node.MeshIndex];
+            if (!currentMesh)
                     return;
 
-            const glm::mat4 nodeMatrix = node->CurrentMatrix;
+            const glm::mat4 nodeMatrix = node.CurrentMatrix;
 
-            for (const auto &primitive : node->Mesh->Primitives)
+            for (const auto &primitive : currentMesh->Primitives)
             {
                 if (!primitive || !m_Materials[primitive->MaterialIndex])
                     continue;
@@ -261,12 +278,9 @@ namespace MamontEngine
                     inContext.OpaqueSurfaces.push_back(def);
             }
 
-            for (const auto& childNode : node->Children)
+            for (const auto& childNode : node.Children)
             {
-                if (childNode)
-                {
-                    collect(childNode, inContext);
-                }
+                collect(m_Nodes[childNode], inContext);
             }
         });
 
@@ -276,43 +290,65 @@ namespace MamontEngine
         }
     }
 
-    void MeshModel::UpdateTransform(const glm::mat4 &inTransform)
+    void Model::UpdateTransform(const glm::mat4 &inTransform)
     {
-        std::function<void(Node *, const glm::mat4 &)> updateNode = [&](Node *node, const glm::mat4 &parentMatrix)
+        for (auto &node : m_Nodes)
         {
-            if (!node)
-                return;
+            if (node.ParentIndex != INVALID_NODE_INDEX)
+                continue;
 
-            node->CurrentMatrix = parentMatrix * node->Matrix;
+            node.CurrentMatrix = inTransform * node.Matrix;
+            node.Status |= TransformStatus::WorldDirty;
+        }
 
-            for (auto &child : node->Children)
-                updateNode(child, node->CurrentMatrix);
-        };
+        for (auto &node : m_Nodes)
+        {
+            if (!(node.Status & TransformStatus::WorldDirty))
+                continue;
 
-        for (auto &root : m_Nodes)
-            updateNode(root, inTransform);
+            if (node.ParentIndex != INVALID_NODE_INDEX)
+            {
+                node.CurrentMatrix = m_Nodes[node.ParentIndex].CurrentMatrix * node.Matrix;
+            }
+            
+            for (uint32_t child : node.Children)
+            {
+                m_Nodes[child].Status |= TransformStatus::WorldDirty;
+            }
+
+            node.Status = TransformStatus::Clean;
+        }
     }
 
-    void MeshModel::Load(std::string_view filePath)
+    void Model::Load(std::string_view filePath)
     {
         Clear();
 
         Log::Info("Model, Loading file: {}", filePath);
 
-        fastgltf::Parser parser{};
+        constexpr auto supportedExtensions =
+                fastgltf::Extensions::KHR_mesh_quantization | fastgltf::Extensions::KHR_texture_transform | fastgltf::Extensions::KHR_materials_variants;
 
-        constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble | fastgltf::Options::LoadGLBBuffers |
-                                     fastgltf::Options::LoadExternalBuffers;
 
-        fastgltf::GltfDataBuffer data;
-        data.loadFromFile(filePath);
+        fastgltf::Parser parser(supportedExtensions);
 
-        const std::filesystem::path path = filePath;
+        constexpr auto gltfOptions = fastgltf::Options::AllowDouble | fastgltf::Options::LoadExternalBuffers | fastgltf::Options::LoadExternalImages |
+                                     fastgltf::Options::GenerateMeshIndices;
 
-        const auto type = fastgltf::determineGltfFileType(&data);
+        
 
-        auto loadResult = (type == fastgltf::GltfType::glTF) ? parser.loadGLTF(&data, path.parent_path(), gltfOptions)
-                                                             : parser.loadBinaryGLTF(&data, path.parent_path(), gltfOptions);
+        const std::filesystem::path path = std::string{filePath};
+
+        auto gltfFile = fastgltf::MappedGltfFile::FromPath(path);
+        if (!bool(gltfFile))
+        {
+            fmt::println("Gltf File is false");
+            return;
+        }
+        const auto type = fastgltf::determineGltfFileType(gltfFile.get());
+
+        auto loadResult = (type == fastgltf::GltfType::glTF) ? parser.loadGltf(gltfFile.get(), path.parent_path(), gltfOptions)
+                                                             : parser.loadGltfBinary(gltfFile.get(), path.parent_path(), gltfOptions);
 
         if (!loadResult)
         {
@@ -321,7 +357,6 @@ namespace MamontEngine
         }
 
         const fastgltf::Asset gltf = std::move(loadResult.get());
-
 
         LoadImages(gltf);
         LoadMaterials(gltf);
@@ -334,7 +369,7 @@ namespace MamontEngine
         IsDirty = true;
     }
 
-    std::vector<VkSampler> MeshModel::LoadSamplers(const std::vector<fastgltf::Sampler> &samplers)
+    std::vector<VkSampler> Model::LoadSamplers(const std::vector<fastgltf::Sampler> &samplers)
     {
         const VkDevice device = LogicalDevice::GetDevice();
 
@@ -365,49 +400,80 @@ namespace MamontEngine
         return modelSamplers;
     }
 
-    void MeshModel::LoadImages(const fastgltf::Asset &inFileAsset)
+    void Model::LoadImages(const fastgltf::Asset &asset)
     {
-        const auto size = inFileAsset.images.size();
-        m_Textures.reserve(size != 0 ? size : 1);
+        m_Textures.clear();
+        m_Textures.reserve(asset.textures.size());
 
-        const std::vector<VkSampler> samplers = LoadSamplers(inFileAsset.samplers);
+        const auto &samples = LoadSamplers(asset.samplers);
 
-        for (const auto &textureGltf : inFileAsset.textures)
+        for (const auto &textureGltf : asset.textures)
         {
-            const auto &image   = inFileAsset.images[textureGltf.imageIndex.value()];
-            const auto &sampler   = inFileAsset.samplers[textureGltf.samplerIndex.value()];
-            const auto  texture = load_image(inFileAsset, image, samplers[textureGltf.samplerIndex.value()]);
+            const auto &image   = asset.images[textureGltf.imageIndex.value()];
+            const auto  samplerIndex = textureGltf.samplerIndex.value();
+            const auto        texture      = load_image(asset, image, samples[samplerIndex]);
 
             if (texture)
             {
-                Log::Info("Loaded texture: {}", image.name.c_str());
-                m_Textures.push_back(texture);
+                m_Textures.push_back(std::move(texture));
+
+                Log::Info("Loaded image: {}", image.name);
             }
             else
             {
-                Log::Warn("gltf failed to load texture: {}", image.name);
+                Log::Error("Failed to load image : {}", image.name);
             }
         }
-
-        if (size == 0)
-        {
-            m_Textures.push_back(CreateWhiteTexture());
         }
 
-    }
-
-    void MeshModel::LoadMaterials(const fastgltf::Asset &inFileAsset)
+    void Model::LoadMaterials(const fastgltf::Asset &inFileAsset)
     {
         m_Materials.reserve(inFileAsset.materials.size());
+        auto defaultTexture = CreateWhiteTexture();
+
+        auto getTexture = [&](const auto &textureInfo) -> std::shared_ptr<Texture>
+        {
+            if (!textureInfo.has_value())
+            {
+                fmt::println("!textureInfo.has_value()");
+                return {};
+            }
+
+            const std::size_t textureIndex = textureInfo->textureIndex;
+
+            if (textureIndex >= inFileAsset.textures.size())
+            {
+                fmt::println("glTF texture index is out of range: {}", textureIndex);
+                return {};
+            }
+
+            const auto &texture = inFileAsset.textures[textureIndex];
+
+            if (!texture.imageIndex.has_value())
+            {
+                fmt::println("glTF texture has no image index: {}", textureIndex);
+                return {};
+            }
+
+            const std::size_t imageIndex = *texture.imageIndex;
+
+            if (imageIndex >= m_Textures.size())
+            {
+                fmt::println("Loaded image index is out of range: {}", imageIndex);
+                return {};
+            }
+
+            return m_Textures[imageIndex];
+        };
 
         const auto getDefaultMaterialResources = [&]()
         {
             Material::MaterialResources materialResources{};
-            materialResources.ColorTexture      = m_Textures[0];
-            materialResources.MetalRoughTexture = m_Textures[0];
-            materialResources.NormalTexture     = m_Textures[0];
-            materialResources.EmissiveTexture   = m_Textures[0];
-            materialResources.OcclusionTexture  = m_Textures[0];
+            materialResources.ColorTexture      = defaultTexture;
+            materialResources.MetalRoughTexture = defaultTexture;
+            materialResources.NormalTexture     = defaultTexture;
+            materialResources.EmissiveTexture   = defaultTexture;
+            materialResources.OcclusionTexture  = defaultTexture;
             return materialResources;
         };
 
@@ -428,7 +494,11 @@ namespace MamontEngine
                 const size_t img     = inFileAsset.textures[mat.pbrData.baseColorTexture.value().textureIndex].imageIndex.value();
                 const size_t sampler = inFileAsset.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
 
-                materialResources.ColorTexture         = m_Textures[img];
+                if (auto texture = getTexture(mat.pbrData.baseColorTexture); texture)
+                {
+                    materialResources.ColorTexture = std::move(texture);
+                    constants.HasBaseTexture        = 1;
+                }
             }
 
             if (mat.pbrData.metallicRoughnessTexture.has_value())
@@ -437,25 +507,35 @@ namespace MamontEngine
                 const size_t sampler = inFileAsset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].samplerIndex.value();
 
                 materialResources.MetalRoughTexture         = m_Textures[img];
+                if (auto texture = getTexture(mat.pbrData.metallicRoughnessTexture); texture)
+                {
+                    materialResources.MetalRoughTexture = std::move(texture);
+                    constants.HasMetalRough               = 1;
+                }
             }
 
             if (mat.normalTexture.has_value())
             {
                 const auto textureIndex                  = inFileAsset.textures[mat.normalTexture.value().textureIndex].imageIndex.value();
                 const auto samplerIndex                  = inFileAsset.textures[mat.normalTexture.value().textureIndex].samplerIndex.value();
-                materialResources.NormalTexture          = m_Textures[textureIndex];
-                constants.HasNormaMap                    = 1;
-            }
-            else
-            {
-                constants.HasNormaMap = 0;
-            }
 
+                if (auto texture = getTexture(mat.normalTexture); texture)
+                {
+                        materialResources.NormalTexture = std::move(texture);
+                        constants.HasNormaMap           = 1;
+                }
+            }
+            
             if (mat.emissiveTexture.has_value())
             {
                 const auto textureIndex                    = inFileAsset.textures[mat.emissiveTexture.value().textureIndex].imageIndex.value();
                 const auto samplerIndex                    = inFileAsset.textures[mat.emissiveTexture.value().textureIndex].samplerIndex.value();
-                materialResources.EmissiveTexture          = m_Textures[textureIndex];
+                if (auto texture = getTexture(mat.emissiveTexture); texture)
+                {
+                    materialResources.EmissiveTexture = std::move(texture);
+                    constants.HasEmmisive             = 1;
+
+                }
             }
 
             if (mat.occlusionTexture.has_value())
@@ -463,6 +543,11 @@ namespace MamontEngine
                 const auto textureIndex                     = inFileAsset.textures[mat.occlusionTexture.value().textureIndex].imageIndex.value();
                 const auto samplerIndex                     = inFileAsset.textures[mat.occlusionTexture.value().textureIndex].samplerIndex.value();
                 materialResources.OcclusionTexture          = m_Textures[textureIndex];
+                if (auto texture = getTexture(mat.occlusionTexture); texture)
+                {
+                    materialResources.OcclusionTexture = std::move(texture);
+                    constants.HasOcclusion              = 1;
+                }
             }
 
             auto newMat  = std::shared_ptr<Material>(MaterialManager::Get()->CreateMaterial(passType, materialResources, constants));
@@ -471,61 +556,118 @@ namespace MamontEngine
         }
     }
 
-    void MeshModel::LoadNodes(const fastgltf::Asset &inFileAsset)
+    void Model::LoadNodes(const fastgltf::Asset &inFileAsset)
     {
         const size_t sizeNodes{inFileAsset.nodes.size()};
         m_Nodes.reserve(sizeNodes);
 
-        for (const fastgltf::Node &node : inFileAsset.nodes)
+        for (uint32_t i = 0; i < sizeNodes; ++i)
         {
-            auto newNode  = new Node();
-            newNode->Name = node.name;
+            const fastgltf::Node &node    = inFileAsset.nodes[i];
+
+            Node newNode{};
+            newNode.Name = node.name;
 
             if (node.meshIndex.has_value())
             {
-                newNode->Mesh = m_Meshes[node.meshIndex.value()];
+                newNode.MeshIndex = node.meshIndex.value();
             }
 
-            std::visit(
-                    fastgltf::visitor{[&](const fastgltf::Node::TransformMatrix &matrix) { memcpy(&newNode->Matrix, matrix.data(), sizeof(matrix)); },
-                                      [&](const fastgltf::Node::TRS &transform)
-                                      {
-                                          newNode->Transform.Position = glm::vec3(transform.translation[0], transform.translation[1], transform.translation[2]);
-                                          newNode->Transform.Rotation = glm::quat
-                                                  (transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]);
-                                          newNode->Transform.Scale    = glm::vec3(transform.scale[0], transform.scale[1], transform.scale[2]);
+            std::visit(fastgltf::visitor{
+                [&](const fastgltf::TRS &transform)
+                                         {
+                                             newNode.Transform.Position =
+                                                     glm::vec3(transform.translation[0], transform.translation[1], transform.translation[2]);
+                                             newNode.Transform.Rotation =
+                                                     glm::quat(transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]);
+                                             newNode.Transform.Scale = glm::vec3(transform.scale[0], transform.scale[1], transform.scale[2]);
+                                             newNode.Matrix = newNode.Transform.Matrix();
+                                         },
 
-                                          newNode->Matrix = newNode->Transform.Matrix();
-                                      }},
-                    node.transform);
+                [&](const fastgltf::math::fmat4x4 &matrix)
+                                         {
+                                             for (glm::length_t column = 0; column < 4; ++column)
+                                             {
+                                                 for (glm::length_t row = 0; row < 4; ++row)
+                                                 {
+                                                     newNode.Matrix[column][row] = matrix[column][row];
+                                                 }
+                                             }
+                                         }},
+                       node.transform);
 
             m_Nodes.push_back(newNode);
         }
 
-        for (size_t i = 0; i < sizeNodes; ++i)
+        for (uint32_t i = 0; i < sizeNodes; ++i)
         {
             const fastgltf::Node &gltfNode    = inFileAsset.nodes[i];
             auto                 &currentNode = m_Nodes[i];
 
             for (const auto &child : gltfNode.children)
             {
-                m_Nodes[i]->Children.push_back(m_Nodes[child]);
-                m_Nodes[child]->Parent = currentNode;
+                m_Nodes[i].Children.push_back(child);
+                m_Nodes[child].ParentIndex = i;
             }
         }
+
+        //Sort 
+        std::vector<uint32_t> order;
+        order.reserve(sizeNodes);
+        std::vector<uint8_t> visited(sizeNodes, 0);
+
+        std::function<void(uint32_t)> visit = [&](uint32_t idx)
+        {
+            if (visited[idx])
+                return;
+            visited[idx] = 1;
+            order.push_back(idx);
+
+            for (uint32_t child : m_Nodes[idx].Children)
+            {
+                visit(child);
+            }
+        };
+
+        for (uint32_t i = 0; i < sizeNodes; ++i)
+        {
+            if (m_Nodes[i].ParentIndex == INVALID_NODE_INDEX)
+            {
+                visit(i);
+            }
+        }
+
+        std::vector<uint32_t> remap(sizeNodes);
+        std::vector<Node>     sorted;
+        sorted.reserve(sizeNodes);
+        for (uint32_t oldIdx : order)
+        {
+            remap[oldIdx] = static_cast<uint32_t>(sorted.size());
+            sorted.push_back(std::move(m_Nodes[oldIdx]));
+        }
+
+        for (Node &node : sorted)
+        {
+            if (node.ParentIndex != INVALID_NODE_INDEX)
+                node.ParentIndex = remap[node.ParentIndex];
+            for (uint32_t &child : node.Children)
+                child = remap[child];
+        }
+
+        m_Nodes = std::move(sorted);
     }
 
-    void MeshModel::LoadMesh(const fastgltf::Asset &inFileAsset)
+    void Model::LoadMesh(const fastgltf::Asset &inFileAsset)
     {
         std::vector<uint32_t> indices;
         std::vector<Vertex>   vertices;
         m_Meshes.reserve(inFileAsset.meshes.size());
         for (const fastgltf::Mesh &mesh : inFileAsset.meshes)
         {
-            std::shared_ptr<NewMesh> newmesh = std::make_shared<NewMesh>();
+            std::unique_ptr<Mesh> newmesh = std::make_unique<Mesh>();
             newmesh->Name                    = mesh.name;
             newmesh->Primitives.reserve(mesh.primitives.size());
-            for (auto &&p : mesh.primitives)
+            for (const auto& p : mesh.primitives)
             {
                 const auto indice = p.indicesAccessor.has_value() ? p.indicesAccessor.value() : 0;
                 std::unique_ptr<Primitive> newPrimitive = std::make_unique<Primitive>();
@@ -542,10 +684,30 @@ namespace MamontEngine
                             inFileAsset, indexaccessor, [&](const std::uint32_t idx) { indices.push_back(idx + initial_vtx); });
                 }
 
-                const auto pos = p.findAttribute("POSITION");
-                if (pos != p.attributes.end())
+                std::size_t baseColorTexcoordIndex{0};
+
+                if (p.materialIndex.has_value())
                 {
-                    const fastgltf::Accessor &posAccessor = inFileAsset.accessors[pos->second];
+                    const auto &material = inFileAsset.materials[p.materialIndex.value()];
+                    const auto &baseColorTexture = material.pbrData.baseColorTexture;
+                    if (baseColorTexture.has_value())
+                    {
+                        if (baseColorTexture->transform && baseColorTexture->transform->texCoordIndex.has_value())
+                        {
+                            baseColorTexcoordIndex = baseColorTexture->transform->texCoordIndex.value();
+                        }
+                        else
+                        {
+                            baseColorTexcoordIndex = material.pbrData.baseColorTexture->texCoordIndex;
+                        }
+                    }
+                }
+
+                
+                if (const auto pos = p.findAttribute("POSITION"); 
+                    pos != p.attributes.end())
+                {
+                    const fastgltf::Accessor &posAccessor = inFileAsset.accessors[pos->accessorIndex];
                     vertices.resize(vertices.size() + posAccessor.count);
 
                     fastgltf::iterateAccessorWithIndex<glm::vec3>(inFileAsset,
@@ -558,49 +720,43 @@ namespace MamontEngine
                                                                   });
                 }
 
-                const auto normals = p.findAttribute("NORMAL");
-                if (normals != p.attributes.end())
+                
+                if (const auto normals = p.findAttribute("NORMAL"); 
+                    normals != p.attributes.end())
                 {
+                    const auto &accessor = inFileAsset.accessors[normals->accessorIndex];
 
                     fastgltf::iterateAccessorWithIndex<glm::vec3>(inFileAsset,
-                                                                  inFileAsset.accessors[(*normals).second],
+                                                                  accessor,
                                                                   [&](const glm::vec3 &v, size_t index) { vertices[initial_vtx + index].Normal = v; });
                 }
 
-                const auto uv = p.findAttribute("TEXCOORD_0");
-                if (uv != p.attributes.end())
+                const std::string texcoordAttributeName = std::string("TEXCOORD_") + std::to_string(baseColorTexcoordIndex);
+                if (const auto uv = p.findAttribute(texcoordAttributeName); uv != p.attributes.end())
                 {
-
+                    const auto &accessor         = inFileAsset.accessors[uv->accessorIndex];
                     fastgltf::iterateAccessorWithIndex<glm::vec2>(
-                            inFileAsset, inFileAsset.accessors[(*uv).second], [&](const glm::vec2 &v, size_t index) { vertices[initial_vtx + index].UV = v; });
+                            inFileAsset, accessor, [&](const glm::vec2 &v, size_t index) { vertices[initial_vtx + index].UV = v; });
                 }
 
-                const auto colors = p.findAttribute("COLOR_0");
-                if (colors != p.attributes.end())
+                
+                if (const auto colors = p.findAttribute("COLOR_0"); 
+                    colors != p.attributes.end())
                 {
-
-                    fastgltf::iterateAccessorWithIndex<glm::vec4>(inFileAsset,
-                                                                  inFileAsset.accessors[(*colors).second],
+                    const auto &accessor = inFileAsset.accessors[colors->accessorIndex];
+                    fastgltf::iterateAccessorWithIndex<glm::vec4>(inFileAsset, accessor,
                                                                   [&](const glm::vec4 &v, size_t index) { vertices[initial_vtx + index].Color = v; });
                 }
-                const auto tangents = p.findAttribute("TANGENT");
-                if (tangents != p.attributes.end())
+                
+                if (const auto tangents = p.findAttribute("TANGENT"); tangents != p.attributes.end())
                 {
+                    const auto &accessor = inFileAsset.accessors[tangents->accessorIndex];
 
-                    fastgltf::iterateAccessorWithIndex<glm::vec4>(inFileAsset,
-                                                                  inFileAsset.accessors[(*tangents).second],
+                    fastgltf::iterateAccessorWithIndex<glm::vec4>(inFileAsset, accessor,
                                                                   [&](const glm::vec4 &v, size_t index) { vertices[initial_vtx + index].Tangent = v; });
                 }
-
-                if (p.materialIndex.has_value())
-                {
-                    newPrimitive->MaterialIndex = static_cast<uint32_t>(p.materialIndex.value());
-                }
-                
-                else
-                {
-                    newPrimitive->MaterialIndex = 0;
-                }
+    
+                newPrimitive->MaterialIndex = p.materialIndex.has_value() ? static_cast<uint32_t>(p.materialIndex.value()) : 0;                
 
                 auto minpos = vertices[initial_vtx].Position;
                 auto maxpos = vertices[initial_vtx].Position;
@@ -618,7 +774,7 @@ namespace MamontEngine
 
                 newmesh->Primitives.push_back(std::move(newPrimitive));
             }
-            m_Meshes.push_back(newmesh);
+            m_Meshes.push_back(std::move(newmesh));
         }
 
         //OptimizeMesh(indices, vertices);
