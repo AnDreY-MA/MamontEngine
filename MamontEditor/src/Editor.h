@@ -33,17 +33,14 @@ namespace MamontEditor
             return GetPanel<SceneHierarchyPanel>()->GetSceneContext();
 		}
 
+		template <typename T>
+        void AddPanel();
+
 	protected:
         virtual void Begin() override;
         virtual void End() override;
 
     private:
-		
-		template<typename T>
-		void AddPanel()
-		{
-            m_Panels.emplace(typeid(T).hash_code(), std::make_unique<T>());
-		}
 
 		template <typename T>
 		T* GetPanel()

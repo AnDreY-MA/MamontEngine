@@ -2,7 +2,6 @@
 
 #include "ECS/Scene.h"
 #include "entt/entt.hpp"
-#include "Components/IDComponent.h"
 
 namespace MamontEngine
 {
@@ -34,7 +33,7 @@ namespace MamontEngine
         }
 
         template <typename T>
-        bool HasComponent()
+        bool HasComponent() const
         {
             return m_Scene->m_Registry.any_of<T>(m_EntityHandle);
         }
@@ -50,10 +49,15 @@ namespace MamontEngine
             m_Scene->m_Registry.destroy(m_EntityHandle);
         }
 
-        UID GetID()
-        {
-            return GetComponent<IDComponent>().ID;
-        }
+        UID GetID();
+
+        void SetParent(Entity inParent);
+
+        entt::entity GetParent();
+
+        std::vector<Entity> GetChildrenTemp();
+
+        std::span<entt::entity> GetChildren();
 
         operator bool() const
         {
@@ -78,7 +82,7 @@ namespace MamontEngine
 	private:
         entt::entity m_EntityHandle{entt::null};
         Scene *m_Scene{nullptr};
-	};
 
-    
+        std::vector<Entity> m_Children;
+	};
 }

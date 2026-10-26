@@ -14,10 +14,60 @@
 #include "imgui.h"
 #include "Utils/Reflection.h"
 #include <Panels/FileBrowserPanel.h>
-
+#include <entt/tools/davey.hpp>
+#include "Core/Log.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
+
+namespace
+{
+    class PanelRegestry
+    {
+    public:
+        using CreateFn = void(*)();
+        struct Entry
+        {
+            std::string_view Name;
+            std::uint32_t    ID;
+
+            CreateFn Create;
+        };
+
+    private:
+        std::vector<Entry> m_Panels;
+
+    public:
+        static PanelRegestry& Instance()
+        {
+            static PanelRegestry inst;
+            return inst;
+        }
+
+        template<typename T>
+        void Register()
+        {
+            const auto id   = static_cast<uint32_t>(typeid(T).hash_code());
+            const auto name = typeid(T).name();
+            for (const auto &p : m_Panels)
+            {
+                if (p.ID == id)
+                    return;
+            }
+
+            m_Panels.push_back({name, id, []() 
+                { return MamontEditor::Editor::Get()->AddPanel<T>(); }
+                });
+        }
+
+        std::span<Entry> GetEntries()
+        {
+            return m_Panels;
+        }
+    };
+}
+
+#define REGISTERPANEL(TYPE) PanelRegestry::Instance().Register<TYPE>();
 
 namespace MamontEditor
 {
@@ -68,9 +118,16 @@ namespace MamontEditor
         AddPanel<InspectorPanel>();
         AddPanel<StatisticsPanel>();
         AddPanel<LogPanel>();
-        AddPanel<SceneSettingsPanel>();
         AddPanel<FileBrowserPanel>();
         //AddPanel<ViewportPanel>();
+        REGISTERPANEL(SceneHierarchyPanel);
+        REGISTERPANEL(InspectorPanel);
+        REGISTERPANEL(StatisticsPanel);
+        REGISTERPANEL(LogPanel);
+        REGISTERPANEL(FileBrowserPanel);
+        REGISTERPANEL(SceneSettingsPanel);
+
+        MamontEngine::Log::Info("SceneHPanel: {}", typeid("MamontEditor::SceneHierarchyPanel").name());
 
         AddIconFont();
 
@@ -151,6 +208,8 @@ namespace MamontEditor
             m_Panels.erase(id);
         }
 
+        //auto &registry = GetSceneContext()->GetRegistry();
+        //entt::davey(registry);
 
         End();
     }
@@ -174,11 +233,20 @@ namespace MamontEditor
                 ImGui::EndMenu();
             }
 
-            if (ImGui::BeginMenu("Windows"))
+            if (ImGui::BeginMenu("Panels"))
             {
-                for (auto& [hash, panel] : m_Panels)
+                for (auto &panel : PanelRegestry::Instance().GetEntries())
                 {
-                    ImGui::MenuItem(panel->GetName().c_str());
+                    const bool  isExist = m_Panels.contains(panel.ID);
+                    if (isExist)
+                        continue;
+
+                    std::string panelNameRaw{panel.Name};
+                    panelNameRaw.erase(0, 20);
+                    if (ImGui::MenuItem(panelNameRaw.c_str()))
+                    {
+                        panel.Create();
+                    }
                 }
 
                 ImGui::EndMenu();
@@ -228,6 +296,12 @@ namespace MamontEditor
         {
             GetPanel<SceneHierarchyPanel>()->SelectEntity(Scene->GetEntity(pickID));
         }*/
+    }
+
+    template <typename T>
+    void Editor::AddPanel()
+    {
+        m_Panels.emplace(typeid(T).hash_code(), std::make_unique<T>());
     }
 
     void Editor::AddIconFont()

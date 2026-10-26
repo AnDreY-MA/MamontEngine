@@ -13,12 +13,16 @@ namespace MamontEngine
 {
     struct TransformComponent
     {
+        REFLECT()
+    public:
         TransformComponent()                                = default;
         TransformComponent(const TransformComponent &other) = default;
 
+        void SetWorldMatrix(const glm::mat4 &inMatrix);
+
         glm::mat4 Matrix() const
         {
-            return m_Transform.Matrix();
+            return m_WorldMatrix * m_Transform.Matrix();
         }
 
         void SetPosition(const glm::vec3& inPosition)
@@ -52,6 +56,7 @@ namespace MamontEngine
         inline bool IsDirty() const { return m_Transform.IsDirty; }
 
     private:
+        glm::mat4 m_WorldMatrix{glm::mat4(1.f)};
 
         Transform m_Transform;
 
@@ -63,6 +68,5 @@ namespace MamontEngine
             ar(m_Transform.Position, m_Transform.Rotation, m_Transform.Scale);
         }
 
-        REFLECT()
     };
 }

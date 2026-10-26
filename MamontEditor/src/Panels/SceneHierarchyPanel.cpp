@@ -7,6 +7,7 @@
 #include "Graphics/Resources/Models/Mesh.h"
 
 #include "UI/UI.h"
+#include <ECS/Components/Hierarchy.h>
 
 namespace MamontEditor
 {
@@ -44,25 +45,38 @@ namespace MamontEditor
                 if (registry.valid(handle))
                 {
                     MamontEngine::Entity entity{handle, m_Scene.get()};
-                    DrawEntityNode(entity);
+
+                    if (!entity.HasComponent<MamontEngine::Hierarchy>())
+                    {
+                        DrawEntityNode(entity);
+                    }
+                    else
+                    {
+                        auto &hierarchy = entity.GetComponent<MamontEngine::Hierarchy>();
+                        if (hierarchy.Parent == entt::null)
+                        {
+                            DrawEntityNode(entity);
+                        }
+                    }
+                    
                 }
             }
 
             ImGui::PopStyleVar();
 
-            if (ImGui::BeginPopup("Properties", ImGuiPopupFlags_MouseButtonRight))
+            if (ImGui::BeginPopup("Properties"))
             {
                 if (ImGui::ButtonEx("Remove"))
                 {
-                    m_Scene->DestroyEntity(m_SeletctedEntity);
+                    m_Scene->DestroyEntity(m_SelectedEntity);
 
-                    m_SeletctedEntity = {};
-
+                    m_SelectedEntity = {};
                 }
 
                 if (ImGui::ButtonEx("Add Child"))
                 {
-                    m_Scene->CreateEntity("New Child");
+                    auto newChildEntity = m_Scene->CreateEntity("New Child");
+                    newChildEntity.SetParent(m_SelectedEntity);
                 }
 
                 ImGui::EndPopup();
@@ -83,28 +97,44 @@ namespace MamontEditor
     {
         const auto &tag = inEntity.GetComponent<MamontEngine::TagComponent>().Tag;
 
-        ImGuiTreeNodeFlags flags = (m_SeletctedEntity == inEntity) ? ImGuiTreeNodeFlags_Selected : 0;
+        ImGuiTreeNodeFlags flags = (m_SelectedEntity == inEntity) ? ImGuiTreeNodeFlags_Selected : 0;
         flags |= ImGuiTreeNodeFlags_OpenOnArrow;
         flags |= ImGuiTreeNodeFlags_SpanFullWidth;
         flags |= ImGuiTreeNodeFlags_FramePadding;
-        //flags |= ImGuiTreeNodeFlags_Leaf;
+
+        const bool hasChildren = inEntity.HasComponent<MamontEngine::Hierarchy>() && !inEntity.GetComponent<MamontEngine::Hierarchy>().Children.empty();
+
+        if (!hasChildren)
+        {
+            flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+        }
 
         const bool opened = ImGui::TreeNodeEx(reinterpret_cast<void *>(static_cast<uint64_t>(inEntity.GetID())), flags, tag.c_str());
 
-        if (ImGui::IsItemClicked())
+        if (ImGui::IsItemClicked(0))
         {
             SelectEntity(inEntity);
         }
+
         if (ImGui::IsItemClicked(1))
         {
-            ImGui::OpenPopup("Properties", ImGuiPopupFlags_AnyPopupLevel);
+            ImGui::OpenPopup("Properties");
             SelectEntity(inEntity);
         }
 
         ImGui::TableNextColumn();
 
-        if (opened)
+        if (opened && hasChildren)
         {
+            if (inEntity.HasComponent<MamontEngine::Hierarchy>())
+            {
+                auto &hierarchy = inEntity.GetComponent<MamontEngine::Hierarchy>();
+                for (const auto& child : hierarchy.Children)
+                {
+                    MamontEngine::Entity cEntity{child, m_Scene.get()};
+                    DrawEntityNode(cEntity);
+                }
+            }
             ImGui::TreePop();
         }
     }
@@ -143,7 +173,7 @@ namespace MamontEditor
             auto              newEntity          = m_Scene->CreateEntity(inNameItem);
             auto              newModel     = std::make_shared<MamontEngine::MeshModel>(newEntity.GetID(), inPath);
             newEntity.AddComponent<MamontEngine::MeshComponent>(std::move(newModel));
-            m_SeletctedEntity = newEntity;
+            m_SelectedEntity = newEntity;
         }
     }
 } // namespace MamontEditor

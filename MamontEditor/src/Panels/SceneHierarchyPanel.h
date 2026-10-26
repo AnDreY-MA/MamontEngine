@@ -22,12 +22,12 @@ namespace MamontEditor
 
         void SelectEntity(const MamontEngine::Entity& inEntity)
         {
-            m_SeletctedEntity = inEntity;
+            m_SelectedEntity = inEntity;
         }
 
         MamontEngine::Entity GetSelectedEntity() const
         {
-            return m_SeletctedEntity;
+            return m_SelectedEntity;
         }
 
         std::shared_ptr<MamontEngine::Scene>& GetSceneContext()
@@ -44,6 +44,6 @@ namespace MamontEditor
 
     private:
         std::shared_ptr<MamontEngine::Scene> m_Scene;
-        MamontEngine::Entity                 m_SeletctedEntity;
+        MamontEngine::Entity                 m_SelectedEntity;
     };
 }

@@ -151,15 +151,6 @@ namespace MamontEditor
         }
         if (ImGui::BeginPopup("Add Component"))
         {
-            /* DrawAddComponent<MeshComponent>(m_SceneContext->GetRegistry(), m_Selected, "Mesh Component");
-            DrawAddComponent<DirectionLightComponent>(m_SceneContext->GetRegistry(), m_Selected, "Direction Light Component");
-            DrawAddComponent<PointLightComponent>(m_SceneContext->GetRegistry(), m_Selected, "Point Light Component");
-            DrawAddComponent<RigidbodyComponent>(m_SceneContext->GetRegistry(), m_Selected, "Rigidbody Component");
-            DrawAddComponent<HeroPhysics::BoxCollision>(m_SceneContext->GetRegistry(), m_Selected, "BoxCollision Component");
-            DrawAddComponent<HeroPhysics::SphereCollision>(m_SceneContext->GetRegistry(), m_Selected, "SphereCollision Component");
-            DrawAddComponent<ScriptComponent>(m_SceneContext->GetRegistry(), m_Selected, "Script Component");*/
-            //DrawAddComponent<CameraComponent>(m_SceneContext->GetRegistry(), m_Selected, "Camera Component");
-
             for (const auto& entry : ComponentRegistry::Instance().GetEntries())
             {
                 if (!entry.Has(m_SceneContext->GetRegistry(), m_Selected))

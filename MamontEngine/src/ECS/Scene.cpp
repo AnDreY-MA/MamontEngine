@@ -24,7 +24,9 @@
 #include "Physics/Body/Rigidbody.h"
 #include "Physics/PhysicsSystem.h"
 
+#include "ECS/Components/IDComponent.h"
 #include "ECS/Components/TagComponent.h"
+#include "ECS/Components/Hierarchy.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/DirectionLightComponent.h"
@@ -73,6 +75,7 @@ FINISH_REFLECT()
             .get<CameraComponent>(serializer) \
             .get<AudioListenerComponent>(serializer)
 
+
 namespace MamontEngine
 {
     IMPLEMENT_REFLECT_COMPONENT(AudioListenerComponent, "Audio Listener Component")
@@ -96,16 +99,52 @@ namespace MamontEngine
     }
     FINISH_REFLECT()
 
+
+    static void UpdateTransform(entt::entity entity, entt::registry& registry, TransformComponent& transformComponent)
+    {
+        auto hierarchy = registry.try_get<Hierarchy>(entity);
+        if (hierarchy)
+        {
+            if (hierarchy->HasParent())
+            {
+                auto parentTransform = registry.try_get<TransformComponent>(hierarchy->Parent);
+                if (parentTransform)
+                {
+                    transformComponent.SetWorldMatrix(parentTransform->Matrix());
+                }
+                else
+                {
+                    transformComponent.SetWorldMatrix(glm::mat4(1.f));
+                }
+            }
+            else
+            {
+                transformComponent.SetWorldMatrix(glm::mat4(1.f));
+            }
+
+            for (auto &children = hierarchy->Children; 
+                auto &child : children)
+            {
+                auto &transform = registry.get<TransformComponent>(child);
+                UpdateTransform(child, registry, transform);
+            }
+        }
+    }
+
     Scene::Scene()
     {
         using hs = entt::hashed_string;
         entt::meta_factory<MeshModel>{}.type(hs{"Model"}, "Model").base<Asset>();
         entt::meta_factory<Sound>{}.type(hs{"Sound"}, "Sound").base<Asset>();
         entt::meta_factory<Transform>{}.type(hs{"Transform"}, "Transform");
+
+        m_Registry.on_destroy<Hierarchy>().connect<&Scene::OnEntityDestroyed>(*this);
     }
 
     Scene::~Scene()
     {
+        m_Registry.on_destroy<Hierarchy>().disconnect<&Scene::OnEntityDestroyed>(*this);
+
         Clear();
     }
 
@@ -207,6 +246,7 @@ namespace MamontEngine
         {
             if (transform.IsDirty())
             {
+                UpdateTransform(entity, m_Registry, transform);
                 transform.SetDirty(false);
             }
         }
@@ -267,11 +307,12 @@ namespace MamontEngine
     void Scene::StopScene()
     {
         m_IsPaused = true;
+
         MEngine::Get().GetPhysicsSytem()->SetPause(true);
         MEngine::Get().GetAudioSystem().StopAll();
-
-        const auto scriptView = m_Registry.view<ScriptComponent>();
-        for (auto [entity, scriptComponent] : scriptView.each())
+        
+        for (const auto& scriptView = m_Registry.view<ScriptComponent>();
+            const auto& [entity, scriptComponent] : scriptView.each())
         {
             scriptComponent.EndPlay();
         }
@@ -329,6 +370,27 @@ namespace MamontEngine
         Log::Warn("Entity not found");
         return {};
 
+    }
+
+    void Scene::OnEntityDestroyed(entt::registry &registry, entt::entity entity)
+    {
+        auto *hierarchy = registry.try_get<Hierarchy>(entity);
+        if (!hierarchy) return;
+
+        if (hierarchy->Parent != entt::null)
+        {
+            if (auto *parent = registry.try_get<Hierarchy>(hierarchy->Parent))
+                std::erase(parent->Children, entity);
+        }
+
+        const auto &children = hierarchy->Children;
+        for (entt::entity c : children)
+        {
+            if (registry.valid(c))
+            {
+                registry.destroy(c);
+            }
+        }
     }
 
     template<>

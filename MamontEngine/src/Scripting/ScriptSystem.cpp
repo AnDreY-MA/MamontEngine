@@ -100,6 +100,7 @@ namespace
 
         sol::usertype<MamontEngine::Entity> entityType = state.new_usertype<MamontEngine::Entity>("Entity", sol::constructors<sol::types<entt::entity>>());
         entityType.set_function("Destroy", &MamontEngine::Entity::Destroy);
+        entityType.set_function("GetChildren", &MamontEngine::Entity::GetChildrenTemp);
 
         sol::usertype<TagComponent> nameComponent_type = state.new_usertype<TagComponent>("NameComponent");
         nameComponent_type["name"]                     = &TagComponent::Tag;
