@@ -108,7 +108,7 @@ namespace MamontEngine
         std::shared_ptr<WindowCore> m_Window;
 
         std::unique_ptr<Renderer>      m_Renderer;
-        std::unique_ptr<ImGuiLayer>    m_GuiLayer;
+        std::shared_ptr<ImGuiLayer>    m_GuiLayer;
         std::unique_ptr<Log>           m_Log;
         std::unique_ptr<ScriptSystem>  m_ScriptSystem;
         std::unique_ptr<MaterialManager> m_MaterialManager;

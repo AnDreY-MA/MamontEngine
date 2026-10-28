@@ -52,7 +52,6 @@ namespace MamontEngine
         JobSystem::Execute(contextJobs, [this](auto args)
             {
                 m_Renderer = std::make_unique<Renderer>(*m_ContextDevice.get(), m_Window);
-                InitImgui();
                 m_Renderer->InitSceneRenderer(m_MainCamera, m_Scene);
             });
 
@@ -62,6 +61,7 @@ namespace MamontEngine
                            });
         
         JobSystem::Wait(contextJobs);
+        InitImgui();
 
         m_InputSystem = std::make_unique<InputSystem>();
 
@@ -88,6 +88,7 @@ namespace MamontEngine
         PROFILE_SETTHREADNAME("Main Thread");
 
         MaterialManager::Get()->SetupDefaults();
+
 
         while (!bQuit)
         {
@@ -147,11 +148,11 @@ namespace MamontEngine
 
             if (m_ContextDevice->IsResizeRequest())
             {
-                m_ContextDevice->ResizeSwapchain(m_Window->Resize());
+                m_ContextDevice->ResizeSwapchain(m_Window.get());
             }
             else
             {
-                m_GuiLayer->ImGuiRender();
+                //m_GuiLayer->ImGuiRender();
 
                 m_PhysicsSystem->Update(deltaTime);
 
@@ -226,14 +227,14 @@ namespace MamontEngine
     {
         m_GuiLayer->Init();
 
-        m_Renderer->InitImGuiRenderer();
+        m_Renderer->InitImGuiRenderer(m_GuiLayer);
 
         m_MainDeletionQueue.PushFunction([]() { ImGui_ImplVulkan_Shutdown(); });
     }
 
     void MEngine::PushGuiLayer(ImGuiLayer *inLayer)
     {
-        m_GuiLayer = std::unique_ptr<ImGuiLayer>(inLayer);
+        m_GuiLayer = std::shared_ptr<ImGuiLayer>(inLayer);
     }
 } // namespace MamontEngine
 

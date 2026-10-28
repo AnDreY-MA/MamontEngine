@@ -214,9 +214,14 @@ namespace MamontEngine
         PROFILE_FUNCTION();
 
         auto view = m_Registry.view<MeshComponent, TransformComponent>();
-        for (auto &&[entity, meshComponent, transform] : view.each())
+        for (auto [entity, meshComponent, transform] : view.each())
         {
-            if (meshComponent.Mesh; meshComponent.Mesh->IsDirty || transform.IsDirty())
+            if (transform.IsDirty())
+            {
+                //Log::Info("MeshComp: transform.IsDirty(): {}", transform.IsDirty());
+            }
+
+            if (meshComponent.Mesh)
             {
                 meshComponent.Mesh->UpdateTransform(transform.Matrix());
                 meshComponent.Mesh->IsDirty = false;
@@ -241,21 +246,14 @@ namespace MamontEngine
             }
         }
         
-        for (const auto &transformView = m_Registry.view<TransformComponent>();  
-            const auto &[entity, transform] : transformView.each())
+        for (auto transformView = m_Registry.view<TransformComponent>();  
+            auto [entity, transform] : transformView.each())
         {
             if (transform.IsDirty())
             {
                 UpdateTransform(entity, m_Registry, transform);
                 transform.SetDirty(false);
             }
-        }
-
-
-        for (const auto& listenerView = m_Registry.view<AudioListenerComponent, TransformComponent>();
-            const auto& [entity, listener, transform] : listenerView.each())
-        {
-
         }
     }
 

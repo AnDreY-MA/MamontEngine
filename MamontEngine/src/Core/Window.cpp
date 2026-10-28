@@ -39,6 +39,7 @@ namespace MamontEngine
         SDL_SetWindowSurfaceVSync(m_Window, false);
 
         SDL_AddEventWatch(CloseWindowEvent, nullptr);
+
     }
 
     void WindowCore::Close()
@@ -55,6 +56,25 @@ namespace MamontEngine
             fmt::print("Surface is false");
             exit(1);
         }
+
+        m_VulkanWindow.Surface = *surface;
+
+    }
+
+    void WindowCore::InitVulkanWindow(VkInstance inInstance, VkPhysicalDevice inPhysicalDevice, VkDevice inDevice, uint32_t inQueueFamily)
+    {
+        const VkFormat requestSurfaceImageFormat[]     = {VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM};
+        const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+        m_VulkanWindow.SurfaceFormat                    = ImGui_ImplVulkanH_SelectSurfaceFormat(
+                inPhysicalDevice, m_VulkanWindow.Surface, requestSurfaceImageFormat, (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat), requestSurfaceColorSpace);
+
+        const std::array < VkPresentModeKHR, 3> present_modes = {VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR};
+        m_VulkanWindow.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(inPhysicalDevice, m_VulkanWindow.Surface, present_modes.data(), present_modes.size());
+
+
+        ImGui_ImplVulkanH_CreateOrResizeWindow(
+                inInstance, inPhysicalDevice, inDevice, &m_VulkanWindow, inQueueFamily, nullptr, m_WindowExtent.width, m_WindowExtent.height, 2);
+
     }
 
     void WindowCore::PollEvents()

@@ -17,6 +17,7 @@ namespace MamontEngine
     class DirectLightPass;
     class PointLightPass;
     class PickPass;
+    class ImGuiLayer;
 
     struct RenderStats
     {
@@ -41,7 +42,7 @@ namespace MamontEngine
         ~Renderer();
 
         void InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera, const std::shared_ptr<Scene> &inScene);
-        void InitImGuiRenderer();
+        void InitImGuiRenderer(const std::shared_ptr<ImGuiLayer>& inLayer);
 
         void InitPipelines();
         void DestroyPipelines();

@@ -161,24 +161,26 @@ if(NOT TARGET cereal)
   target_link_libraries(${PROJECT_NAME} PUBLIC cereal::cereal)
 endif()
 
-add_library(ImGuizmo STATIC
-    vendor/ImGuizmo/ImGuizmo.cpp
-    vendor/ImGuizmo/ImSequencer.cpp
-    vendor/ImGuizmo/GraphEditor.cpp
-    vendor/ImGuizmo/ImCurveEdit.cpp
-    vendor/ImGuizmo/ImGradient.cpp)
+add_subdirectory("vendor/ImGuizmo" )
 
-target_include_directories(ImGuizmo PUBLIC
+#add_library(ImGuizmo STATIC
+ #   vendor/ImGuizmo/ImGuizmo.cpp
+  #  vendor/ImGuizmo/ImSequencer.cpp
+   # vendor/ImGuizmo/GraphEditor.cpp
+    #vendor/ImGuizmo/ImCurveEdit.cpp
+    #vendor/ImGuizmo/ImGradient.cpp)
+
+target_include_directories(imguizmo PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/ImGuizmo
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
 )
-target_compile_definitions(ImGuizmo PRIVATE
+target_compile_definitions(imguizmo PRIVATE
     IMGUI_DEFINE_MATH_OPERATORS
 )
 
-target_link_libraries(ImGuizmo PUBLIC imgui)
+target_link_libraries(imguizmo PUBLIC imgui)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC ImGuizmo)
+target_link_libraries(${PROJECT_NAME} PUBLIC imguizmo::imguizmo)
 
 FetchContent_Declare(glslang
 	GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git

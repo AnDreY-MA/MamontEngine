@@ -55,10 +55,14 @@ namespace MamontEditor
 
 		void AddIconFont();
 
+		void DrawViewport();
+
 	private:
         std::unordered_map<uint32_t, std::unique_ptr<EditorPanel>> m_Panels;
 
 		glm::vec2 m_ViewportBounds[2];
+
+		VkDescriptorSet m_DrawImage{VK_NULL_HANDLE};
 
 		static Editor* s_Instance;
 	};

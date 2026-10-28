@@ -15,4 +15,17 @@ namespace MamontEngine
         m_Transform.IsDirty = true;
         m_WorldMatrix = inMatrix;
     }
+
+    void TransformComponent::SetMatrix(const glm::mat4 &inMatrix)
+    {
+        m_Transform.SetMatrix(inMatrix);
+        m_Transform.IsDirty = true;
+        
+        Log::Info("TransformComp: SetMatrix, isdirty: {}", IsDirty());
+    }
+
+    glm::mat4 TransformComponent::GetLocalMatrix() const
+    {
+        return m_Transform.Matrix();
+    }
 } // namespace MamontEngine

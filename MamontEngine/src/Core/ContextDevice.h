@@ -29,7 +29,7 @@ namespace MamontEngine
 
         void DestroyFrameData();
 
-        void ResizeSwapchain(const VkExtent2D &inWindowExtent);
+        void ResizeSwapchain(WindowCore *inWindow);
 
         FrameData       &GetCurrentFrame();
         const FrameData &GetCurrentFrame() const;
@@ -86,6 +86,9 @@ namespace MamontEngine
 
         VkDescriptorSetLayout RenderDescriptorLayout{VK_NULL_HANDLE};
         VkDescriptorSetLayout GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
+
+        VkSampler ImGuiSceneSampler{VK_NULL_HANDLE};
+        //VkImageView &ImGuiView{VK_NULL_HANDLE};
 
         void            InitDescriptors();
 

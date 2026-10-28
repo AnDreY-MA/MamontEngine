@@ -8,7 +8,7 @@
 #include "EditorUtils/EditorUtils.h"
 #include "EditorUtils/IconsMaterialsDesign.h"
 #include "Fonts/MaterialDesign.h"
-#include "ImGuizmo/ImGuizmo.h"
+#include "ImGuizmo.h"
 #include "Panels/SceneSettingsPanel.h"
 #include "Panels/ViewportPanel.h"
 #include "imgui.h"
@@ -16,9 +16,11 @@
 #include <Panels/FileBrowserPanel.h>
 #include <entt/tools/davey.hpp>
 #include "Core/Log.h"
+#include <glm/gtx/string_cast.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 namespace
 {
@@ -143,9 +145,17 @@ namespace MamontEditor
 
         ImGui_ImplSDL3_NewFrame();
 
+        if (m_DrawImage == VK_NULL_HANDLE)
+        {
+            auto &contextDevice = MamontEngine::MEngine().Get().GetContextDevice();
+            m_DrawImage = ImGui_ImplVulkan_AddTexture(
+                    contextDevice.ImGuiSceneSampler, contextDevice.DrawImage.ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+
         ImGui::NewFrame();
         ImGui::DockSpaceOverViewport(ImGui::GetID("MyDockSpace"), ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
         ImGuizmo::BeginFrame();
+
     }
 
     void Editor::End()
@@ -153,6 +163,7 @@ namespace MamontEditor
         const ImGuiIO &io = ImGui::GetIO();
 
         ImGui::Render();
+        //ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
 
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
@@ -186,6 +197,8 @@ namespace MamontEditor
         }
 
         DrawMainPanel();
+
+        DrawViewport();
 
         std::vector<uint32_t> idPanelsDelete;
         
@@ -281,6 +294,81 @@ namespace MamontEditor
             ImGui::EndMainMenuBar();
         }
 
+    }
+
+    void Editor::DrawViewport()
+    {
+        using namespace MamontEngine;
+
+        if (m_DrawImage == VK_NULL_HANDLE)
+        {
+            auto &contextDevice = MEngine::Get().GetContextDevice();
+            m_DrawImage =
+                    ImGui_ImplVulkan_AddTexture(contextDevice.ImGuiSceneSampler, contextDevice.DrawImage.ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+
+        static ImGuizmo::OPERATION operation = ImGuizmo::TRANSLATE;
+        static ImGuizmo::MODE      mode      = ImGuizmo::WORLD;
+
+        
+        if (!ImGui::IsMouseDown(ImGuiMouseButton_Right))
+        {
+            if (ImGui::IsKeyPressed(ImGuiKey_Q))
+            {
+                operation = ImGuizmo::TRANSLATE;
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_W))
+            {
+                operation = ImGuizmo::ROTATE;
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_E))
+            {
+                operation = ImGuizmo::SCALE;
+            }
+        }
+        
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
+
+        const ImVec2 viewportPos  = ImGui::GetCursorScreenPos();
+        const ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+        ImGui::Image((ImTextureID)m_DrawImage, viewportSize);
+
+        
+        if (auto selectedEntity = GetPanel<SceneHierarchyPanel>()->GetSelectedEntity(); selectedEntity)
+        {
+            ImGuizmo::SetOrthographic(false);
+
+            ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+            ImGuizmo::SetRect(viewportPos.x, viewportPos.y, viewportSize.x, viewportSize.y);
+            
+            const auto camera = MEngine::Get().GetSceneRenderer()->GetCamera();
+            auto      &registry = MEngine::Get().GetScene()->GetRegistry();
+
+            const glm::mat4 camerView       = camera->GetViewMatrix();
+            glm::mat4 cameraProjection = camera->GetProjection();
+            cameraProjection[1][1] *= -1.f;
+
+            auto transformComponent = registry.try_get<TransformComponent>((entt::entity)selectedEntity);
+
+            float delta[16];
+
+            if (transformComponent)
+            {
+                auto transformMatrix = transformComponent->Matrix();
+
+                if (ImGuizmo::Manipulate(glm::value_ptr(camerView), glm::value_ptr(cameraProjection), operation, mode, glm::value_ptr(transformMatrix), delta))
+                {
+                    if (mode == ImGuizmo::WORLD)
+                    {
+                        transformComponent->SetMatrix(transformMatrix);
+                    }
+                }
+            }
+        }
+
+        ImGui::End();
+        ImGui::PopStyleVar();
     }
 
     void Editor::PickObject(const ImVec2 &inMousePostion)

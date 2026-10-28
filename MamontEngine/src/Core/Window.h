@@ -38,6 +38,8 @@ namespace MamontEngine
 		void PollEvents();
 
 		VkExtent2D Resize();
+
+		void InitVulkanWindow(VkInstance inInstance, VkPhysicalDevice inPhysicalDevice, VkDevice inDevice, uint32_t inQueueFamily);
 	private:
 		void Init();
 
@@ -45,7 +47,7 @@ namespace MamontEngine
 	private:
 
         SDL_Window* m_Window;
-        ImGui_ImplVulkanH_Window *m_VulkanWindow;
+        ImGui_ImplVulkanH_Window m_VulkanWindow;
 
         VkExtent2D  m_WindowExtent{1920, 1080};
 	};

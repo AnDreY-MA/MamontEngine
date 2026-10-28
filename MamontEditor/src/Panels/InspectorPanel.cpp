@@ -21,7 +21,6 @@
 #include "Math/Color.h"
 #include "Physics/Collision/BoxCollision.h"
 #include "Physics/Collision/SphereCollision.h"
-#include "Utils/MetaInspector.h"
 
 const std::string RootDirectories = PROJECT_ROOT_DIR;
 const std::string AssetsPath      = RootDirectories + "/MamontEngine/assets";

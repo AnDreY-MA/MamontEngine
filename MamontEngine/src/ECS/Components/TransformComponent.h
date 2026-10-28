@@ -18,12 +18,23 @@ namespace MamontEngine
         TransformComponent()                                = default;
         TransformComponent(const TransformComponent &other) = default;
 
+        void SetDirty(bool value)
+        {
+            m_Transform.IsDirty = value;
+        }
+        bool IsDirty() const
+        {
+            return m_Transform.IsDirty;
+        }
+
         void SetWorldMatrix(const glm::mat4 &inMatrix);
 
         glm::mat4 Matrix() const
         {
             return m_WorldMatrix * m_Transform.Matrix();
         }
+
+        void SetMatrix(const glm::mat4 &inMatrix);
 
         void SetPosition(const glm::vec3& inPosition)
         {
@@ -47,13 +58,12 @@ namespace MamontEngine
         inline const glm::quat& GetRotation() const { return m_Transform.Rotation; }
         inline const glm::vec3& GetScale() const { return m_Transform.Scale; }
 
+        glm::mat4 GetLocalMatrix() const;
+
         inline glm::vec3 GetForwardVector() const
         {
             return m_Transform.GetForwardVector();
         }
-
-        inline void SetDirty(bool value) { m_Transform.IsDirty = value; }
-        inline bool IsDirty() const { return m_Transform.IsDirty; }
 
     private:
         glm::mat4 m_WorldMatrix{glm::mat4(1.f)};

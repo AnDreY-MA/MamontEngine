@@ -1903,7 +1903,7 @@ A good place is [stackoverflow](http://stackoverflow.com/search?q=GLM) using the
 
 ### <a name="section7_6"></a> 7.6. Where can I find the documentation of extensions?
 
-The Doxygen generated documentation includes a complete list of all extensions available. Explore this [*API documentation*](http://glm.g-truc.net/html/index.html) to get a complete
+The Doxygen generated documentation includes a complete list of all extensions available. Explore this [*API documentation*](http://glm.g-truc.net/0.9.9/api/modules.html) to get a complete
 view of all GLM capabilities!
 
 ### <a name="section7_7"></a> 7.7. Should I use ‘using namespace glm;’?
@@ -2355,7 +2355,7 @@ Simple, easy-to-follow examples with GLSL source code are provided, as well as a
 
 [***Outerra***](http://outerra.com/)
 
-A 3D planetary inDeviece for seamless planet rendering from space down to the surface. Can use arbitrary resolution of elevation data, refining it to centimetre resolution using fractal algorithms.
+A 3D planetary engine for seamless planet rendering from space down to the surface. Can use arbitrary resolution of elevation data, refining it to centimetre resolution using fractal algorithms.
 
 ![](./doc/manual/references-outerra1.jpg)
 

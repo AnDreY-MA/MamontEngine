@@ -12,6 +12,7 @@
 #include "tracy/TracyVulkan.hpp"
 #include "vulkan/vk_enum_string_helper.h"
 #include "Graphics/Vulkan/ImmediateContext.h"
+#include "Graphics/ImGuiRenderer.h"
 #include "Core/Log.h"
 #include <VkBootstrap.h>
 
@@ -100,6 +101,8 @@ namespace MamontEngine
         return VK_FALSE;
     }
 
+    static WindowCore *s_Window = nullptr;
+
     VkContextDevice::VkContextDevice(WindowCore *inWindow)
     {
         vkb::InstanceBuilder builder;
@@ -146,6 +149,20 @@ namespace MamontEngine
 
         inWindow->CreateSurface(Instance, &Surface);
 
+         auto indexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures{
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, nullptr
+            };
+            indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+            indexingFeatures.runtimeDescriptorArray = VK_TRUE;
+            indexingFeatures.shaderSampledImageArrayNonUniformIndexing       = VK_TRUE;
+            indexingFeatures.shaderStorageBufferArrayNonUniformIndexing      = VK_TRUE;
+            indexingFeatures.shaderStorageImageArrayNonUniformIndexing       = VK_TRUE;
+            indexingFeatures.shaderUniformBufferArrayNonUniformIndexing      = VK_TRUE;
+            indexingFeatures.shaderInputAttachmentArrayNonUniformIndexing    = VK_TRUE;
+            indexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing = VK_TRUE;
+            indexingFeatures.shaderStorageTexelBufferArrayNonUniformIndexing = VK_TRUE;
+
+
         constexpr auto deviceFeatures = VkPhysicalDeviceFeatures{.imageCubeArray            = VK_TRUE,
                                                                  .geometryShader            = VK_TRUE,
                                                                  .sampleRateShading         = VK_TRUE,
@@ -159,41 +176,54 @@ namespace MamontEngine
             
                                                                  .shaderInt64               = VK_TRUE};
 
-        constexpr VkPhysicalDeviceVulkan14Features features14 = {.maintenance5 = VK_TRUE, .maintenance6 = VK_TRUE, .pushDescriptor = VK_TRUE};
+         VkPhysicalDeviceFeatures2 deviceFeatures2{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, .pNext = nullptr, .features = deviceFeatures};
+
+
+        constexpr VkPhysicalDeviceVulkan14Features features14 = {
+            .maintenance5 = VK_TRUE, .maintenance6 = VK_TRUE, .pushDescriptor = VK_TRUE
+        };
 
         constexpr VkPhysicalDeviceVulkan13Features features = {
                 .robustImageAccess = VK_TRUE,
                 .synchronization2 = VK_TRUE,
                 .dynamicRendering = VK_TRUE,
+                .maintenance4 = VK_TRUE
         };
 
         constexpr VkPhysicalDeviceVulkan12Features features12 = {
-                .uniformAndStorageBuffer8BitAccess            = VK_TRUE,
-                .shaderInt8                                   = VK_TRUE,
-                .descriptorIndexing                           = VK_TRUE,
-                .shaderSampledImageArrayNonUniformIndexing    = VK_TRUE,
-                .descriptorBindingSampledImageUpdateAfterBind = VK_TRUE,
-                .descriptorBindingUpdateUnusedWhilePending    = VK_TRUE,
-                .descriptorBindingPartiallyBound              = VK_TRUE,
-                .descriptorBindingVariableDescriptorCount     = VK_TRUE,
-                .runtimeDescriptorArray                       = VK_TRUE,
-                .scalarBlockLayout                            = VK_TRUE,
+                .uniformAndStorageBuffer8BitAccess = VK_TRUE,
+                .shaderInt8                        = VK_TRUE,
+                .descriptorIndexing                = VK_TRUE,
+                .shaderUniformBufferArrayNonUniformIndexing = VK_TRUE,
+                .shaderSampledImageArrayNonUniformIndexing  = VK_TRUE,
+                .shaderStorageBufferArrayNonUniformIndexing = VK_TRUE,
+                .shaderStorageImageArrayNonUniformIndexing  = VK_TRUE,
+                .shaderInputAttachmentArrayNonUniformIndexing = VK_TRUE,
+                .shaderUniformTexelBufferArrayNonUniformIndexing = VK_TRUE,
+                .shaderStorageTexelBufferArrayNonUniformIndexing = VK_TRUE,
+                .descriptorBindingSampledImageUpdateAfterBind  = VK_TRUE,
+                .descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE,
+                .descriptorBindingUpdateUnusedWhilePending     = VK_TRUE,
+                .descriptorBindingPartiallyBound               = VK_TRUE,
+                .descriptorBindingVariableDescriptorCount      = VK_TRUE,
+                .runtimeDescriptorArray                        = VK_TRUE,
+                .scalarBlockLayout         = VK_TRUE,
 #ifdef PROFILING
                 .hostQueryReset = VK_TRUE,
 #endif
-                .timelineSemaphore   = VK_TRUE,
-                .bufferDeviceAddress = VK_TRUE,
+                .timelineSemaphore = VK_TRUE,
+
+                .bufferDeviceAddress       = VK_TRUE,
                 .shaderOutputViewportIndex = VK_TRUE,
-                .shaderOutputLayer = VK_TRUE,
                 
+                .shaderOutputLayer         = VK_TRUE,
         };
 
         VkPhysicalDeviceRobustness2FeaturesKHR robustness2Features{};
         robustness2Features.sType               = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_KHR;
-        robustness2Features.robustBufferAccess2 = VK_TRUE; // Включаем нужные фичи
+        robustness2Features.robustBufferAccess2 = VK_TRUE;
         robustness2Features.robustImageAccess2  = VK_TRUE;
         robustness2Features.nullDescriptor      = VK_TRUE;
-
 
         vkb::PhysicalDeviceSelector selector{vkbInstance};
 
@@ -214,10 +244,12 @@ namespace MamontEngine
                                                            .select()
                                                            .value();
         fmt::print("Name {}", physicalDevice.name);
+        s_Window = inWindow;
+
 
         vkb::DeviceBuilder deviceBuilder{physicalDevice};
 
-        const vkb::Device vkbDevice = deviceBuilder.add_pNext(&robustness2Features).build().value();
+        const vkb::Device vkbDevice = deviceBuilder.build().value();
 
         LogicalDevice::InitDevice(vkbDevice.device);
         PhysicalDevice::Init(physicalDevice.physical_device);
@@ -251,6 +283,7 @@ namespace MamontEngine
         InitDescriptors();
 
         InitTracyContext();
+
     }
 
     VkContextDevice::~VkContextDevice()
@@ -574,14 +607,30 @@ namespace MamontEngine
     void VkContextDevice::InitSwapchain(const VkExtent2D &inWindowExtent)
     {
         Swapchain.Init(Surface, inWindowExtent);
+
+        if (ImGuiRenderer::IsInitialize())
+        {
+            ImGuiIO &io = ImGui::GetIO();
+
+            const auto &swapchainExtent = Swapchain.GetExtent();
+            io.DisplaySize              = ImVec2(static_cast<float>(swapchainExtent.width), static_cast<float>(swapchainExtent.height));
+        }
+
+        //s_Window->InitVulkanWindow(Instance, PhysicalDevice::GetDevice(), LogicalDevice::GetDevice(), m_GraphicsQueueFamily);
+
     }
 
     void VkContextDevice::InitImage()
     {
         const VkExtent3D extent{Swapchain.GetExtent().width, Swapchain.GetExtent().height, 1};
 
-        constexpr VkImageUsageFlags drawImageUsages = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+        const auto &device = LogicalDevice::GetDevice();
+
+        constexpr VkImageUsageFlags drawImageUsages =
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
         DrawImage.Create(extent, Swapchain.GetImageFormat() /*VK_FORMAT_B8G8R8A8_UNORM*/, drawImageUsages, true);
+
+        //ImGuiView = Swapchain.GetImageView(0);
 
         std::cerr << "Image.DrawImage Image:" << DrawImage.Image << std::endl;
         std::cerr << "Image.DrawImage ImageView:" << DrawImage.ImageView << std::endl;
@@ -590,18 +639,32 @@ namespace MamontEngine
         DepthImage.Create(extent, Utils::FindDepthFormat(PhysicalDevice::GetDevice()) /*VK_FORMAT_D32_SFLOAT*/, depthImageUsages, false);
         ImmediateContext::ImmediateSubmit(
                 [&](VkCommandBuffer cmd)
-                { VkUtil::transition_image(cmd, DepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL); });
+                { 
+                VkUtil::transition_image(cmd, DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL); 
+                VkUtil::transition_image(cmd, DepthImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL); 
+            });
 
         std::cerr << "Image.DepthImage Image:" << DepthImage.Image << std::endl;
         std::cerr << "Image.DepthImage ImageView:" << DepthImage.ImageView << std::endl;
 
         IdTexture.Create(extent, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
+        VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType        = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter    = VK_FILTER_LINEAR;
+        samplerInfo.minFilter    = VK_FILTER_LINEAR;
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.mipmapMode   = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        samplerInfo.minLod       = 0.0f;
+        samplerInfo.maxLod       = 1.0f;
+        VK_CHECK(vkCreateSampler(device, &samplerInfo, nullptr, &ImGuiSceneSampler));
 
         //InitShadowImages();
     }
 
-    void VkContextDevice::ResizeSwapchain(const VkExtent2D &inWindowExtent)
+    void VkContextDevice::ResizeSwapchain(WindowCore *inWindow)
     {
         if (!m_IsResizeRequested)
             return;
@@ -616,7 +679,11 @@ namespace MamontEngine
 
         DestroyDescriptors();
 
-        Swapchain.ReCreate(Surface, inWindowExtent);
+        const auto &newExtent = inWindow->Resize();
+
+        Swapchain.Destroy(device);
+
+        Swapchain.Init(Surface, newExtent);
 
         InitImage();
 

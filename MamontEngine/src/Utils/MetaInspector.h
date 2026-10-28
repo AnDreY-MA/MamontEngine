@@ -7,7 +7,7 @@
 #include "UI/UI.h"
 #include "Physics/Body/Rigidbody.h"
 #include <filesystem>
-
+#include <glm/gtc/quaternion.hpp>
 using entt::literals::operator""_hs;
 
 constexpr entt::hashed_string f_Inspect = "Inspect"_hs;
@@ -98,14 +98,17 @@ namespace MetaInspectors
     template<>
     inline void MetaInspect<Transform>(const std::string &name, Transform &value, const entt::meta_data &meta)
     {
-        //ImGui::Text(name.c_str());
-       // bool changed{false};
+        glm::vec3  rot   = glm::eulerAngles(value.Rotation);
+        const bool pos = MUI::DrawVec3Control("Position", value.Position);
+        const bool irot  = MUI::DrawVec3Control("Rotation", rot);
+        const bool scale = MUI::DrawVec3Control("Scale", value.Scale, 1.f);
 
-        bool pos = MUI::DrawVec3Control("Position", value.Position);
-        bool rot = MUI::DrawQuatControl("Rotation", value.Rotation);
-        bool scale = MUI::DrawVec3Control("Scale", value.Scale, 1.f);
+        if (irot)
+        {
+            value.Rotation = glm::quat(rot);
+        }
 
-        value.IsDirty = pos || rot || scale;
+        value.IsDirty = pos || irot || scale;
     }
     template <>
     inline void MetaInspect<Color>(const std::string &name, Color &value, const entt::meta_data &meta)
@@ -131,17 +134,6 @@ namespace MetaInspectors
             ImGui::EndCombo();
         }
     }
-
-/*    template <>
-    inline void MetaInspect<HeroPhysics::Rigidbody>(const std::string &name, HeroPhysics::Rigidbody &value, const entt::meta_data &meta)
-    {
-        /*const char* motionTypeName = "MotionType";
-
-        if (ImGui::BeginCombo(motionTypeName, "r"))
-        {
-
-        }
-    }*/
 }
 
 template <class Type>
