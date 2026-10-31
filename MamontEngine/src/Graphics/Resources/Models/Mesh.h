@@ -31,6 +31,7 @@ namespace MamontEngine
     struct GPUDrawPushConstants
     {
         glm::mat4       WorldMatrix{glm::mat4(1.f)};
+        VkDeviceAddress SceneBuffer{0};
         VkDeviceAddress VertexBuffer{0};
         VkDeviceAddress MaterialBuffer{0};
         uint64_t        ObjectID{0};

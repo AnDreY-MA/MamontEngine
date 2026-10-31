@@ -4,6 +4,7 @@ namespace MamontEngine
 {
     class Camera;
     class PipelineData;
+    class Texture;
 
     class PointLightPass : public RenderPass
     {
@@ -11,7 +12,10 @@ namespace MamontEngine
         PointLightPass(std::array<Texture, MAX_POINT_LIGHT>& inShadowCubeImages);
         ~PointLightPass();
 
-        virtual void Render(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, const DrawContext &inDrawContext, const glm::mat4 &viewproj) override;
+        virtual void Render(VkCommandBuffer                             cmd,
+                            std::pair<VkDescriptorSet, VkDescriptorSet> globalDescriptor,
+                            const DrawContext                          &inDrawContext,
+                            const glm::mat4                            &viewproj) override;
 
         void CreatePipeline(std::span<const VkDescriptorSetLayout> inDescriptorLaouts, VkFormat inImageFormat);
 

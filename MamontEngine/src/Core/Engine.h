@@ -8,21 +8,23 @@
 #include "Graphics/ImGuiRenderer.h"
 #include <ECS/SceneRenderer.h>
 #include "ImGuiLayer.h"
-#include "Core/Log.h"
 #include "Scripting/ScriptSystem.h"
 #include "Physics/PhysicsSystem.h"
 #include "Graphics/Resources/Materials/MaterialManager.h"
 #include "InputSystem.h"
-#include "Audio/AudioSystem.h"
 
 namespace MamontEngine
 {
     class Scene;
     class TimeStep;
+    class AudioSystem;
+    class Log;
 
 	class MEngine
 	{
     public:
+        MEngine();
+        ~MEngine();
         void Init();
         void Run();
         void Cleanup();
@@ -63,10 +65,7 @@ namespace MamontEngine
             return m_Renderer->GetSceneRenderer();
         }
 
-        Renderer* GetRenderer() const
-        {
-            return m_Renderer.get();
-        }
+        void ReloadShaders();
 
         const WindowCore* GetMainWindow() const
         {
@@ -77,7 +76,7 @@ namespace MamontEngine
 
         inline ScriptSystem *GetScriptSystem() const { return m_ScriptSystem.get(); }
 
-        inline AudioSystem &GetAudioSystem() const { return *m_AudioSystem.get(); }
+         AudioSystem &GetAudioSystem() const;
 
         void PushGuiLayer(ImGuiLayer *inLayer);
 

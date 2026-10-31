@@ -8,6 +8,7 @@
 
 #include "UI/UI.h"
 #include <ECS/Components/Hierarchy.h>
+#include "Audio/AudioSystem.h"
 
 namespace MamontEditor
 {

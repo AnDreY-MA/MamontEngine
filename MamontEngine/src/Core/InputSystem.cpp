@@ -1,6 +1,7 @@
 #include "Core/InputSystem.h"
 #include <SDL3/SDL.h>
 #include "Core/Log.h"
+#include <Utils/Profile.h>
 
 namespace
 {
@@ -438,7 +439,8 @@ namespace MamontEngine
 
     void InputSystem::ResetPressed()
     {
-        memset(m_KeyPressed, 0, MAX_KEYS);
+        std::memset(m_KeyPressed, 0, MAX_KEYS);
+        std::memset(m_PreviousKeys, 0, MAX_KEYS);
         std::memset(m_MouseClicked.data(), 0, MAX_BUTTONS);
     }
     
@@ -449,7 +451,14 @@ namespace MamontEngine
 
     bool SDLCALL InputSystem::OnInputEvent(void * v, SDL_Event *event)
     {
+        PROFILE_FUNCTION();
+
         const auto type = event->type;
+
+        for (uint32_t i = 0; i < MAX_KEYS; ++i)
+        {
+            s_InputSystem->m_PreviousKeys[i] = s_InputSystem->m_KeyPressed[i];
+        }
 
         if (type == SDL_EVENT_KEY_DOWN)
         {
@@ -460,6 +469,7 @@ namespace MamontEngine
             {
                 Log::Info("KeyDown: {}", stringCode);
             }
+            Log::Info("KeyDown: {}", stringCode);
 
             InputSystem::Get().SetKeyPressed(keyCode, true);
         }

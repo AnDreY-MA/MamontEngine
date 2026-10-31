@@ -6,11 +6,11 @@
 
 //#define ambient 0.6
 
-layout(set = 0, binding = 1) uniform sampler2DArray shadowMap; // DirectionLightShadow
-layout(set = 0, binding = 4) uniform samplerCube samplerCubeMap;
-layout(set = 0, binding = 5) uniform sampler2D samplerBRDFLUT;
-layout(set = 0, binding = 6) uniform samplerCube samplerPrefilteredMap;
-layout(set = 0, binding = 7) uniform samplerCube irradianceMap;
+layout(set = 0, binding = 0) uniform sampler2DArray shadowMap; // DirectionLightShadow
+layout(set = 0, binding = 3) uniform samplerCube samplerCubeMap;
+layout(set = 0, binding = 4) uniform sampler2D samplerBRDFLUT;
+layout(set = 0, binding = 5) uniform samplerCube samplerPrefilteredMap;
+layout(set = 0, binding = 6) uniform samplerCube irradianceMap;
 
 
 layout(location = 0) in vec3 inPos;
@@ -35,7 +35,7 @@ vec3 CalculalteNormal(uint hasNormalMap)
   {
     return normalize(inNormal);
   }
-  const vec4 texel = texture(textureSamplers[2], inUV);
+  const vec4 texel = texture(bindlessTextures[nonuniformEXT(hasNormalMap)], inUV);
   vec3 tangent_normal = texel.xyz;
   if (texel.w > 0.999)
   {
@@ -66,17 +66,17 @@ void main()
     MaterialBuffer matbuffer = MaterialBuffer(PushConstants.materialBuffer + PushConstants.materialIndex);
     const MaterialData materialData = matbuffer.materials;
 
-    const vec3 N = CalculalteNormal(0);
+    const vec3 N = CalculalteNormal(materialData.HasNormalMap);
 
-    const vec3 viewDirection = normalize(sceneData.cameraPosition - inPos);
+    const vec3 viewDirection = normalize(PushConstants.sceneData.cameraPosition - inPos);
     const vec3 R = reflect(-viewDirection, N);
 
-    const vec4 baseColorTexture = texture(textureSamplers[0], inUV);
+    const vec4 baseColorTexture = texture(bindlessTextures[nonuniformEXT(materialData.BaseColorTextureIndex)], inUV);
     const vec3 albedo = srgbToLinear(baseColorTexture.rgb * materialData.colorFactors.rgb * inColor.rgb);
 
     const vec4 baseColor = baseColorTexture * materialData.colorFactors * inColor;
 
-    const vec4 metallicRoughness = texture(textureSamplers[1], inUV);
+    const vec4 metallicRoughness = texture(bindlessTextures[nonuniformEXT(materialData.MetalRoughTextureIndex)], inUV);
     const float metallic = metallicRoughness.b * materialData.metallicFactor;
     const float roughness = clamp(metallicRoughness.g * materialData.roughnessFactor, 0.089, 1.0);
     const float alphaRoughness = roughness * roughness;

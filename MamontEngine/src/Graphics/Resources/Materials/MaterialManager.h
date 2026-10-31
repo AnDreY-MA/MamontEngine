@@ -15,7 +15,7 @@ namespace MamontEngine
 		static MaterialManager *Get() { return s_Instance; }
 
 		std::shared_ptr<Material>
-        CreateMaterial(const EMaterialPass pass, const Material::MaterialResources &resources, const Material::MaterialConstants &data);
+        CreateMaterial(const EMaterialPass pass, const Material::MaterialConstants &data);
 
 	private:
         std::vector<std::shared_ptr<Material>> m_Materials;

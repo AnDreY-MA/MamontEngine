@@ -9,7 +9,7 @@ namespace MamontEngine
         void      Init();
         void      Destroy();
 
-        Material *AllocateMaterial(const EMaterialPass pass, const Material::MaterialResources &resources, const Material::MaterialConstants &data);
+        Material *AllocateMaterial(const EMaterialPass pass, const Material::MaterialConstants &data);
 
         void Free(Material *material);
 

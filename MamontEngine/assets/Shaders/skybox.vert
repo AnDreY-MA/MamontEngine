@@ -12,9 +12,9 @@ void main()
     
     const vec4 worldPos = PushConstants.render_matrix * vec4(position , 1.0);
     
-    const mat4 view = mat4(mat3(sceneData.view));
+    const mat4 view = mat4(mat3(PushConstants.sceneData.view));
 
-    gl_Position = sceneData.proj * view * worldPos;
+    gl_Position = PushConstants.sceneData.proj * view * worldPos;
     
     gl_Position.z = gl_Position.w;
     

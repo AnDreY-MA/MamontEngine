@@ -1,6 +1,6 @@
 #version 450
 
-#include "include/material.glsl"
+layout(set = 0, binding = 3) uniform samplerCube samplerCubeMap;
 
 layout(location = 0) in vec3 inUVW;
 

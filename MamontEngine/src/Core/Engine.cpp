@@ -11,9 +11,14 @@
 #include "Utils/Profile.h"
 #include "tracy/public/TracyClient.cpp"
 #include "Graphics/Resources/Materials/MaterialAllocator.h"
+#include "Graphics/Resources/Textures/TextureManager.h"
 #include "Core/JobSystem.h"
 #include "Core/Event/EventSystem.h"
 #include "Core/TimeStep.h"
+#include "Core/Log.h"
+
+#include "Audio/AudioSystem.h"
+
 
 namespace MamontEngine
 {
@@ -23,6 +28,9 @@ namespace MamontEngine
     {
         return *loadedEngine;
     }
+
+    MEngine::MEngine() = default;
+    MEngine::~MEngine() = default;
 
     const std::string RootDirectories = PROJECT_ROOT_DIR;
 
@@ -40,6 +48,8 @@ namespace MamontEngine
         m_Window = std::make_shared<WindowCore>();
 
         m_ContextDevice = std::make_unique<VkContextDevice>(m_Window.get());
+
+        TextureManager::GetInstance().Init();
 
         m_MainCamera = std::make_shared<Camera>();
         m_Scene      = std::make_shared<Scene>();
@@ -83,13 +93,9 @@ namespace MamontEngine
         bool      isResized{false};
         bool      isStopRendering{false};
 
-        Event eventResize;
-
         PROFILE_SETTHREADNAME("Main Thread");
 
         MaterialManager::Get()->SetupDefaults();
-
-
         while (!bQuit)
         {
             const auto deltaTime = ImGui::GetIO().DeltaTime;
@@ -103,7 +109,7 @@ namespace MamontEngine
                 const auto frameTime = m_TimeStep->GetMillis();
             }
 
-            InputSystem::Get().ResetPressed();
+            //InputSystem::Get().ResetPressed();
 
             //m_Window->PollEvents();
 
@@ -115,12 +121,6 @@ namespace MamontEngine
                 ImGui_ImplSDL3_ProcessEvent(&event);
 
                 const auto typeEvent = event.window.type;
-
-                if (typeEvent == SDL_EVENT_WINDOW_RESIZED)
-                {
-                    isResized = true;
-                    eventResize.Invoke();
-                }
 
                 if (typeEvent == SDL_EVENT_WINDOW_MINIMIZED)
                 {
@@ -134,7 +134,6 @@ namespace MamontEngine
                 if (!m_Scene->IsSimulated())
                 {
                     m_MainCamera->ProccessEvent(event);
-
                 }
 
                 m_InputEvent = &event;
@@ -148,12 +147,10 @@ namespace MamontEngine
 
             if (m_ContextDevice->IsResizeRequest())
             {
-                m_ContextDevice->ResizeSwapchain(m_Window.get());
+                m_ContextDevice->ResizeSwapchain(m_Window->Resize());
             }
             else
             {
-                //m_GuiLayer->ImGuiRender();
-
                 m_PhysicsSystem->Update(deltaTime);
 
                 UpdateScene(deltaTime);
@@ -169,6 +166,7 @@ namespace MamontEngine
         {
             VkDevice &device = LogicalDevice::GetDevice();
             vkDeviceWaitIdle(device);
+            
             m_MainDeletionQueue.Flush();
 
             m_Renderer.reset();
@@ -179,6 +177,7 @@ namespace MamontEngine
             m_Scene.reset();
 
             m_MaterialManager.reset();
+            TextureManager::GetInstance().Shutdown();
 
             m_Window.reset();
             m_ContextDevice.reset();
@@ -235,6 +234,16 @@ namespace MamontEngine
     void MEngine::PushGuiLayer(ImGuiLayer *inLayer)
     {
         m_GuiLayer = std::shared_ptr<ImGuiLayer>(inLayer);
+    }
+
+    void MEngine::ReloadShaders()
+    {
+        m_Renderer->InitPipelines();
+    }
+
+    AudioSystem &MEngine::GetAudioSystem() const
+    {
+        return *m_AudioSystem.get();
     }
 } // namespace MamontEngine
 

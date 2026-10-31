@@ -1,9 +1,7 @@
 #pragma once
 
-#include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
-#include "ECS/SceneRenderer.h"
-#include "Pass/SkyPass.h"
 #include "Core/JobSystem.h"
+#include "Graphics/RenderData.h"
 
 namespace MamontEngine
 {
@@ -17,7 +15,10 @@ namespace MamontEngine
     class DirectLightPass;
     class PointLightPass;
     class PickPass;
+    class SkyPass;
     class ImGuiLayer;
+    class RenderPipeline;
+    class SceneRenderer;
 
     struct RenderStats
     {
@@ -87,7 +88,7 @@ namespace MamontEngine
 
         std::shared_ptr<RenderPipeline> m_RenderPipeline;
 
-        std::unique_ptr<DirectLightPass> m_DirectLightPass;
+        std::shared_ptr<DirectLightPass> m_DirectLightPass;
         std::unique_ptr<PointLightPass> m_PointLightPass;
         std::unique_ptr<PickPass>        m_PickPass;
         std::unique_ptr<SkyPass>         m_SkyPass;
@@ -100,6 +101,9 @@ namespace MamontEngine
         mutable MemoryStats m_GpuMemoryStats;
 
         mutable std::vector<VmaBudget> m_GpuHeapBudgets;
+
+        std::array<AllocatedBuffer, FRAME_OVERLAP> m_SceneStagingBuffers;
+
 
 	};
 }

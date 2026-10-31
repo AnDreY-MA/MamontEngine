@@ -29,7 +29,11 @@ namespace MamontEngine
 
         void DestroyFrameData();
 
-        void ResizeSwapchain(WindowCore *inWindow);
+        void ResizeSwapchain(const VkExtent2D &inNewExtent);
+
+        void BindBindlessDescriptorSet(VkCommandBuffer cmd, VkPipelineLayout layout);
+
+        void UpdateBindlessDescriptorSet(const VkDescriptorImageInfo inImageInfo, uint32_t id);
 
         FrameData       &GetCurrentFrame();
         const FrameData &GetCurrentFrame() const;
@@ -88,7 +92,10 @@ namespace MamontEngine
         VkDescriptorSetLayout GPUSceneDataDescriptorLayout{VK_NULL_HANDLE};
 
         VkSampler ImGuiSceneSampler{VK_NULL_HANDLE};
-        //VkImageView &ImGuiView{VK_NULL_HANDLE};
+
+        VkDescriptorPool BindlessDescriptorPool{VK_NULL_HANDLE};
+        VkDescriptorSetLayout BindlessDescriptorLayout{VK_NULL_HANDLE};
+        VkDescriptorSet  BindlessDescritporSet{VK_NULL_HANDLE};
 
         void            InitDescriptors();
 
@@ -108,6 +115,8 @@ namespace MamontEngine
         void InitSceneBuffers();
 
         void InitTracyContext();
+
+        void InitBindlessDescriptor();
 #pragma endregion
 
 #pragma region Destroy functions
@@ -119,6 +128,7 @@ namespace MamontEngine
         void DestroySyncStructeres();
 
         void DestroyDescriptors();
+        void DestroyBindlessDescriptor();
 
         void DestroySceneBuffers();
 #pragma endregion

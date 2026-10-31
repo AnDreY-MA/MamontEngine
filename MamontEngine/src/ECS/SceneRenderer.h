@@ -18,15 +18,16 @@ namespace MamontEngine
     };
 
     class Scene;
+    class DirectLightPass;
 
     class SceneRenderer
     {
     public:
-        explicit SceneRenderer(const std::shared_ptr<Camera> &inCamera, const std::shared_ptr<Scene>& inScene);
+        explicit SceneRenderer(const std::shared_ptr<Camera> &inCamera, const std::shared_ptr<Scene>& inScene, const std::shared_ptr<DirectLightPass>& inDirectPass);
 
         ~SceneRenderer();
 
-        void Render(VkCommandBuffer inCmd, VkDescriptorSet globalDescriptor, const RenderPipeline *inRenderPipeline);
+        void Render(VkCommandBuffer inCmd, std::pair<VkDescriptorSet, VkDescriptorSet> globalDescriptor, const RenderPipeline *inRenderPipeline);
 
         void Update(const VkExtent2D &inWindowExtent, float inDeltaTime);
 
@@ -67,6 +68,9 @@ namespace MamontEngine
     private:
         std::shared_ptr<Scene>     m_Scene;
         std::shared_ptr<Camera>    m_Camera;
+
+        std::weak_ptr<DirectLightPass> m_DirectShadowPass;
+
         DrawContext                m_DrawContext;
 
         GPUSceneData m_SceneData;

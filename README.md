@@ -9,6 +9,7 @@
 - Save/Load scene
 - Cascade Shadow Mapping
 - Physically Based Rendering
+- Bindless Model Textures
 
 ## Dependencies
 - Vulkan SDK (1.4)
@@ -22,3 +23,4 @@
 - Fastgltf
 - Stb
 - Vma
+- SoLoud

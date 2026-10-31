@@ -9,6 +9,8 @@ namespace MamontEngine
         ShaderModule(VkDevice device, std::string_view path, EShaderStage stage);
         ~ShaderModule();
 
+        inline bool IsValid() const{ return m_Module != VK_NULL_HANDLE; }
+
         inline VkShaderModule GetModule() const { return m_Module; }
 
 	private:

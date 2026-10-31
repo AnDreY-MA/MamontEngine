@@ -1,25 +1,15 @@
 #version 460
 
-#include "include/material.glsl"
 #include "include/PointShadowMap.glsl"
-#include "include/Light.glsl"
 
 layout(location = 0) in vec4 inPos;
 layout(location = 1) in vec2 inUV;
 
-layout(set = 0, binding = 0) uniform SceneData {
-  mat4 view;
-  mat4 proj;
-  mat4 viewproj;
-  vec3 cameraPosition;
-
-  float nearPlane;
-  float farPlane;
-} sceneData;
-
 void main()
 {
-  const float alpha = texture(textureSamplers[0], inUV).a;
+    /*MaterialBuffer matbuffer = MaterialBuffer(PushConstants.materialBuffer + PushConstants.materialIndex);
+    const MaterialData materialData = matbuffer.materials;
+  const float alpha = texture(bindlessTextures[nonuniformEXT(materialData.BaseColorTextureIndex)], inUV).a;
   if (alpha < 0.5) {
     discard;
   }
@@ -29,5 +19,5 @@ void main()
 
   const float distanceToLight = length(inPos.xyz - light.Position);
   gl_FragDepth = distanceToLight / light.Radius;
-
+  */
 }

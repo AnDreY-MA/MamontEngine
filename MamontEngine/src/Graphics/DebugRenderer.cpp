@@ -1,5 +1,6 @@
 #include "Graphics/DebugRenderer.h"
 #include <Utils/Profile.h>
+#include "Core/Engine.h"
 #include "Core/Log.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Resources/Models/Mesh.h"
@@ -95,6 +96,8 @@ namespace MamontEngine
 
         void Render(VkCommandBuffer inCmd)
         {
+            const auto &sceneBuffer = MEngine::Get().GetContextDevice().GetFrameAt(0).SceneDataBuffer;
+            
             if (const auto vertexCount = DebugRenderer::GetVertexCount(); vertexCount > 0)
             {
                 constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
@@ -104,6 +107,7 @@ namespace MamontEngine
                 const auto                 bufferAdress = DebugRenderer::GetVertexBufferAdress();
                 const GPUDrawPushConstants debug_pushconstants{
                         .WorldMatrix  = glm::mat4(1.f),
+                        .SceneBuffer = sceneBuffer.Address,
                         .VertexBuffer = bufferAdress,
                 };
 

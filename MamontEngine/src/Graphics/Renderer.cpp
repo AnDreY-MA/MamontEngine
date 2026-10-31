@@ -20,7 +20,10 @@
 #include "Graphics/Pass/DirectLightPass.h"
 #include "Graphics/Pass/PointLightPass.h"
 #include "Graphics/Pass/PickPass.h"
+#include "Graphics/Pass/SkyPass.h"
 #include "Graphics/DebugRenderer.h"
+#include "Graphics/Vulkan/Pipelines/RenderPipeline.h"
+#include "ECS/SceneRenderer.h"
 // #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
@@ -33,19 +36,21 @@ namespace MamontEngine
     {
         m_SkyPass = std::make_unique<SkyPass>();
 
-
         const std::array<VkDescriptorSetLayout, 2> layouts = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
 
-        m_DirectLightPass = std::make_unique<DirectLightPass>(m_DeviceContext.CascadeDepthImage.ImageFormat, m_DeviceContext.CascadeDepthImage.Image);
-        m_DirectLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
+        m_DirectLightPass = std::make_shared<DirectLightPass>(m_DeviceContext.CascadeDepthImage.ImageFormat, m_DeviceContext.CascadeDepthImage.Image);
 
         m_PointLightPass = std::make_unique<PointLightPass>(m_DeviceContext.PointLightShadowMaps);
 
         m_PickPass = std::make_unique<PickPass>();
-        //m_PickPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
         InitPipelines();
 
         m_GpuHeapBudgets.resize(10000);
+
+        for (auto &sBuffer : m_SceneStagingBuffers)
+        {
+            sBuffer = CreateStagingBuffer(sizeof(GPUSceneData));
+        }
     }
 
     Renderer::~Renderer()
@@ -58,7 +63,7 @@ namespace MamontEngine
 
     void Renderer::InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera, const std::shared_ptr<Scene> &inScene)
     {
-        m_SceneRenderer = std::make_shared<SceneRenderer>(inMainCamera, inScene);
+        m_SceneRenderer = std::make_shared<SceneRenderer>(inMainCamera, inScene, m_DirectLightPass);
     }
 
     void Renderer::InitImGuiRenderer(const std::shared_ptr<ImGuiLayer>& inLayer)
@@ -76,7 +81,8 @@ namespace MamontEngine
         fmt::println("DrawImage.ImageFormat: {}", string_VkFormat(inImageFormats.first));
         fmt::println("DepthImage.ImageFormat: {}", string_VkFormat(inImageFormats.second));
 
-        const std::array<VkDescriptorSetLayout, 2> layouts{m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
+        const std::array<VkDescriptorSetLayout, 2> layouts{m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.BindlessDescriptorLayout};
+        const std::array<VkDescriptorSetLayout, 1> skyLayouts{m_DeviceContext.GPUSceneDataDescriptorLayout};
 
         if (m_RenderPipeline)
         {
@@ -85,8 +91,9 @@ namespace MamontEngine
         
         m_RenderPipeline = std::make_shared<RenderPipeline>(device, layouts, inImageFormats);
 
-        m_SkyPass->CreatePipeline(layouts, inImageFormats);
-        m_PointLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
+        m_SkyPass->CreatePipeline(skyLayouts, inImageFormats);
+        m_DirectLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
+        //m_PointLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
 
         //InitPickPipepline();
 
@@ -202,9 +209,11 @@ namespace MamontEngine
         SetViewportScissor(inCmd, m_DrawExtent);
         vkCmdSetDepthBias(inCmd, 0, 0, 0);
 
+        const std::pair<VkDescriptorSet, VkDescriptorSet> descriptors{currentFrame.GlobalDescriptor, m_DeviceContext.BindlessDescritporSet};
+
         m_SkyPass->Render(inCmd, currentFrame.GlobalDescriptor);
 
-        m_SceneRenderer->Render(inCmd, currentFrame.GlobalDescriptor, m_RenderPipeline.get());
+        m_SceneRenderer->Render(inCmd, descriptors, m_RenderPipeline.get());
 
         vkCmdEndRendering(inCmd);
 
@@ -236,8 +245,10 @@ namespace MamontEngine
         const auto &lightData = m_SceneRenderer->GetLightData();
         if (lightData.PointLightingCount > 0)
         {
-            m_PointLightPass->Render(
-                    inCmd, m_DeviceContext.GetCurrentFrame().GlobalDescriptor, m_SceneRenderer->GetDrawContext(), m_SceneRenderer->GetGPUSceneData().Viewproj);
+            const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
+
+            const std::pair<VkDescriptorSet, VkDescriptorSet> descriptors{currentFrame.GlobalDescriptor, m_DeviceContext.BindlessDescritporSet};
+            m_PointLightPass->Render(inCmd, descriptors, m_SceneRenderer->GetDrawContext(), m_SceneRenderer->GetGPUSceneData().Viewproj);
         }
 
         const auto end     = std::chrono::high_resolution_clock::now();
@@ -251,21 +262,24 @@ namespace MamontEngine
     {
         if (!m_SceneRenderer->HasDirectionLight())
             return;
-
         const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
-        m_DirectLightPass->Render(inCmd, currentFrame.GlobalDescriptor, m_SceneRenderer->GetDrawContext(), m_SceneRenderer->GetGPUSceneData().Viewproj);
+
+        const std::pair<VkDescriptorSet, VkDescriptorSet> descriptors{currentFrame.GlobalDescriptor, m_DeviceContext.BindlessDescritporSet};
+
+        m_DirectLightPass->Render(inCmd, descriptors, m_SceneRenderer->GetDrawContext(), m_SceneRenderer->GetGPUSceneData().Viewproj);
     }
 
     void Renderer::UpdateUniformBuffers()
     {
         PROFILE_ZONE("Update uniform buffers");
 
-        const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
+        auto &currentFrame = m_DeviceContext.GetCurrentFrame();
 
         // Scene Buffer
         {
             const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
-            currentFrame.SceneDataBuffer.Copy(&sceneData);
+            CopyDataToDynamicBuffer(&currentFrame.SceneDataBuffer, &sceneData, &m_SceneStagingBuffers[m_DeviceContext.GetFrame()]);
+
         }
 
         // Cascade Matrix Buffer
@@ -303,7 +317,8 @@ namespace MamontEngine
     {
         m_SceneRenderer->Update(m_Window->GetExtent(), inDeltaTime);
 
-        m_DirectLightPass->UpdateCascade(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData().DirectLight.Direction);
+        //m_DirectLightPass->UpdateCascade(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData().DirectLight.Direction);
+
         m_PointLightPass->UpdateLights(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData());
     }
 

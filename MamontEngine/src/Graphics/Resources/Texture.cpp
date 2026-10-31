@@ -14,11 +14,18 @@
 #include "ktx.h"
 #include "stb_image.h"
 #include "vulkan/vulkan_core.h"
+#include <fastgltf/types.hpp>
+#include "Core/Log.h"
 
 #define M_PI 3.1415926535897932384626433832795
 
 namespace MamontEngine
 {
+    Texture::Texture()
+    {
+        m_Type = EAssetType::Texture;
+    }
+
     void Texture::Load(void *inData, const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped, VkSampler inSampler)
     {
         const size_t    dataSize     = inSize.depth * inSize.width * inSize.height * 4;
@@ -28,7 +35,6 @@ namespace MamontEngine
 
         Create(inSize, inFormat, inUsage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, inIsMipMapped, 1, 0, inSampler);
 
-        const auto &contextDevice = MEngine::Get().GetContextDevice();
         ImmediateContext::ImmediateSubmit(
                 [&](VkCommandBuffer cmd)
                 {
@@ -1243,6 +1249,170 @@ namespace MamontEngine
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
         return newTexture;
+    }
+
+    // Loading from gltf
+    static VkFilter ExtractFilter(fastgltf::Filter filter)
+    {
+        switch (filter)
+        {
+                // nearest samplers
+            case fastgltf::Filter::Nearest:
+            case fastgltf::Filter::NearestMipMapNearest:
+            case fastgltf::Filter::NearestMipMapLinear:
+                return VK_FILTER_NEAREST;
+
+                // linear samplers
+            case fastgltf::Filter::Linear:
+            case fastgltf::Filter::LinearMipMapNearest:
+            case fastgltf::Filter::LinearMipMapLinear:
+            default:
+                return VK_FILTER_LINEAR;
+        }
+    }
+
+    static VkSamplerMipmapMode ExtractMipmapMode(fastgltf::Filter filter)
+    {
+        switch (filter)
+        {
+            case fastgltf::Filter::NearestMipMapNearest:
+            case fastgltf::Filter::LinearMipMapNearest:
+                return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+
+            case fastgltf::Filter::NearestMipMapLinear:
+            case fastgltf::Filter::LinearMipMapLinear:
+            default:
+                return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        }
+    }
+
+    static std::vector<VkSampler> LoadSamplers(const std::vector<fastgltf::Sampler> &samplers)
+    {
+        const VkDevice device = LogicalDevice::GetDevice();
+
+        VkSamplerCreateInfo sampl = {.sType     = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+                                     .pNext     = nullptr,
+                                     .magFilter = VK_FILTER_LINEAR,
+                                     .minFilter = VK_FILTER_LINEAR,
+                                     .minLod    = 0,
+                                     .maxLod    = VK_LOD_CLAMP_NONE};
+        sampl.mipmapMode          = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
+        std::vector<VkSampler> modelSamplers;
+        const auto             size = samplers.size();
+        modelSamplers.reserve(size != 0 ? size : 1);
+
+        for (const fastgltf::Sampler &sampler : samplers)
+        {
+            sampl.magFilter  = ExtractFilter(sampler.magFilter.value_or(fastgltf::Filter::Nearest));
+            sampl.minFilter  = ExtractFilter(sampler.minFilter.value_or(fastgltf::Filter::Nearest));
+            sampl.mipmapMode = ExtractMipmapMode(sampler.minFilter.value_or(fastgltf::Filter::Nearest));
+
+            VkSampler newSampler;
+            vkCreateSampler(device, &sampl, nullptr, &newSampler);
+
+            modelSamplers.push_back(newSampler);
+        }
+
+        return modelSamplers;
+    }
+
+    Texture *CreateTextureFromGltf(const fastgltf::Asset &asset, const fastgltf::Image &image, VkSampler inSampler)
+    {
+        auto* newTexture = new Texture();
+
+        std::visit(
+                fastgltf::visitor{
+                        [](auto &arg) {},
+                        [&](const fastgltf::sources::URI &filePath)
+                        {
+                            assert(filePath.fileByteOffset == 0);
+                            assert(filePath.uri.isLocalPath());
+
+                            const auto       &uri = *filePath.uri;
+                            const std::string path(uri.path().begin(), uri.path().end());
+                            int               width, height, nrChannels;
+
+                            unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
+                            if (data)
+                            {
+                                const VkExtent3D imagesize{.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height), .depth = 1};
+
+                                newTexture->Load(data,
+                                                 imagesize,
+                                                 VK_FORMAT_R8G8B8A8_UNORM,
+                                                 VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                                                 false,
+                                                 inSampler);
+                                stbi_image_free(data);
+                            }
+                        },
+                        [&](const fastgltf::sources::Vector &vector)
+                        {
+                            int width, height, nrChannels;
+
+                            const auto    *bytes = reinterpret_cast<const stbi_uc *>(vector.bytes.data());
+                            unsigned char *data  = stbi_load_from_memory(bytes, static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
+                            if (data)
+                            {
+                                const VkExtent3D imagesize{.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height), .depth = 1};
+
+                                newTexture->Load(data,
+                                                 imagesize,
+                                                 VK_FORMAT_R8G8B8A8_UNORM,
+                                                 VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                                                 false,
+                                                 inSampler);
+                                stbi_image_free(data);
+                            }
+                        },
+                        [&](const fastgltf::sources::BufferView &view)
+                        {
+                            const auto &bufferView = asset.bufferViews[view.bufferViewIndex];
+                            const auto &buffer     = asset.buffers[bufferView.bufferIndex];
+                            int         width, height, nrChannels;
+
+
+                            std::visit(fastgltf::visitor{[](auto &arg) {},
+                                                         [&](const fastgltf::sources::Array &array)
+                                                         {
+                                                             const auto *bytes = reinterpret_cast<const stbi_uc *>(array.bytes.data());
+
+                                                             unsigned char *data = stbi_load_from_memory(bytes + bufferView.byteOffset,
+                                                                                                         static_cast<int>(bufferView.byteLength),
+                                                                                                         &width,
+                                                                                                         &height,
+                                                                                                         &nrChannels,
+                                                                                                         4);
+                                                             if (data)
+                                                             {
+                                                                 const VkExtent3D imagesize{.width  = static_cast<uint32_t>(width),
+                                                                                            .height = static_cast<uint32_t>(height),
+                                                                                            .depth  = 1};
+
+                                                                 newTexture->Load(data,
+                                                                                  imagesize,
+                                                                                  VK_FORMAT_R8G8B8A8_UNORM,
+                                                                                  VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                                                                                  false,
+                                                                                  inSampler);
+                                                                 stbi_image_free(data);
+                                                             }
+                                                         }},
+                                       buffer.data);
+                        },
+                },
+                image.data);
+
+        if (newTexture->Image == VK_NULL_HANDLE)
+        {
+            Log::Warn("newTexture.Image is NULL");
+            return {};
+        }
+        else
+        {
+            return newTexture;
+        }
     }
 
 } // namespace MamontEngine

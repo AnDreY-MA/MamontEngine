@@ -4,6 +4,7 @@
 #include "Core/Engine.h"
 #include "EditorUtils/EditorUtils.h"
 #include "Asset/AssetManager.h"
+#include "Core/Log.h"
 
 namespace MamontEditor
 {

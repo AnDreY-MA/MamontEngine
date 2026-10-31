@@ -14,5 +14,5 @@ void main()
   outColor = v.color;
 
   vec4 position = vec4(v.position, 1.0);
-  gl_Position = sceneData.viewproj * position;
+  gl_Position = PushConstants.sceneData.viewproj * position;
 }

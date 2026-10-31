@@ -6,7 +6,10 @@ namespace MamontEngine
     {
     }
 
-    void MainPass::Render(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, const DrawContext &inDrawContext, const glm::mat4 &viewproj)
+    void MainPass::Render(VkCommandBuffer                             cmd,
+                          std::pair<VkDescriptorSet, VkDescriptorSet> globalDescriptor,
+                          const DrawContext                          &inDrawContext,
+                          const glm::mat4                            &viewproj)
     {
     }
 } // namespace MamontEngine

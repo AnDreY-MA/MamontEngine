@@ -23,8 +23,8 @@ void main()
   outUV = v.uv;
   outTangent = v.tangent;
   outPos = worldPosition.xyz;
-  outViewPos = (sceneData.view * worldPosition).xyz;
+  outViewPos = (PushConstants.sceneData.view * worldPosition).xyz;
 
-  gl_Position = sceneData.viewproj * worldPosition;
+  gl_Position = PushConstants.sceneData.viewproj * worldPosition;
 
 }

@@ -1,5 +1,6 @@
 #include "Camera.h"
-
+#include "Core/InputSystem.h"
+#include "Core/Log.h"
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE 
 #define GLM_FORCE_LEFT_HANDED
 #include <glm/glm.hpp>
@@ -33,15 +34,9 @@ namespace MamontEngine
     
     void Camera::ProccessEvent(SDL_Event &inEvent)
     {
-        if (inEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN && inEvent.button.button == SDL_BUTTON_RIGHT)
-        {
-            m_IsMotion   = true;
-        }
-
-        if (inEvent.type == SDL_EVENT_MOUSE_BUTTON_UP && inEvent.button.button == SDL_BUTTON_RIGHT)
-        {
-            m_IsMotion   = false;
-        }
+        const auto &input      = InputSystem::Get();
+        const bool rightMouse = input.IsMouseClicked(KeyMouse::Right);
+        m_IsMotion            = rightMouse;
 
         if (inEvent.type == SDL_EVENT_KEY_UP)
         {

@@ -4,6 +4,8 @@ namespace MamontEngine
 {
     struct AllocatedBuffer
     {
+        AllocatedBuffer() = default;
+        ~AllocatedBuffer();
         VkBuffer          Buffer{VK_NULL_HANDLE};
         VmaAllocation     Allocation{VK_NULL_HANDLE};
         VmaAllocationInfo Info;

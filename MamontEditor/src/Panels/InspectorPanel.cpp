@@ -1,5 +1,7 @@
 ﻿#include "Panels/InspectorPanel.h"
 #include "Editor.h"
+#include "Audio/AudioSystem.h"
+
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 #include <ECS/Components/TagComponent.h>

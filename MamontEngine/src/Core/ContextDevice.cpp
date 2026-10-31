@@ -20,6 +20,9 @@ namespace MamontEngine
 {
     constexpr bool bUseValidationLayers = true;
 
+    constexpr uint32_t BindlessTextureBinding = 10;
+    constexpr uint32_t MAX_BINDLESS_RESOURCE = 1024;
+
     static VKAPI_ATTR VkBool32 VKAPI_CALL DetailedDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      severity,
                                                                 VkDebugUtilsMessageTypeFlagsEXT             type,
                                                                 const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
@@ -100,8 +103,6 @@ namespace MamontEngine
 
         return VK_FALSE;
     }
-
-    static WindowCore *s_Window = nullptr;
 
     VkContextDevice::VkContextDevice(WindowCore *inWindow)
     {
@@ -185,11 +186,13 @@ namespace MamontEngine
 
         constexpr VkPhysicalDeviceVulkan13Features features = {
                 .robustImageAccess = VK_TRUE,
+                .inlineUniformBlock = VK_TRUE,
+                .descriptorBindingInlineUniformBlockUpdateAfterBind = VK_TRUE,
                 .synchronization2 = VK_TRUE,
                 .dynamicRendering = VK_TRUE,
                 .maintenance4 = VK_TRUE
         };
-
+        
         constexpr VkPhysicalDeviceVulkan12Features features12 = {
                 .uniformAndStorageBuffer8BitAccess = VK_TRUE,
                 .shaderInt8                        = VK_TRUE,
@@ -202,6 +205,7 @@ namespace MamontEngine
                 .shaderUniformTexelBufferArrayNonUniformIndexing = VK_TRUE,
                 .shaderStorageTexelBufferArrayNonUniformIndexing = VK_TRUE,
                 .descriptorBindingSampledImageUpdateAfterBind  = VK_TRUE,
+                .descriptorBindingStorageImageUpdateAfterBind = VK_TRUE,
                 .descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE,
                 .descriptorBindingUpdateUnusedWhilePending     = VK_TRUE,
                 .descriptorBindingPartiallyBound               = VK_TRUE,
@@ -225,9 +229,22 @@ namespace MamontEngine
         robustness2Features.robustImageAccess2  = VK_TRUE;
         robustness2Features.nullDescriptor      = VK_TRUE;
 
+        VkValidationFeatureEnableEXT validationEnables[] = {
+                VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
+                // опционально:
+                // VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
+                // VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT,
+        };
+
+        VkValidationFeaturesEXT validationFeatures{};
+        validationFeatures.sType                         = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+        validationFeatures.enabledValidationFeatureCount = 1;
+        validationFeatures.pEnabledValidationFeatures    = validationEnables;
+
+
         vkb::PhysicalDeviceSelector selector{vkbInstance};
 
-        std::vector<const char *> extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, VK_KHR_ROBUSTNESS_2_EXTENSION_NAME};
+        std::vector<const char *> extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_ROBUSTNESS_2_EXTENSION_NAME, VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME};
 
 #ifdef PROFILING
         extensions.push_back("VK_EXT_calibrated_timestamps");
@@ -244,12 +261,10 @@ namespace MamontEngine
                                                            .select()
                                                            .value();
         fmt::print("Name {}", physicalDevice.name);
-        s_Window = inWindow;
-
 
         vkb::DeviceBuilder deviceBuilder{physicalDevice};
 
-        const vkb::Device vkbDevice = deviceBuilder.build().value();
+        const vkb::Device vkbDevice = deviceBuilder.add_pNext(&validationFeatures).build().value();
 
         LogicalDevice::InitDevice(vkbDevice.device);
         PhysicalDevice::Init(physicalDevice.physical_device);
@@ -280,15 +295,28 @@ namespace MamontEngine
 
         InitSceneBuffers();
 
+        InitBindlessDescriptor();
         InitDescriptors();
 
         InitTracyContext();
+
+        VkPhysicalDeviceDescriptorIndexingFeatures indexing_features{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, nullptr};
+        VkPhysicalDeviceFeatures2                  device_features{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexing_features};
+
+        vkGetPhysicalDeviceFeatures2(PhysicalDevice::GetDevice(), &device_features);
+        // For the feature to be correctly working, we need both the possibility to partially bind a descriptor,
+        // as some entries in the bindless array will be empty, and SpirV runtime descriptors.
+        bool bindlessSupported = indexing_features.descriptorBindingPartiallyBound && indexing_features.runtimeDescriptorArray;
+
+        Log::Info("bindlessSupported: {}", bindlessSupported);
 
     }
 
     VkContextDevice::~VkContextDevice()
     {
         VkDevice device = LogicalDevice::GetDevice();
+
+        DestroyBindlessDescriptor();
 
         m_SkyboxTexture->Destroy();
         m_BRDFUTTexture->Destroy();
@@ -467,12 +495,17 @@ namespace MamontEngine
 
     void VkContextDevice::InitSceneBuffers()
     {
-        for (size_t i{0}; i < FRAME_OVERLAP; ++i)
+        for (auto& frame : m_Frames)
         {
-            GetFrameAt(i).SceneDataBuffer.Create(sizeof(GPUSceneData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-            GetFrameAt(i).LightDataBuffer.Create(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+            frame.SceneDataBuffer.Create(sizeof(GPUSceneData),
+                                         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                                         VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+            const VkBufferDeviceAddressInfo deviceAddressInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = frame.SceneDataBuffer.Buffer};
+            frame.SceneDataBuffer.Address                     = vkGetBufferDeviceAddress(LogicalDevice::GetDevice(), &deviceAddressInfo);
+            
+            frame.LightDataBuffer.Create(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-            GetFrameAt(i).CascadeMatrixBuffer.Create(sizeof(ShadowCascades), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+            frame.CascadeMatrixBuffer.Create(sizeof(ShadowCascades), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
         }
     }
 
@@ -506,24 +539,22 @@ namespace MamontEngine
 
         {
             DescriptorLayoutBuilder builder;
-            builder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            builder.AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            builder.AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            builder.AddBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             builder.AddBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            builder.AddBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
            
+            builder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            builder.AddBinding(7, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            builder.AddBinding(8, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, PointLightShadowMaps.size());
+            builder.AddBinding(7, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, PointLightShadowMaps.size());
             GPUSceneDataDescriptorLayout = builder.Build(device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
         }
 
         std::cerr << "GPUSceneDataDescriptorLayout: " << GPUSceneDataDescriptorLayout << std::endl;
         std::cerr << "RenderDescriptorLayout: " << RenderDescriptorLayout << std::endl;
 
-
-        constexpr size_t cascadeDataSize     = sizeof(LightData);
+        constexpr size_t lightDataSize = sizeof(LightData);
 
         for (auto &frame : m_Frames)
         {
@@ -534,25 +565,24 @@ namespace MamontEngine
 
             auto &globalDescriptor = frame.GlobalDescriptor;
             globalDescriptor       = GlobalDescriptorAllocator.Allocate(device, GPUSceneDataDescriptorLayout);
-            writer.WriteBuffer(0, frame.SceneDataBuffer.Buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            writer.WriteImage(1,
+            writer.WriteImage(0,
                               CascadeDepthImage.ImageView,
                               CascadeDepthImage.Sampler,
                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            writer.WriteBuffer(2, frame.LightDataBuffer.Buffer, cascadeDataSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            writer.WriteBuffer(3, frame.CascadeMatrixBuffer.Buffer, sizeof(ShadowCascades), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            writer.WriteImage(4, m_SkyboxTexture->ImageView, m_SkyboxTexture->Sampler, 
+            writer.WriteBuffer(1, frame.LightDataBuffer.Buffer, lightDataSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            writer.WriteBuffer(2, frame.CascadeMatrixBuffer.Buffer, sizeof(ShadowCascades), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            writer.WriteImage(3, m_SkyboxTexture->ImageView, m_SkyboxTexture->Sampler, 
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            writer.WriteImage(5,
+            writer.WriteImage(4,
                               m_BRDFUTTexture->ImageView,
                               m_BRDFUTTexture->Sampler, 
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             if (m_PrefilteredCubeTexture && m_PrefilteredCubeTexture->Image != VK_NULL_HANDLE && m_PrefilteredCubeTexture->Sampler != VK_NULL_HANDLE)
             {
-                writer.WriteImage(6,
+                writer.WriteImage(5,
                                   m_PrefilteredCubeTexture->ImageView,
                                   m_PrefilteredCubeTexture->Sampler,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -560,7 +590,7 @@ namespace MamontEngine
             }
             if (m_IrradianceTexture && m_IrradianceTexture->Image != VK_NULL_HANDLE && m_IrradianceTexture->Sampler != VK_NULL_HANDLE)
             {
-                writer.WriteImage(7,
+                writer.WriteImage(6,
                                   m_IrradianceTexture->ImageView,
                                   m_IrradianceTexture->Sampler,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -578,7 +608,7 @@ namespace MamontEngine
                 info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
                 pointInfos.push_back(info);
             }
-            writer.WriteImageArray(8, pointInfos, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            writer.WriteImageArray(7, pointInfos, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
             writer.UpdateSet(device, globalDescriptor);
 
@@ -602,6 +632,35 @@ namespace MamontEngine
 
         vkDestroyDescriptorSetLayout(device, RenderDescriptorLayout, nullptr);
         vkDestroyDescriptorSetLayout(device, GPUSceneDataDescriptorLayout, nullptr);
+
+        
+    }
+
+    void VkContextDevice::DestroyBindlessDescriptor()
+    {
+        const VkDevice &device = LogicalDevice::GetDevice();
+
+        vkDestroyDescriptorSetLayout(device, BindlessDescriptorLayout, nullptr);
+        vkDestroyDescriptorPool(device, BindlessDescriptorPool, nullptr);
+    }
+
+    void VkContextDevice::BindBindlessDescriptorSet(VkCommandBuffer cmd, VkPipelineLayout layout)
+    {
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &BindlessDescritporSet, 0, nullptr);
+    }
+
+    void VkContextDevice::UpdateBindlessDescriptorSet(const VkDescriptorImageInfo inImageInfo, uint32_t id)
+    {
+        VkWriteDescriptorSet write{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, .pNext = nullptr, 
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+        };
+        write.dstBinding      = BindlessTextureBinding;
+        write.descriptorCount = 1;
+        write.dstSet          = BindlessDescritporSet;
+        write.dstArrayElement = id;
+        write.pImageInfo      = &inImageInfo;
+
+        vkUpdateDescriptorSets(LogicalDevice::GetDevice(), 1, &write, 0, nullptr);
     }
 
     void VkContextDevice::InitSwapchain(const VkExtent2D &inWindowExtent)
@@ -664,7 +723,7 @@ namespace MamontEngine
         //InitShadowImages();
     }
 
-    void VkContextDevice::ResizeSwapchain(WindowCore *inWindow)
+    void VkContextDevice::ResizeSwapchain(const VkExtent2D& inNewExtent)
     {
         if (!m_IsResizeRequested)
             return;
@@ -679,11 +738,9 @@ namespace MamontEngine
 
         DestroyDescriptors();
 
-        const auto &newExtent = inWindow->Resize();
-
         Swapchain.Destroy(device);
 
-        Swapchain.Init(Surface, newExtent);
+        Swapchain.Init(Surface, inNewExtent);
 
         InitImage();
 
@@ -859,12 +916,74 @@ namespace MamontEngine
 #endif
     }
 
+    void VkContextDevice::InitBindlessDescriptor()
+    {
+        const VkDevice device = LogicalDevice::GetDevice();
+
+        constexpr std::array<VkDescriptorPoolSize, 2> poolSizedBindless = {
+                VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_BINDLESS_RESOURCE},
+                VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_BINDLESS_RESOURCE}};
+
+        VkDescriptorPoolCreateInfo poolInfo = {.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, .pNext = nullptr};
+        poolInfo.flags                      = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+        poolInfo.maxSets                    = MAX_BINDLESS_RESOURCE * static_cast<uint32_t>(poolSizedBindless.size());
+        poolInfo.poolSizeCount              = poolSizedBindless.size();
+        poolInfo.pPoolSizes                 = poolSizedBindless.data();
+
+        VK_CHECK(vkCreateDescriptorPool(device, &poolInfo, nullptr, &BindlessDescriptorPool));
+
+        const uint32_t                              poolCount = static_cast<uint32_t>(poolSizedBindless.size());
+        std::array<VkDescriptorSetLayoutBinding, 4> bindings{};
+
+        bindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        bindings[0].descriptorCount    = MAX_BINDLESS_RESOURCE;
+        bindings[0].binding            = BindlessTextureBinding;
+        bindings[0].stageFlags         = VK_SHADER_STAGE_ALL;
+        bindings[0].pImmutableSamplers = nullptr;
+
+        bindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        bindings[1].descriptorCount    = MAX_BINDLESS_RESOURCE;
+        bindings[1].binding            = BindlessTextureBinding + 1;
+        bindings[1].stageFlags         = VK_SHADER_STAGE_ALL;
+        bindings[1].pImmutableSamplers = nullptr;
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo = {.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+        layoutInfo.bindingCount                    = poolCount;
+        layoutInfo.pBindings                       = bindings.data();
+        layoutInfo.flags                           = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+
+        VkDescriptorBindingFlags bindlessFlags = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+                                                 /*VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT |*/ VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
+        std::array<VkDescriptorBindingFlags, 4> binding_flags{};
+
+        binding_flags[0] = bindlessFlags;
+        binding_flags[1] = bindlessFlags;
+
+        const VkDescriptorSetLayoutBindingFlagsCreateInfoEXT extendedInfo{.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+                                                                          .pNext         = nullptr,
+                                                                          .bindingCount  = poolCount,
+                                                                          .pBindingFlags = binding_flags.data()};
+
+        layoutInfo.pNext = &extendedInfo;
+
+        VK_CHECK(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &BindlessDescriptorLayout));
+        VkDescriptorSetAllocateInfo allocInfo{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, .pNext = nullptr};
+        allocInfo.descriptorPool     = BindlessDescriptorPool;
+        allocInfo.pSetLayouts        = &BindlessDescriptorLayout;
+        allocInfo.descriptorSetCount = 1;
+
+        VK_CHECK(vkAllocateDescriptorSets(device, &allocInfo, &BindlessDescritporSet));
+    }
+
     void VkContextDevice::DestroyImages()
     {
         DrawImage.Destroy();
         DepthImage.Destroy();
 
         IdTexture.Destroy();
+
+        vkDestroySampler(LogicalDevice::GetDevice(), ImGuiSceneSampler, nullptr);
+
     }
 
     void VkContextDevice::DestroyShadowImages()

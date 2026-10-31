@@ -106,6 +106,8 @@ namespace MamontEngine
 
         const RenderObject &object = m_SkyboxContext.OpaqueSurfaces[0];
 
+        const auto &sceneBuffer = MEngine::Get().GetContextDevice().GetFrameAt(0).SceneDataBuffer;
+
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Pipeline);
 
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout,
@@ -119,6 +121,7 @@ namespace MamontEngine
 
         const GPUDrawPushConstants push_constants{
                 .WorldMatrix  = glm::mat4(1.f),
+                .SceneBuffer = sceneBuffer.Address,
                 .VertexBuffer = object.MeshBuffer.VertexBuffer.Address,
         };
 

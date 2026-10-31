@@ -14,6 +14,8 @@ namespace fastgltf
 
 namespace MamontEngine
 {
+    class Texture;
+
     class Model : public Asset, public NonCopyable
 	{ 
     public:

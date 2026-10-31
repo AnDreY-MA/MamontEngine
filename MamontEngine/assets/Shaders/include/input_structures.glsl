@@ -3,20 +3,13 @@
 #include "vertex_data.glsl"
 #include "material.glsl"
 #include "Light.glsl"
+#include "scene_data.glsl"
 
-layout(set = 0, binding = 0) uniform SceneData {
-  mat4 view;
-  mat4 proj;
-  mat4 viewproj;
-  vec3 cameraPosition;
-
-  float nearPlane;
-  float farPlane;
-} sceneData;
 
 layout(push_constant) uniform constants
 {
   mat4 render_matrix;
+  SceneDataBuffer sceneData;
   VertexBuffer vertexBuffer;
   MaterialBuffer materialBuffer;
   uint64_t objectID;

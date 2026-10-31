@@ -68,7 +68,7 @@ namespace MamontEngine
             g_Buffer.Destroy();
         }
 
-        Material *AllocateMaterial(const EMaterialPass pass, const Material::MaterialResources &resources, const Material::MaterialConstants &data)
+        Material *AllocateMaterial(const EMaterialPass pass, const Material::MaterialConstants &data)
         {
             uint32_t  index       = 0;
             if (!g_Free.empty())
@@ -84,13 +84,12 @@ namespace MamontEngine
 
             Material *newMaterial = new Material();
             newMaterial->Constants    = data;
-            newMaterial->Resources    = resources;
             newMaterial->PassType     = pass;
             newMaterial->Index        = index;
 
             const VkDevice  &device   = LogicalDevice::GetDevice();
 
-            const std::vector<std::shared_ptr<Texture>> textures{
+            /*const std::vector<std::shared_ptr<Texture>> textures{
                     resources.ColorTexture, resources.MetalRoughTexture, resources.NormalTexture, resources.EmissiveTexture, resources.OcclusionTexture};
 
             std::vector<VkDescriptorImageInfo> textureDescriptors;
@@ -106,7 +105,7 @@ namespace MamontEngine
 
             DescriptorWriter writer;
             writer.WriteImageArray(0, textureDescriptors, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            writer.UpdateSet(device, newMaterial->MaterialSet);
+            writer.UpdateSet(device, newMaterial->MaterialSet);*/
 
             Update(newMaterial);
 

@@ -11,7 +11,10 @@ namespace MamontEngine
         RenderPass()          = default;
         virtual ~RenderPass() = default;
 
-        virtual void Render(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, const DrawContext &inDrawContext, const glm::mat4 &viewproj) {};
+        virtual void Render(VkCommandBuffer                             cmd,
+                            std::pair<VkDescriptorSet, VkDescriptorSet> globalDescriptor,
+                            const DrawContext                          &inDrawContext,
+                            const glm::mat4                            &viewproj) {};
 
     protected:
         std::unique_ptr<PipelineData> m_Pipeline;

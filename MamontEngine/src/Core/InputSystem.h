@@ -23,10 +23,19 @@ namespace MamontEngine
         {
             return m_KeyPressed[int(key)];
         }
+        inline bool IsKeyReleased(KeyCode key) const
+        {
+            return m_KeyReleased[int(key)];
+        }
 
         inline bool IsMouseClicked(KeyMouse key) const
         {
             return m_MouseClicked[int(key)];
+        }
+
+        inline bool IsMouseReleased(KeyMouse key) const
+        {
+            return !m_MouseClicked[int(key)];
         }
 
         void EnableDebug(bool inValue)
@@ -42,9 +51,12 @@ namespace MamontEngine
 
         inline void SetMouseClicked(KeyMouse key, bool value) { m_MouseClicked[int(key)] = value; } 
 
-
     private:
         bool m_KeyPressed[MAX_KEYS];
+        bool m_KeyReleased[MAX_KEYS];
+
+        bool m_PreviousKeys[MAX_KEYS];
+
         std::array<bool, MAX_KEYS> m_KeyHeld;
 
         std::array<bool, MAX_KEYS> m_MouseClicked;

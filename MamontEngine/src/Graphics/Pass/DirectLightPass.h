@@ -13,7 +13,10 @@ namespace MamontEngine
 
         ~DirectLightPass();
 
-        virtual void Render(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, const DrawContext &inDrawContext, const glm::mat4 &viewproj) override;
+        virtual void Render(VkCommandBuffer                            cmd,
+                            std::pair<VkDescriptorSet, VkDescriptorSet> globalDescriptor,
+                            const DrawContext                         &inDrawContext,
+                            const glm::mat4                           &viewproj) override;
 
 		void UpdateCascade(const Camera* inCamera, const glm::vec3& inLightDirection);
 

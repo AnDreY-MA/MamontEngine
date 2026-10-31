@@ -42,9 +42,9 @@ namespace MamontEngine
     }
 
     std::shared_ptr<Material>
-    MaterialManager::CreateMaterial(const EMaterialPass pass, const Material::MaterialResources &resources, const Material::MaterialConstants &data)
+    MaterialManager::CreateMaterial(const EMaterialPass pass, const Material::MaterialConstants &data)
     {
-        const auto newMaterial {std::shared_ptr<Material>(MaterialAllocator::AllocateMaterial(pass, resources, data))};
+        const auto newMaterial {std::shared_ptr<Material>(MaterialAllocator::AllocateMaterial(pass, data))};
 
         m_Materials.push_back(newMaterial);
 
@@ -57,15 +57,9 @@ namespace MamontEngine
 
         const auto whiteTexture = CreateWhiteTexture();
 
-        Material::MaterialResources resources;
-        resources.ColorTexture = whiteTexture;
-        resources.MetalRoughTexture = whiteTexture;
-        resources.NormalTexture = whiteTexture;
-        resources.OcclusionTexture = whiteTexture;
-        resources.EmissiveTexture = whiteTexture;
         const Material::MaterialConstants matParameters{.ColorFactors = glm::vec4(1.f)};
 
-        Material *newMaterial = MaterialAllocator::AllocateMaterial(pass, resources, matParameters);
+        Material *newMaterial = MaterialAllocator::AllocateMaterial(pass, matParameters);
         newMaterial->Name     = "M_White";
         return newMaterial;
     }

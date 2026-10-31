@@ -1,7 +1,7 @@
 #define SHADOW_MAP_CASCADE_COUNT 3
 #define SHADOW_OPACITY 0.5
 
-layout (set = 0, binding = 3) uniform CascadeShadowUBO {
+layout (set = 0, binding = 2) uniform CascadeShadowUBO {
 	mat4 cascadeViewProjMat[SHADOW_MAP_CASCADE_COUNT];
     float CascadeSplits[SHADOW_MAP_CASCADE_COUNT];
 } cascadeShadows;

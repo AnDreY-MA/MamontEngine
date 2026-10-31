@@ -2,6 +2,7 @@
 #include <sol/sol.hpp>
 #include "Core/Engine.h"
 #include "Utils/Reflection.h"
+#include "Core/Log.h"
 
 namespace MamontEngine
 {

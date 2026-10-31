@@ -16,5 +16,7 @@ glslc.exe -fshader-stage=vert cascade_shadow.vert -o cascade_shadow.vert.spv
 glslc.exe -fshader-stage=frag debug_draw.frag -o debug_draw.frag.spv
 glslc.exe -fshader-stage=vert debug_draw.vert -o debug_draw.vert.spv
 
+glslc.exe -fshader-stage=frag skybox.frag -o skybox.frag.spv
+glslc.exe -fshader-stage=vert skybox.vert -o skybox.vert.spv
 
 pause

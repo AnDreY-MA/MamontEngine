@@ -9,6 +9,7 @@
 #include "Core/Engine.h"
 #include "Graphics/Frustum.h"
 #include "Graphics/Shader/ShaderModule.h"
+#include "Graphics/Resources/Materials/MaterialAllocator.h"
 
 namespace MamontEngine
 {
@@ -41,7 +42,10 @@ namespace MamontEngine
         m_Pipeline.reset();
     }
 
-    void DirectLightPass::Render(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, const DrawContext &inDrawContext, const glm::mat4 &viewproj)
+    void DirectLightPass::Render(VkCommandBuffer                             cmd,
+                                 std::pair<VkDescriptorSet, VkDescriptorSet> globalDescriptor,
+                                 const DrawContext                          &inDrawContext,
+                                 const glm::mat4                            &viewproj)
     {
         PROFILE_ZONE("DirectLightPass::Render");
 
@@ -61,20 +65,27 @@ namespace MamontEngine
                 .framebuffer = VK_NULL_HANDLE,
         };
 
+        const auto &sceneBuffer = MEngine::Get().GetContextDevice().GetFrameAt(0).SceneDataBuffer;
+
         const VkCommandBufferBeginInfo cmdSecondaryBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, &inheritanceInfo);
 
         constexpr VkExtent2D cascadeExtent = {.width = SHADOWMAP_DIMENSION  , .height = SHADOWMAP_DIMENSION};
+        const auto           materialBufferAddress{MaterialAllocator::GetBufferAddess()};
+
 
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdSecondaryBeginInfo));
 
         const auto draw = [&](const RenderObject &r, uint32_t cascadeIndex)
         {
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
-
             vkCmdBindIndexBuffer(cmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            const GPUDrawPushConstants push_constants{
-                    .WorldMatrix = r.Transform, .VertexBuffer = r.MeshBuffer.VertexBuffer.Address, .CascadeIndex = cascadeIndex};
+            const GPUDrawPushConstants push_constants{.WorldMatrix    = r.Transform,
+                                                      .SceneBuffer    = sceneBuffer.Address,
+                                                      .VertexBuffer   = r.MeshBuffer.VertexBuffer.Address,
+                                                      .MaterialBuffer = materialBufferAddress,
+                                                        .CascadeIndex = cascadeIndex,
+                                                      .MaterialIndex = r.MaterialIndex, 
+                };
 
             constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
             vkCmdPushConstants(cmd, m_Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
@@ -86,7 +97,8 @@ namespace MamontEngine
         VkUtil::transition_image(cmd, m_CascadeImage, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Pipeline);
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 0, 1, &globalDescriptor.first, 0, nullptr);
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 1, 1, &globalDescriptor.second, 0, nullptr);
 
         constexpr VkViewport viewport = {.x        = 0.0f,
                                          .y        = 0.0f,

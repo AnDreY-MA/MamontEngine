@@ -85,6 +85,26 @@ namespace MamontEngine
         {
             ImGui_ImplSDL3_ProcessEvent(&event);
 
+            if (event.type == SDL_EVENT_QUIT)
+            {
+                m_RequestQuit = true;
+            }
+            const auto typeEvent = event.window.type;
+
+            if (typeEvent == SDL_EVENT_WINDOW_RESIZED)
+            {
+                m_RequestResize = true;
+            }
+
+            if (typeEvent == SDL_EVENT_WINDOW_MINIMIZED)
+            {
+                m_Minimized = true;
+            }
+            if (typeEvent == SDL_EVENT_WINDOW_RESTORED)
+            {
+                m_Minimized = false;
+            }
+
         }
 
     }

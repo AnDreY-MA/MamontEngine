@@ -1,10 +1,19 @@
 #pragma once
 
+#include "Asset/Asset.h"
+
+namespace fastgltf
+{
+    class Asset;
+    class Image;
+}
+
 namespace MamontEngine
 {
-    struct Texture
+    class Texture : public Asset
     {
-        Texture() = default;
+    public:
+        Texture();
         ~Texture() = default;
 
         VkImage           Image{VK_NULL_HANDLE};
@@ -39,6 +48,12 @@ namespace MamontEngine
 
             return info;
         }
+
+        inline void SetBindId(uint32_t id){ m_Id = id; }
+        inline uint32_t GetBindID() const { return m_Id; }
+
+    private:
+        uint32_t m_Id{0};
     };
 
     Texture *LoadCubeMapTexture(const std::string &inFileName, VkFormat inFormat);
@@ -46,13 +61,13 @@ namespace MamontEngine
     std::shared_ptr<Texture> CreateWhiteTexture();
     Texture* CreateErrorTexture();
 
-
-
     Texture *
     GeneratePrefilteredCube(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &inDrawSkyboxFunc, const Texture &inEnvironmentTexture);
     Texture *
     GenerateIrradianceTexture(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &inDrawSkyboxFunc, const Texture &inEnvironmentTexture);
 
     Texture *GenerateBRDFLUT();
+
+    Texture *CreateTextureFromGltf(const fastgltf::Asset &asset, const fastgltf::Image &image, VkSampler inSampler = VK_NULL_HANDLE);
 
 } // namespace MamontEngine

@@ -1,6 +1,7 @@
 #version 460
 
 #extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_debug_printf : require
 
 #include "include/input_structures.glsl"
 #include "include/Shadow.glsl"
@@ -15,11 +16,9 @@ const mat4 biasMat = mat4(
 );
 
 void main() {
-
-	const Vertex v = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
+    const Vertex v = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
 	outUV = v.uv;
 
 	const vec4 worldPosition = PushConstants.render_matrix * vec4(v.position, 1.0);
-	//gl_Position = ubo.cascadeViewProjMat[PushConstants.cascadeIndex] * position * PushConstants.render_matrix;
 	gl_Position = cascadeShadows.cascadeViewProjMat[PushConstants.cascadeIndex] * worldPosition;
 }

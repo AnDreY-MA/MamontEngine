@@ -14,6 +14,7 @@
 
 #include "Graphics/Resources/Materials/MaterialAllocator.h"
 #include "Graphics/Resources/Materials/MaterialManager.h"
+#include "Graphics/Resources/Textures/TextureManager.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Resources/Texture.h"
 #include "Graphics/Vulkan/Allocator.h"
@@ -64,126 +65,6 @@ namespace
         }
     }
 
-    std::shared_ptr<Texture> load_image(const fastgltf::Asset &asset, const fastgltf::Image &image, VkSampler inSampler = VK_NULL_HANDLE)
-    {
-        auto newTexture = std::make_shared<Texture>();
-
-        std::visit(
-                fastgltf::visitor{
-                        [](auto &arg) {},
-                        [&](const fastgltf::sources::URI &filePath)
-                        {
-                            assert(filePath.fileByteOffset == 0);
-                            assert(filePath.uri.isLocalPath());
-
-                            const auto &uri = *filePath.uri;
-                            const std::string path(uri.path().begin(), uri.path().end());
-                            int               width, height, nrChannels;
-
-                            unsigned char    *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
-                            if (data)
-                            {
-                                const VkExtent3D imagesize{.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height), .depth = 1};
-
-                                newTexture->Load(data,
-                                                imagesize,
-                                                VK_FORMAT_R8G8B8A8_UNORM,
-                                                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                                                false,
-                                                inSampler);
-                                stbi_image_free(data);
-                            }
-                        },
-                        [&](const fastgltf::sources::Vector &vector)
-                        {
-                            int width, height, nrChannels;
-
-                            const auto    *bytes = reinterpret_cast<const stbi_uc *>(vector.bytes.data());
-                            unsigned char *data = stbi_load_from_memory(bytes, static_cast<int>(vector.bytes.size()), &width, &height, &nrChannels, 4);
-                            if (data)
-                            {
-                                const VkExtent3D imagesize{.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height), .depth = 1};
-
-                                newTexture->Load(data,
-                                                imagesize,
-                                                VK_FORMAT_R8G8B8A8_UNORM,
-                                                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                                                false,
-                                                inSampler);
-                                stbi_image_free(data);
-                            }
-
-                        },
-                        [&](const fastgltf::sources::BufferView &view)
-                        {
-                            const auto &bufferView = asset.bufferViews[view.bufferViewIndex];
-                            const auto &buffer     = asset.buffers[bufferView.bufferIndex];
-                            int         width, height, nrChannels;
-
-
-                            std::visit(fastgltf::visitor{[](auto &arg) {},
-                                                         [&](const fastgltf::sources::Array &array)
-                                                         {
-                                                             const auto *bytes = reinterpret_cast<const stbi_uc *>(array.bytes.data());
-
-                                                             unsigned char *data = stbi_load_from_memory(bytes + bufferView.byteOffset,
-                                                                                                         static_cast<int>(bufferView.byteLength),
-                                                                                                         &width,
-                                                                                                         &height,
-                                                                                                         &nrChannels,
-                                                                                                         4);
-                                                             if (data)
-                                                             {
-                                                                 const VkExtent3D imagesize{.width  = static_cast<uint32_t>(width),
-                                                                                            .height = static_cast<uint32_t>(height),
-                                                                                            .depth  = 1};
-
-                                                                 newTexture->Load(data,
-                                                                                 imagesize,
-                                                                                 VK_FORMAT_R8G8B8A8_UNORM,
-                                                                                 VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                                                                                 false,
-                                                                                 inSampler);
-                                                                 stbi_image_free(data);
-
-                                                             }
-                                                         }},
-                                       buffer.data);
-                        },
-                },
-                image.data);
-
-        if (newTexture->Image == VK_NULL_HANDLE)
-        {
-            Log::Warn("newTexture.Image is NULL");
-            return {};
-        }
-        else
-        {
-            return newTexture;
-        }
-        
-    }
-
-    void OptimizeMesh(std::vector<uint32_t>& indices, std::vector<Vertex> vertices)
-    {
-        if (indices.empty() || vertices.empty())
-            return;
-        
-        std::vector<uint32_t> remap(vertices.size());
-        const auto            uniqueVertices = meshopt_generateVertexRemap(remap.data(), indices.data(), indices.size(), vertices.data(), vertices.size(), sizeof(Vertex));
-
-        std::vector<uint32_t> newIndices(indices.size());
-        std::vector<Vertex> newVertices(uniqueVertices);
-
-        meshopt_remapIndexBuffer(newIndices.data(), indices.data(), indices.size(), remap.data());
-        meshopt_remapVertexBuffer(newVertices.data(), vertices.data(), vertices.size(), sizeof(Vertex), remap.data());
-
-        indices  = std::move(newIndices);
-        vertices = std::move(newVertices);
-
-        meshopt_optimizeVertexCache(indices.data(), indices.data(), indices.size(), vertices.size());
-    }
 } // namespace
 
 namespace MamontEngine
@@ -227,7 +108,6 @@ namespace MamontEngine
 
         for (auto &material : m_Materials)
         {
-            material->MaterialSet = VK_NULL_HANDLE;
             MaterialAllocator::Free(material.get());
         }
         m_Materials.clear();
@@ -268,7 +148,7 @@ namespace MamontEngine
                 RenderObject def(primitive->Count,
                                         primitive->StartIndex,
                                         Buffer,
-                                        material->MaterialSet, material->Index, Bound,
+                                        material->Index, Bound,
                                         nodeMatrix, ID);
                 def.SphereBound = primitive->Bounds;
 
@@ -407,11 +287,16 @@ namespace MamontEngine
 
         const auto &samples = LoadSamplers(asset.samplers);
 
+        uint32_t samplerCount = 0;
+
+        Log::Info("Loaded Samplers: {} , gltf samplers: {}", samples.size(), asset.samplers.size());
+
         for (const auto &textureGltf : asset.textures)
         {
             const auto &image   = asset.images[textureGltf.imageIndex.value()];
             const auto  samplerIndex = textureGltf.samplerIndex.value();
-            const auto        texture      = load_image(asset, image, samples[samplerIndex]);
+            const auto  texture      = std::shared_ptr<Texture>(CreateTextureFromGltf(asset, image, samples[samplerIndex]));
+            Log::Info("SamplerIndex: {}", samplerIndex);
 
             if (texture)
             {
@@ -466,17 +351,6 @@ namespace MamontEngine
             return m_Textures[imageIndex];
         };
 
-        const auto getDefaultMaterialResources = [&]()
-        {
-            Material::MaterialResources materialResources{};
-            materialResources.ColorTexture      = defaultTexture;
-            materialResources.MetalRoughTexture = defaultTexture;
-            materialResources.NormalTexture     = defaultTexture;
-            materialResources.EmissiveTexture   = defaultTexture;
-            materialResources.OcclusionTexture  = defaultTexture;
-            return materialResources;
-        };
-
         for (const fastgltf::Material &mat : inFileAsset.materials)
         {
             Material::MaterialConstants constants = {
@@ -487,7 +361,7 @@ namespace MamontEngine
 
             const EMaterialPass passType = mat.alphaMode == fastgltf::AlphaMode::Blend ? EMaterialPass::Transparent : EMaterialPass::MAIN_COLOR;
 
-            Material::MaterialResources materialResources = getDefaultMaterialResources();
+            //Material::MaterialResources materialResources = getDefaultMaterialResources();
 
             if (mat.pbrData.baseColorTexture.has_value())
             {
@@ -496,8 +370,8 @@ namespace MamontEngine
 
                 if (auto texture = getTexture(mat.pbrData.baseColorTexture); texture)
                 {
-                    materialResources.ColorTexture = std::move(texture);
-                    constants.HasBaseTexture        = 1;
+                    constants.BaseTextureIndex     = TextureManager::GetInstance().AddTexture(texture);
+                    constants.Flags |= Material::MaterialFlags_HasBaseColorTexture;
                 }
             }
 
@@ -506,11 +380,12 @@ namespace MamontEngine
                 const size_t img     = inFileAsset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].imageIndex.value();
                 const size_t sampler = inFileAsset.textures[mat.pbrData.metallicRoughnessTexture.value().textureIndex].samplerIndex.value();
 
-                materialResources.MetalRoughTexture         = m_Textures[img];
+                //materialResources.MetalRoughTexture         = m_Textures[img];
                 if (auto texture = getTexture(mat.pbrData.metallicRoughnessTexture); texture)
                 {
-                    materialResources.MetalRoughTexture = std::move(texture);
-                    constants.HasMetalRough               = 1;
+                    constants.MetalRoughTextureIndex          = TextureManager::GetInstance().AddTexture(texture);
+                    constants.Flags |= Material::MaterialFlags_HasMetalRoughTexture;
+
                 }
             }
 
@@ -521,8 +396,9 @@ namespace MamontEngine
 
                 if (auto texture = getTexture(mat.normalTexture); texture)
                 {
-                        materialResources.NormalTexture = std::move(texture);
-                        constants.HasNormaMap           = 1;
+                    constants.MetalRoughTextureIndex = TextureManager::GetInstance().AddTexture(texture);
+                    constants.Flags |= Material::MaterialFlags_HasNormalTexture;
+
                 }
             }
             
@@ -532,8 +408,9 @@ namespace MamontEngine
                 const auto samplerIndex                    = inFileAsset.textures[mat.emissiveTexture.value().textureIndex].samplerIndex.value();
                 if (auto texture = getTexture(mat.emissiveTexture); texture)
                 {
-                    materialResources.EmissiveTexture = std::move(texture);
-                    constants.HasEmmisive             = 1;
+                    constants.EmmisiveTextureIndex = TextureManager::GetInstance().AddTexture(texture);
+                    constants.Flags |= Material::MaterialFlags_HasEmissiveTexture;
+
 
                 }
             }
@@ -542,15 +419,16 @@ namespace MamontEngine
             {
                 const auto textureIndex                     = inFileAsset.textures[mat.occlusionTexture.value().textureIndex].imageIndex.value();
                 const auto samplerIndex                     = inFileAsset.textures[mat.occlusionTexture.value().textureIndex].samplerIndex.value();
-                materialResources.OcclusionTexture          = m_Textures[textureIndex];
                 if (auto texture = getTexture(mat.occlusionTexture); texture)
                 {
-                    materialResources.OcclusionTexture = std::move(texture);
-                    constants.HasOcclusion              = 1;
+                    constants.OcclusionTexture = TextureManager::GetInstance().AddTexture(texture);
+                    constants.Flags            |= Material::MaterialFlags_HasOcclusionTexture;
+                    //materialResources.OcclusionTexture = std::move(texture);
+                    //constants.HasOcclusion              = 1;
                 }
             }
 
-            auto newMat  = std::shared_ptr<Material>(MaterialManager::Get()->CreateMaterial(passType, materialResources, constants));
+            auto newMat  = std::shared_ptr<Material>(MaterialManager::Get()->CreateMaterial(passType, constants));
             newMat->Name = mat.name;
             m_Materials.push_back(newMat);
         }

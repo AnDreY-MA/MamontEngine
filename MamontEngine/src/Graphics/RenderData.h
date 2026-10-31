@@ -22,15 +22,12 @@ namespace MamontEngine
         RenderObject(uint32_t InIndexCount,
                      uint32_t InFirstIndex,
                      MeshBuffer InMeshBuffer,
-
-                     VkDescriptorSet InMaterial,
                      uint32_t InMaterialIndex,
                      AABB inBound,
                      glm::mat4       InTransform,
                      UID id)
             : IndexCount(InIndexCount)
             , FirstIndex(InFirstIndex), MeshBuffer(InMeshBuffer)
-            , MaterialDescriptorSet(InMaterial)
             , MaterialIndex(InMaterialIndex)
             , Bound(inBound)
             , Transform(InTransform)
@@ -42,7 +39,6 @@ namespace MamontEngine
         uint32_t FirstIndex;
         const MeshBuffer     MeshBuffer;
 
-        VkDescriptorSet MaterialDescriptorSet;
         uint32_t        MaterialIndex{0};
 		//const Material *Material;
         AABB            Bound;

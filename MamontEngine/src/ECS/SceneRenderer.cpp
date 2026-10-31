@@ -1,5 +1,6 @@
 ﻿#include "SceneRenderer.h"
 #include <glm/gtx/transform.hpp>
+#include "Core/Engine.h"
 #include "Core/Log.h"
 #include "Graphics/Resources/Models/Model.h"
 #include "Utils/Profile.h"
@@ -17,6 +18,7 @@
 #include "Physics/Collision/SphereCollision.h"
 #include "Graphics/Resources/Materials/MaterialAllocator.h"
 #include "Graphics/Frustum.h"
+#include "Graphics/Pass/DirectLightPass.h"
 
 namespace
 {
@@ -71,8 +73,10 @@ namespace
 
 namespace MamontEngine
 {
-    SceneRenderer::SceneRenderer(const std::shared_ptr<Camera> &inCamera, const std::shared_ptr<Scene> &inScene) 
-        : m_Camera(inCamera), m_Scene(inScene)
+    SceneRenderer::SceneRenderer(const std::shared_ptr<Camera>          &inCamera,
+                                 const std::shared_ptr<Scene>           &inScene,
+                                 const std::shared_ptr<DirectLightPass> &inDirectPass) 
+        : m_Camera(inCamera), m_Scene(inScene), m_DirectShadowPass(inDirectPass)
     {
 
     }
@@ -82,30 +86,30 @@ namespace MamontEngine
         m_DrawContext.Clear();
     }
 
-    void SceneRenderer::Render(VkCommandBuffer     inCmd,
-                               VkDescriptorSet     globalDescriptor,
+    void SceneRenderer::Render(VkCommandBuffer     inCmd, std::pair<VkDescriptorSet, VkDescriptorSet> globalDescriptor,
                                const RenderPipeline* inRenderPipeline)
     {
         PROFILE_ZONE("SceneRenderer::Render");
 
         vkCmdBindPipeline(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inRenderPipeline->OpaquePipeline->Pipeline);
 
-        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inRenderPipeline->OpaquePipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
+        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inRenderPipeline->OpaquePipeline->Layout, 0, 1, &globalDescriptor.first, 0, nullptr);
+        vkCmdBindDescriptorSets(inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inRenderPipeline->OpaquePipeline->Layout, 1, 1, &globalDescriptor.second, 0, nullptr);
 
         constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
+
+        const auto& sceneBuffer = MEngine::Get().GetContextDevice().GetFrameAt(0).SceneDataBuffer;
 
         const auto materialBufferAddress{MaterialAllocator::GetBufferAddess()};
 
         const auto draw = [&](const RenderObject &r)
         {
-            vkCmdBindDescriptorSets(
-                    inCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, inRenderPipeline->OpaquePipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
-            
             vkCmdBindIndexBuffer(inCmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
             const GPUDrawPushConstants push_constants
             {
                 .WorldMatrix = r.Transform, 
+                .SceneBuffer = sceneBuffer.Address,
                 .VertexBuffer = r.MeshBuffer.VertexBuffer.Address, 
                 .MaterialBuffer = materialBufferAddress,
                 .MaterialIndex = r.MaterialIndex
@@ -133,8 +137,6 @@ namespace MamontEngine
 
             drawObjectCount++;
         }
-
-       // Log::Info("Draw ObjectCount: {}", drawObjectCount);
 
        /* const auto& meshView = m_Scene->GetRegistry().view<MeshComponent>();
         for (const auto& [entity, mesh] : meshView.each())
@@ -173,7 +175,7 @@ namespace MamontEngine
         glm::mat4   projection{glm::mat4(1.f)};
         if (m_Scene->IsSimulated())
         {
-            for (auto camerasView = sceneRegistry.view<TransformComponent, CameraComponent>();
+            for (const auto& camerasView = sceneRegistry.view<const TransformComponent, CameraComponent>();
                  auto &&[entity, transform, cameraComp] : camerasView.each())
             {
                 if (cameraComp.IsViewTarget())
@@ -218,12 +220,18 @@ namespace MamontEngine
 
         if (m_LightData.HasDirectionLight)
         {
-            const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent, TransformComponent>();
+            const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent, const TransformComponent>();
 
-            viewDirectionLight.each([&](const auto& ligth, const auto& transform) { 
-                m_LightData.DirectLight.Direction = transform.GetForwardVector();
-                m_LightData.DirectLight.Color     = ligth.GetColor();
-
+            viewDirectionLight.each(
+                    [&](const DirectionLightComponent &ligth, const TransformComponent &transform)
+                    { 
+                    m_LightData.DirectLight.Direction = transform.GetForwardVector();
+                        m_LightData.DirectLight.Color     = ligth.GetColor();
+                    if (transform.IsDirty())
+                    {
+                        
+                        m_DirectShadowPass.lock()->UpdateCascade(m_Camera.get(), m_LightData.DirectLight.Direction);
+                    }
             });
         }
         
@@ -252,11 +260,16 @@ namespace MamontEngine
         }
 
         const auto meshes = sceneRegistry.view<MeshComponent, TransformComponent>();
-        for (const auto&& [entity, meshComponent, Transform] : meshes.each())
+        for (const auto&& [entity, meshComponent, transform] : meshes.each())
         {
             if (meshComponent.Mesh != nullptr)
             {
                 meshComponent.Mesh->Draw(m_DrawContext);
+                if (meshComponent.Mesh->IsDirty || transform.IsDirty())
+                {
+                    meshComponent.Mesh->UpdateTransform(transform.Matrix());
+                    meshComponent.Mesh->IsDirty = false;
+                }
             }
         }
 

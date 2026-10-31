@@ -37,10 +37,13 @@
 #include "ECS/Components/AudioComponent.h"
 #include "ECS/Components/AudioListenerComponent.h"
 
+#include "Audio/AudioSystem.h"
 #include "Audio/Sound.h"
 
 #include "Utils/Serialization.h"
 #include "Utils/Reflection.h"
+
+#include <ImGuizmo.h>
 
 META_INIT(void) 
 IMPLEMENT_META_INIT(void)
@@ -213,7 +216,7 @@ namespace MamontEngine
     {
         PROFILE_FUNCTION();
 
-        auto view = m_Registry.view<MeshComponent, TransformComponent>();
+/*        auto view = m_Registry.view<MeshComponent, TransformComponent>();
         for (auto [entity, meshComponent, transform] : view.each())
         {
             if (transform.IsDirty())
@@ -221,12 +224,12 @@ namespace MamontEngine
                 //Log::Info("MeshComp: transform.IsDirty(): {}", transform.IsDirty());
             }
 
-            if (meshComponent.Mesh)
+            if (meshComponent.Mesh->IsDirty || transform.IsDirty() || ImGuizmo::IsUsing())
             {
                 meshComponent.Mesh->UpdateTransform(transform.Matrix());
                 meshComponent.Mesh->IsDirty = false;
             }
-        }
+        }*/
 
         if (!m_IsPaused)
         {

@@ -136,7 +136,10 @@ namespace MamontEngine
 
     }
 
-    void PointLightPass::Render(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor, const DrawContext &inDrawContext, const glm::mat4 &viewproj)
+    void PointLightPass::Render(VkCommandBuffer                             cmd,
+                                std::pair<VkDescriptorSet, VkDescriptorSet> globalDescriptor,
+                                const DrawContext                          &inDrawContext,
+                                const glm::mat4                            &viewproj)
     {
         PROFILE_ZONE("PointLightPass::Render");
 
@@ -167,7 +170,7 @@ namespace MamontEngine
 
         const auto draw = [&](const RenderObject &r, uint32_t lightCount, uint32_t faceIndex)
         {
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 1, 1, &r.MaterialDescriptorSet, 0, nullptr);
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 1, 1, &globalDescriptor.second, 0, nullptr);
 
             vkCmdBindIndexBuffer(cmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
@@ -218,7 +221,7 @@ namespace MamontEngine
                 vkCmdSetScissor(cmd, 0, 1, &scissor);
 
                 vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Pipeline);
-                vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 0, 1, &globalDescriptor, 0, nullptr);
+                vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 0, 1, &globalDescriptor.first, 0, nullptr);
 
                 for (const auto &object : inDrawContext.OpaqueSurfaces)
                 {
@@ -311,15 +314,15 @@ namespace MamontEngine
             glm::mat4 proj = glm::perspectiveRH_ZO(glm::radians(90.f), 1.f, PointShadowNearPlane, light.Radius);
             proj[1][1] *= -1.0f;
 
-            for (uint32_t faceIndex = 0; faceIndex < SHADOW_FACE_NUM; ++faceIndex)
+            /*for (uint32_t faceIndex = 0; faceIndex < SHADOW_FACE_NUM; ++faceIndex)
             {
                 const auto &face = CubeFaces[faceIndex];
 
                 const glm::mat4 view = glm::lookAtRH(light.Position, light.Position + face.Direction, face.Up);
 
                 m_ShadowFaceCubes[i * SHADOW_FACE_NUM + faceIndex] = proj * view;
-            }
-/*           for (uint32_t f = 0; f < SHADOW_FACE_NUM; ++f)
+            }*/
+           for (uint32_t f = 0; f < SHADOW_FACE_NUM; ++f)
             { 
                 glm::mat4 view = glm::mat4(1.0f);
                 switch (f)
@@ -347,7 +350,7 @@ namespace MamontEngine
                 }
 
                 m_ShadowFaceCubes[i * SHADOW_FACE_NUM + f] = proj * view * glm::translate(glm::mat4(1.f), -light.Position);
-            }*/
+            }
         }
 
         //const auto currentFrame = MEngine::Get().GetContextDevice().GetFrame();

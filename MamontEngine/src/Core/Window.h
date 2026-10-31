@@ -40,15 +40,22 @@ namespace MamontEngine
 		VkExtent2D Resize();
 
 		void InitVulkanWindow(VkInstance inInstance, VkPhysicalDevice inPhysicalDevice, VkDevice inDevice, uint32_t inQueueFamily);
+
+		inline bool IsRequestQuit() const { return m_RequestQuit; }
+		inline bool IsRequestResize() const { return m_RequestResize; }
+		inline bool IsMinimized() const { return m_Minimized; }
 	private:
 		void Init();
 
         void Close();
 	private:
-
         SDL_Window* m_Window;
         ImGui_ImplVulkanH_Window m_VulkanWindow;
 
         VkExtent2D  m_WindowExtent{1920, 1080};
+
+		bool m_RequestQuit{false};
+        bool m_RequestResize{false};
+        bool m_Minimized{false};
 	};
 }

@@ -4,8 +4,13 @@
 #include "Graphics/Vulkan/ImmediateContext.h"
 #include "Graphics/Devices/LogicalDevice.h"
 
+
 namespace MamontEngine
 {
+    AllocatedBuffer::~AllocatedBuffer()
+    {
+    }
+
     void AllocatedBuffer::Create(const size_t inAllocSize, const VkBufferUsageFlags inUsage, const VmaMemoryUsage inMemoryUsage)
     {
         const VkBufferCreateInfo bufferInfo = {
@@ -19,8 +24,8 @@ namespace MamontEngine
                 .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
                 .usage = inMemoryUsage,
         };
-
         VK_CHECK(vmaCreateBuffer(Allocator::GetAllocator(), &bufferInfo, &vmaAllocInfo, &Buffer, &Allocation, &Info));
+        Info.pName = "TestAllocatedBuffer";
     }
 
     void AllocatedBuffer::Destroy()

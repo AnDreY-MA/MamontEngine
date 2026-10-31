@@ -2,6 +2,7 @@
 #include "Utils/Reflection.h"
 #include "Core/Engine.h"
 #include "Core/Log.h"
+#include "Audio/AudioSystem.h"
 
 namespace MamontEngine
 {
