@@ -73,12 +73,14 @@ namespace
 
 namespace MamontEngine
 {
+    constexpr int MAX_RENDER_OBJECTS = 10000;
     SceneRenderer::SceneRenderer(const std::shared_ptr<Camera>          &inCamera,
                                  const std::shared_ptr<Scene>           &inScene,
                                  const std::shared_ptr<DirectLightPass> &inDirectPass) 
         : m_Camera(inCamera), m_Scene(inScene), m_DirectShadowPass(inDirectPass)
     {
-
+        m_DrawContext.OpaqueSurfaces.reserve(MAX_RENDER_OBJECTS);
+        m_DrawContext.TransparentSurfaces.reserve(MAX_RENDER_OBJECTS / 2);
     }
 
     SceneRenderer::~SceneRenderer()
@@ -104,13 +106,13 @@ namespace MamontEngine
 
         const auto draw = [&](const RenderObject &r)
         {
-            vkCmdBindIndexBuffer(inCmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(inCmd, r.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
             const GPUDrawPushConstants push_constants
             {
                 .WorldMatrix = r.Transform, 
                 .SceneBuffer = sceneBuffer.Address,
-                .VertexBuffer = r.MeshBuffer.VertexBuffer.Address, 
+                .VertexBuffer = r.VertexAddress, 
                 .MaterialBuffer = materialBufferAddress,
                 .MaterialIndex = r.MaterialIndex
             };
@@ -125,17 +127,16 @@ namespace MamontEngine
             vkCmdDrawIndexed(inCmd, r.IndexCount, 1, r.FirstIndex, 0, 0);
         };
 
-        uint32_t drawObjectCount{0};
-        const auto frustumPlanes = ExtractFrustumPlanes(m_SceneData.Viewproj);
+        m_DrawObjectCount        = 0;
+        
         // Opaque Draw
         for (const auto &object : m_DrawContext.OpaqueSurfaces)
         {
-            if (IsNodeVisible(frustumPlanes, object.Transform, object.SphereBound))
+            if (IsNodeVisible(m_Camera->GetFrustum(), object.Transform, object.SphereBound))
             {
                 draw(object);
+                m_DrawObjectCount++;
             }
-
-            drawObjectCount++;
         }
 
        /* const auto& meshView = m_Scene->GetRegistry().view<MeshComponent>();
@@ -264,7 +265,7 @@ namespace MamontEngine
         {
             if (meshComponent.Mesh != nullptr)
             {
-                meshComponent.Mesh->Draw(m_DrawContext);
+                meshComponent.Mesh->CollectDraws(m_DrawContext);
                 if (meshComponent.Mesh->IsDirty || transform.IsDirty())
                 {
                     meshComponent.Mesh->UpdateTransform(transform.Matrix());

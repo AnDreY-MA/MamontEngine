@@ -1,4 +1,5 @@
 #include "Frustum.h"
+#include "Resources/Models/Mesh.h"
 
 namespace MamontEngine
 {

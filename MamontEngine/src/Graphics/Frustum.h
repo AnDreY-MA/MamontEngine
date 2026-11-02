@@ -1,11 +1,11 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "Resources/Models/Mesh.h"
 
 namespace MamontEngine
 {
     class Node;
+    struct SphereBounds;
 
 	struct FrustumPlane
 	{

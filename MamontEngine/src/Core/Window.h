@@ -6,6 +6,8 @@
 
 namespace MamontEngine
 {
+    typedef void (*OsMessageCallback)(void *osEvent, void *userData);
+
 	class WindowCore
 	{
     public:
@@ -39,6 +41,9 @@ namespace MamontEngine
 
 		VkExtent2D Resize();
 
+		void RegisterMessagesCallbacks(OsMessageCallback callback, void *userData);
+		void UnregisterMessagesCallbacks(OsMessageCallback callback);
+
 		void InitVulkanWindow(VkInstance inInstance, VkPhysicalDevice inPhysicalDevice, VkDevice inDevice, uint32_t inQueueFamily);
 
 		inline bool IsRequestQuit() const { return m_RequestQuit; }
@@ -49,6 +54,8 @@ namespace MamontEngine
 
         void Close();
 	private:
+        std::vector<OsMessageCallback> m_OsMessagesCallbacks;
+        std::vector<void *>            m_MessagesUserData;
         SDL_Window* m_Window;
         ImGui_ImplVulkanH_Window m_VulkanWindow;
 

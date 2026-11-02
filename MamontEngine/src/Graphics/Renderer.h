@@ -26,6 +26,7 @@ namespace MamontEngine
         float SceneUpdateTime{0.f};
         float MeshDrawTime{0.f};
         float ShadowsDrawTime{0.f};
+        int   DrawObjectCount{0};
         int   TriangleCount{0};
         int   DrawCallCount{0};
     };

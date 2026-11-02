@@ -14,18 +14,18 @@ namespace MamontEngine
         const std::string cubePath = DEFAULT_ASSETS_DIRECTORY + "cube.glb";
 
         m_Skybox = std::make_unique<Model>(0, cubePath);
-        m_Skybox->Draw(m_SkyboxContext);
+        m_Skybox->CollectDraws(m_SkyboxContext);
 
         const RenderObject &object = m_SkyboxContext.OpaqueSurfaces[0];
-        const VkDeviceAddress     vertexAddress = object.MeshBuffer.VertexBuffer.Address;
+        const VkDeviceAddress     vertexAddress = object.VertexAddress;
 
         MEngine::Get().GetContextDevice().CreatePrefilteredCubeTexture(vertexAddress,
                                                      [object](VkCommandBuffer cmd)
                                                      {
                                                          constexpr VkDeviceSize offsets[1] = {0};
-                                                         vkCmdBindVertexBuffers(cmd, 0, 1, &object.MeshBuffer.VertexBuffer.Buffer, offsets);
+                                                         //vkCmdBindVertexBuffers(cmd, 0, 1, &object.MeshBuffer.VertexBuffer.Buffer, offsets);
 
-                                                         vkCmdBindIndexBuffer(cmd, object.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+                                                         vkCmdBindIndexBuffer(cmd, object.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
                                                          vkCmdDrawIndexed(cmd, object.IndexCount, 1, object.FirstIndex, 0, 0);
                                                      });
@@ -117,12 +117,12 @@ namespace MamontEngine
                                 0,
                                 nullptr);
 
-        vkCmdBindIndexBuffer(cmd, object.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer(cmd, object.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
         const GPUDrawPushConstants push_constants{
                 .WorldMatrix  = glm::mat4(1.f),
                 .SceneBuffer = sceneBuffer.Address,
-                .VertexBuffer = object.MeshBuffer.VertexBuffer.Address,
+                .VertexBuffer = object.VertexAddress,
         };
 
         constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};

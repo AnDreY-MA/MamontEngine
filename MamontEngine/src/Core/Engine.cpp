@@ -34,6 +34,12 @@ namespace MamontEngine
 
     const std::string RootDirectories = PROJECT_ROOT_DIR;
 
+    static void InputMessagesCallback(void* event, void* userData)
+    {
+        auto *input = static_cast<InputSystem *>(userData);
+        input->OnEvent(event);
+    }
+
     void MEngine::Init()
     {
         assert(loadedEngine == nullptr);
@@ -46,6 +52,8 @@ namespace MamontEngine
         JobSystem::Init(3);
 
         m_Window = std::make_shared<WindowCore>();
+        m_InputSystem = std::make_unique<InputSystem>();
+        m_Window->RegisterMessagesCallbacks(InputMessagesCallback, m_InputSystem.get());
 
         m_ContextDevice = std::make_unique<VkContextDevice>(m_Window.get());
 
@@ -73,7 +81,6 @@ namespace MamontEngine
         JobSystem::Wait(contextJobs);
         InitImgui();
 
-        m_InputSystem = std::make_unique<InputSystem>();
 
         m_ScriptSystem = std::make_unique<ScriptSystem>();
 
@@ -88,15 +95,10 @@ namespace MamontEngine
 
     void MEngine::Run()
     {
-        SDL_Event event;
-        bool      bQuit{false};
-        bool      isResized{false};
-        bool      isStopRendering{false};
-
         PROFILE_SETTHREADNAME("Main Thread");
 
         MaterialManager::Get()->SetupDefaults();
-        while (!bQuit)
+        while (!m_Window->IsRequestQuit())
         {
             const auto deltaTime = ImGui::GetIO().DeltaTime;
 
@@ -109,37 +111,11 @@ namespace MamontEngine
                 const auto frameTime = m_TimeStep->GetMillis();
             }
 
-            //InputSystem::Get().ResetPressed();
+            InputSystem::Get().NewFrame();
 
-            //m_Window->PollEvents();
-
-            while (SDL_PollEvent(&event) != 0)
-            {
-                if (event.type == SDL_EVENT_QUIT)
-                    bQuit = true;
-
-                ImGui_ImplSDL3_ProcessEvent(&event);
-
-                const auto typeEvent = event.window.type;
-
-                if (typeEvent == SDL_EVENT_WINDOW_MINIMIZED)
-                {
-                    isStopRendering = true;
-                }
-                if (typeEvent == SDL_EVENT_WINDOW_RESTORED)
-                {
-                    isStopRendering = false;
-                }
-
-                if (!m_Scene->IsSimulated())
-                {
-                    m_MainCamera->ProccessEvent(event);
-                }
-
-                m_InputEvent = &event;
-            }
-
-            if (isStopRendering)
+            m_Window->PollEvents();
+            
+            if (m_Window->IsMinimized())
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                 continue;
@@ -169,6 +145,8 @@ namespace MamontEngine
             
             m_MainDeletionQueue.Flush();
 
+            m_Window->UnregisterMessagesCallbacks(InputMessagesCallback);
+
             m_Renderer.reset();
 
             m_GuiLayer->Deactivate();
@@ -194,6 +172,8 @@ namespace MamontEngine
 
     void MEngine::UpdateScene(float inDeltaTime)
     {
+        PROFILE_FUNCTION();
+
         if (!m_Scene->IsSimulated())
         {
             m_MainCamera->Update(inDeltaTime);

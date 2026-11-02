@@ -65,6 +65,8 @@ namespace MamontEngine
 
         inline const LightData &GetLightData() const { return m_LightData; }
 
+        inline uint32_t GetDrawObjectCount() const { return m_DrawObjectCount; }
+
     private:
         std::shared_ptr<Scene>     m_Scene;
         std::shared_ptr<Camera>    m_Camera;
@@ -75,6 +77,8 @@ namespace MamontEngine
 
         GPUSceneData m_SceneData;
         LightData  m_LightData;
+
+        uint32_t m_DrawObjectCount{0};
 
         bool m_DrawCollisionBounds{false};
     };

@@ -4,6 +4,7 @@
 #include <SDL3/SDL_vulkan.h>
 #include "imgui/backends/imgui_impl_sdl3.h"
 #include "Core/Engine.h"
+#include "Core/Log.h"
 
 namespace MamontEngine
 {
@@ -40,6 +41,8 @@ namespace MamontEngine
 
         SDL_AddEventWatch(CloseWindowEvent, nullptr);
 
+        m_OsMessagesCallbacks.reserve(3);
+        m_MessagesUserData.reserve(3);
     }
 
     void WindowCore::Close()
@@ -105,6 +108,12 @@ namespace MamontEngine
                 m_Minimized = false;
             }
 
+            for (size_t i = 0; i < m_OsMessagesCallbacks.size(); ++i)
+            {
+                OsMessageCallback callback = m_OsMessagesCallbacks[i];
+                callback(&event, m_MessagesUserData[i]);
+            }
+
         }
 
     }
@@ -114,7 +123,27 @@ namespace MamontEngine
         int w = 0, h = 0;
         SDL_GetWindowSize(m_Window, &w, &h);
         UpdateExtent(w, h);
+        m_RequestResize = false;
         return m_WindowExtent;
+    }
+
+    void WindowCore::RegisterMessagesCallbacks(OsMessageCallback callback, void *userData)
+    {
+        m_OsMessagesCallbacks.push_back(callback);
+        m_MessagesUserData.push_back(userData);
+    }
+
+    void WindowCore::UnregisterMessagesCallbacks(OsMessageCallback callback)
+    {
+        for (size_t i = 0; i < m_OsMessagesCallbacks.size(); ++i)
+        {
+            if (m_OsMessagesCallbacks[i] == callback)
+            {
+                m_OsMessagesCallbacks.erase(m_OsMessagesCallbacks.begin() + i);
+                m_MessagesUserData.erase(m_MessagesUserData.begin() + i);
+                return;
+            }
+        }
     }
 
 }

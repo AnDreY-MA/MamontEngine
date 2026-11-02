@@ -299,8 +299,8 @@ namespace MamontEngine
     GeneratePrefilteredCube(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &inDrawSkyboxFunc, const Texture &inEnvironmentTexture)
     {
         const VkDevice       device  = LogicalDevice::GetDevice();
-        VkFormat             format  = VK_FORMAT_R16G16B16A16_SFLOAT;
-        VkImageUsageFlags    usage   = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        constexpr VkFormat           format  = VK_FORMAT_R16G16B16A16_SFLOAT;
+        constexpr VkImageUsageFlags usage   = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         constexpr int32_t    dim     = 512;
         const uint32_t   numMips = static_cast<uint32_t>(floor(log2(dim))) + 1;
         constexpr VkExtent3D extent{.width = dim, .height = dim, .depth = 1};
@@ -321,6 +321,10 @@ namespace MamontEngine
 
         VK_CHECK(vmaCreateImage(Allocator::GetAllocator(), &imageInfo, &allocInfo, &newTexture->Image, &newTexture->Allocation, &newTexture->Info));
 
+        ImmediateContext::ImmediateSubmit(
+                [&](VkCommandBuffer cmd)
+                { VkUtil::transition_image(cmd, newTexture->Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); });
+
         VkImageViewCreateInfo viewCreateInfo       = vkinit::imageviewCreateInfo(format, newTexture->Image, VK_IMAGE_ASPECT_COLOR_BIT);
         viewCreateInfo.viewType                    = VK_IMAGE_VIEW_TYPE_CUBE;
         viewCreateInfo.subresourceRange.levelCount = numMips;
@@ -340,56 +344,11 @@ namespace MamontEngine
         samplerCreateInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
         VK_CHECK(vkCreateSampler(device, &samplerCreateInfo, nullptr, &newTexture->Sampler));
 
-        VkAttachmentDescription attDesc = {};
-        // Color attachment
-        attDesc.format                                 = format;
-        attDesc.samples                                = VK_SAMPLE_COUNT_1_BIT;
-        attDesc.loadOp                                 = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        attDesc.storeOp                                = VK_ATTACHMENT_STORE_OP_STORE;
-        attDesc.stencilLoadOp                          = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attDesc.stencilStoreOp                         = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attDesc.initialLayout                          = VK_IMAGE_LAYOUT_UNDEFINED;
-        attDesc.finalLayout                            = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        constexpr VkAttachmentReference colorReference = {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
-
-        VkSubpassDescription subpassDescription = {};
-        subpassDescription.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpassDescription.colorAttachmentCount = 1;
-        subpassDescription.pColorAttachments    = &colorReference;
-
-        // Use subpass dependencies for layout transitions
-        std::array<VkSubpassDependency, 2> dependencies;
-        dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
-        dependencies[0].dstSubpass      = 0;
-        dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
-        dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-        dependencies[1].srcSubpass      = 0;
-        dependencies[1].dstSubpass      = VK_SUBPASS_EXTERNAL;
-        dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-        dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[1].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
-        dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-        VkRenderPassCreateInfo renderPassInfo = {.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, .pNext = nullptr};
-        renderPassInfo.attachmentCount        = 1;
-        renderPassInfo.pAttachments           = &attDesc;
-        renderPassInfo.subpassCount           = 1;
-        renderPassInfo.pSubpasses             = &subpassDescription;
-        renderPassInfo.dependencyCount        = 2;
-        renderPassInfo.pDependencies          = dependencies.data();
-        VkRenderPass renderPass;
-        VK_CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass));
-
         struct
         {
             VkImage        Image{VK_NULL_HANDLE};
             VkImageView    View{VK_NULL_HANDLE};
             VkDeviceMemory Memory{VK_NULL_HANDLE};
-            VkFramebuffer  Framebuffer{VK_NULL_HANDLE};
         } offscreen{};
         // Offscreen framebuffer
         {
@@ -424,15 +383,6 @@ namespace MamontEngine
             colorImageView.subresourceRange.layerCount     = 1;
             VK_CHECK(vkCreateImageView(device, &colorImageView, nullptr, &offscreen.View));
 
-            VkFramebufferCreateInfo framebufferInfo = {.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, .pNext = nullptr};
-            framebufferInfo.renderPass              = renderPass;
-            framebufferInfo.attachmentCount         = 1;
-            framebufferInfo.pAttachments            = &offscreen.View;
-            framebufferInfo.width                   = dim;
-            framebufferInfo.height                  = dim;
-            framebufferInfo.layers                  = 1;
-            VK_CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &offscreen.Framebuffer));
-
             ImmediateContext::ImmediateSubmit(
                     [&](VkCommandBuffer cmd)
                     { VkUtil::transition_image(cmd, offscreen.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL); });
@@ -458,10 +408,12 @@ namespace MamontEngine
                 .descriptorCount = 1,
         }};
 
-        VkDescriptorPoolCreateInfo descriptorPoolInfo = {.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, .pNext = nullptr};
-        descriptorPoolInfo.pPoolSizes                 = poolSizes.data();
-        descriptorPoolInfo.poolSizeCount              = static_cast<uint32_t>(poolSizes.size());
-        descriptorPoolInfo.maxSets                    = 2;
+        const VkDescriptorPoolCreateInfo descriptorPoolInfo = VkDescriptorPoolCreateInfo{.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .pNext         = nullptr,
+            .maxSets = 2,
+            .poolSizeCount              = static_cast<uint32_t>(poolSizes.size()),
+            .pPoolSizes                 = poolSizes.data()
+        };
 
         VkDescriptorPool descriptorPool;
         VK_CHECK(vkCreateDescriptorPool(device, &descriptorPoolInfo, nullptr, &descriptorPool));
@@ -499,7 +451,7 @@ namespace MamontEngine
         pushBlock.VertexBuffer = vertexAddress;
 
         VkPipelineLayout                         pipelineLayout = VK_NULL_HANDLE;
-        const std::array<VkPushConstantRange, 1> pustConstantRanges = {
+        constexpr std::array<VkPushConstantRange, 1> pustConstantRanges = {
                 VkPushConstantRange{
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                 .offset = 0, 
@@ -549,21 +501,13 @@ namespace MamontEngine
         }
         pipelineBuilder.SetShaders(filtercubeVertexShader, prefilterenvmapFragShader);
 
-        VkPipeline pipeline = pipelineBuilder.BuildPipline(device, 1, renderPass);
+        VkPipeline pipeline = pipelineBuilder.BuildPipline(device, 1);
 
         vkDestroyShaderModule(device, prefilterenvmapFragShader, nullptr);
         vkDestroyShaderModule(device, filtercubeVertexShader, nullptr);
         
         VkClearValue clearValues[1]{};
         clearValues[0].color = {{0.0f, 0.0f, 0.2f, 0.0f}};
-
-        VkRenderPassBeginInfo renderPassBeginInfo    = {.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, .pNext = nullptr};
-        renderPassBeginInfo.renderPass               = renderPass;
-        renderPassBeginInfo.framebuffer              = offscreen.Framebuffer;
-        renderPassBeginInfo.renderArea.extent.width  = dim;
-        renderPassBeginInfo.renderArea.extent.height = dim;
-        renderPassBeginInfo.clearValueCount          = 1;
-        renderPassBeginInfo.pClearValues             = clearValues;
 
         const std::array<glm::mat4, 6> matrices = {
                 // POSITIVE_X
@@ -591,24 +535,29 @@ namespace MamontEngine
         subresourceRange.levelCount              = numMips;
         subresourceRange.layerCount              = 6;
 
+        constexpr VkClearValue          clearColor      = {.color = {0.0f, 0.0f, 0.0f, 0.0f}};
+        constexpr VkClearValue          clearDepth      = {.depthStencil = {1.0f, 0}};
+        const VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(offscreen.View, &clearColor);
+        const VkRenderingInfo           renderInfo      = vkinit::rendering_info(VkExtent2D{dim, dim}, &colorAttachment, nullptr);
+
         ImmediateContext::ImmediateSubmit(
                 [&](VkCommandBuffer cmd)
                 {
-                    vkCmdSetViewport(cmd, 0, 1, &viewport);
-                    vkCmdSetScissor(cmd, 0, 1, &scissor);
-                    VkUtil::transition_image(cmd, newTexture->Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, numMips, 6);
+                    VkUtil::transition_image(
+                            cmd, newTexture->Image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, numMips, 6);
 
                     for (uint32_t m = 0; m < numMips; m++)
                     {
                         pushBlock.Roughness = static_cast<float>(m) / static_cast<float>(numMips - 1);
+                        viewport.width      = static_cast<float>(dim * std::pow(0.5f, m));
+                        viewport.height     = static_cast<float>(dim * std::pow(0.5f, m));
+                        vkCmdSetViewport(cmd, 0, 1, &viewport);
+                        vkCmdSetScissor(cmd, 0, 1, &scissor);
+
                         for (uint32_t f = 0; f < 6; f++)
                         {
-                            viewport.width  = static_cast<float>(dim * std::pow(0.5f, m));
-                            viewport.height = static_cast<float>(dim * std::pow(0.5f, m));
-
-                            vkCmdSetViewport(cmd, 0, 1, &viewport);
-
-                            vkCmdBeginRenderPass(cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+                            //vkCmdBeginRenderPass(cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+                            vkCmdBeginRendering(cmd, &renderInfo);
 
                             pushBlock.MVP = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
 
@@ -619,8 +568,8 @@ namespace MamontEngine
                             vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
                             //--- Function Draw Skybox
                             inDrawSkyboxFunc(cmd);
-                            vkCmdEndRenderPass(cmd);
-
+                            //vkCmdEndRenderPass(cmd);
+                            vkCmdEndRendering(cmd);
                             VkUtil::transition_image(cmd, offscreen.Image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
                             VkImageCopy copyRegion = {};
@@ -657,8 +606,6 @@ namespace MamontEngine
                     VkUtil::transition_image(cmd, newTexture->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, numMips, 6);
                 });
 
-        vkDestroyRenderPass(device, renderPass, nullptr);
-        vkDestroyFramebuffer(device, offscreen.Framebuffer, nullptr);
         vkFreeMemory(device, offscreen.Memory, nullptr);
         vkDestroyImageView(device, offscreen.View, nullptr);
         vkDestroyImage(device, offscreen.Image, nullptr);

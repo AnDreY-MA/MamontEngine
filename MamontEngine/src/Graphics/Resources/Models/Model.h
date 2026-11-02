@@ -3,7 +3,6 @@
 #include "Asset/Asset.h"
 #include "Graphics/Resources/Materials/Material.h"
 #include "Graphics/Resources/Models/Mesh.h"
-#include "Graphics/RenderData.h"
 #include "Graphics/Vulkan/Buffers/MeshBuffer.h"
 
 namespace fastgltf
@@ -15,6 +14,7 @@ namespace fastgltf
 namespace MamontEngine
 {
     class Texture;
+    struct DrawContext;
 
     class Model : public Asset, public NonCopyable
 	{ 
@@ -27,7 +27,7 @@ namespace MamontEngine
 
         virtual void Load(std::string_view filePath) override;
         
-        void Draw(DrawContext &inContext);
+        void CollectDraws(DrawContext &inContext);
 
         void UpdateTransform(const glm::mat4 &inTransform);
 

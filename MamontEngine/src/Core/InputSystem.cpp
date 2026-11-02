@@ -429,7 +429,7 @@ namespace MamontEngine
     {
         s_InputSystem = this;
 
-        SDL_AddEventWatch(&InputSystem::OnInputEvent, nullptr);
+        ResetPressed();
     }
     
     InputSystem::~InputSystem()
@@ -439,9 +439,10 @@ namespace MamontEngine
 
     void InputSystem::ResetPressed()
     {
-        std::memset(m_KeyPressed, 0, MAX_KEYS);
-        std::memset(m_PreviousKeys, 0, MAX_KEYS);
-        std::memset(m_MouseClicked.data(), 0, MAX_BUTTONS);
+        std::memset(m_Keys.data(), 0, MAX_KEYS);
+        std::memset(m_PreviousKeys.data(), 0, MAX_KEYS);
+        std::memset(m_MouseButton.data(), 0, MAX_BUTTONS);
+        std::memset(m_PreviousMouseButton.data(), 0, MAX_BUTTONS);
     }
     
     InputSystem &InputSystem::Get()
@@ -449,66 +450,66 @@ namespace MamontEngine
         return *s_InputSystem;
     }
 
-    bool SDLCALL InputSystem::OnInputEvent(void * v, SDL_Event *event)
+    void InputSystem::OnEvent(void *inEvent)
     {
-        PROFILE_FUNCTION();
+        SDL_Event &event = *static_cast<SDL_Event*> (inEvent);
 
-        const auto type = event->type;
+        if (event.type == SDL_EVENT_MOUSE_MOTION)
+        {
+            m_MouseMotion += glm::vec2{event.motion.xrel, event.motion.yrel};
+        }
 
+        switch (event.type)
+        {
+            case SDL_EVENT_KEY_DOWN:
+            case SDL_EVENT_KEY_UP:
+            {
+                const auto keyCode = ToKeyCode(event.key.key);
+                m_Keys[int(keyCode)] = (event.type == SDL_EVENT_KEY_DOWN);
+                break;
+            }
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            {
+                const auto mouseCode = ConvertMouseButton(event.button.button);
+                m_MouseButton[int(mouseCode)] = (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN);
+            }
+            case SDL_EVENT_MOUSE_WHEEL:
+                m_MouseWheel += event.wheel.y;
+            default:
+                break;
+        }
+
+        if (m_DebugEnabled)
+        {
+            if (event.key.down)
+            {
+                const auto keyCode    = ToKeyCode(event.key.key);
+                auto       stringCode = ToString(keyCode);
+                Log::Info("[InputSystem] KeyDown: {}", stringCode);
+            }
+            if (event.button.down)
+            {
+                const auto mouseCode = ConvertMouseButton(event.button.button);
+                const auto buttonString = ToString(mouseCode);
+                Log::Info("[InputSystem] Button dowm: {}", buttonString);
+                    
+            }
+        }
+    }
+
+    void InputSystem::NewFrame()
+    {
         for (uint32_t i = 0; i < MAX_KEYS; ++i)
         {
-            s_InputSystem->m_PreviousKeys[i] = s_InputSystem->m_KeyPressed[i];
+            m_PreviousKeys[i] = m_Keys[i];
         }
-
-        if (type == SDL_EVENT_KEY_DOWN)
+        for (uint32_t i = 0; i < MAX_BUTTONS; ++i)
         {
-            const auto keyCode = ToKeyCode(event->key.key);
-            auto       stringCode = ToString(keyCode);
-
-            if (s_InputSystem->m_DebugEnabled)
-            {
-                Log::Info("KeyDown: {}", stringCode);
-            }
-            Log::Info("KeyDown: {}", stringCode);
-
-            InputSystem::Get().SetKeyPressed(keyCode, true);
+            m_PreviousMouseButton[i] = m_MouseButton[i];
         }
 
-        if (type == SDL_EVENT_KEY_UP)
-        {
-            const auto keyCode    = ToKeyCode(event->key.key);
-            auto       stringCode = ToString(keyCode);
-            if (s_InputSystem->m_DebugEnabled)
-            {
-                Log::Info("KeyUp: {}", stringCode);
-            }
-            InputSystem::Get().SetKeyPressed(keyCode, false);
-        }
-
-
-        if (type == SDL_EVENT_MOUSE_BUTTON_DOWN)
-        {
-            const auto mouseCode    = ConvertMouseButton(event->button.button);
-            if (s_InputSystem->m_DebugEnabled)
-            {
-                const auto buttonString = ToString(mouseCode);
-                Log::Info("[Input]: mouse button: {}", buttonString);
-            }
-            InputSystem::Get().SetMouseClicked(mouseCode, true);
-        }
-
-        if (type == SDL_EVENT_MOUSE_BUTTON_UP)
-        {
-            const auto mouseCode    = ConvertMouseButton(event->button.button);
-            if (s_InputSystem->m_DebugEnabled)
-            {
-                const auto buttonString = ToString(mouseCode);
-                Log::Info("[Input]: mouse button up: {}", buttonString);
-            }
-
-            InputSystem::Get().SetMouseClicked(mouseCode, false);
-        }
-
-        return true;
+        m_MouseMotion = glm::vec2(0.f);
+        m_MouseWheel = 0.f;
     }
 }

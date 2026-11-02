@@ -21,6 +21,8 @@ namespace MamontEditor
             //ImGui::Text("frametime %f ms", stats.FrameTime);
             ImGui::Text("Framerate: %f ms", io.Framerate);
             ImGui::Text("Drawtime: %f ms", stats.MeshDrawTime);
+            ImGui::Text("Draw shadows: %f ms", stats.ShadowsDrawTime);
+            ImGui::Text("Draw object count: %i", stats.DrawObjectCount);
 
             /*const auto &memoryStats = engine.GetGPUMemoryStats();
             ImGui::Text("MemoryUsed: %f", memoryStats.MemoryUsed);

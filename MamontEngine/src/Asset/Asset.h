@@ -35,6 +35,8 @@ namespace MamontEngine
 
         EAssetType GetType() const { return m_Type; }
 
+        bool IsLoaded() const { return m_Loaded; }
+
         UID GetID() const { return ID; }
         
     protected:
@@ -56,6 +58,8 @@ namespace MamontEngine
         UID ID;
 
         EAssetType m_Type;
+
+        bool m_Loaded{false};
 
 	private:
         friend class cereal::access;

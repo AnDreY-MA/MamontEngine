@@ -18,6 +18,7 @@
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Resources/Texture.h"
 #include "Graphics/Vulkan/Allocator.h"
+#include "Graphics/RenderData.h"
 
 #include <fastgltf/core.hpp>
 #include <fastgltf/types.hpp>
@@ -118,7 +119,7 @@ namespace MamontEngine
         Buffer.VertexBuffer.Destroy();
     }
 
-    void Model::Draw(DrawContext &inContext)
+    void Model::CollectDraws(DrawContext &inContext)
     {
         for (const auto &material : m_Materials)
         {
@@ -145,12 +146,17 @@ namespace MamontEngine
                     continue;
 
                 const auto        &material = m_Materials[primitive->MaterialIndex];
-                RenderObject def(primitive->Count,
-                                        primitive->StartIndex,
-                                        Buffer,
-                                        material->Index, Bound,
-                                        nodeMatrix, ID);
-                def.SphereBound = primitive->Bounds;
+                const RenderObject def {
+                    .IndexBuffer = Buffer.IndexBuffer,
+                    .VertexAddress = Buffer.VertexBuffer.Address,
+                    .IndexCount  = primitive->Count,
+                    .FirstIndex  = primitive->StartIndex,
+                    .MaterialIndex   = material->Index,
+                    .Bound         = Bound,
+                    .SphereBound = primitive->Bounds,
+                    .Transform       = nodeMatrix,
+                    .Id              = ID
+                };
 
                 if (material->PassType == EMaterialPass::Transparent)
                     inContext.TransparentSurfaces.push_back(def);

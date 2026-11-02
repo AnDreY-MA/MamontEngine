@@ -172,11 +172,11 @@ namespace MamontEngine
         {
             vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 1, 1, &globalDescriptor.second, 0, nullptr);
 
-            vkCmdBindIndexBuffer(cmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(cmd, r.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
             const PointShadowConstants pushConstants{
                     .WorldMatrix = r.Transform, 
-                    .VertexBuffer = r.MeshBuffer.VertexBuffer.Address, 
+                    .VertexBuffer = r.VertexAddress, 
                     .ShadowMapBufferAddress = m_Buffer[currentFrame].Address,
                     .BufferIndex = lightCount * SHADOW_FACE_NUM + faceIndex,
                     .LightIndex = lightCount

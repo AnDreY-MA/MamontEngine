@@ -15,27 +15,34 @@ namespace MamontEngine
 
         static InputSystem &Get();
 
-        void HandleEvents();
+        void OnEvent(void *inEvent);
+
+        void NewFrame();
 
         void ResetPressed();
 
+        inline bool IsKeyDown(KeyCode key) const
+        {
+            return m_Keys[int(key)];
+        }
+
         inline bool IsKeyPressed(KeyCode key) const
         {
-            return m_KeyPressed[int(key)];
+            return m_Keys[int(key)] && !m_PreviousKeys[int(key)];
         }
         inline bool IsKeyReleased(KeyCode key) const
         {
-            return m_KeyReleased[int(key)];
+            return !m_Keys[int(key)] && m_PreviousKeys[int(key)];
         }
 
-        inline bool IsMouseClicked(KeyMouse key) const
+        inline bool IsMousePressed(KeyMouse key) const
         {
-            return m_MouseClicked[int(key)];
+            return m_MouseButton[int(key)];
         }
 
         inline bool IsMouseReleased(KeyMouse key) const
         {
-            return !m_MouseClicked[int(key)];
+            return !m_MouseButton[int(key)] && m_PreviousMouseButton[int(key)];
         }
 
         void EnableDebug(bool inValue)
@@ -43,23 +50,24 @@ namespace MamontEngine
             m_DebugEnabled = inValue;
         }
 
+        glm::vec2 GetMouseMotion() const
+        {
+            return m_MouseMotion;
+        }
+
+        float GetMouseWheel() const { return m_MouseWheel; }
+
     private:
-        static bool OnInputEvent(void *v, SDL_Event *event);
+        std::array<bool, MAX_KEYS> m_Keys;
+        std::array<bool, MAX_KEYS> m_PreviousKeys;
 
-        inline void SetKeyPressed(KeyCode key, bool value) { m_KeyPressed[int(key)] = value; } 
-        inline void SetKeyHeld(KeyCode key, bool value) { m_KeyHeld[int(key)] = value; } 
 
-        inline void SetMouseClicked(KeyMouse key, bool value) { m_MouseClicked[int(key)] = value; } 
+        std::array<bool, MAX_BUTTONS> m_MouseButton;
+        std::array<bool, MAX_BUTTONS> m_PreviousMouseButton;
 
-    private:
-        bool m_KeyPressed[MAX_KEYS];
-        bool m_KeyReleased[MAX_KEYS];
+        glm::vec2 m_MouseMotion{glm::vec2(0.f)};
 
-        bool m_PreviousKeys[MAX_KEYS];
-
-        std::array<bool, MAX_KEYS> m_KeyHeld;
-
-        std::array<bool, MAX_KEYS> m_MouseClicked;
+        float m_MouseWheel{0.f};
 
         bool m_DebugEnabled{false};
 		

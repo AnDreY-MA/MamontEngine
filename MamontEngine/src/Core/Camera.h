@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Graphics/Frustum.h"
+
 namespace MamontEngine
 {
 	class Camera
@@ -9,7 +11,6 @@ namespace MamontEngine
         glm::mat4 GetViewMatrix() const;
         glm::mat4 GetRotationMatrix() const;
 
-        void ProccessEvent(SDL_Event &inEvent);
         void Update(float inDeltaTime);
 
         void UpdateProjection(const VkExtent2D &inWindowExtent);
@@ -18,6 +19,8 @@ namespace MamontEngine
         {
             return m_Projection;
         }
+
+        const FrustumPlane &GetFrustum() const { return m_Frustum; }
 
         void SetPosition(const glm::vec3& inPosition)
         {
@@ -61,9 +64,11 @@ namespace MamontEngine
         }
 
     private:
-        void Rotate(const SDL_MouseMotionEvent& inMotion);
+        void Rotate(const glm::vec2 &inMotion);
 
     private:
+        FrustumPlane m_Frustum;
+
         glm::mat4 m_Projection{glm::mat4(1.f)};
 
         glm::vec3 m_Velocity{glm::vec3(0.f)};
@@ -76,7 +81,7 @@ namespace MamontEngine
         bool      m_IsRotating       = false;
         float     m_MouseSensitivity = 0.001f;
 
-        float m_MovementSpeed{5.f};
+        float m_MovementSpeed{7.f};
 
         float m_NearClip{0.01f};
         float m_FarClip{100.f};

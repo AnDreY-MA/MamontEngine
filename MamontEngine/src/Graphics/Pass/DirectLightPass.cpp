@@ -77,11 +77,11 @@ namespace MamontEngine
 
         const auto draw = [&](const RenderObject &r, uint32_t cascadeIndex)
         {
-            vkCmdBindIndexBuffer(cmd, r.MeshBuffer.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(cmd, r.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
             const GPUDrawPushConstants push_constants{.WorldMatrix    = r.Transform,
                                                       .SceneBuffer    = sceneBuffer.Address,
-                                                      .VertexBuffer   = r.MeshBuffer.VertexBuffer.Address,
+                                                      .VertexBuffer   = r.VertexAddress,
                                                       .MaterialBuffer = materialBufferAddress,
                                                         .CascadeIndex = cascadeIndex,
                                                       .MaterialIndex = r.MaterialIndex, 

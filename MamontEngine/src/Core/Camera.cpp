@@ -24,95 +24,56 @@ namespace MamontEngine
         return glm::toMat4(yawRotation) * glm::toMat4(pitchRotation);
     }
 
-    void Camera::Rotate(const SDL_MouseMotionEvent &inMotion)
+    void Camera::Rotate(const glm::vec2& inMotion)
     {
-        const float dx = inMotion.xrel * m_MouseSensitivity;
-        const float dy = inMotion.yrel * m_MouseSensitivity;
+        const float dx = inMotion.x * m_MouseSensitivity;
+        const float dy = inMotion.y * m_MouseSensitivity;
         m_Pitch -= dy;
         m_Yaw += dx;
-    }
-    
-    void Camera::ProccessEvent(SDL_Event &inEvent)
-    {
-        const auto &input      = InputSystem::Get();
-        const bool rightMouse = input.IsMouseClicked(KeyMouse::Right);
-        m_IsMotion            = rightMouse;
-
-        if (inEvent.type == SDL_EVENT_KEY_UP)
-        {
-            if (inEvent.key.key == SDLK_E)
-            {
-                m_Velocity.y = 0;
-            }
-            if (inEvent.key.key == SDLK_Q)
-            {
-                m_Velocity.y = 0;
-            }
-            if (inEvent.key.key == SDLK_W)
-            {
-                m_Velocity.z = 0;
-            }
-            if (inEvent.key.key == SDLK_S)
-            {
-                m_Velocity.z = 0;
-            }
-            if (inEvent.key.key == SDLK_A)
-            {
-                m_Velocity.x = 0;
-            }
-            if (inEvent.key.key == SDLK_D)
-            {
-                m_Velocity.x = 0;
-            }
-        }
-        
-        if (!m_IsMotion)
-            return;
-
-        if (inEvent.type == SDL_EVENT_MOUSE_MOTION)
-        {
-            Rotate(inEvent.motion);
-        }
-
-        if (inEvent.type == SDL_EVENT_MOUSE_WHEEL)
-        {
-            m_MovementSpeed += glm::clamp(inEvent.wheel.y, 0.1f, inEvent.wheel.y);
-        }
-
-        if (inEvent.type == SDL_EVENT_KEY_DOWN)
-        {
-            if (inEvent.key.key == SDLK_E)
-            {
-                m_Velocity.y = 1;
-            }
-            if (inEvent.key.key == SDLK_Q)
-            {
-                m_Velocity.y = -1;
-            }
-            if (inEvent.key.key == SDLK_W)
-            {
-                m_Velocity.z = -1;
-            }
-            if (inEvent.key.key == SDLK_S)
-            {
-                m_Velocity.z = 1;
-            }
-            if (inEvent.key.key == SDLK_A)
-            {
-                m_Velocity.x = -1;
-            }
-            if (inEvent.key.key == SDLK_D)
-            {
-                m_Velocity.x = 1;
-            }
-        }
-
     }
 
     void Camera::Update(float inDeltaTime)
     {
+        const auto &input      = InputSystem::Get();
+        const bool  rightMouse = input.IsMousePressed(KeyMouse::Right);
+        m_IsMotion             = rightMouse;
+
+        if (!m_IsMotion)
+            return;
+
+        Rotate(input.GetMouseMotion());
+
+        const auto wheel = input.GetMouseWheel();
+        // m_MovementSpeed += glm::clamp(wheel, 0.1f, wheel);
+
+        if (input.IsKeyDown(KeyCode::w))
+        {
+            m_Velocity.z = -1.f;
+        }
+        if (input.IsKeyDown(KeyCode::s))
+        {
+            m_Velocity.z = 1.f;
+        }
+        if (input.IsKeyDown(KeyCode::d))
+        {
+            m_Velocity.x = 1.f;
+        }
+        if (input.IsKeyDown(KeyCode::a))
+        {
+            m_Velocity.x = -1.f;
+        }
+        if (input.IsKeyDown(KeyCode::e))
+        {
+            m_Velocity.y = 1.f;
+        }
+        if (input.IsKeyDown(KeyCode::q))
+        {
+            m_Velocity.y = -1.f;
+        }
+
         const glm::mat4 cameraRotation = GetRotationMatrix();
         m_Position += glm::vec3(cameraRotation * glm::vec4(m_Velocity * m_MovementSpeed * inDeltaTime, 0.f));
+        m_Velocity = glm::vec3(0.f);
     }
 
     void Camera::UpdateProjection(const VkExtent2D &inWindowExtent)
@@ -120,5 +81,7 @@ namespace MamontEngine
         m_AspectRatio = (float)inWindowExtent.width / (float)inWindowExtent.height;
         m_Projection  = glm::perspectiveRH_ZO(glm::radians(m_FOV), m_AspectRatio, m_NearClip, m_FarClip);
         m_Projection[1][1] *= -1;
+
+        m_Frustum = ExtractFrustumPlanes(m_Projection * GetViewMatrix());
     }
 } // namespace MamontEngine

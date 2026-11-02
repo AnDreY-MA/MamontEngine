@@ -17,27 +17,11 @@ namespace MamontEngine
 
 	struct RenderObject
 	{
-        RenderObject() = default;
-
-        RenderObject(uint32_t InIndexCount,
-                     uint32_t InFirstIndex,
-                     MeshBuffer InMeshBuffer,
-                     uint32_t InMaterialIndex,
-                     AABB inBound,
-                     glm::mat4       InTransform,
-                     UID id)
-            : IndexCount(InIndexCount)
-            , FirstIndex(InFirstIndex), MeshBuffer(InMeshBuffer)
-            , MaterialIndex(InMaterialIndex)
-            , Bound(inBound)
-            , Transform(InTransform)
-            , Id(id)
-        {
-        }
+        AllocatedBuffer IndexBuffer;
+        VkDeviceAddress VertexAddress{0};
 
         uint32_t IndexCount;
         uint32_t FirstIndex;
-        const MeshBuffer     MeshBuffer;
 
         uint32_t        MaterialIndex{0};
 		//const Material *Material;
