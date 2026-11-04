@@ -1,17 +1,18 @@
 #pragma once
 
 #include "Graphics/Pass/RenderPass.h"
+#include "Graphics/Frustum.h"
 
 namespace MamontEngine
 {
     class Camera;
 
-	class DirectLightPass : public RenderPass
+	class CascadeShadowPass : public RenderPass
 	{
     public:
-        DirectLightPass(VkFormat inCascadeDepthFormat, VkImage inCascadeImage);
+        CascadeShadowPass(VkFormat inCascadeDepthFormat, VkImage inCascadeImage);
 
-        ~DirectLightPass();
+        ~CascadeShadowPass();
 
         virtual void Render(VkCommandBuffer                            cmd,
                             std::pair<VkDescriptorSet, VkDescriptorSet> globalDescriptor,
@@ -31,6 +32,7 @@ namespace MamontEngine
         ShadowCascades m_Cascades;
 
         std::array<VkImageView, CASCADECOUNT> m_CascadeImageViews;
+        std::array<FrustumPlane, CASCADECOUNT> m_CascadeFrustumPlanes;
 
         VkImage m_CascadeImage{VK_NULL_HANDLE};
         VkFormat m_CascadeFormat;

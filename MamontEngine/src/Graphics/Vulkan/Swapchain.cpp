@@ -37,6 +37,11 @@ namespace MamontEngine
         m_Swapchain                 = m_vkbSwapchain.swapchain;
         m_SwapchainImages           = m_vkbSwapchain.get_images().value();
         m_SwapchainImageViews       = m_vkbSwapchain.get_image_views().value();
+
+        for (auto& image : m_SwapchainImages)
+        {
+            std::cerr << "-----Swapchain image: " << image << "\n";
+        }
     }
 
     void MSwapchain::ReCreate(const VkSurfaceKHR inSurface, const VkExtent2D &inExtent)
@@ -72,9 +77,7 @@ namespace MamontEngine
 
         m_SwapchainImageViews.clear();
 
-        if (m_Swapchain != VK_NULL_HANDLE)
-        {
-            vkDestroySwapchainKHR(inDevice, m_Swapchain, nullptr);
-        }
+
+        vkDestroySwapchainKHR(inDevice, m_Swapchain, nullptr);
     }
 }

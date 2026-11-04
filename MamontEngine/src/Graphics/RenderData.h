@@ -17,15 +17,13 @@ namespace MamontEngine
 
 	struct RenderObject
 	{
-        AllocatedBuffer IndexBuffer;
+        VkBuffer        IndexBuffer;
         VkDeviceAddress VertexAddress{0};
 
         uint32_t IndexCount;
         uint32_t FirstIndex;
 
         uint32_t        MaterialIndex{0};
-		//const Material *Material;
-        AABB            Bound;
         SphereBounds SphereBound;
 
 		glm::mat4 Transform;
@@ -43,6 +41,17 @@ namespace MamontEngine
 
         std::vector<RenderObject> OpaqueSurfaces;
         std::vector<RenderObject> TransparentSurfaces;
+    };
+
+    struct GPUDrawPushConstants
+    {
+        glm::mat4       WorldMatrix{glm::mat4(1.f)};
+        VkDeviceAddress SceneBuffer{0};
+        VkDeviceAddress VertexBuffer{0};
+        VkDeviceAddress MaterialBuffer{0};
+        uint64_t        ObjectID{0};
+        uint32_t        CascadeIndex{0};
+        uint32_t        MaterialIndex{0};
     };
 
     struct ShadowCascades

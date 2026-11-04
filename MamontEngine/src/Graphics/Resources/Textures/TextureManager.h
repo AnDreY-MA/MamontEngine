@@ -26,13 +26,10 @@ namespace MamontEngine
             return m_Textures[id];
         }
 
-		//inline uint32_t GetErrorTexture() const { return m_ErrorTextureIndex; }
 		inline uint32_t GetWhiteTexture() const { return m_WhiteTextureIndex; }
 
 	private:
         std::vector<std::shared_ptr<Texture>> m_Textures;
-
-		uint32_t m_ErrorTextureIndex{0};
 
 		uint32_t m_WhiteTextureIndex{0};
 	};

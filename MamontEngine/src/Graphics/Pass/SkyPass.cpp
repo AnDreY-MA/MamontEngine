@@ -25,7 +25,7 @@ namespace MamontEngine
                                                          constexpr VkDeviceSize offsets[1] = {0};
                                                          //vkCmdBindVertexBuffers(cmd, 0, 1, &object.MeshBuffer.VertexBuffer.Buffer, offsets);
 
-                                                         vkCmdBindIndexBuffer(cmd, object.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+                                                         vkCmdBindIndexBuffer(cmd, object.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
                                                          vkCmdDrawIndexed(cmd, object.IndexCount, 1, object.FirstIndex, 0, 0);
                                                      });
@@ -33,6 +33,7 @@ namespace MamontEngine
 
     SkyPass::~SkyPass()
     {
+        m_SkyboxContext.Clear();
         m_Skybox.reset();
     }
 
@@ -106,7 +107,7 @@ namespace MamontEngine
 
         const RenderObject &object = m_SkyboxContext.OpaqueSurfaces[0];
 
-        const auto &sceneBuffer = MEngine::Get().GetContextDevice().GetFrameAt(0).SceneDataBuffer;
+        const auto &sceneBuffer = MEngine::Get().GetContextDevice().GetCurrentFrame().SceneDataBuffer;
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Pipeline);
 
@@ -117,7 +118,7 @@ namespace MamontEngine
                                 0,
                                 nullptr);
 
-        vkCmdBindIndexBuffer(cmd, object.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindIndexBuffer(cmd, object.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
         const GPUDrawPushConstants push_constants{
                 .WorldMatrix  = glm::mat4(1.f),

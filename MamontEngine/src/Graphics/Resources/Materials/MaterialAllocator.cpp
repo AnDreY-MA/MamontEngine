@@ -12,7 +12,6 @@ namespace MamontEngine
 {
     namespace MaterialAllocator
     {
-        DescriptorAllocatorGrowable DescrtiptorAllocator;
         VkDeviceSize                AlignedMaterialSize{0};
         AllocatedBuffer g_Buffer;
         std::array<AllocatedBuffer, FRAME_OVERLAP> stagingBuffers{};
@@ -29,7 +28,6 @@ namespace MamontEngine
                     DescriptorAllocatorGrowable::PoolSizeRatio{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 6}, };
             
             const VkDevice& device = LogicalDevice::GetDevice();
-            DescrtiptorAllocator.Init(device, 100, sizes);
 
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(PhysicalDevice::GetDevice(), &properties);
@@ -56,9 +54,6 @@ namespace MamontEngine
         void Destroy()
         {
             const VkDevice &device = LogicalDevice::GetDevice();
-
-            DescrtiptorAllocator.ClearPools(device);
-            DescrtiptorAllocator.DestroyPools(device);
 
             for (auto &sBuffer : stagingBuffers)
             {
@@ -87,26 +82,6 @@ namespace MamontEngine
             newMaterial->PassType     = pass;
             newMaterial->Index        = index;
 
-            const VkDevice  &device   = LogicalDevice::GetDevice();
-
-            /*const std::vector<std::shared_ptr<Texture>> textures{
-                    resources.ColorTexture, resources.MetalRoughTexture, resources.NormalTexture, resources.EmissiveTexture, resources.OcclusionTexture};
-
-            std::vector<VkDescriptorImageInfo> textureDescriptors;
-            for (auto &texture : textures)
-            {
-                if (texture)
-                {
-                    textureDescriptors.push_back(texture->GetDescriptorInfo());
-                }
-            }
-
-            newMaterial->MaterialSet = DescrtiptorAllocator.Allocate(device, contextDevice.RenderDescriptorLayout);
-
-            DescriptorWriter writer;
-            writer.WriteImageArray(0, textureDescriptors, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            writer.UpdateSet(device, newMaterial->MaterialSet);*/
-
             Update(newMaterial);
 
             return newMaterial;
@@ -131,10 +106,11 @@ namespace MamontEngine
             ImmediateContext::ImmediateSubmit(
                     [&](VkCommandBuffer cmd)
                     {
-                        VkBufferCopy copy{};
-                        copy.srcOffset = 0;
-                        copy.dstOffset = inMaterial->Index * AlignedMaterialSize;
-                        copy.size      = sizeof(Material::MaterialConstants);
+                        const VkBufferCopy copy{
+                            .srcOffset = 0,
+                            .dstOffset = inMaterial->Index * AlignedMaterialSize,
+                            .size      = sizeof(Material::MaterialConstants)
+                        };
                         vkCmdCopyBuffer(cmd, staging.Buffer, g_Buffer.Buffer, 1, &copy);
                     });
         }

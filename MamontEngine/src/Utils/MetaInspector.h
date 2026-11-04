@@ -12,6 +12,7 @@ using entt::literals::operator""_hs;
 
 constexpr entt::hashed_string f_Inspect = "Inspect"_hs;
 constexpr entt::hashed_string p_DisplayName = "DisplayName"_hs;
+constexpr entt::hashed_string f_RemoveComponent = "RemoveComponent"_hs;
 
 namespace MetaInspectors
 {

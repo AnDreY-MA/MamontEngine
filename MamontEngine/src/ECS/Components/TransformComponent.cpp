@@ -10,18 +10,22 @@ namespace MamontEngine
     }
     FINISH_REFLECT()
 
+    void TransformComponent::SetDirty(bool value)
+    {
+        m_Transform.IsDirty = value;
+    }
+
     void TransformComponent::SetWorldMatrix(const glm::mat4 &inMatrix)
     {
-        m_Transform.IsDirty = true;
         m_WorldMatrix = inMatrix;
+        SetDirty(true);
     }
 
     void TransformComponent::SetMatrix(const glm::mat4 &inMatrix)
     {
         m_Transform.SetMatrix(inMatrix);
-        m_Transform.IsDirty = true;
+        SetDirty(true);
         
-        Log::Info("TransformComp: SetMatrix, isdirty: {}", IsDirty());
     }
 
     glm::mat4 TransformComponent::GetLocalMatrix() const

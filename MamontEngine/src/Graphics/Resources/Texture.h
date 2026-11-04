@@ -14,7 +14,7 @@ namespace MamontEngine
     {
     public:
         Texture();
-        ~Texture() = default;
+        ~Texture();
 
         VkImage           Image{VK_NULL_HANDLE};
         VkImageView       ImageView{VK_NULL_HANDLE};

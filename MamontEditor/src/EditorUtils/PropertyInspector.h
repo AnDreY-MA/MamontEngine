@@ -8,5 +8,5 @@ namespace MamontEditor
 
     void InspectType(const std::string &name, entt::meta_any &value, entt::meta_data &meta);
 
-    void InspectComponent(entt::entity owner, entt::meta_any &data);
+    void InspectComponent(entt::registry& registry, entt::entity owner, entt::meta_any &data);
 }

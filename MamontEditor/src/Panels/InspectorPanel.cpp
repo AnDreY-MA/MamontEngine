@@ -179,7 +179,7 @@ namespace MamontEditor
 
             entt::meta_any metaProp = componentMeta.from_void(storage.value(m_Selected));
 
-            InspectComponent(m_Selected, metaProp);
+            InspectComponent(registry, m_Selected, metaProp);
         }
 
         ImGui::SameLine();

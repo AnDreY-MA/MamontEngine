@@ -142,6 +142,8 @@ namespace MamontEngine
         entt::meta_factory<Transform>{}.type(hs{"Transform"}, "Transform");
 
         m_Registry.on_destroy<Hierarchy>().connect<&Scene::OnEntityDestroyed>(*this);
+
+        m_Registry.on_update<TransformComponent>().connect<&Scene::OnTransformUpdated>(*this);
     }
 
     Scene::~Scene()
@@ -248,9 +250,8 @@ namespace MamontEngine
                 script.Update(deltaTime);
             }
         }
-        
-        for (auto transformView = m_Registry.view<TransformComponent>();  
-            auto [entity, transform] : transformView.each())
+        auto transformView = m_Registry.view<TransformComponent>();  
+        for (auto&& [entity, transform] : transformView.each())
         {
             if (transform.IsDirty())
             {
@@ -258,6 +259,7 @@ namespace MamontEngine
                 transform.SetDirty(false);
             }
         }
+
     }
 
     void Scene::StartScene()
@@ -371,6 +373,16 @@ namespace MamontEngine
         Log::Warn("Entity not found");
         return {};
 
+    }
+
+    void Scene::OnTransformUpdated(entt::registry &registry, entt::entity entity)
+    {
+        auto transform = m_Registry.try_get<TransformComponent>(entity);
+        auto meshComponent = m_Registry.try_get<MeshComponent>(entity);
+        if (meshComponent && meshComponent->Mesh)
+        {
+            meshComponent->Mesh->UpdateTransform(transform->Matrix());
+        }
     }
 
     void Scene::OnEntityDestroyed(entt::registry &registry, entt::entity entity)

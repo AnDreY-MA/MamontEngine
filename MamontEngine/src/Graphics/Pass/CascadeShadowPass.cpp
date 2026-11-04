@@ -1,4 +1,4 @@
-#include "Graphics/Pass/DirectLightPass.h"
+#include "Graphics/Pass/CascadeShadowPass.h"
 #include "Core/Camera.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Utils/VkPipelines.h"
@@ -13,7 +13,7 @@
 
 namespace MamontEngine
 {
-    DirectLightPass::DirectLightPass(VkFormat inCascadeDepthFormat, VkImage inCascadeImage) 
+    CascadeShadowPass::CascadeShadowPass(VkFormat inCascadeDepthFormat, VkImage inCascadeImage) 
         : m_CascadeImage(inCascadeImage), m_CascadeFormat(inCascadeDepthFormat)
     {
         const VkDevice& device = LogicalDevice::GetDevice();
@@ -28,9 +28,11 @@ namespace MamontEngine
             VK_CHECK(vkCreateImageView(device, &layerViewInfo, nullptr, &m_CascadeImageViews[i]));
             std::cerr << "Cascades[" << i << "].View: " << m_CascadeImageViews[i] << std::endl;
         }
+
+        std::cerr << "-----CascadeImageDepth: " << m_CascadeImage << "\n";
     }
     
-    DirectLightPass::~DirectLightPass()
+    CascadeShadowPass::~CascadeShadowPass()
     {
         const VkDevice device = LogicalDevice::GetDevice();
 
@@ -42,7 +44,7 @@ namespace MamontEngine
         m_Pipeline.reset();
     }
 
-    void DirectLightPass::Render(VkCommandBuffer                             cmd,
+    void CascadeShadowPass::Render(VkCommandBuffer                             cmd,
                                  std::pair<VkDescriptorSet, VkDescriptorSet> globalDescriptor,
                                  const DrawContext                          &inDrawContext,
                                  const glm::mat4                            &viewproj)
@@ -65,7 +67,7 @@ namespace MamontEngine
                 .framebuffer = VK_NULL_HANDLE,
         };
 
-        const auto &sceneBuffer = MEngine::Get().GetContextDevice().GetFrameAt(0).SceneDataBuffer;
+        const auto &sceneBuffer = MEngine::Get().GetContextDevice().GetCurrentFrame().SceneDataBuffer;
 
         const VkCommandBufferBeginInfo cmdSecondaryBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, &inheritanceInfo);
 
@@ -75,9 +77,11 @@ namespace MamontEngine
 
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdSecondaryBeginInfo));
 
+        VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
+
         const auto draw = [&](const RenderObject &r, uint32_t cascadeIndex)
         {
-            vkCmdBindIndexBuffer(cmd, r.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(cmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
             const GPUDrawPushConstants push_constants{.WorldMatrix    = r.Transform,
                                                       .SceneBuffer    = sceneBuffer.Address,
@@ -115,9 +119,7 @@ namespace MamontEngine
 
         for (uint32_t i = 0; i < m_CascadeImageViews.size(); ++i)
         {
-            const auto frustumPlanes = ExtractFrustumPlanes(m_Cascades.ViewProjectMatrixs[i]);
-
-            const VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(m_CascadeImageViews[i], VK_ATTACHMENT_LOAD_OP_LOAD);
+            const VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(m_CascadeImageViews[i], VK_ATTACHMENT_LOAD_OP_CLEAR);
 
             const VkRenderingInfo renderCascadeInfo = vkinit::rendering_info(cascadeExtent, nullptr, &depthAttachment);
 
@@ -125,7 +127,7 @@ namespace MamontEngine
             
             for (const auto &object : inDrawContext.OpaqueSurfaces)
             {
-                if (IsNodeVisible(frustumPlanes, object.Transform, object.SphereBound))
+                if (IsNodeVisible(m_CascadeFrustumPlanes[i], object.Transform, object.SphereBound))
                 {
                     draw(object, i);
                 }
@@ -138,8 +140,10 @@ namespace MamontEngine
         VK_CHECK(vkEndCommandBuffer(cmd));
     }
 
-    void DirectLightPass::UpdateCascade(const Camera *inCamera, const glm::vec3 &inLightDirection)
+    void CascadeShadowPass::UpdateCascade(const Camera *inCamera, const glm::vec3 &inLightDirection)
     {
+        PROFILE_FUNCTION();
+
         std::array<float, CASCADECOUNT> cascadeSplits{};
 
         const float nearClip{inCamera->GetNearClip()};
@@ -213,12 +217,14 @@ namespace MamontEngine
             
             m_Cascades.DepthSpilts[i] = (nearClip + splitDist * clipRange) * -1.f;
             m_Cascades.ViewProjectMatrixs[i]             = lightOrthoMatrix * lightViewMatrix;
+            m_CascadeFrustumPlanes[i]        = ExtractFrustumPlanes(m_Cascades.ViewProjectMatrixs[i]);
 
             lastSplitDist = splitDist;
         }
+
     }
        
-    void DirectLightPass::CreatePipeline(std::span<const VkDescriptorSetLayout> inDescriptorLaouts, VkFormat inImageFormat)
+    void CascadeShadowPass::CreatePipeline(std::span<const VkDescriptorSetLayout> inDescriptorLaouts, VkFormat inImageFormat)
     {
         constexpr VkPushConstantRange matrixRange{
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(GPUDrawPushConstants)};

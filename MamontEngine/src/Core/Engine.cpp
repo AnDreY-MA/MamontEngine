@@ -19,6 +19,8 @@
 
 #include "Audio/AudioSystem.h"
 
+#include "Asset/AssetManager.h"
+
 
 namespace MamontEngine
 {
@@ -81,6 +83,9 @@ namespace MamontEngine
         JobSystem::Wait(contextJobs);
         InitImgui();
 
+        AssetMananger::Get().OnModelLoaded.Add([](Asset *inAsset) { 
+                Log::Info("OnModelLoading: {}", inAsset->GetPathFile());
+            });
 
         m_ScriptSystem = std::make_unique<ScriptSystem>();
 
@@ -143,21 +148,24 @@ namespace MamontEngine
             VkDevice &device = LogicalDevice::GetDevice();
             vkDeviceWaitIdle(device);
             
-            m_MainDeletionQueue.Flush();
-
             m_Window->UnregisterMessagesCallbacks(InputMessagesCallback);
-
-            m_Renderer.reset();
 
             m_GuiLayer->Deactivate();
             m_GuiLayer.reset();
 
+            ImGui_ImplVulkan_Shutdown();
+
             m_Scene.reset();
+            
+            m_Renderer.reset();
 
             m_MaterialManager.reset();
             TextureManager::GetInstance().Shutdown();
 
+            m_MainDeletionQueue.Flush();
+
             m_Window.reset();
+
             m_ContextDevice.reset();
 
             JobSystem::Release();
@@ -208,7 +216,7 @@ namespace MamontEngine
 
         m_Renderer->InitImGuiRenderer(m_GuiLayer);
 
-        m_MainDeletionQueue.PushFunction([]() { ImGui_ImplVulkan_Shutdown(); });
+        //m_MainDeletionQueue.PushFunction([]() { ImGui_ImplVulkan_Shutdown(); });
     }
 
     void MEngine::PushGuiLayer(ImGuiLayer *inLayer)

@@ -8,15 +8,13 @@ namespace MamontEngine
     {
         m_Textures.reserve(100);
 
-        //auto errorTexture = std::shared_ptr<Texture>(CreateErrorTexture());
         auto whiteTexture = std::shared_ptr<Texture>(CreateWhiteTexture());
-        //m_ErrorTextureIndex = AddTexture(errorTexture);
         m_WhiteTextureIndex = AddTexture(whiteTexture);
     }
     
     void TextureManager::Shutdown()
     {
-
+        m_Textures.clear();
     }
 
     uint32_t TextureManager::AddTexture(std::shared_ptr<Texture> &inTexture)
@@ -29,13 +27,12 @@ namespace MamontEngine
 
         m_Textures.push_back(inTexture);
 
-
         return textureId;
     }
 
     void TextureManager::RemoveTexture()
     {
-
+        m_Textures.erase(m_Textures.begin(), m_Textures.end());
     }
     
 } // namespace MamontEngine

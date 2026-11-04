@@ -25,6 +25,11 @@ namespace MamontEngine
         return asset;
     }
 
+    AssetMananger &AssetMananger::Get()
+    {
+        static AssetMananger isntance;
+        return isntance;
+    }
 
     template <typename AssetClass>
     std::shared_ptr<Asset> AssetMananger::LoadAsset(std::string_view inPath)

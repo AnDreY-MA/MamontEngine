@@ -4,11 +4,10 @@
 #include <stb/include/stb_image.h>
 #include "Core/Engine.h"
 #include "Core/Log.h"
+#include "Core/ContextDevice.h"
 
 #include "Utils/Utilities.h"
-#include "ktx.h"
-#include "ktxvulkan.h"
-#include "Core/ContextDevice.h"
+
 
 #include <meshoptimizer.h>
 
@@ -27,6 +26,8 @@
 #include <fastgltf/glm_element_traits.hpp>
 
 #include <ranges>
+
+#include "Asset/AssetManager.h"
 
 namespace
 {
@@ -96,8 +97,17 @@ namespace MamontEngine
 
     void Model::Clear()
     {
-        const auto &device = LogicalDevice::GetDevice();
-        vkDeviceWaitIdle(device);
+        VkBuffer indexBuffer = Buffer.IndexBuffer.Buffer;
+        VmaAllocation indexAllocation = Buffer.IndexBuffer.Allocation;
+        VkBuffer          vertexBuffer     = Buffer.VertexBuffer.Buffer;
+        VmaAllocation     vertexAllocation = Buffer.VertexBuffer.Allocation;
+
+        MEngine::Get().GetContextDevice().GetCurrentFrame().Deleteions.PushFunction(
+                [indexBuffer, indexAllocation, vertexBuffer, vertexAllocation]()
+                {
+                    vmaDestroyBuffer(Allocator::GetAllocator(), indexBuffer, indexAllocation);
+                    vmaDestroyBuffer(Allocator::GetAllocator(), vertexBuffer, vertexAllocation);
+        });
 
         m_Nodes.clear();
 
@@ -115,8 +125,7 @@ namespace MamontEngine
 
         m_Meshes.clear();
 
-        Buffer.IndexBuffer.Destroy();
-        Buffer.VertexBuffer.Destroy();
+        
     }
 
     void Model::CollectDraws(DrawContext &inContext)
@@ -147,12 +156,11 @@ namespace MamontEngine
 
                 const auto        &material = m_Materials[primitive->MaterialIndex];
                 const RenderObject def {
-                    .IndexBuffer = Buffer.IndexBuffer,
+                    .IndexBuffer = Buffer.IndexBuffer.Buffer,
                     .VertexAddress = Buffer.VertexBuffer.Address,
                     .IndexCount  = primitive->Count,
                     .FirstIndex  = primitive->StartIndex,
                     .MaterialIndex   = material->Index,
-                    .Bound         = Bound,
                     .SphereBound = primitive->Bounds,
                     .Transform       = nodeMatrix,
                     .Id              = ID
@@ -208,9 +216,13 @@ namespace MamontEngine
 
     void Model::Load(std::string_view filePath)
     {
-        Clear();
+        if (m_Loaded)
+        {
+            Clear();
+        }
 
         Log::Info("Model, Loading file: {}", filePath);
+
 
         constexpr auto supportedExtensions =
                 fastgltf::Extensions::KHR_mesh_quantization | fastgltf::Extensions::KHR_texture_transform | fastgltf::Extensions::KHR_materials_variants;
@@ -252,7 +264,10 @@ namespace MamontEngine
 
         m_FilePath = filePath;
 
+        //AssetMananger::Get().OnModelLoaded.Invoke(this);
+
         IsDirty = true;
+        m_Loaded = true;
     }
 
     std::vector<VkSampler> Model::LoadSamplers(const std::vector<fastgltf::Sampler> &samplers)

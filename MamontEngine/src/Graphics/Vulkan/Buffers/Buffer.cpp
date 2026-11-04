@@ -25,12 +25,12 @@ namespace MamontEngine
                 .usage = inMemoryUsage,
         };
         VK_CHECK(vmaCreateBuffer(Allocator::GetAllocator(), &bufferInfo, &vmaAllocInfo, &Buffer, &Allocation, &Info));
-        Info.pName = "TestAllocatedBuffer";
+        
     }
 
     void AllocatedBuffer::Destroy()
     {
-        if (Buffer != VK_NULL_HANDLE)
+        if (IsValid())
         {
             vmaDestroyBuffer(Allocator::GetAllocator(), Buffer, Allocation);
             Buffer     = VK_NULL_HANDLE;

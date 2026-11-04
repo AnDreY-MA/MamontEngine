@@ -137,6 +137,8 @@ namespace MamontEditor
     void Editor::Deactivate()
     {
         m_Panels.clear();
+        ImGui_ImplVulkan_RemoveTexture(m_DrawImage);
+
     }
 
     void Editor::Begin()
@@ -306,7 +308,6 @@ namespace MamontEditor
             m_DrawImage =
                     ImGui_ImplVulkan_AddTexture(contextDevice.ImGuiSceneSampler, contextDevice.DrawImage.ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
-
         static ImGuizmo::OPERATION operation = ImGuizmo::TRANSLATE;
         static ImGuizmo::MODE      mode      = ImGuizmo::WORLD;
 
@@ -333,7 +334,6 @@ namespace MamontEditor
         const ImVec2 viewportPos  = ImGui::GetCursorScreenPos();
         const ImVec2 viewportSize = ImGui::GetContentRegionAvail();
         ImGui::Image((ImTextureID)m_DrawImage, viewportSize);
-
         
         if (auto selectedEntity = GetPanel<SceneHierarchyPanel>()->GetSelectedEntity(); selectedEntity)
         {
@@ -349,22 +349,20 @@ namespace MamontEditor
             glm::mat4 cameraProjection = camera->GetProjection();
             cameraProjection[1][1] *= -1.f;
 
-            auto transformComponent = registry.try_get<TransformComponent>((entt::entity)selectedEntity);
+            auto &transformComponent = selectedEntity.GetComponent<TransformComponent>();
 
             float delta[16];
 
-            if (transformComponent)
-            {
-                auto transformMatrix = transformComponent->Matrix();
+            auto transformMatrix = transformComponent.Matrix();
 
-                if (ImGuizmo::Manipulate(glm::value_ptr(camerView), glm::value_ptr(cameraProjection), operation, mode, glm::value_ptr(transformMatrix), delta))
-                {
-                    if (mode == ImGuizmo::WORLD)
-                    {
-                        transformComponent->SetMatrix(transformMatrix);
-                    }
-                }
+            if (ImGuizmo::Manipulate(glm::value_ptr(camerView), glm::value_ptr(cameraProjection), operation, mode, glm::value_ptr(transformMatrix), delta))
+            {
+                registry.patch<TransformComponent>(selectedEntity, [transformMatrix](TransformComponent &transform) { 
+                    transform.SetMatrix(transformMatrix);
+                    transform.SetDirty(true); 
+                });
             }
+            
         }
 
         ImGui::End();

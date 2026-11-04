@@ -80,11 +80,6 @@ namespace MamontEngine
 
         void PushGuiLayer(ImGuiLayer *inLayer);
 
-        const SDL_Event* GetInputEvent() const
-        {
-            return m_InputEvent;
-        }
-
         struct Stats
         {
             double FrameTime{0.0};
@@ -122,8 +117,6 @@ namespace MamontEngine
         DeletionQueue m_MainDeletionQueue;
 
         std::shared_ptr<Scene> m_Scene;
-
-        SDL_Event* m_InputEvent;
 
         std::shared_ptr<Camera> m_MainCamera;
 

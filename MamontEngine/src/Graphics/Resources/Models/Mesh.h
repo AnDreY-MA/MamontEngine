@@ -13,12 +13,6 @@ namespace MamontEngine
         WorldDirty = 1 << 1,
     };
 
-    struct MyData
-    {
-        glm::vec3 p;
-        float     r;
-    };
-
     struct Vertex
     {
         alignas(16) glm::vec3 Position = glm::vec3(0.0f);
@@ -28,16 +22,7 @@ namespace MamontEngine
         alignas(16) glm::vec4 Tangent  = glm::vec4(0.f);
     };
 
-    struct GPUDrawPushConstants
-    {
-        glm::mat4       WorldMatrix{glm::mat4(1.f)};
-        VkDeviceAddress SceneBuffer{0};
-        VkDeviceAddress VertexBuffer{0};
-        VkDeviceAddress MaterialBuffer{0};
-        uint64_t        ObjectID{0};
-        uint32_t        CascadeIndex{0};
-        uint32_t        MaterialIndex{0};
-    };
+    
 
     struct SphereBounds
     {

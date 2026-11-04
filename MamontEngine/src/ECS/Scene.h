@@ -64,6 +64,7 @@ namespace MamontEngine
         bool Load(std::string_view inFile);
 
         void OnEntityDestroyed(entt::registry &registry, entt::entity entity);
+        void OnTransformUpdated(entt::registry &registry, entt::entity entity);
 
     private:
         entt::registry     m_Registry;

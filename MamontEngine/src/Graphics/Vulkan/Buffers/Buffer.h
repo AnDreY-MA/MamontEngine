@@ -21,7 +21,7 @@ namespace MamontEngine
 
         void *GetMappedData() const;
 
-        bool IsValid() const noexcept
+        inline bool IsValid() const noexcept
         {
             return Buffer != VK_NULL_HANDLE;
         }

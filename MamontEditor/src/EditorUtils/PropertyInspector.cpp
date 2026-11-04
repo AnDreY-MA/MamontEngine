@@ -146,7 +146,7 @@ namespace MamontEditor
             ImGui::TextColored(ImVec4(1, 0, 0, 1), "Failed to render type");
     }
 
-    void InspectComponent(entt::entity owner, entt::meta_any& data)
+    void InspectComponent(entt::registry &registry, entt::entity owner, entt::meta_any &data)
     {
         using namespace MamontEngine;
         if (!data)
@@ -161,6 +161,18 @@ namespace MamontEditor
                                                   ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding;
 
         const bool menuOpen = ImGui::CollapsingHeader(dataType.name(), TREE_FLAGS);
+
+        // TODO: Fix for MeshComponent
+        if (ImGui::BeginPopupContextItem())
+        {
+            if (ImGui::Button("Remove"))
+            {
+                data.type().func(f_RemoveComponent).invoke({}, entt::forward_as_meta(registry), owner);
+            }
+
+            ImGui::EndPopup();
+        }
+
         if (!menuOpen)
             return;
 

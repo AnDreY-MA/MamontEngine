@@ -12,7 +12,7 @@ namespace MamontEngine
     public:
         void PushFunction(std::function<void()> &&inFunction)
         {
-            deletors.push_back(inFunction);
+            deletors.push_back(std::move(inFunction));
         }
 
         void Flush()

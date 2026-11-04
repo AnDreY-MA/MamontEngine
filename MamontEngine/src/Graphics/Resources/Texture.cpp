@@ -26,6 +26,11 @@ namespace MamontEngine
         m_Type = EAssetType::Texture;
     }
 
+    Texture::~Texture()
+    {
+        Destroy();
+    }
+
     void Texture::Load(void *inData, const VkExtent3D &inSize, VkFormat inFormat, VkImageUsageFlags inUsage, const bool inIsMipMapped, VkSampler inSampler)
     {
         const size_t    dataSize     = inSize.depth * inSize.width * inSize.height * 4;
@@ -69,20 +74,33 @@ namespace MamontEngine
     void Texture::Destroy()
     {
         const auto device = LogicalDevice::GetDevice();
+        if (device == VK_NULL_HANDLE)
+        {
+            std::cerr << "~~~~~Texture::Destroy(): Device Is NULL " << "\n ";
+            return;
+        }
 
         if (Sampler != VK_NULL_HANDLE)
         {
             vkDestroySampler(device, Sampler, nullptr);
+            Sampler = VK_NULL_HANDLE;
         }
 
         if (ImageView != VK_NULL_HANDLE)
         {
             vkDestroyImageView(device, ImageView, nullptr);
+            ImageView = VK_NULL_HANDLE;
         }
 
-        if (Image != VK_NULL_HANDLE)
+        if (Allocation != 0 && Image != VK_NULL_HANDLE)
         {
             vmaDestroyImage(Allocator::GetAllocator(), Image, Allocation);
+            Image = VK_NULL_HANDLE;
+        }
+        else if (Allocation == nullptr && Image != VK_NULL_HANDLE)
+        {
+            vkDestroyImage(LogicalDevice::GetDevice(), Image, nullptr);
+            Image = VK_NULL_HANDLE;
         }
 
     }

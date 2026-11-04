@@ -18,7 +18,7 @@
 #include "Physics/Collision/SphereCollision.h"
 #include "Graphics/Resources/Materials/MaterialAllocator.h"
 #include "Graphics/Frustum.h"
-#include "Graphics/Pass/DirectLightPass.h"
+#include "Graphics/Pass/CascadeShadowPass.h"
 
 namespace
 {
@@ -76,7 +76,7 @@ namespace MamontEngine
     constexpr int MAX_RENDER_OBJECTS = 10000;
     SceneRenderer::SceneRenderer(const std::shared_ptr<Camera>          &inCamera,
                                  const std::shared_ptr<Scene>           &inScene,
-                                 const std::shared_ptr<DirectLightPass> &inDirectPass) 
+                                 const std::shared_ptr<CascadeShadowPass> &inDirectPass) 
         : m_Camera(inCamera), m_Scene(inScene), m_DirectShadowPass(inDirectPass)
     {
         m_DrawContext.OpaqueSurfaces.reserve(MAX_RENDER_OBJECTS);
@@ -106,10 +106,9 @@ namespace MamontEngine
 
         const auto draw = [&](const RenderObject &r)
         {
-            vkCmdBindIndexBuffer(inCmd, r.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(inCmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-            const GPUDrawPushConstants push_constants
-            {
+            const GPUDrawPushConstants push_constants {
                 .WorldMatrix = r.Transform, 
                 .SceneBuffer = sceneBuffer.Address,
                 .VertexBuffer = r.VertexAddress, 
@@ -221,17 +220,17 @@ namespace MamontEngine
 
         if (m_LightData.HasDirectionLight)
         {
-            const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent, const TransformComponent>();
+            const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent, TransformComponent>();
 
             viewDirectionLight.each(
-                    [&](const DirectionLightComponent &ligth, const TransformComponent &transform)
+                    [&](const DirectionLightComponent &ligth, TransformComponent &transform)
                     { 
                     m_LightData.DirectLight.Direction = transform.GetForwardVector();
                         m_LightData.DirectLight.Color     = ligth.GetColor();
                     if (transform.IsDirty())
                     {
-                        
                         m_DirectShadowPass.lock()->UpdateCascade(m_Camera.get(), m_LightData.DirectLight.Direction);
+                        transform.SetDirty(false);
                     }
             });
         }
@@ -260,12 +259,13 @@ namespace MamontEngine
 
         }
 
-        const auto meshes = sceneRegistry.view<MeshComponent, TransformComponent>();
-        for (const auto&& [entity, meshComponent, transform] : meshes.each())
+        auto meshes = sceneRegistry.view<MeshComponent, TransformComponent>();
+        for (auto&& [entity, meshComponent, transform] : meshes.each())
         {
             if (meshComponent.Mesh != nullptr)
             {
                 meshComponent.Mesh->CollectDraws(m_DrawContext);
+
                 if (meshComponent.Mesh->IsDirty || transform.IsDirty())
                 {
                     meshComponent.Mesh->UpdateTransform(transform.Matrix());

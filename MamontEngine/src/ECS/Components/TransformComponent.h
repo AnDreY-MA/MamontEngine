@@ -18,10 +18,8 @@ namespace MamontEngine
         TransformComponent()                                = default;
         TransformComponent(const TransformComponent &other) = default;
 
-        void SetDirty(bool value)
-        {
-            m_Transform.IsDirty = value;
-        }
+        void SetDirty(bool value);
+
         bool IsDirty() const
         {
             return m_Transform.IsDirty;
@@ -67,8 +65,8 @@ namespace MamontEngine
 
     private:
         glm::mat4 m_WorldMatrix{glm::mat4(1.f)};
-
         Transform m_Transform;
+
 
         friend class cereal::access;
 

@@ -172,7 +172,7 @@ namespace MamontEngine
         {
             vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Layout, 1, 1, &globalDescriptor.second, 0, nullptr);
 
-            vkCmdBindIndexBuffer(cmd, r.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(cmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
             const PointShadowConstants pushConstants{
                     .WorldMatrix = r.Transform, 

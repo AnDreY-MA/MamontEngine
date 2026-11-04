@@ -17,7 +17,7 @@
 #include <execution>
 #include "Core/Log.h"
 #include "Graphics/Devices/LogicalDevice.h"
-#include "Graphics/Pass/DirectLightPass.h"
+#include "Graphics/Pass/CascadeShadowPass.h"
 #include "Graphics/Pass/PointLightPass.h"
 #include "Graphics/Pass/PickPass.h"
 #include "Graphics/Pass/SkyPass.h"
@@ -38,14 +38,12 @@ namespace MamontEngine
 
         const std::array<VkDescriptorSetLayout, 2> layouts = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
 
-        m_DirectLightPass = std::make_shared<DirectLightPass>(m_DeviceContext.CascadeDepthImage.ImageFormat, m_DeviceContext.CascadeDepthImage.Image);
+        m_DirectLightPass = std::make_shared<CascadeShadowPass>(m_DeviceContext.CascadeDepthImage.ImageFormat, m_DeviceContext.CascadeDepthImage.Image);
 
         m_PointLightPass = std::make_unique<PointLightPass>(m_DeviceContext.PointLightShadowMaps);
 
-        m_PickPass = std::make_unique<PickPass>();
+        //m_PickPass = std::make_unique<PickPass>();
         InitPipelines();
-
-        m_GpuHeapBudgets.resize(10000);
 
         for (auto &sBuffer : m_SceneStagingBuffers)
         {
@@ -55,6 +53,11 @@ namespace MamontEngine
 
     Renderer::~Renderer()
     {
+        for (auto& buffer : m_SceneStagingBuffers)
+        {
+            buffer.Destroy();
+        }
+
         m_SceneRenderer.reset();
         m_SkyPass.reset();
         DestroyPipelines();
@@ -78,9 +81,6 @@ namespace MamontEngine
 
         const std::pair<VkFormat, VkFormat> inImageFormats{m_DeviceContext.DrawImage.ImageFormat, m_DeviceContext.DepthImage.ImageFormat};
 
-        fmt::println("DrawImage.ImageFormat: {}", string_VkFormat(inImageFormats.first));
-        fmt::println("DepthImage.ImageFormat: {}", string_VkFormat(inImageFormats.second));
-
         const std::array<VkDescriptorSetLayout, 2> layouts{m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.BindlessDescriptorLayout};
         const std::array<VkDescriptorSetLayout, 1> skyLayouts{m_DeviceContext.GPUSceneDataDescriptorLayout};
 
@@ -93,9 +93,6 @@ namespace MamontEngine
 
         m_SkyPass->CreatePipeline(skyLayouts, inImageFormats);
         m_DirectLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
-        //m_PointLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
-
-        //InitPickPipepline();
 
         DebugRenderer::Init(device, layouts);
 

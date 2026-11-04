@@ -20,6 +20,8 @@ namespace MamontEngine
             Dirty = true;
         }
 
+        ~MeshComponent() = default;
+
         std::shared_ptr<Model> Mesh;
 
         bool Dirty{false};

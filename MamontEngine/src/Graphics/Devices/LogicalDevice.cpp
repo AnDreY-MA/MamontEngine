@@ -20,6 +20,7 @@ namespace LogicalDevice
     {
         fmt::println("LOGICAL DEVICE: Destroy");
         vkDestroyDevice(g_Device, nullptr);
+        g_Device = VK_NULL_HANDLE;
     }
 }
 }

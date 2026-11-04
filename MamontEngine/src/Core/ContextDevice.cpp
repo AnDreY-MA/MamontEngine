@@ -291,7 +291,10 @@ namespace MamontEngine
 
         m_SkyboxTexture = std::unique_ptr<Texture>(LoadCubeMapTexture(DEFAULT_ASSETS_DIRECTORY + "Textures/cubemap_vulkan.ktx", VK_FORMAT_R8G8B8A8_UNORM));
 
+        std::cerr << "-----m_SkyboxTexture: " << m_SkyboxTexture->Image << "\n";
+
         m_BRDFUTTexture = std::unique_ptr<Texture>(GenerateBRDFLUT());
+        std::cerr << "-----m_BRDFUTTexture: " << m_BRDFUTTexture->Image << "\n";
 
         InitSceneBuffers();
 
@@ -318,11 +321,17 @@ namespace MamontEngine
 
         DestroyBindlessDescriptor();
 
-        m_SkyboxTexture->Destroy();
+       /* m_SkyboxTexture->Destroy();
         m_BRDFUTTexture->Destroy();
         m_PrefilteredCubeTexture->Destroy();
-        m_IrradianceTexture->Destroy();
+        m_IrradianceTexture->Destroy();*/
+        
+        m_SkyboxTexture.reset();
+        m_IrradianceTexture.reset();
+        m_BRDFUTTexture.reset();
+        m_PrefilteredCubeTexture.reset();
 
+        DestroyImages();
         DestroyShadowImages();
 
         Swapchain.Destroy(device);
@@ -339,7 +348,9 @@ namespace MamontEngine
 
     bool VkContextDevice::BeginFrame()
     {
-        const auto           &currentFrame = GetCurrentFrame();
+        PROFILE_FUNCTION();
+
+        auto           &currentFrame = GetCurrentFrame();
         const VkDevice &device       = LogicalDevice::GetDevice();
 
         if (vkGetFenceStatus(device, currentFrame.RenderFence) != VK_SUCCESS)
@@ -348,7 +359,11 @@ namespace MamontEngine
         }
 
         VK_CHECK_MESSAGE(vkWaitForFences(device, 1, &currentFrame.RenderFence, VK_TRUE, UINT64_MAX), "Wait FENCE");
+        currentFrame.Deleteions.Flush();
+
         VK_CHECK(vkResetFences(device, 1, &currentFrame.RenderFence));
+
+        vkResetCommandPool(device, currentFrame.CommandPool, 0);
 
         const auto [resultAcquire, swapchainImageIndex] = Swapchain.AcquireImage(device, currentFrame.SwapchainSemaphore);
         if (resultAcquire == VK_ERROR_OUT_OF_DATE_KHR || resultAcquire == VK_SUBOPTIMAL_KHR)
@@ -357,11 +372,13 @@ namespace MamontEngine
             return false;
         }
 
+
         return true;
     }
 
     bool VkContextDevice::EndFrame(VkCommandBuffer cmd)
     {
+        PROFILE_FUNCTION();
         const auto                     &currentFrame = GetCurrentFrame();
         const auto                      swapchainImageIndex = Swapchain.GetCurrentImageIndex();
 
@@ -396,7 +413,7 @@ namespace MamontEngine
         DestroySyncStructeres();
         DestroyDescriptors();
         DestroySceneBuffers();
-        DestroyImages();
+        
 
 #ifdef PROFILING
         for (size_t i{0}; i < FRAME_OVERLAP; ++i)
@@ -890,7 +907,9 @@ namespace MamontEngine
     {
         m_PrefilteredCubeTexture = std::unique_ptr<Texture>(GeneratePrefilteredCube(vertexAddress, inDrawSkyboxFunc, *m_SkyboxTexture));
         m_IrradianceTexture      = std::unique_ptr<Texture>(GenerateIrradianceTexture(vertexAddress, inDrawSkyboxFunc, *m_SkyboxTexture));
-        
+        std::cerr << "-----m_PrefilteredCubeTexture: " << m_PrefilteredCubeTexture->Image << "\n";
+        std::cerr << "-----m_IrradianceTexture: " << m_IrradianceTexture->Image << "\n";
+
         DestroyDescriptors();
         InitDescriptors();
     }

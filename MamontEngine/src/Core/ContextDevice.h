@@ -97,6 +97,8 @@ namespace MamontEngine
         VkDescriptorSetLayout BindlessDescriptorLayout{VK_NULL_HANDLE};
         VkDescriptorSet  BindlessDescritporSet{VK_NULL_HANDLE};
 
+        DeletionQueue Deletions;
+
         void            InitDescriptors();
 
         void CreatePrefilteredCubeTexture(VkDeviceAddress vertexAddress, std::function<void(VkCommandBuffer cmd)> &&inDrawSkyboxFunc);

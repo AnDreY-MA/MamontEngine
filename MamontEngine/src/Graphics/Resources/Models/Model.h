@@ -59,8 +59,8 @@ namespace MamontEngine
             return m_Textures;
         }
 
-
         bool IsDirty{false};
+        void Clear();
 
     private:
         void                                  LoadMaterials(const fastgltf::Asset &inFileAsset);
@@ -70,7 +70,6 @@ namespace MamontEngine
 
         std::vector<VkSampler> LoadSamplers(const std::vector<fastgltf::Sampler> &samplers);
 
-        void Clear();
 
     private:
         std::vector<Node>                          m_Nodes;

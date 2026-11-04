@@ -25,6 +25,8 @@ static inline entt::meta_factory<T> ReflectComponent(std::string_view type, std:
     //entt::locator<entt::meta_ctx>::reset(MetaContext::GetMetaContext());
     entt::meta_factory<T> factory = entt::meta_factory<T>();
 
+    factory.template func<&entt::registry::erase<T>> (f_RemoveComponent);
+
     factory.type(entt::hashed_string{type.data()}, type.data());
 
     return factory;

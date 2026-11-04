@@ -12,7 +12,7 @@ namespace MamontEngine
     class Camera;
     class Scene;
     class Model;
-    class DirectLightPass;
+    class CascadeShadowPass;
     class PointLightPass;
     class PickPass;
     class SkyPass;
@@ -89,7 +89,7 @@ namespace MamontEngine
 
         std::shared_ptr<RenderPipeline> m_RenderPipeline;
 
-        std::shared_ptr<DirectLightPass> m_DirectLightPass;
+        std::shared_ptr<CascadeShadowPass> m_DirectLightPass;
         std::unique_ptr<PointLightPass> m_PointLightPass;
         std::unique_ptr<PickPass>        m_PickPass;
         std::unique_ptr<SkyPass>         m_SkyPass;
@@ -98,10 +98,6 @@ namespace MamontEngine
         float      m_RenderScale{1.f};
 
         RenderStats m_Stats;
-
-        mutable MemoryStats m_GpuMemoryStats;
-
-        mutable std::vector<VmaBudget> m_GpuHeapBudgets;
 
         std::array<AllocatedBuffer, FRAME_OVERLAP> m_SceneStagingBuffers;
 
