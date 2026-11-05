@@ -128,6 +128,7 @@ namespace MamontEngine
 
             if (m_ContextDevice->IsResizeRequest())
             {
+                Log::Info("Resized");
                 m_ContextDevice->ResizeSwapchain(m_Window->Resize());
             }
             else

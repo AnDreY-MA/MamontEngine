@@ -158,7 +158,6 @@ namespace MamontEngine
         VkCommandBuffer uiCommandBuffer = currentFrame.UICommandBuffer;
         m_ImGuiRenderer->Draw(uiCommandBuffer, m_DeviceContext.Swapchain.GetImageView(swapchainImageIndex), m_DrawExtent);
 
-
         // End ImGui
 
         vkCmdExecuteCommands(cmd, 1, &uiCommandBuffer);

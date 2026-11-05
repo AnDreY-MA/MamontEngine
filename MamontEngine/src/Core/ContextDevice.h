@@ -43,10 +43,7 @@ namespace MamontEngine
             return m_Frames.at(inIndex);
         }
 
-        inline void IncrementFrameNumber()
-        {
-            m_FrameNumber = (m_FrameNumber + 1) % FRAME_OVERLAP;
-        }
+        void IncrementFrameNumber();
 
         inline size_t GetFrame() const
         {
@@ -85,6 +82,11 @@ namespace MamontEngine
         std::vector<VkImageView>             PointShadowMapImageViews;
 
         MSwapchain Swapchain;
+
+        VkSemaphore TimelineSemaphore{VK_NULL_HANDLE};
+        uint64_t    TimelineSemaphoreValue{0};
+        uint64_t    GraphicsFinished{0};
+        uint64_t    AllFinished{0};
 
         DescriptorAllocatorGrowable GlobalDescriptorAllocator;
 
@@ -140,6 +142,7 @@ namespace MamontEngine
     private:
         std::array<FrameData, FRAME_OVERLAP> m_Frames{};
         size_t                               m_FrameNumber{0};
+        uint64_t                             m_AbsoluteFrame{0};
 
         VkInstance               Instance{VK_NULL_HANDLE};
         VkDebugUtilsMessengerEXT DebugMessenger{VK_NULL_HANDLE};

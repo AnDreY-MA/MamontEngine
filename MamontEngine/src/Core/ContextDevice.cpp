@@ -150,20 +150,6 @@ namespace MamontEngine
 
         inWindow->CreateSurface(Instance, &Surface);
 
-         auto indexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures{
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES, nullptr
-            };
-            indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
-            indexingFeatures.runtimeDescriptorArray = VK_TRUE;
-            indexingFeatures.shaderSampledImageArrayNonUniformIndexing       = VK_TRUE;
-            indexingFeatures.shaderStorageBufferArrayNonUniformIndexing      = VK_TRUE;
-            indexingFeatures.shaderStorageImageArrayNonUniformIndexing       = VK_TRUE;
-            indexingFeatures.shaderUniformBufferArrayNonUniformIndexing      = VK_TRUE;
-            indexingFeatures.shaderInputAttachmentArrayNonUniformIndexing    = VK_TRUE;
-            indexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing = VK_TRUE;
-            indexingFeatures.shaderStorageTexelBufferArrayNonUniformIndexing = VK_TRUE;
-
-
         constexpr auto deviceFeatures = VkPhysicalDeviceFeatures{.imageCubeArray            = VK_TRUE,
                                                                  .geometryShader            = VK_TRUE,
                                                                  .sampleRateShading         = VK_TRUE,
@@ -229,22 +215,15 @@ namespace MamontEngine
         robustness2Features.robustImageAccess2  = VK_TRUE;
         robustness2Features.nullDescriptor      = VK_TRUE;
 
-        VkValidationFeatureEnableEXT validationEnables[] = {
-                VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
-                // опционально:
-                // VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
-                // VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT,
-        };
-
-        VkValidationFeaturesEXT validationFeatures{};
-        validationFeatures.sType                         = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
-        validationFeatures.enabledValidationFeatureCount = 1;
-        validationFeatures.pEnabledValidationFeatures    = validationEnables;
+        
 
 
         vkb::PhysicalDeviceSelector selector{vkbInstance};
 
-        std::vector<const char *> extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_ROBUSTNESS_2_EXTENSION_NAME, VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME};
+        std::vector<const char *> extensions = {
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_ROBUSTNESS_2_EXTENSION_NAME, VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME, 
+            VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME, VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME
+        };
 
 #ifdef PROFILING
         extensions.push_back("VK_EXT_calibrated_timestamps");
@@ -264,7 +243,7 @@ namespace MamontEngine
 
         vkb::DeviceBuilder deviceBuilder{physicalDevice};
 
-        const vkb::Device vkbDevice = deviceBuilder.add_pNext(&validationFeatures).build().value();
+        const vkb::Device vkbDevice = deviceBuilder.build().value();
 
         LogicalDevice::InitDevice(vkbDevice.device);
         PhysicalDevice::Init(physicalDevice.physical_device);
@@ -321,11 +300,6 @@ namespace MamontEngine
 
         DestroyBindlessDescriptor();
 
-       /* m_SkyboxTexture->Destroy();
-        m_BRDFUTTexture->Destroy();
-        m_PrefilteredCubeTexture->Destroy();
-        m_IrradianceTexture->Destroy();*/
-        
         m_SkyboxTexture.reset();
         m_IrradianceTexture.reset();
         m_BRDFUTTexture.reset();
@@ -353,25 +327,28 @@ namespace MamontEngine
         auto           &currentFrame = GetCurrentFrame();
         const VkDevice &device       = LogicalDevice::GetDevice();
 
-        if (vkGetFenceStatus(device, currentFrame.RenderFence) != VK_SUCCESS)
+        if (m_AbsoluteFrame >= FRAME_OVERLAP)
         {
-            return false;
+            const uint64_t waitValue = m_AbsoluteFrame - (FRAME_OVERLAP - 1);
+
+            VkSemaphoreWaitInfo waitInfo {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO};
+            waitInfo.semaphoreCount = 1;
+            waitInfo.pSemaphores    = &TimelineSemaphore;
+            waitInfo.pValues        = &waitValue;
+            VK_CHECK(vkWaitSemaphores(device, &waitInfo, UINT64_MAX));
         }
 
-        VK_CHECK_MESSAGE(vkWaitForFences(device, 1, &currentFrame.RenderFence, VK_TRUE, UINT64_MAX), "Wait FENCE");
         currentFrame.Deleteions.Flush();
 
-        VK_CHECK(vkResetFences(device, 1, &currentFrame.RenderFence));
-
-        vkResetCommandPool(device, currentFrame.CommandPool, 0);
+        VK_CHECK(vkResetCommandPool(device, currentFrame.CommandPool, 0));
 
         const auto [resultAcquire, swapchainImageIndex] = Swapchain.AcquireImage(device, currentFrame.SwapchainSemaphore);
+
         if (resultAcquire == VK_ERROR_OUT_OF_DATE_KHR || resultAcquire == VK_SUBOPTIMAL_KHR)
         {
             m_IsResizeRequested = true;
             return false;
         }
-
 
         return true;
     }
@@ -379,16 +356,40 @@ namespace MamontEngine
     bool VkContextDevice::EndFrame(VkCommandBuffer cmd)
     {
         PROFILE_FUNCTION();
-        const auto                     &currentFrame = GetCurrentFrame();
-        const auto                      swapchainImageIndex = Swapchain.GetCurrentImageIndex();
+
+        auto      &currentFrame        = GetCurrentFrame();
+        const auto swapchainImageIndex = Swapchain.GetCurrentImageIndex();
+
+        const uint64_t signalValue = ++TimelineSemaphoreValue; 
 
         const VkCommandBufferSubmitInfo cmdInfo = vkinit::command_buffer_submit_info(cmd);
-        const VkSemaphoreSubmitInfo     waitInfo =
-                vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, currentFrame.SwapchainSemaphore);
-        const VkSemaphoreSubmitInfo signalInfo = vkinit::semaphore_submit_info(0, RenderCopleteSemaphores[swapchainImageIndex]);
 
-        const VkSubmitInfo2 submit = vkinit::submit_info(&cmdInfo, &signalInfo, &waitInfo);
-        VK_CHECK(vkQueueSubmit2(m_GraphicsQueue, 1, &submit, currentFrame.RenderFence));
+        VkSemaphoreSubmitInfo waitInfo {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO};
+        waitInfo.semaphore = currentFrame.SwapchainSemaphore;
+        waitInfo.value     = 0;
+        waitInfo.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+        VkSemaphoreSubmitInfo signalTimeline {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO};
+        signalTimeline.semaphore = TimelineSemaphore;
+        signalTimeline.value     = signalValue; 
+        signalTimeline.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+
+        VkSemaphoreSubmitInfo signalPresent {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO};
+        signalPresent.semaphore = RenderCopleteSemaphores[swapchainImageIndex];
+        signalPresent.value     = 0;
+        signalPresent.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+
+        std::array<VkSemaphoreSubmitInfo, 2> signals = {signalTimeline, signalPresent};
+
+        VkSubmitInfo2 submit{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2};
+        submit.waitSemaphoreInfoCount   = 1;
+        submit.pWaitSemaphoreInfos      = &waitInfo;
+        submit.commandBufferInfoCount   = 1;
+        submit.pCommandBufferInfos      = &cmdInfo;
+        submit.signalSemaphoreInfoCount = static_cast<uint32_t>(signals.size());
+        submit.pSignalSemaphoreInfos    = signals.data();
+
+        VK_CHECK(vkQueueSubmit2(m_GraphicsQueue, 1, &submit, VK_NULL_HANDLE));
 
         const VkResult presentResult = Swapchain.Present(m_GraphicsQueue, &RenderCopleteSemaphores[swapchainImageIndex], swapchainImageIndex);
 
@@ -492,22 +493,38 @@ namespace MamontEngine
         {
             VK_CHECK(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphore));
         }
+        
+        const VkSemaphoreTypeCreateInfoKHR semaphoreTypeCreateInfo{
+            .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
+            .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE_KHR,
+            .initialValue  = TimelineSemaphoreValue
+        };
+
+        const VkSemaphoreCreateInfo semaphoreCI{
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            .pNext = &semaphoreTypeCreateInfo
+        };
+
+        VK_CHECK(vkCreateSemaphore(device, &semaphoreCI, nullptr, &TimelineSemaphore));
+
     }
 
     void VkContextDevice::DestroySyncStructeres()
     {
         const VkDevice device = LogicalDevice::GetDevice();
 
-        for (size_t i = 0; i < FRAME_OVERLAP; ++i)
+        for (auto& frame : m_Frames)
         {
-            vkDestroyFence(device, GetFrameAt(i).RenderFence, nullptr);
-            vkDestroySemaphore(device, GetFrameAt(i).SwapchainSemaphore, nullptr);
-            // vkDestroySemaphore(Device, GetFrameAt(i).RenderSemaphore, nullptr);
+            vkDestroyFence(device, frame.RenderFence, nullptr);
+            vkDestroySemaphore(device, frame.SwapchainSemaphore, nullptr);
         }
+        
         for (auto &semaphore : RenderCopleteSemaphores)
         {
             vkDestroySemaphore(device, semaphore, nullptr);
         }
+
+        vkDestroySemaphore(device, TimelineSemaphore, nullptr);
     }
 
     void VkContextDevice::InitSceneBuffers()
@@ -1030,6 +1047,12 @@ namespace MamontEngine
     const FrameData &VkContextDevice::GetCurrentFrame() const
     {
         return m_Frames.at(m_FrameNumber);
+    }
+
+    void VkContextDevice::IncrementFrameNumber()
+    {
+        m_FrameNumber = (m_FrameNumber + 1) % FRAME_OVERLAP;
+        ++m_AbsoluteFrame;
     }
 
     VkFormat VkContextDevice::GetSupportedDepthFormat(bool checkSamplingSupport)
