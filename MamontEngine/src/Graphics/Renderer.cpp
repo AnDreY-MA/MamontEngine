@@ -64,9 +64,9 @@ namespace MamontEngine
         DebugRenderer::Destroy();
     }
 
-    void Renderer::InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera, const std::shared_ptr<Scene> &inScene)
+    void Renderer::InitSceneRenderer(const std::shared_ptr<Scene> &inScene)
     {
-        m_SceneRenderer = std::make_shared<SceneRenderer>(inMainCamera, inScene, m_DirectLightPass);
+        m_SceneRenderer = std::make_shared<SceneRenderer>(inScene, m_DirectLightPass);
     }
 
     void Renderer::InitImGuiRenderer(const std::shared_ptr<ImGuiLayer>& inLayer)

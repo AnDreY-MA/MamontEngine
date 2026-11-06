@@ -40,6 +40,8 @@
 #include "Audio/AudioSystem.h"
 #include "Audio/Sound.h"
 
+#include "Scripting/Script.h"
+
 #include "Utils/Serialization.h"
 #include "Utils/Reflection.h"
 
@@ -139,6 +141,7 @@ namespace MamontEngine
         using hs = entt::hashed_string;
         entt::meta_factory<Model>{}.type(hs{"Model"}, "Model").base<Asset>();
         entt::meta_factory<Sound>{}.type(hs{"Sound"}, "Sound").base<Asset>();
+        entt::meta_factory<Script>{}.type(hs{"Script"}, "Script").base<Asset>();
         entt::meta_factory<Transform>{}.type(hs{"Transform"}, "Transform");
 
         m_Registry.on_destroy<Hierarchy>().connect<&Scene::OnEntityDestroyed>(*this);
@@ -250,16 +253,27 @@ namespace MamontEngine
                 script.Update(deltaTime);
             }
         }
-        auto transformView = m_Registry.view<TransformComponent>();  
-        for (auto&& [entity, transform] : transformView.each())
+
+        auto transformView = m_Registry.view<TransformComponent>();
+        for (auto &&[entity, transform] : transformView.each())
         {
             if (transform.IsDirty())
             {
                 UpdateTransform(entity, m_Registry, transform);
+            }
+
+            if (auto *meshComponent = m_Registry.try_get<MeshComponent>(entity); 
+                meshComponent && meshComponent->Mesh)
+            {
+                if (meshComponent->Mesh->IsDirty || transform.IsDirty())
+                {
+                    meshComponent->Mesh->UpdateTransform(transform.Matrix());
+                    meshComponent->Mesh->IsDirty = false;
+                }
+
                 transform.SetDirty(false);
             }
         }
-
     }
 
     void Scene::StartScene()

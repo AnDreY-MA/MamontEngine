@@ -35,9 +35,9 @@ namespace MamontEngine
             m_Camera->UpdateProjection(inWindowExtent);
         }
 
-        inline Camera *GetCamera()
+        inline std::shared_ptr<Camera>& GetCamera()
         {
-            return m_Camera.get();
+            return m_Camera;
         }
 
 	private:

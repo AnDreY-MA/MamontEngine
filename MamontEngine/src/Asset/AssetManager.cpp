@@ -54,6 +54,9 @@ namespace MamontEngine
             case EAssetType::Audio:
                 outExtensions.push_back(".ogg");
                 break;
+            case EAssetType::Script:
+                outExtensions.push_back(".lua");
+                break;
             default:
                 break;
         }

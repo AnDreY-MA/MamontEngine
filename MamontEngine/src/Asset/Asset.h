@@ -9,7 +9,7 @@ namespace MamontEngine
 {
     enum class EAssetType : uint8_t
     {
-        None, Model, Audio, Material, Texture
+        None, Model, Audio, Material, Texture, Script
     };
 
 	class Asset
@@ -23,6 +23,11 @@ namespace MamontEngine
 
 		virtual void Load(std::string_view filePath){}
 
+        const std::filesystem::path& GetPath() const
+        {
+            return m_FilePath;
+        }
+
 		const std::string &GetPathFile() const
         {
             return m_FilePath.string();
@@ -30,7 +35,7 @@ namespace MamontEngine
 
 		const std::string& GetName() const
 		{
-            return m_Name;
+            return m_FilePath.stem().string();
 		}
 
         EAssetType GetType() const { return m_Type; }
@@ -48,7 +53,7 @@ namespace MamontEngine
         Asset(UID id)
             : ID(id)
         {
-
+            
         }
 
 	protected:

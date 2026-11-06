@@ -6,8 +6,6 @@
 
 layout(location = 0) in vec2 inUV;
 
-//layout(set = 1, binding = 0) uniform sampler2D textureSamplers[];
-
 void main()
 {
     MaterialBuffer matbuffer = MaterialBuffer(PushConstants.materialBuffer + PushConstants.materialIndex);

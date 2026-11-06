@@ -181,52 +181,6 @@ namespace MamontEditor
 
             InspectComponent(registry, m_Selected, metaProp);
         }
-
-        ImGui::SameLine();
-
-        if (entity.HasComponent<ScriptComponent>())
-        {
-            constexpr ImGuiTreeNodeFlags TREE_FLAGS = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
-                                                      ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding;
-
-            const bool menuOpen = ImGui::CollapsingHeader("ScriptComponent", TREE_FLAGS);
-            if (!menuOpen)
-                return;
-
-            const std::string id = "ScriptComponent";
-            ImGui::PushID(id.c_str());
-            ImGui::Indent(10.f);
-
-            auto &scriptComponent = entity.GetComponent<ScriptComponent>();
-
-            const std::string selectedString = scriptComponent.GetFilePath();
-            if (ImGui::BeginCombo("##File", selectedString.c_str()))
-            {
-                const std::array<std::string, 1> extensionFile = {std::string(".lua")};
-                const std::vector<std::string> files         = MamontEditor::ScanFolder(AssetsPath, extensionFile, true);
-                for (const auto &file : files)
-                {
-                    const std::string fullPath   = AssetsPath + "/Scripts/" + file;
-                    const bool        isSelected = (selectedString == fullPath);
-
-                    if (ImGui::Selectable(file.c_str(), isSelected))
-                    {
-                        scriptComponent.LoadScript(fullPath.c_str());
-                    }
-
-                    if (isSelected)
-                    {
-                        ImGui::SetItemDefaultFocus();
-                    }
-                }
-                ImGui::EndCombo();
-            }   
-
-            ImGui::Unindent(10);
-            ImGui::Separator();
-
-            ImGui::PopID();
-        }
     }
     
 } // namespace MamontEditor

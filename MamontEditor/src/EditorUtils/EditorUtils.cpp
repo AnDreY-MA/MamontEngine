@@ -8,11 +8,11 @@ namespace MamontEditor
 
         std::vector<std::string> files;
 
-        auto proccessFiles = [&files, inExtensions](const std::filesystem::directory_entry &entry) -> void
+        auto proccessFiles = [&files, inExtensions, folderPath](const std::filesystem::directory_entry &entry) -> void
         {
                 if (entry.is_regular_file())
                 {
-                    const std::string filename = entry.path().filename().string();
+                    const std::string filename = entry.path().generic_string();
 
                     for (const auto& extension : inExtensions)
                     {

@@ -61,7 +61,6 @@ namespace MamontEngine
 
         TextureManager::GetInstance().Init();
 
-        m_MainCamera = std::make_shared<Camera>();
         m_Scene      = std::make_shared<Scene>();
 
         JobSystem::Context contextJobs;
@@ -72,7 +71,7 @@ namespace MamontEngine
         JobSystem::Execute(contextJobs, [this](auto args)
             {
                 m_Renderer = std::make_unique<Renderer>(*m_ContextDevice.get(), m_Window);
-                m_Renderer->InitSceneRenderer(m_MainCamera, m_Scene);
+                m_Renderer->InitSceneRenderer(m_Scene);
             });
 
         JobSystem::Execute(contextJobs,
@@ -183,10 +182,6 @@ namespace MamontEngine
     {
         PROFILE_FUNCTION();
 
-        if (!m_Scene->IsSimulated())
-        {
-            m_MainCamera->Update(inDeltaTime);
-        }
 
         m_Renderer->UpdateSceneRenderer(inDeltaTime);
 

@@ -1,26 +1,23 @@
 local owner = {}
 local audioComp = {}
 
-local count = {}
+local currentTransform = {}
+local i = 21
+
+local newPosition = Vector3.new(4.0, 10.0, -3.0)
 
 function BeginPlay()
 	owner = ScriptComponent:GetOwner()
 	local name = owner:GetTagComponent()
 	Log.Info(name.name)
 
-	audioComp = owner:GetAudioComponent()
-	count = 1 
+	currentTransform = owner:GetTransformComponent()
 end
 
 function Update(dt)
-	if count == 1 then
-		audioComp:Play()
-		count = 0
-	end
-	newPosition = Vector3.new(4.0, 10.0, -3.0)
-	newPosition.x = 2.0
-	owner:GetTransformComponent():SetPosition(newPosition) 
+	currentTransform:SetPosition(newPosition)
+
 	if Input.IsKeyPressed(Key.A) then
-		Log.Info("Space pressed")
+		Log.Info("A pressed")
 	end
 end

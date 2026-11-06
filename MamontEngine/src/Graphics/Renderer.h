@@ -43,7 +43,7 @@ namespace MamontEngine
         Renderer(VkContextDevice &inDeviceContext, const std::shared_ptr<WindowCore>& inWindow);
         ~Renderer();
 
-        void InitSceneRenderer(const std::shared_ptr<Camera> &inMainCamera, const std::shared_ptr<Scene> &inScene);
+        void InitSceneRenderer(const std::shared_ptr<Scene> &inScene);
         void InitImGuiRenderer(const std::shared_ptr<ImGuiLayer>& inLayer);
 
         void InitPipelines();

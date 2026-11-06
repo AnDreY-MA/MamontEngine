@@ -74,11 +74,13 @@ namespace
 namespace MamontEngine
 {
     constexpr int MAX_RENDER_OBJECTS = 10000;
-    SceneRenderer::SceneRenderer(const std::shared_ptr<Camera>          &inCamera,
-                                 const std::shared_ptr<Scene>           &inScene,
+    SceneRenderer::SceneRenderer(const std::shared_ptr<Scene>           &inScene,
                                  const std::shared_ptr<CascadeShadowPass> &inDirectPass) 
-        : m_Camera(inCamera), m_Scene(inScene), m_DirectShadowPass(inDirectPass)
+        : m_Scene(inScene), m_DirectShadowPass(inDirectPass)
     {
+        m_EditorCamera = std::make_shared<Camera>();
+        m_ActiveCamera = m_EditorCamera;
+
         m_DrawContext.OpaqueSurfaces.reserve(MAX_RENDER_OBJECTS);
         m_DrawContext.TransparentSurfaces.reserve(MAX_RENDER_OBJECTS / 2);
     }
@@ -131,7 +133,7 @@ namespace MamontEngine
         // Opaque Draw
         for (const auto &object : m_DrawContext.OpaqueSurfaces)
         {
-            if (IsNodeVisible(m_Camera->GetFrustum(), object.Transform, object.SphereBound))
+            if (IsNodeVisible(m_EditorCamera->GetFrustum(), object.Transform, object.SphereBound))
             {
                 draw(object);
                 m_DrawObjectCount++;
@@ -173,40 +175,53 @@ namespace MamontEngine
         bool        hasAnotherView{false};
         glm::mat4   view{glm::mat4(1.f)};
         glm::mat4   projection{glm::mat4(1.f)};
-        if (m_Scene->IsSimulated())
+        const bool  isSimulated = m_Scene->IsSimulated();
+        if (isSimulated)
         {
             for (const auto& camerasView = sceneRegistry.view<const TransformComponent, CameraComponent>();
                  auto &&[entity, transform, cameraComp] : camerasView.each())
             {
                 if (cameraComp.IsViewTarget())
                 {
+                    auto& camera = cameraComp.GetCamera();
+                    if (m_ActiveCamera != camera)
+                    {
+                        m_ActiveCamera = camera;
+                    }
+
                     m_SceneData.CameraPosition = transform.GetPosition();
-                    cameraComp.GetCamera()->SetPosition(transform.GetPosition());
-                    cameraComp.GetCamera()->SetRotation(transform.GetRotation());
+                    camera->SetPosition(transform.GetPosition());
+                    camera->SetRotation(transform.GetRotation());
                     cameraComp.UpdateProj(inWindowExtent);
                     view                       = cameraComp.GetView();
                     projection     = cameraComp.GetProjection();
+
                     hasAnotherView             = true;
                     continue;
                 }
             }
         }
-        else
+
+        if (!hasAnotherView)
         {
-            if (!hasAnotherView)
+            if (m_ActiveCamera != m_EditorCamera)
             {
-                m_Camera->UpdateProjection(inWindowExtent);
-                view                       = m_Camera->GetViewMatrix();
-                projection                 = m_Camera->GetProjection();
-                m_SceneData.CameraPosition = m_Camera->GetPosition();
+                m_ActiveCamera = m_EditorCamera;
             }
+
+            m_EditorCamera->Update(inDeltaTime);
+
+            m_EditorCamera->UpdateProjection(inWindowExtent);
+            view                       = m_EditorCamera->GetViewMatrix();
+            projection                 = m_EditorCamera->GetProjection();
+            m_SceneData.CameraPosition = m_EditorCamera->GetPosition();
         }
 
         m_SceneData.View           = view;
         m_SceneData.Proj           = projection;
         m_SceneData.Viewproj       = projection * view;
-        m_SceneData.NearPlane      = m_Camera->GetNearClip();
-        m_SceneData.FarPlane = m_Camera->GetFarClip();
+        m_SceneData.NearPlane      = m_EditorCamera->GetNearClip();
+        m_SceneData.FarPlane = m_EditorCamera->GetFarClip();
 
         {
             const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent>();
@@ -229,7 +244,7 @@ namespace MamontEngine
                         m_LightData.DirectLight.Color     = ligth.GetColor();
                     if (transform.IsDirty())
                     {
-                        m_DirectShadowPass.lock()->UpdateCascade(m_Camera.get(), m_LightData.DirectLight.Direction);
+                        m_DirectShadowPass.lock()->UpdateCascade(m_EditorCamera.get(), m_LightData.DirectLight.Direction);
                         transform.SetDirty(false);
                     }
             });

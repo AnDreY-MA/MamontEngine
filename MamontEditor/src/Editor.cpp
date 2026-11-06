@@ -267,6 +267,8 @@ namespace MamontEditor
 
             ImGui::SameLine((ImGui::GetWindowContentRegionMax().x * 0.5f) - (1.5f * (ImGui::GetFontSize() + ImGui::GetStyle().ItemSpacing.x)));
 
+            auto &scene = GetSceneContext();
+
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.2f, 0.7f, 0.0f));
 
             if (ImGui::Button(ICON_PLAY))
@@ -281,9 +283,18 @@ namespace MamontEditor
 
             ImGui::SameLine();
 
+            if (scene && scene->IsSimulated())
+            {
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.0f, 0.f, 0.0f, .5f));
+            }
             if (ImGui::Button(ICON_STOP))
             {
                 GetSceneContext()->StopScene();
+            }
+
+            if (scene && scene->IsSimulated())
+            {
+                ImGui::PopStyleColor();
             }
 
             if (ImGui::IsItemHovered())

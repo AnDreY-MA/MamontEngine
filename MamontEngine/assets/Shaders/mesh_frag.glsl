@@ -6,11 +6,7 @@
 
 //#define ambient 0.6
 
-layout(set = 0, binding = 0) uniform sampler2DArray shadowMap; // DirectionLightShadow
-layout(set = 0, binding = 3) uniform samplerCube samplerCubeMap;
-layout(set = 0, binding = 4) uniform sampler2D samplerBRDFLUT;
-layout(set = 0, binding = 5) uniform samplerCube samplerPrefilteredMap;
-layout(set = 0, binding = 6) uniform samplerCube irradianceMap;
+
 
 
 layout(location = 0) in vec3 inPos;

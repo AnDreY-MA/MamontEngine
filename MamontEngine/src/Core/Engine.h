@@ -118,8 +118,6 @@ namespace MamontEngine
 
         std::shared_ptr<Scene> m_Scene;
 
-        std::shared_ptr<Camera> m_MainCamera;
-
         std::chrono::microseconds m_DeltaTime{0};
         uint64_t                  m_LastFrameTime{0};
 

@@ -5,6 +5,10 @@
 #include "EditorUtils/EditorUtils.h"
 #include "Asset/AssetManager.h"
 #include "Core/Log.h"
+#include <algorithm>
+#include <filesystem>
+#include <string>
+#include <vector>
 
 namespace MamontEditor
 {
@@ -33,21 +37,22 @@ namespace MamontEditor
             {
                 if (auto* asset = ref.try_cast<Asset>(); asset)
                 {
-                    const auto       &pathFile       = asset->GetPathFile();
-                    const std::string selectedString = pathFile.empty() ? "empty" : asset->GetPathFile();
+                    const auto& p = asset->GetPath();
+                    const std::string selectedString = p.stem().string();
 
                     if (ImGui::BeginCombo("##File", selectedString.c_str()))
                     {
                         const auto extensions = AssetMananger::GetExtensionsFromType(asset->GetType());
-                        const std::vector<std::string>       files      = MamontEditor::ScanFolder(AssetsPath, extensions);
+                        const std::vector<std::string>       files      = MamontEditor::ScanFolder(AssetsPath, extensions, true);
                         for (const auto &file : files)
                         {
-                            const std::string fullPath   = AssetsPath + "/" + file;
-                            const bool        isSelected = (selectedString == fullPath);
+                            const bool isSelected = (selectedString == file);
 
-                            if (ImGui::Selectable(file.c_str(), isSelected))
+                            const std::filesystem::path pathFile{file};
+
+                            if (ImGui::Selectable(pathFile.lexically_relative(AssetsPath).filename().string().c_str(), isSelected))
                             {
-                                asset->Load(fullPath);
+                                asset->Load(file);
                             }
 
                             if (isSelected)

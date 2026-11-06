@@ -36,11 +36,7 @@ namespace
     template <typename T, typename... Args>
     sol::usertype<T> BindMathStruct(sol::state &state, std::string_view name, Args &&...args)
     {
-        sol::usertype<T> struct_type = state.new_usertype<glm::vec3>("Vector3", std::forward<Args>(args)...);
-
-        /*vector3_type["x"] = &glm::vec3::x;
-        vector3_type["y"] = &glm::vec3::y;
-        vector3_type["z"] = &glm::vec3::z;*/
+        sol::usertype<T> struct_type = state.new_usertype<T>(name.data(), std::forward<Args>(args)...);
 
         struct_type[sol::meta_function::addition] = [](const T &a, const T &b) { return a + b; };
 
@@ -65,22 +61,26 @@ namespace
         vector3["x"]      = &glm::vec3::x;
         vector3["y"]      = &glm::vec3::y;
         vector3["z"]      = &glm::vec3::z;
+        auto vector2      = BindMathStruct<glm::vec2>(state, "Vector2", sol::constructors<glm::vec2(), glm::vec2(float, float)>());
+        vector2["x"]      = &glm::vec2::x;
+        vector2["y"]      = &glm::vec2::y;
     }
 
     MamontEngine::Entity GetEntityByName(MamontEngine::Scene *scene, const std::string &name)
     {
         using namespace MamontEngine;
         entt::entity resutlEntity = entt::null;
-        auto        &registry = scene->GetRegistry();
+        const auto        &registry = scene->GetRegistry();
+        const auto& tagView = registry.view<TagComponent>();
 
-        registry.view<TagComponent>().each(
-                [&](const auto &entity, const TagComponent &component)
-                {
-                    if (name == component.Tag)
-                    {
-                        resutlEntity = entity;
-                    }
-                });
+        for (const auto&& [entity, tagComponent] : tagView.each())
+        {
+            if (name == tagComponent.Tag)
+            {
+                resutlEntity = entity;
+                break;
+            } 
+        }
 
         if (resutlEntity == entt::null)
         {
@@ -114,6 +114,8 @@ namespace
         sol::usertype<TransformComponent> transformComponent_type = state.new_usertype<TransformComponent>("TransformComponent");
         transformComponent_type.set_function("SetPosition", &TransformComponent::SetPosition);
         transformComponent_type.set_function("GetPosition", &TransformComponent::GetPosition);
+        transformComponent_type.set_function("SetScale", &TransformComponent::SetScale);
+        transformComponent_type.set_function("GetScale", &TransformComponent::GetScale);
         REGISTER_COMPONENT_ECS(state, TransformComponent);
 
         sol::usertype<MeshComponent> meshComponent_type = state.new_usertype<MeshComponent>("MeshComponent");
@@ -143,13 +145,20 @@ namespace
 
         auto input = state["Input"].get_or_create<sol::table>();
 
-        input.set_function("IsKeyPressed", 
-            [](KeyCode key) -> bool { 
+        input.set_function("IsKeyPressed", [](KeyCode key) -> bool { 
                 return InputSystem::Get().IsKeyPressed(key);
-            }
-        );
-        input.set_function("IsKeyHeld", [](KeyCode key) -> bool { 
-            return InputSystem::Get().IsKeyPressed(key); 
+        });
+        input.set_function("IsKeyReleased", [](KeyCode key) -> bool { 
+            return InputSystem::Get().IsKeyReleased(key); 
+        });
+        input.set_function("IsMousePressed", [](KeyMouse key) -> bool { 
+            return InputSystem::Get().IsMousePressed(key); 
+        });
+        input.set_function("IsMouseReleased", [](KeyMouse key) -> bool { 
+            return InputSystem::Get().IsMouseReleased(key); 
+        });
+        input.set_function("GetMouseMotion", []() -> glm::vec2 { 
+            return InputSystem::Get().GetMouseMotion(); 
         });
 
         std::initializer_list<std::pair<sol::string_view, KeyCode>> keyItems = {

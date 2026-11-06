@@ -23,7 +23,7 @@ namespace MamontEngine
     class SceneRenderer
     {
     public:
-        explicit SceneRenderer(const std::shared_ptr<Camera> &inCamera, const std::shared_ptr<Scene>& inScene, const std::shared_ptr<CascadeShadowPass>& inDirectPass);
+        SceneRenderer(const std::shared_ptr<Scene>& inScene, const std::shared_ptr<CascadeShadowPass>& inDirectPass);
 
         ~SceneRenderer();
 
@@ -42,7 +42,7 @@ namespace MamontEngine
 
         const Camera *GetCamera() const
         {
-            return m_Camera.get();
+            return m_ActiveCamera.get();
         }
 
         const DrawContext& GetDrawContext() const
@@ -69,7 +69,9 @@ namespace MamontEngine
 
     private:
         std::shared_ptr<Scene>     m_Scene;
-        std::shared_ptr<Camera>    m_Camera;
+
+        std::shared_ptr<Camera>    m_EditorCamera;
+        std::shared_ptr<Camera>    m_ActiveCamera;
 
         std::weak_ptr<CascadeShadowPass> m_DirectShadowPass;
 

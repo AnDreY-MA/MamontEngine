@@ -3,33 +3,32 @@
 #include "Core/Engine.h"
 #include "Utils/Reflection.h"
 #include "Core/Log.h"
+#include "Scripting/Script.h"
 
 namespace MamontEngine
 {
     IMPLEMENT_REFLECT_COMPONENT(ScriptComponent, "ScriptComponent")
     {
         meta.base<Component>();
+        meta.data<&ScriptComponent::m_Script, entt::as_ref_t>("Script");
+
     }
     FINISH_REFLECT()
 
     ScriptComponent::ScriptComponent()
     {
-        Log::Info("Construct ScriptComp: {}", FileName);
+        m_Script = std::make_shared<Script>();
     }
 
     ScriptComponent::ScriptComponent(std::string_view inFile)
     {
-        LoadScript(inFile);
+        m_Script = std::make_shared<Script>();
+        m_Script->Load(inFile);
     }
 
     ScriptComponent::~ScriptComponent()
     {
-        if (m_Environment)
-        {
-            sol::protected_function releaseFunc = (*m_Environment)["OnRelease"];
-            if (releaseFunc.valid())
-                releaseFunc.call();
-        }
+
     }
 
     void ScriptComponent::BeginPlay(Entity inOwner)
@@ -55,7 +54,8 @@ namespace MamontEngine
         auto result = m_OnUpdateFunc->call();
         if (!result.valid())
         {
-            Log::Error("Failed call Update function in script");
+            sol::error err = result;
+            Log::Error("Failed call Update function in script\n Error: {}", err.what());
         }
     }
 
@@ -70,51 +70,34 @@ namespace MamontEngine
         }
     }
 
-    void ScriptComponent::LoadScript(std::string_view inFile)
+    void ScriptComponent::Reload()
     {
-        FileName = inFile;
+        if (!m_Script || !m_Script->IsLoaded())
+            return;
 
         auto &luaState = MEngine::Get().GetScriptSystem()->GetState();
 
-        m_Environment = std::make_shared<sol::environment>(luaState, sol::create, luaState.globals());
+        auto &environment = m_Script->GetEnvironment();
 
-        auto loadResult = luaState.script_file(FileName, *m_Environment, sol::script_pass_on_error);
-        if (!loadResult.valid())
-        {
-            sol::error error = loadResult;
-            Log::Error("Failed load script: {}. \nError: {}", FileName.c_str(), error.what());
-
-            return;
-        }
-
-        m_OnBeginFunc = std::make_shared<sol::protected_function>((*m_Environment)["BeginPlay"]);
+        m_OnBeginFunc = std::make_shared<sol::protected_function>((environment)["BeginPlay"]);
         if (!m_OnBeginFunc->valid())
         {
             m_OnBeginFunc.reset();
         }
-        m_OnUpdateFunc = std::make_shared<sol::protected_function>((*m_Environment)["Update"]);
+        m_OnUpdateFunc = std::make_shared<sol::protected_function>((environment)["Update"]);
         if (!m_OnUpdateFunc->valid())
         {
             m_OnUpdateFunc.reset();
         }
-        m_OnEndFunc = std::make_shared<sol::protected_function>((*m_Environment)["EndPlay"]);
+        m_OnEndFunc = std::make_shared<sol::protected_function>((environment)["EndPlay"]);
         if (!m_OnEndFunc->valid())
         {
             m_OnEndFunc.reset();
         }
 
-        (*m_Environment)["ScriptComponent"] = this;
+        (environment)["ScriptComponent"] = this;
 
         luaState.collect_garbage();
-    }
-
-    void ScriptComponent::Reload()
-    {
-        if (FileName.empty())
-        {
-            Log::Warn("ScirptComponent: file empty");
-        }
-        LoadScript(FileName);
 
     }
 }
