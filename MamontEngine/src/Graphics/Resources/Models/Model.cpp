@@ -478,7 +478,7 @@ namespace MamontEngine
                                              newNode.Transform.Position =
                                                      glm::vec3(transform.translation[0], transform.translation[1], transform.translation[2]);
                                              newNode.Transform.Rotation =
-                                                     glm::quat(transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]);
+                                                     glm::eulerAngles(glm::quat(transform.rotation[3], transform.rotation[0], transform.rotation[1], transform.rotation[2]));
                                              newNode.Transform.Scale = glm::vec3(transform.scale[0], transform.scale[1], transform.scale[2]);
                                              newNode.Matrix = newNode.Transform.Matrix();
                                          },

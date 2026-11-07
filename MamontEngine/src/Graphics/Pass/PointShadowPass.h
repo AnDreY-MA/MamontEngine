@@ -6,11 +6,11 @@ namespace MamontEngine
     class PipelineData;
     class Texture;
 
-    class PointLightPass : public RenderPass
+    class PointShadowPass : public RenderPass
     {
     public:
-        PointLightPass(std::array<Texture, MAX_POINT_LIGHT>& inShadowCubeImages);
-        ~PointLightPass();
+        PointShadowPass(std::array<Texture, MAX_POINT_LIGHT>& inShadowCubeImages);
+        ~PointShadowPass();
 
         virtual void Render(VkCommandBuffer                             cmd,
                             std::pair<VkDescriptorSet, VkDescriptorSet> globalDescriptor,

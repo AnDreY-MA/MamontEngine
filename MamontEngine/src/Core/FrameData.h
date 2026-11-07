@@ -53,7 +53,7 @@ namespace MamontEngine
         AllocatedBuffer SceneDataBuffer;
         AllocatedBuffer LightDataBuffer;
 
-        AllocatedBuffer CascadeMatrixBuffer;
+        //AllocatedBuffer CascadeMatrixBuffer;
 
         TracyVkCtx TracyContext = nullptr;
 

@@ -1,4 +1,4 @@
-#include "Graphics/Pass/PointLightPass.h"
+#include "Graphics/Pass/PointShadowPass.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Devices/PhysicalDevice.h"
 #include "Utils/VkPipelines.h"
@@ -94,7 +94,7 @@ namespace MamontEngine
         glm::vec3 Up{glm::vec3(0.f)};
     };
 
-    PointLightPass::PointLightPass(std::array<Texture, MAX_POINT_LIGHT> &inShadowCubeImages) 
+    PointShadowPass::PointShadowPass(std::array<Texture, MAX_POINT_LIGHT> &inShadowCubeImages) 
         : shadowCubeImages(inShadowCubeImages)
     {
         const VkDevice &device = LogicalDevice::GetDevice();
@@ -118,7 +118,7 @@ namespace MamontEngine
 
     }
 
-    PointLightPass::~PointLightPass()
+    PointShadowPass::~PointShadowPass()
     {
         const VkDevice device = LogicalDevice::GetDevice();
         for (auto& sBuffer : m_StagingBuffers)
@@ -136,7 +136,7 @@ namespace MamontEngine
 
     }
 
-    void PointLightPass::Render(VkCommandBuffer                             cmd,
+    void PointShadowPass::Render(VkCommandBuffer                             cmd,
                                 std::pair<VkDescriptorSet, VkDescriptorSet> globalDescriptor,
                                 const DrawContext                          &inDrawContext,
                                 const glm::mat4                            &viewproj)
@@ -240,7 +240,7 @@ namespace MamontEngine
         VK_CHECK(vkEndCommandBuffer(cmd));
     }
 
-    void PointLightPass::CreatePipeline(std::span<const VkDescriptorSetLayout> inDescriptorLaouts, VkFormat inImageFormat)
+    void PointShadowPass::CreatePipeline(std::span<const VkDescriptorSetLayout> inDescriptorLaouts, VkFormat inImageFormat)
     {
         constexpr VkPushConstantRange matrixRange{
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(PointShadowConstants)};
@@ -289,7 +289,7 @@ namespace MamontEngine
         pipelineBuilder.Clear();
     }
 
-    void PointLightPass::UpdateLights(const Camera *inCamera, const LightData &inLightData)
+    void PointShadowPass::UpdateLights(const Camera *inCamera, const LightData &inLightData)
     {
         m_LightCount = std::min(inLightData.PointLightingCount, MAX_POINT_LIGHT);
 

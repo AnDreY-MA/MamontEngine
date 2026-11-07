@@ -40,7 +40,7 @@ namespace MamontEngine
             SetDirty(true);
         }
 
-        void SetRotation(const glm::quat& inRotation)
+        void SetRotation(const glm::vec3& inRotation)
         {
             m_Transform.Rotation = inRotation;
             SetDirty(true);

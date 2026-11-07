@@ -24,16 +24,24 @@ struct DirectionLigth
 	int CastShadow;
 };
 
-layout(set = 0, binding = 7) uniform samplerCube pointLightShadowSamplers[MAX_POINT_LIGHT];
+struct Cascade
+{
+	mat4 ProjView;
+	float DepthSplit;
+};
+
+layout(set = 0, binding = 6) uniform samplerCube pointLightShadowSamplers[MAX_POINT_LIGHT];
 
 layout(set = 0, binding = 1) uniform LightDataUBO {
   DirectionLigth DirectLight;
   
-  float _pad;
   bool IsActive;
 
   PointLight PointLights[MAX_POINT_LIGHT];
   int PointLightNum;
+
+  Cascade Cascades[3]; // Cascade Count
+
 } lightData;
 
 float CalcualteDistanceAttenuation(float dist, float range)

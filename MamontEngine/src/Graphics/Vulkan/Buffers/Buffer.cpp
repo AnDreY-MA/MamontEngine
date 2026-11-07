@@ -76,9 +76,44 @@ namespace MamontEngine
         ImmediateContext::ImmediateSubmit(
                 [&](VkCommandBuffer cmd)
                 {
+                    const auto bufferBarrier1 = VkBufferMemoryBarrier2{
+                            .sType         = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+                            .srcStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                            .srcAccessMask = VK_ACCESS_2_MEMORY_READ_BIT,
+                            .dstStageMask  = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                            .dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                            .buffer        = targetBuffer->Buffer,
+                            .offset        = 0,
+                            .size          = VK_WHOLE_SIZE,
+                    };
+
+                    const auto dependencyInfo = VkDependencyInfo{
+                            .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                            .bufferMemoryBarrierCount = 1,
+                            .pBufferMemoryBarriers    = &bufferBarrier1,
+                    };
+                    vkCmdPipelineBarrier2(cmd, &dependencyInfo);
+
                     const VkBufferCopy copy = {.srcOffset = 0, .dstOffset = dstOffset, .size = targetBuffer->Info.size};
 
                     vkCmdCopyBuffer(cmd, stagingBuffer->Buffer, targetBuffer->Buffer, 1, &copy);
+
+                    const auto bufferBarrier2 = VkBufferMemoryBarrier2{
+                            .sType         = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+                            .srcStageMask  = VK_PIPELINE_STAGE_2_COPY_BIT,
+                            .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                            .dstStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                            .dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
+                            .buffer        = targetBuffer->Buffer,
+                            .offset        = 0,
+                            .size          = VK_WHOLE_SIZE,
+                    };
+                    const auto dependencyInfo2 = VkDependencyInfo{
+                            .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                            .bufferMemoryBarrierCount = 1,
+                            .pBufferMemoryBarriers    = &bufferBarrier2,
+                    };
+                    vkCmdPipelineBarrier2(cmd, &dependencyInfo2);
                 });
 
         if (isCustomStaging)

@@ -329,18 +329,25 @@ namespace MamontEngine
 
         if (m_AbsoluteFrame >= FRAME_OVERLAP)
         {
+            PROFILE_ZONE("WaitSemaphores");
+
             const uint64_t waitValue = m_AbsoluteFrame - (FRAME_OVERLAP - 1);
 
-            VkSemaphoreWaitInfo waitInfo {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO};
-            waitInfo.semaphoreCount = 1;
-            waitInfo.pSemaphores    = &TimelineSemaphore;
-            waitInfo.pValues        = &waitValue;
+            const VkSemaphoreWaitInfo waitInfo {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+                .semaphoreCount = 1,
+                .pSemaphores    = &TimelineSemaphore,
+                .pValues        = &waitValue
+            };
+
             VK_CHECK(vkWaitSemaphores(device, &waitInfo, UINT64_MAX));
         }
 
         currentFrame.Deleteions.Flush();
 
-        VK_CHECK(vkResetCommandPool(device, currentFrame.CommandPool, 0));
+        {
+            PROFILE_ZONE("vkResetCommandPool");
+            VK_CHECK(vkResetCommandPool(device, currentFrame.CommandPool, 0));
+        }
 
         const auto [resultAcquire, swapchainImageIndex] = Swapchain.AcquireImage(device, currentFrame.SwapchainSemaphore);
 
@@ -532,14 +539,14 @@ namespace MamontEngine
         for (auto& frame : m_Frames)
         {
             frame.SceneDataBuffer.Create(sizeof(GPUSceneData),
-                                         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                                         VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+                                         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                                         VMA_MEMORY_USAGE_CPU_TO_GPU);
             const VkBufferDeviceAddressInfo deviceAddressInfo = {.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = frame.SceneDataBuffer.Buffer};
             frame.SceneDataBuffer.Address                     = vkGetBufferDeviceAddress(LogicalDevice::GetDevice(), &deviceAddressInfo);
             
             frame.LightDataBuffer.Create(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-            frame.CascadeMatrixBuffer.Create(sizeof(ShadowCascades), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+            //frame.CascadeMatrixBuffer.Create(sizeof(ShadowCascades), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
         }
     }
 
@@ -549,7 +556,7 @@ namespace MamontEngine
         {
             GetFrameAt(i).SceneDataBuffer.Destroy();
             GetFrameAt(i).LightDataBuffer.Destroy();
-            GetFrameAt(i).CascadeMatrixBuffer.Destroy();
+            //GetFrameAt(i).CascadeMatrixBuffer.Destroy();
         }
     }
 
@@ -575,13 +582,13 @@ namespace MamontEngine
             DescriptorLayoutBuilder builder;
             builder.AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            builder.AddBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            //builder.AddBinding(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
            
+            builder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             builder.AddBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            builder.AddBinding(6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            builder.AddBinding(7, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, PointLightShadowMaps.size());
+            builder.AddBinding(6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, PointLightShadowMaps.size());
             GPUSceneDataDescriptorLayout = builder.Build(device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
         }
 
@@ -605,18 +612,18 @@ namespace MamontEngine
                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             writer.WriteBuffer(1, frame.LightDataBuffer.Buffer, lightDataSize, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            writer.WriteBuffer(2, frame.CascadeMatrixBuffer.Buffer, sizeof(ShadowCascades), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            writer.WriteImage(3, m_SkyboxTexture->ImageView, m_SkyboxTexture->Sampler, 
+            //writer.WriteBuffer(2, frame.CascadeMatrixBuffer.Buffer, sizeof(ShadowCascades), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            writer.WriteImage(2, m_SkyboxTexture->ImageView, m_SkyboxTexture->Sampler, 
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            writer.WriteImage(4,
+            writer.WriteImage(3,
                               m_BRDFUTTexture->ImageView,
                               m_BRDFUTTexture->Sampler, 
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             if (m_PrefilteredCubeTexture && m_PrefilteredCubeTexture->Image != VK_NULL_HANDLE && m_PrefilteredCubeTexture->Sampler != VK_NULL_HANDLE)
             {
-                writer.WriteImage(5,
+                writer.WriteImage(4,
                                   m_PrefilteredCubeTexture->ImageView,
                                   m_PrefilteredCubeTexture->Sampler,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -624,7 +631,7 @@ namespace MamontEngine
             }
             if (m_IrradianceTexture && m_IrradianceTexture->Image != VK_NULL_HANDLE && m_IrradianceTexture->Sampler != VK_NULL_HANDLE)
             {
-                writer.WriteImage(6,
+                writer.WriteImage(5,
                                   m_IrradianceTexture->ImageView,
                                   m_IrradianceTexture->Sampler,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -642,7 +649,7 @@ namespace MamontEngine
                 info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
                 pointInfos.push_back(info);
             }
-            writer.WriteImageArray(7, pointInfos, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            writer.WriteImageArray(6, pointInfos, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
             writer.UpdateSet(device, globalDescriptor);
 

@@ -18,7 +18,7 @@
 #include "Core/Log.h"
 #include "Graphics/Devices/LogicalDevice.h"
 #include "Graphics/Pass/CascadeShadowPass.h"
-#include "Graphics/Pass/PointLightPass.h"
+#include "Graphics/Pass/PointShadowPass.h"
 #include "Graphics/Pass/PickPass.h"
 #include "Graphics/Pass/SkyPass.h"
 #include "Graphics/DebugRenderer.h"
@@ -38,26 +38,17 @@ namespace MamontEngine
 
         const std::array<VkDescriptorSetLayout, 2> layouts = {m_DeviceContext.GPUSceneDataDescriptorLayout, m_DeviceContext.RenderDescriptorLayout};
 
-        m_DirectLightPass = std::make_shared<CascadeShadowPass>(m_DeviceContext.CascadeDepthImage.ImageFormat, m_DeviceContext.CascadeDepthImage.Image);
+        m_CascadeShadowPass = std::make_shared<CascadeShadowPass>(m_DeviceContext.CascadeDepthImage.ImageFormat, m_DeviceContext.CascadeDepthImage.Image);
 
-        m_PointLightPass = std::make_unique<PointLightPass>(m_DeviceContext.PointLightShadowMaps);
+        m_PointShadowPass = std::make_unique<PointShadowPass>(m_DeviceContext.PointLightShadowMaps);
 
         //m_PickPass = std::make_unique<PickPass>();
         InitPipelines();
 
-        for (auto &sBuffer : m_SceneStagingBuffers)
-        {
-            sBuffer = CreateStagingBuffer(sizeof(GPUSceneData));
-        }
     }
 
     Renderer::~Renderer()
     {
-        for (auto& buffer : m_SceneStagingBuffers)
-        {
-            buffer.Destroy();
-        }
-
         m_SceneRenderer.reset();
         m_SkyPass.reset();
         DestroyPipelines();
@@ -66,7 +57,7 @@ namespace MamontEngine
 
     void Renderer::InitSceneRenderer(const std::shared_ptr<Scene> &inScene)
     {
-        m_SceneRenderer = std::make_shared<SceneRenderer>(inScene, m_DirectLightPass);
+        m_SceneRenderer = std::make_shared<SceneRenderer>(inScene, m_CascadeShadowPass);
     }
 
     void Renderer::InitImGuiRenderer(const std::shared_ptr<ImGuiLayer>& inLayer)
@@ -92,7 +83,7 @@ namespace MamontEngine
         m_RenderPipeline = std::make_shared<RenderPipeline>(device, layouts, inImageFormats);
 
         m_SkyPass->CreatePipeline(skyLayouts, inImageFormats);
-        m_DirectLightPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
+        m_CascadeShadowPass->CreatePipeline(layouts, m_DeviceContext.CascadeDepthImage.ImageFormat);
 
         DebugRenderer::Init(device, layouts);
 
@@ -235,17 +226,28 @@ namespace MamontEngine
 
     void Renderer::RenderShadows(VkCommandBuffer inCmd)
     {
-        const auto start = std::chrono::high_resolution_clock::now();
+        PROFILE_FUNCTION();
 
-        RenderCascadeShadow(inCmd);
+        const auto start = std::chrono::high_resolution_clock::now();
+        const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
+
 
         const auto &lightData = m_SceneRenderer->GetLightData();
+
+        const std::pair<VkDescriptorSet, VkDescriptorSet> descriptors{currentFrame.GlobalDescriptor, m_DeviceContext.BindlessDescritporSet};
+        
+        if (lightData.HasDirectionLight)
+        {
+            PROFILE_ZONE("Cascade Shadow Pas");
+
+            m_CascadeShadowPass->Render(inCmd, descriptors, m_SceneRenderer->GetDrawContext(), m_SceneRenderer->GetGPUSceneData().Viewproj);
+        }
+        
         if (lightData.PointLightingCount > 0)
         {
-            const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
+            PROFILE_ZONE("Point Shadow Pas");
 
-            const std::pair<VkDescriptorSet, VkDescriptorSet> descriptors{currentFrame.GlobalDescriptor, m_DeviceContext.BindlessDescritporSet};
-            m_PointLightPass->Render(inCmd, descriptors, m_SceneRenderer->GetDrawContext(), m_SceneRenderer->GetGPUSceneData().Viewproj);
+            m_PointShadowPass->Render(inCmd, descriptors, m_SceneRenderer->GetDrawContext(), m_SceneRenderer->GetGPUSceneData().Viewproj);
         }
 
         const auto end     = std::chrono::high_resolution_clock::now();
@@ -253,17 +255,6 @@ namespace MamontEngine
 
         m_Stats.ShadowsDrawTime = elapsed.count() / 1000.f;
 
-    }
-
-    void Renderer::RenderCascadeShadow(VkCommandBuffer inCmd)
-    {
-        if (!m_SceneRenderer->HasDirectionLight())
-            return;
-        const auto &currentFrame = m_DeviceContext.GetCurrentFrame();
-
-        const std::pair<VkDescriptorSet, VkDescriptorSet> descriptors{currentFrame.GlobalDescriptor, m_DeviceContext.BindlessDescritporSet};
-
-        m_DirectLightPass->Render(inCmd, descriptors, m_SceneRenderer->GetDrawContext(), m_SceneRenderer->GetGPUSceneData().Viewproj);
     }
 
     void Renderer::UpdateUniformBuffers()
@@ -274,19 +265,16 @@ namespace MamontEngine
 
         // Scene Buffer
         {
+            PROFILE_ZONE("Update uniform buffers: Scene Buffer");
+
             const GPUSceneData &sceneData = m_SceneRenderer->GetGPUSceneData();
-            CopyDataToDynamicBuffer(&currentFrame.SceneDataBuffer, &sceneData, &m_SceneStagingBuffers[m_DeviceContext.GetFrame()]);
-
-        }
-
-        // Cascade Matrix Buffer
-        {
-            currentFrame.CascadeMatrixBuffer.Copy(&m_DirectLightPass->GetCascades());
-        }
-        
+            currentFrame.SceneDataBuffer.Copy(&sceneData);
+        }        
 
         // Light Data Buffer
         {
+            PROFILE_ZONE("Update uniform buffers: Light Data Buffer");
+
             const LightData &lightData = m_SceneRenderer->GetLightData();
             currentFrame.LightDataBuffer.Copy(&lightData);
         }
@@ -312,11 +300,13 @@ namespace MamontEngine
 
     void Renderer::UpdateSceneRenderer(float inDeltaTime)
     {
+        PROFILE_FUNCTION();
+
         m_SceneRenderer->Update(m_Window->GetExtent(), inDeltaTime);
 
-        //m_DirectLightPass->UpdateCascade(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData().DirectLight.Direction);
+        m_CascadeShadowPass->UpdateCascade(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData().DirectLight.Direction);
 
-        m_PointLightPass->UpdateLights(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData());
+        m_PointShadowPass->UpdateLights(m_SceneRenderer->GetCamera(), m_SceneRenderer->GetLightData());
     }
 
     void Renderer::DestroyPipelines()

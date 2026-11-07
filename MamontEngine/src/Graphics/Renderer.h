@@ -13,7 +13,7 @@ namespace MamontEngine
     class Scene;
     class Model;
     class CascadeShadowPass;
-    class PointLightPass;
+    class PointShadowPass;
     class PickPass;
     class SkyPass;
     class ImGuiLayer;
@@ -71,7 +71,6 @@ namespace MamontEngine
         //void DrawSkybox(VkCommandBuffer inCmd);
 
         void RenderShadows(VkCommandBuffer inCmd);
-        void RenderCascadeShadow(VkCommandBuffer inCmd);
 
         void SetViewportScissor(VkCommandBuffer cmd, const VkExtent2D &inExtent) const;
 
@@ -89,8 +88,8 @@ namespace MamontEngine
 
         std::shared_ptr<RenderPipeline> m_RenderPipeline;
 
-        std::shared_ptr<CascadeShadowPass> m_DirectLightPass;
-        std::unique_ptr<PointLightPass> m_PointLightPass;
+        std::shared_ptr<CascadeShadowPass> m_CascadeShadowPass;
+        std::unique_ptr<PointShadowPass> m_PointShadowPass;
         std::unique_ptr<PickPass>        m_PickPass;
         std::unique_ptr<SkyPass>         m_SkyPass;
 
@@ -98,9 +97,6 @@ namespace MamontEngine
         float      m_RenderScale{1.f};
 
         RenderStats m_Stats;
-
-        std::array<AllocatedBuffer, FRAME_OVERLAP> m_SceneStagingBuffers;
-
 
 	};
 }

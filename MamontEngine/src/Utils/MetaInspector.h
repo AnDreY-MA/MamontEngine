@@ -99,15 +99,17 @@ namespace MetaInspectors
     template<>
     inline void MetaInspect<Transform>(const std::string &name, Transform &value, const entt::meta_data &meta)
     {
-        glm::vec3  rot   = glm::eulerAngles(value.Rotation);
+        //glm::vec3  rot   = glm::eulerAngles(value.Rotation);
         const bool pos = MUI::DrawVec3Control("Position", value.Position);
-        const bool irot  = MUI::DrawVec3Control("Rotation", rot);
+        glm::vec3  rotation = glm::degrees(value.Rotation);
+        const bool irot     = MUI::DrawVec3Control("Rotation", rotation);
+        value.Rotation      = glm::radians(rotation);
         const bool scale = MUI::DrawVec3Control("Scale", value.Scale, 1.f);
 
-        if (irot)
+        /*if (irot)
         {
             value.Rotation = glm::quat(rot);
-        }
+        }*/
 
         value.IsDirty = pos || irot || scale;
     }

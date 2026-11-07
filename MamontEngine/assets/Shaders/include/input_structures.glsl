@@ -12,13 +12,12 @@ layout(push_constant) uniform constants
   SceneDataBuffer sceneData;
   VertexBuffer vertexBuffer;
   MaterialBuffer materialBuffer;
-  uint64_t objectID;
   uint cascadeIndex;
   uint materialIndex;
 } PushConstants;
 
 layout(set = 0, binding = 0) uniform sampler2DArray shadowMap; // DirectionLightShadow
-layout(set = 0, binding = 3) uniform samplerCube samplerCubeMap;
-layout(set = 0, binding = 4) uniform sampler2D samplerBRDFLUT;
-layout(set = 0, binding = 5) uniform samplerCube samplerPrefilteredMap;
-layout(set = 0, binding = 6) uniform samplerCube irradianceMap;
+layout(set = 0, binding = 2) uniform samplerCube samplerCubeMap;
+layout(set = 0, binding = 3) uniform sampler2D samplerBRDFLUT;
+layout(set = 0, binding = 4) uniform samplerCube samplerPrefilteredMap;
+layout(set = 0, binding = 5) uniform samplerCube irradianceMap;

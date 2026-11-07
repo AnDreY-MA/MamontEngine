@@ -23,13 +23,15 @@ namespace MamontEngine
 
         void CreatePipeline(std::span<const VkDescriptorSetLayout> inDescriptorLaouts, VkFormat inImageFormat);
 
-        const ShadowCascades &GetCascades() const
+        const std::array<Cascade, CASCADECOUNT> &GetCascades() const
         {
-            return m_Cascades;
+            return m_Cascade;
         }
 
 	private:
-        ShadowCascades m_Cascades;
+        //ShadowCascades m_Cascades;
+
+        std::array<Cascade, CASCADECOUNT> m_Cascade;
 
         std::array<VkImageView, CASCADECOUNT> m_CascadeImageViews;
         std::array<FrustumPlane, CASCADECOUNT> m_CascadeFrustumPlanes;

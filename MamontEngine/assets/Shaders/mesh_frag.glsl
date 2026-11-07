@@ -4,11 +4,6 @@
 #include "include/pbr.glsl"
 #include "include/Shadow.glsl"
 
-//#define ambient 0.6
-
-
-
-
 layout(location = 0) in vec3 inPos;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inUV;
@@ -105,14 +100,23 @@ void main()
     // Direction Light
     if (lightData.IsActive)
     {
-        const uint cascadeIndex = GetCascadeIndex(inViewPos);
+        //const uint cascadeIndex = GetCascadeIndex(inViewPos);
+
+        uint cascadeIndex = 0;
+        for (uint i = 0; i < SHADOW_MAP_CASCADE_COUNT - 1; ++i)
+        {
+            if (inViewPos.z < lightData.Cascades[i].DepthSplit)
+            {
+                cascadeIndex = i + 1;
+            }
+        }
 
         const vec3 l = normalize(-lightData.DirectLight.Direction);
 
         const vec3 H = normalize(viewDirection + l);
         const float dotNL = clamp(dot(N, l), 0.001, 1.0);
 
-        const vec4 shadowCoord = (biasMat * cascadeShadows.cascadeViewProjMat[cascadeIndex]) * vec4(inPos, 1.0);
+        const vec4 shadowCoord = (biasMat * lightData.Cascades[cascadeIndex].ProjView) * vec4(inPos, 1.0);
 
         const float shadow = filterPCF(shadowMap,  shadowCoord / shadowCoord.w, cascadeIndex);
         float atten = 1.0;

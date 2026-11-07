@@ -77,8 +77,6 @@ namespace MamontEngine
 
         VK_CHECK(vkBeginCommandBuffer(cmd, &cmdSecondaryBeginInfo));
 
-        VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
-
         const auto draw = [&](const RenderObject &r, uint32_t cascadeIndex)
         {
             vkCmdBindIndexBuffer(cmd, r.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
@@ -87,9 +85,9 @@ namespace MamontEngine
                                                       .SceneBuffer    = sceneBuffer.Address,
                                                       .VertexBuffer   = r.VertexAddress,
                                                       .MaterialBuffer = materialBufferAddress,
-                                                        .CascadeIndex = cascadeIndex,
+                                                      .CascadeIndex = cascadeIndex,
                                                       .MaterialIndex = r.MaterialIndex, 
-                };
+            };
 
             constexpr uint32_t constantsSize{static_cast<uint32_t>(sizeof(GPUDrawPushConstants))};
             vkCmdPushConstants(cmd, m_Pipeline->Layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, constantsSize, &push_constants);
@@ -215,9 +213,9 @@ namespace MamontEngine
             glm::mat4 lightOrthoMatrix = glm::orthoRH_ZO(-radius, radius, -radius, radius, 0.005f, radius * 2.f);
             lightOrthoMatrix[1][1] *= -1.0f;
             
-            m_Cascades.DepthSpilts[i] = (nearClip + splitDist * clipRange) * -1.f;
-            m_Cascades.ViewProjectMatrixs[i]             = lightOrthoMatrix * lightViewMatrix;
-            m_CascadeFrustumPlanes[i]        = ExtractFrustumPlanes(m_Cascades.ViewProjectMatrixs[i]);
+            m_Cascade[i].DepthSplit         = (nearClip + splitDist * clipRange) * -1.f;
+            m_Cascade[i].ViewProjectMatrix = lightOrthoMatrix * lightViewMatrix;
+            m_CascadeFrustumPlanes[i]       = ExtractFrustumPlanes(m_Cascade[i].ViewProjectMatrix);
 
             lastSplitDist = splitDist;
         }

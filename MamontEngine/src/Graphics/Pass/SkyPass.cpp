@@ -1,11 +1,16 @@
 #include "SkyPass.h"
+#include "Core/Engine.h"
+#include "Core/Log.h"
+
+#include "Graphics/Devices/LogicalDevice.h"
+#include "Graphics/Resources/Models/Mesh.h"
+#include "Graphics/Shader/ShaderModule.h"
+
+
+#include "Utils/Profile.h"
 #include "Utils//VkPipelines.h"
 #include "Utils//VkDestriptor.h"
 #include "Utils//VkInitializers.h"
-#include "Graphics/Devices/LogicalDevice.h"
-#include "Graphics/Resources/Models/Mesh.h"
-#include <Utils/Profile.h>
-#include "Core/Engine.h"
 
 namespace MamontEngine
 {
@@ -23,7 +28,6 @@ namespace MamontEngine
                                                      [object](VkCommandBuffer cmd)
                                                      {
                                                          constexpr VkDeviceSize offsets[1] = {0};
-                                                         //vkCmdBindVertexBuffers(cmd, 0, 1, &object.MeshBuffer.VertexBuffer.Buffer, offsets);
 
                                                          vkCmdBindIndexBuffer(cmd, object.IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
@@ -46,30 +50,23 @@ namespace MamontEngine
         constexpr VkPushConstantRange matrixRange{
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(GPUDrawPushConstants)};
 
-
         const VkPipelineLayoutCreateInfo skyboxlayoutInfo =
                 vkinit::pipeline_layout_create_info(inDescriptorLaouts.size(), inDescriptorLaouts.data(), &matrixRange, 1);
 
         VkPipelineLayout skyboxLayout;
         VK_CHECK(vkCreatePipelineLayout(device, &skyboxlayoutInfo, nullptr, &skyboxLayout));
 
-        const std::string skyboxPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/skybox.frag.spv";
+        const std::string vertPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/skybox.vert";
+        const std::string fragPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/skybox.frag";
 
-        VkShaderModule skyboxFragShader;
-        if (!VkPipelines::LoadShaderModule(skyboxPath.c_str(), device, &skyboxFragShader))
+        ShaderModule vertModule(device, vertPath, EShaderStage::Vertex);
+        ShaderModule fragModule(device, fragPath, EShaderStage::Fragment);
+
+        if (!vertModule.IsValid() || !fragModule.IsValid())
         {
-            fmt::println("Error when building the triangle fragment shader module");
+            Log::Error("[SkyPass] Vert module or FragModule is not valid");
+            return;
         }
-
-        const std::string skyboxVertexShaderPath = DEFAULT_ASSETS_DIRECTORY + "Shaders/skybox.vert.spv";
-        VkShaderModule    skyboxVertexShader;
-        if (!VkPipelines::LoadShaderModule(skyboxVertexShaderPath.c_str(), device, &skyboxVertexShader))
-        {
-            fmt::println("Error when building the triangle vertex shader module");
-        }
-
-        std::cerr << "skyboxFragShader: " << skyboxFragShader << "\n";
-        std::cerr << "skyboxVertexShader: " << skyboxVertexShader << "\n";
 
         VkPipelineCacheCreateInfo pipelineCacheInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
         VkPipelineCache skyPipelineCache{VK_NULL_HANDLE};
@@ -82,7 +79,7 @@ namespace MamontEngine
 
         VkPipelines::PipelineBuilder pipelineBuilder;
         pipelineBuilder.Clear();
-        pipelineBuilder.SetShaders(skyboxVertexShader, skyboxFragShader);
+        pipelineBuilder.SetShaders(vertModule.GetModule(), fragModule.GetModule());
         pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
         pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
         pipelineBuilder.SetDepthFormat(inImageFormats.second);
@@ -96,9 +93,6 @@ namespace MamontEngine
         pipelineBuilder.SetMultisamplingNone();
 
         m_Pipeline = std::make_unique<PipelineData>(pipelineBuilder.BuildPipline(device), skyboxLayout, skyPipelineCache);
-
-        vkDestroyShaderModule(device, skyboxFragShader, nullptr);
-        vkDestroyShaderModule(device, skyboxVertexShader, nullptr);
     }
 
     void SkyPass::Render(VkCommandBuffer cmd, VkDescriptorSet globalDescriptor)

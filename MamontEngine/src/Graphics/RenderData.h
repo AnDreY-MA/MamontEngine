@@ -49,9 +49,14 @@ namespace MamontEngine
         VkDeviceAddress SceneBuffer{0};
         VkDeviceAddress VertexBuffer{0};
         VkDeviceAddress MaterialBuffer{0};
-        uint64_t        ObjectID{0};
         uint32_t        CascadeIndex{0};
         uint32_t        MaterialIndex{0};
+    };
+
+    struct alignas(16) Cascade
+    {
+        glm::mat4 ViewProjectMatrix{glm::mat4(1.f)};
+        float     DepthSplit{0.f};
     };
 
     struct ShadowCascades
@@ -74,21 +79,21 @@ namespace MamontEngine
 
     struct alignas(16) DirectionLight
     {
-        glm::vec3 Color;   
-        float     pad0;                   
-        glm::vec3 Direction;
-        uint32_t CastShadow{1};
+        glm::vec3   Color;   
+        float       pad0;                   
+        glm::vec3   Direction;
+        uint32_t    CastShadow{1};
     };
 
     struct alignas(16) LightData
     {
-        DirectionLight DirectLight;           
-        float          _pad;
-        uint32_t       HasDirectionLight;  
+        DirectionLight  DirectLight;           
+        uint32_t        HasDirectionLight;  
 
-        PointLight     PointLights[8];
-        uint32_t       PointLightingCount;
-        float          _pad2[3];
+        PointLight      PointLights[MAX_POINT_LIGHT];
+        uint32_t        PointLightingCount;
+
+        std::array<Cascade, CASCADECOUNT> Cascade;
     };
 
 } // namespace MamontEngine

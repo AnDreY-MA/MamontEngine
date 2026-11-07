@@ -14,14 +14,14 @@ namespace MamontEngine
     struct Transform
     {
         glm::vec3 Position{glm::vec3(0.f)};
-        glm::quat Rotation{glm::quat(1.0f, 0.0f, 0.0f, 0.0f)};
+        glm::vec3 Rotation{glm::vec3(0.f)};
         glm::vec3 Scale{glm::vec3(1.f)};
 
         bool IsDirty{true};
 
         glm::mat4 Matrix() const
         {
-            return glm::translate(glm::mat4(1.0f), Position) * glm::mat4_cast(Rotation)
+            return glm::translate(glm::mat4(1.0f), Position) * glm::mat4_cast(glm::quat(Rotation))
                    * glm::scale(glm::mat4(1.0f), Scale);
         }
 
@@ -29,7 +29,9 @@ namespace MamontEngine
         {
             glm::vec3 skew = glm::vec3(1.f);
             glm::vec4 perspective = glm::vec4(1.0f);
-            glm::decompose(inMatrix, Scale, Rotation, Position, skew, perspective);
+            glm::quat rotation    = glm::quat(1.0f, 0.f, 0.f, 0.f);
+            glm::decompose(inMatrix, Scale, rotation, Position, skew, perspective);
+            Rotation = glm::eulerAngles(rotation);
         }
 
         bool operator==(const Transform &other) const
@@ -43,15 +45,15 @@ namespace MamontEngine
 
         inline glm::vec3 GetForwardVector() const
         {
-            return Rotation * glm::vec3(0.f, 0.f, 1.0f);
+            return glm::quat(Rotation) * FORWARD_VECTOR;
         }
         inline glm::vec3 GetUpVector() const
         {
-            return Rotation * UP_VECTOR;
+            return glm::quat(Rotation) * UP_VECTOR;
         }
         inline glm::vec3 GetRightVector() const
         {
-            return Rotation * RIGHT_VECTOR;
+            return glm::quat(Rotation) * RIGHT_VECTOR;
         }
     };
 

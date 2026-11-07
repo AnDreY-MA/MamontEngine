@@ -235,18 +235,15 @@ namespace MamontEngine
 
         if (m_LightData.HasDirectionLight)
         {
-            const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent, TransformComponent>();
+            const auto &viewDirectionLight = sceneRegistry.view<const DirectionLightComponent, const TransformComponent>();
 
             viewDirectionLight.each(
-                    [&](const DirectionLightComponent &ligth, TransformComponent &transform)
+                    [&](const DirectionLightComponent &ligth, const TransformComponent &transform)
                     { 
-                    m_LightData.DirectLight.Direction = transform.GetForwardVector();
+                        m_LightData.DirectLight.Direction = transform.GetForwardVector();
                         m_LightData.DirectLight.Color     = ligth.GetColor();
-                    if (transform.IsDirty())
-                    {
-                        m_DirectShadowPass.lock()->UpdateCascade(m_EditorCamera.get(), m_LightData.DirectLight.Direction);
-                        transform.SetDirty(false);
-                    }
+                        auto shadowPass                   = m_DirectShadowPass.lock();
+                        m_LightData.Cascade               = shadowPass->GetCascades();
             });
         }
         

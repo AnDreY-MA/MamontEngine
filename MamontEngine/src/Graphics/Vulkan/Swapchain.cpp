@@ -55,6 +55,8 @@ namespace MamontEngine
 
     std::pair<VkResult, uint32_t> MSwapchain::AcquireImage(VkDevice inDevice, VkSemaphore inSemaphore)
     {
+        PROFILE_FUNCTION();
+
         const VkResult result = vkAcquireNextImageKHR(inDevice, m_Swapchain, UINT64_MAX, inSemaphore, VK_NULL_HANDLE, &m_CurrentImageIndex);
         return {result, m_CurrentImageIndex};
     }

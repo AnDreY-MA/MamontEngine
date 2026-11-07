@@ -1,10 +1,8 @@
 #define SHADOW_MAP_CASCADE_COUNT 3
 #define SHADOW_OPACITY 0.5
 
-layout (set = 0, binding = 2) uniform CascadeShadowUBO {
-	mat4 cascadeViewProjMat[SHADOW_MAP_CASCADE_COUNT];
-    float CascadeSplits[SHADOW_MAP_CASCADE_COUNT];
-} cascadeShadows;
+
+
 
 float textureProj(sampler2DArray shadowMap, vec4 shadowCoord, vec2 offset, uint cascadeIndex)
 {
@@ -40,7 +38,7 @@ float filterPCF(sampler2DArray shadowMap, vec4 sc, uint cascadeIndex)
   }
   return shadowFactor / count;
 }
-
+/*
 uint GetCascadeIndex(vec3 viewPos)
 {
   uint cascadeIndex = 0;
@@ -53,7 +51,7 @@ uint GetCascadeIndex(vec3 viewPos)
   }
 
   return cascadeIndex;
-}
+}*/
 
 float GetPointShadowDepth(vec3 fragPos, vec3 lightPos, float lightNearPlane, float lightFarPlane)
 {
@@ -77,36 +75,3 @@ float calculatePointShadow(vec3 fragPos, vec3 lightPos, float dotNL, samplerCube
   
     return shadow;
 }
-
-/*const vec3 sample_offset_directions[20] = vec3[](
-    vec3( 1, 1, 1), vec3(-1, 1, 1), vec3( 1,-1, 1), vec3(-1,-1, 1),
-    vec3( 1, 1,-1), vec3(-1, 1,-1), vec3( 1,-1,-1), vec3(-1,-1,-1),
-    vec3( 1, 0, 0), vec3(-1, 0, 0), vec3( 0, 1, 0), vec3( 0,-1, 0),
-    vec3( 0, 0, 1), vec3( 0, 0,-1), vec3( 1, 1, 0), vec3(-1, 1, 0),
-    vec3( 1,-1, 0), vec3(-1,-1, 0), vec3( 1, 0, 1), vec3(-1, 0, 1)
-);
-
-
-float calculatePointShadow(vec3 fragPos, vec3 lightPos, float dotNL, samplerCube shadowMap, float radius, vec3 normal)
-{
-  const vec3 fragToLight = fragPos - lightPos;
-  const float currentDepth = length(fragToLight);
-  const vec3 lightDirection = normalize(lightPos - fragPos);
-
-  float baseBias = 0.015;
-  float normalBias = 0.15 * (1.0 - dot(normal, lightDirection));
-  float depthWithBias = currentDepth - (baseBias + normalBias);
-  float diskRadius = (currentDepth / radius) * 0.05;
-
-  float shadow = 0.0;
-  int samples = 20;
-
-    for (int i = 0; i < samples; i++) {
-        vec3 sample_vec = fragToLight + diskRadius * sample_offset_directions[i];
-        float closest_depth = texture(shadowMap, sample_vec).r * radius;
-
-        shadow += (depthWithBias > closest_depth) ? 1.0 : 0.0;
-    }
-
-    return 1.0 - (shadow / samples);
-}*/

@@ -244,7 +244,7 @@ namespace MamontEngine
             {
                 const auto &[transform, rigidbody] = rigidbodyGroup.get<TransformComponent, RigidbodyComponent>(entity);
                 transform.SetPosition(rigidbody.Rigidbody->GetPosition());
-                transform.SetRotation(rigidbody.Rigidbody->GetRotation());
+                transform.SetRotation(glm::eulerAngles(rigidbody.Rigidbody->GetRotation()));
             }
 
             const auto& scriptComponentView = m_Registry.view<ScriptComponent>();
